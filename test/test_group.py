@@ -702,11 +702,10 @@ class TestGroup:
     def test_disable_entity_overlapping_warning(self):
         group = Group("test")
         group.entities.append("transport-belt")
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             group.entities.append("transport-belt")  # No warning
         assert len(group.entities) == 2
 
-        group.entities.validate_assignment = "strict"
         with pytest.warns(OverlappingObjectsWarning):
             group.entities.append("transport-belt")
 

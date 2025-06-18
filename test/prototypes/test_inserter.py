@@ -201,7 +201,7 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.spoil_priority = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             inserter.spoil_priority = "incorrect"
             assert inserter.spoil_priority == "incorrect"
             assert inserter.to_dict() == {
@@ -230,7 +230,7 @@ class TestInserter:
             inserter.read_hand_contents = "incorrect"
         assert inserter.read_hand_contents == True
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             inserter.read_hand_contents = "incorrect"
             assert inserter.read_hand_contents == "incorrect"
             assert inserter.to_dict() == {
@@ -316,7 +316,7 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.circuit_set_filters = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             inserter.circuit_set_filters = "incorrect"
             assert inserter.circuit_set_filters == "incorrect"
             assert inserter.to_dict() == {
@@ -344,7 +344,7 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.circuit_set_stack_size = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             inserter.circuit_set_stack_size = "incorrect"
             assert inserter.circuit_set_stack_size == "incorrect"
             assert inserter.to_dict() == {

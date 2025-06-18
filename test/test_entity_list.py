@@ -310,7 +310,7 @@ class TestEntityList:
             blueprint.entities[0] = new_entity("substation")
 
         # No overlapping warning
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             blueprint.entities[0] = new_entity("substation")
 
         with pytest.raises(TypeError):
@@ -392,4 +392,4 @@ class TestEntityList:
     def test_validate(self):
         blueprint = Blueprint()
 
-        assert blueprint.entities.validate(mode="none") == ValidationResult([], [])
+        assert blueprint.entities.validate(mode=ValidationMode.DISABLED) == ValidationResult([], [])

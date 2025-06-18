@@ -185,7 +185,7 @@ class TestConstants:
 
     def test_validation_mode_gt(self):
         with pytest.raises(TypeError):
-            ValidationMode.NONE > TypeError
+            ValidationMode.DISABLED > TypeError
 
 
 class TestUtils:

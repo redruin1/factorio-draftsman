@@ -866,18 +866,16 @@ class ValidationMode(Enum):
     """
     The manner in which to validate a given Draftsman object.
 
-    * ``NONE``
-        No validation will be performed at all. If the attribute
-        supports a shorthand format, it will *not* be converted using this mode.
-        Consider this mode a simple "passthrough" mode, where any value given
-        to Draftsman is taken verbatim.
+    * ``DISABLED``
+        No validation will be performed at all. Shorthand conversions will still
+        take place, meaning that all values will still attempt to be coerced to
+        their internal form whenever possible.
     * ``MINIMUM``
-        The minimum amount of validation needed in order to coerce shorthand
-        formats into their expected form, as well as validate that the structure
-        of the object conforms to what Factorio expects. Importing an object
-        that has been validated with this mode is not guaranteed to succeed, as
-        while the object might be structurally correct, the data inside of it
-        might still be malformed.
+        The minimum amount of validation needed in order to validate that the 
+        structure of the object conforms to what Factorio expects. Importing an 
+        object that has been validated with this mode is not guaranteed to 
+        succeed, as while the object might be structurally correct, the data 
+        inside of it might still be malformed.
     * ``STRICT``
         The default mode. Includes all of the errors from ``MINIMUM``,
         but attempts to point out and remedy issues with the objects values.
@@ -889,13 +887,13 @@ class ValidationMode(Enum):
         warnings, in addition to more linting-like behavior.
     """
 
-    NONE = "none"
+    DISABLED = "disabled"
     MINIMUM = "minimum"
     STRICT = "strict"
     PEDANTIC = "pedantic"
 
     def __bool__(self) -> bool:
-        return self is not ValidationMode.NONE
+        return self is not ValidationMode.DISABLED
 
     def __eq__(self, other):
         if isinstance(other, ValidationMode):

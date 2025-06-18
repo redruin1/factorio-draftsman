@@ -39,11 +39,11 @@ class TestWall:
         # ========================
         # No assignment validation
         # ========================
-        draftsman.validators.set_mode(vm.NONE)
+        draftsman.validators.set_mode(vm.DISABLED)
 
         # Known entity
         wall = Wall("stone-wall")
-        wall.validate(mode=vm.NONE).reissue_all()
+        wall.validate(mode=vm.DISABLED).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -108,7 +108,7 @@ class TestWall:
         #     "connections": "incorrect",
         #     "control_behavior": "incorrect",
         # })
-        # wall.validate(mode=vm.NONE).reissue_all()
+        # wall.validate(mode=vm.DISABLED).reissue_all()
         # assert wall.to_dict(version=(1, 0)) == {
         #     "name": "stone-wall",
         #     "position": {"x": 0.5, "y": 0.5},
@@ -382,7 +382,7 @@ class TestWall:
         # ========================
         # No assignment validation
         # ========================
-        draftsman.validators.set_mode(vm.NONE)
+        draftsman.validators.set_mode(vm.DISABLED)
         wall = Wall("stone-wall")
 
         # bool
@@ -436,7 +436,7 @@ class TestWall:
         # ========================
         # No assignment validation
         # ========================
-        draftsman.validators.set_mode(vm.NONE)
+        draftsman.validators.set_mode(vm.DISABLED)
         wall = Wall("stone-wall")
 
         # bool
@@ -490,7 +490,7 @@ class TestWall:
         # ========================
         # No assignment validation
         # ========================
-        draftsman.validators.set_mode(vm.NONE)
+        draftsman.validators.set_mode(vm.DISABLED)
         wall = Wall("stone-wall")
 
         # None

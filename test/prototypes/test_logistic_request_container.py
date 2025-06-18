@@ -338,7 +338,7 @@ class TestRequestContainer:
         with pytest.raises(DataFormatError):
             container.request_from_buffers = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             container.request_from_buffers = "incorrect"
             assert container.request_from_buffers == "incorrect"
             assert container.to_dict() == {

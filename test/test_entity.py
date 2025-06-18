@@ -281,11 +281,11 @@ class TestAllEntities:
 
 class TestEntityBase:
     def test_similar_entities(self):
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             assert Entity("entity").similar_entities == []
 
     def test_get_type(self):
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             assert Entity("entity", validate_assignment="none").type is None
 
         container = Container("wooden-chest")

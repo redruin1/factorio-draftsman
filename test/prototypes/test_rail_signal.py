@@ -1,6 +1,6 @@
 # test_rail_signal.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import RailSignal, rail_signals, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID, Condition
@@ -126,7 +126,7 @@ class TestRailSignal:
         with pytest.raises(DataFormatError):
             rail_signal.enable_disable = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             rail_signal.enable_disable = "incorrect"
             assert rail_signal.enable_disable == "incorrect"
             assert rail_signal.to_dict() == {
@@ -145,7 +145,7 @@ class TestRailSignal:
         with pytest.raises(DataFormatError):
             rail_signal.read_signal = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             rail_signal.read_signal = "incorrect"
             assert rail_signal.read_signal == "incorrect"
             assert rail_signal.to_dict() == {

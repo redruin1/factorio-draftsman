@@ -2,7 +2,7 @@
 
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
-from draftsman.constants import WaitConditionType, WaitConditionCompareType
+from draftsman.constants import WaitConditionType, ValidationMode
 from draftsman.error import DataFormatError
 import draftsman.validators
 from draftsman.signatures import Condition
@@ -33,7 +33,7 @@ class TestWaitCondition:
         assert w.ticks == None
         assert w.condition == Condition()
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             w = WaitCondition("incorrect", compare_type="incorrect")
         assert w.type == "incorrect"
         assert w.compare_type == "incorrect"

@@ -1,5 +1,4 @@
 # exportable.py
-from draftsman import __factorio_version_info__
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import (
@@ -7,7 +6,7 @@ from draftsman.serialization import (
     make_unstructure_function_from_schema,
 )
 from draftsman.utils import dict_merge
-from draftsman.validators import conditional, instance_of
+from draftsman.validators import conditional
 from draftsman.warning import UnknownKeywordWarning
 
 from draftsman.data import mods
@@ -20,175 +19,7 @@ import copy
 from typing import Any, List, Optional
 from typing_extensions import Self
 import warnings
-import pprint
-
-
-# def convert_to_countingattr(attr):
-#     """
-#     Convert an `Attribute` instance to an equivalent `_CountingAttr` instance.
-#     """
-#     return attrs.field(
-#         **{
-#             slot: getattr(attr, slot)
-#             for slot in attr.__slots__
-#             if slot not in {"name", "eq_key", "order_key", "inherited"}
-#         }
-#     )
-
-
-# def custom_define(field_order: list[str], **kwargs):
-#     import inspect
-
-#     @wraps(attrs.define)
-#     def wrapper(cls):
-#         # Pre-attrs definition
-#         these = {}
-#         for field_name in field_order:
-#             field = getattr(cls, field_name, attrs.field())
-
-#             # Grabbing fields from already `@define`d classes return memberdescriptors
-#             if inspect.ismemberdescriptor(field):
-#                 # If so, grab it using attrs plumbing and convert it to _CountingAttr
-#                 field = getattr(attrs.fields(cls), field_name)
-#                 field = convert_to_countingattr(field)
-#             # If it's not a _CountingAttr, then it must be the default value
-#             elif not isinstance(field, _CountingAttr):
-#                 field = attrs.field(default=field)
-
-#             these[field_name] = field
-
-#         # # Post-attrs definition
-#         # original_init = res.__init__
-
-#         # @wraps(original_init)
-#         # def new_init(*args, **kwargs):
-#         #     kwargs.pop("entity_number", None)
-#         #     original_init(*args, **kwargs)
-
-#         # cls.__init__ = new_init
-
-#         return attrs.define(cls, these=these, **kwargs)
-
-#     return wrapper
-
-
-# def attempt_and_reissue(
-#     object: Any, format_model: Any, target: Any, name: str, value: Any, **kwargs
-# ):
-#     """
-#     Helper function that normalizes assignment validation
-#     """
-#     context = {
-#         "mode": object.validate_assignment,
-#         "object": object,
-#         "warning_list": [],
-#         "assignment": True,
-#         "environment_version": __factorio_version_info__,
-#         **kwargs,
-#     }
-#     if object.validate_assignment == ValidationMode.NONE:
-#         context["construction"] = True
-#     try:
-#         result = format_model.__pydantic_validator__.validate_assignment(
-#             target,
-#             name,
-#             value,
-#             strict=False,  # TODO: disallow any weird string -> int / string -> bool conversions
-#             context=context,
-#         )
-#     except ValidationError as e:
-#         raise DataFormatError(e) from None
-#     for warning in context["warning_list"]:
-#         warnings.warn(warning, stacklevel=4)
-#     # result = result.model_dump(warnings=False)
-#     # return result[name]
-#     return getattr(result, name)
-
-
-# def apply_assignment(
-#     object: "Exportable",
-#     format_model: BaseModel,
-#     target: BaseModel,
-#     name: str,
-#     value: Any,
-#     **kwargs
-# ):
-#     """
-#     TODO
-#     """
-#     context = {
-#         "mode": ValidationMode.NONE,
-#         "object": object,
-#         "warning_list": [],
-#         "assignment": True,
-#         "construction": True,
-#         **kwargs,
-#     }
-#     # try:
-#     result = format_model.__pydantic_validator__.validate_assignment(
-#         target,
-#         name,
-#         value,
-#         strict=True,  # TODO: disallow any weird string -> int / string -> bool conversions
-#         context=context,
-#     )
-#     # except ValidationError as e:
-#     #     raise DataFormatError(e) from None
-#     # for warning in context["warning_list"]:
-#     #     warnings.warn(warning, stacklevel=4)
-#     return getattr(result, name)
-
-
-# def test_replace_me(
-#     object: "Exportable",
-#     format_model: BaseModel,
-#     target: BaseModel,
-#     name: str,
-#     value: Any,
-#     mode: ValidationMode,
-#     **kwargs
-# ):
-#     """
-#     Attempts to coerce a input value to a particular Pydantic model format, and
-#     run validation at the same time if requested by the caller. Utility function
-#     to increase code reuse.
-
-#     The input value is expected to be in a standard JSON format, what you would
-#     expect a regular input to look like. Any shorthand formats should be handled
-#     *before* passing to this function.
-
-#     If the passed in mode is `ValidationMode.NONE`, then this function attempts
-#     to just coerce the input to a Pydantic BaseModel using the "construction"
-#     key. Because using this key should generate no errors or warnings, the
-#     original value will just be returned when it is indeterminate. Under any
-#     other passed in `mode`, the validation suite is run corresponding to that
-#     mode.
-#     """
-#     context = {
-#         "mode": mode,
-#         "object": object,
-#         "warning_list": [],
-#         "assignment": True,  # Do not revalidate the entire object; just this attr
-#         "environment_version": __factorio_version_info__,
-#         **kwargs,
-#     }
-#     # Functions check for presence, not value; so we only add it when necessary
-#     if mode is ValidationMode.NONE:
-#         context["construction"] = True
-
-#     try:
-#         result = format_model.__pydantic_validator__.validate_assignment(
-#             target,
-#             name,
-#             value,
-#             strict=True,  # TODO: disallow any weird str to int or str to bool conversions
-#             context=context,
-#         )
-#     except ValidationError as e:
-#         raise DataFormatError(e) from None
-#     for warning in context["warning_list"]:
-#         warnings.warn(warning, stacklevel=4)
-#     target[name] = getattr(result, name)
+import pprint # TODO: find something better
 
 
 class ValidationResult:
@@ -202,8 +33,6 @@ class ValidationResult:
         self.warning_list: List[Warning] = warning_list
 
     def reissue_all(self, stacklevel=2):
-        print(self.error_list)
-        print(self.warning_list)
         for error in self.error_list:
             raise error
         for warning in self.warning_list:
@@ -254,27 +83,6 @@ class Exportable:
     Factorio blueprint string, such as entities, tiles, or entire blueprints
     themselves.
     """
-
-    # _is_valid: bool = attrs.field(default=False, init=False)
-    # validation: ValidationMode = attrs.field(
-    #     default=ValidationMode.NONE,
-    #     repr=False,
-    #     eq=False,
-    #     metadata={"omit": True, "location": None},
-    # )
-
-    # def __init__(self):
-    #     self._root: __class__.Format
-    #     # TODO: hopefully put _root initialization here
-    #     self._is_valid = False
-    #     # Validation assignment is set to "none" on construction since we might
-    #     # not want to validate at this point; validation is performed at the end
-    #     # of construction in the child-most class, if desired
-    #     self._validate_assignment = ValidationMode.NONE
-
-    #     # TODO: make this a static class property instead of an instance variable
-    #     # (more writing but less memory)
-    #     self._unknown = False
 
     # =========================================================================
 
@@ -432,17 +240,14 @@ class Exportable:
         for a in attrs.fields(self.__class__):
             v = a.validator
             if v is not None:
-                try:
-                    v(
-                        self,
-                        a,
-                        getattr(self, a.name),
-                        mode=mode,
-                        error_list=res.error_list,
-                        warning_list=res.warning_list,
-                    )
-                except Exception as e:
-                    raise e
+                v(
+                    self,
+                    a,
+                    getattr(self, a.name),
+                    mode=mode,
+                    error_list=res.error_list,
+                    warning_list=res.warning_list,
+                )
         return res
 
     @classmethod

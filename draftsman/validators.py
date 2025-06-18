@@ -5,7 +5,6 @@ from draftsman.error import DataFormatError
 
 import attrs
 
-from contextlib import contextmanager
 import inspect
 import operator
 from typing import (
@@ -28,8 +27,12 @@ _validation_mode = ValidationMode.STRICT
 
 
 def get_mode():
+    """
+    TODO
+    """
     global _validation_mode
     return _validation_mode
+
 
 def set_mode(mode: ValidationMode):
     """
@@ -71,16 +74,6 @@ def set_mode(mode: ValidationMode):
             _validation_mode = original_mode
 
     return ValidationContext()
-
-def disabled():
-    """
-    Shorthand for writing:
-
-    .. code-block::
-
-        draftsman.validators.set_mode(ValidationMode.NONE)
-    """
-    return set_mode(ValidationMode.NONE)
 
 
 def conditional(severity):
@@ -194,23 +187,18 @@ attr._make.and_ = and_
 
 class _OrValidator:
     def __init__(self, validators):
-        print(validators)
         self.validators = validators
 
     @conditional(ValidationMode.MINIMUM)
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
-        print("\t", attr.name)
         messages = []
         for validator in self.validators:
-            print(validator)
             try:
                 validator(inst, attr, value, **kwargs)
-                print("passed")
                 return
             except DataFormatError as e:
                 messages.append(str(e))
 
-        print("messages:", messages)
         msg = "{} did not match any of {}\n\t{}".format(
             repr(value),
             repr(self.validators),
@@ -232,54 +220,33 @@ def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any):
 
 class _InstanceOfValidator:
     def __init__(self, cls: type):
-        if get_origin(cls) is Annotated:
-            args = get_args(cls)
-            self.cls = args[0]
-            self.extra_validator = args[1]
-        else:
-            self.cls = cls
-            self.extra_validator = None
+        self.cls = cls
 
     @conditional(ValidationMode.MINIMUM)
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any):
-        # mode = mode if mode is not None else _validation_mode
-        # if mode:
         if not isinstance(value, self.cls):
             name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
             msg = "'{}' must be an instance of {}".format(attr.name, name)
             raise DataFormatError(msg)
-        # if self.extra_validator:
-        #     self.extra_validator(inst, attr, value, **kwargs)
 
 
 class _ArgsAreValidator:
     def __init__(self, cls: type):
-        # if get_origin(cls) is Annotated:
-        #     args = get_args(cls)
-        #     self.cls = args[0]
-        #     self.extra_validator = args[1]
-        # else:
-        #     self.cls = cls
-        #     self.extra_validator = None
         self.cls = cls
 
+    @conditional(ValidationMode.MINIMUM)
     def __call__(
-        self, inst: "Exportable", attr: attrs.Attribute, value: list, **kwargs
+        self, _inst: "Exportable", _attr: attrs.Attribute, value: list
     ):
-        mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else _validation_mode
-        if mode:
-            for i, v in enumerate(value):
-                if not isinstance(v, self.cls):
-                    name = (
-                        self.cls if isinstance(self.cls, tuple) else self.cls.__name__
-                    )
-                    msg = "Element {} in list ({}) is not an instance of {}".format(
-                        i, repr(v), name
-                    )
-                    raise DataFormatError(msg)
-                # if self.extra_validator:
-                #     self.extra_validator(inst, attr, value, **kwargs)
+        for i, v in enumerate(value):
+            if not isinstance(v, self.cls):
+                name = (
+                    self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+                )
+                msg = "Element {} in list ({}) is not an instance of {}".format(
+                    i, repr(v), name
+                )
+                raise DataFormatError(msg)
 
 
 def instance_of(cls: type):
@@ -309,13 +276,11 @@ class _OneOfValidator:
     def __init__(self, values):
         self.values = values
 
-    def __call__(self, _inst: "Exportable", _attr: attrs.Attribute, value: Any, **kwargs):
-        mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else _validation_mode
-        if mode:
-            if value not in self.values:
-                msg = "value {} not one of {}".format(repr(value), self.values)
-                raise DataFormatError(msg)
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, _inst: "Exportable", _attr: attrs.Attribute, value: Any):
+        if value not in self.values:
+            msg = "value {} not one of {}".format(repr(value), self.values)
+            raise DataFormatError(msg)
 
 
 def one_of(*values):

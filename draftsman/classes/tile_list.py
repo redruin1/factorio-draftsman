@@ -135,10 +135,8 @@ class TileList(Exportable, MutableSequence):
         if not isinstance(tile, Tile):
             raise TypeError("Entry in TileList must be a Tile")
 
-        # Handle overlapping and merging
-        if get_mode():
-            # tile.validate(mode=self.validate_assignment).reissue_all()
-            self.spatial_map.validate_insert(tile, merge=merge)
+        tile.validate(mode=get_mode()).reissue_all()
+        self.spatial_map.validate_insert(tile, merge=merge) # TODO: remove this and integrate it into `add()`
 
         # Add to tile map
         tile = self.spatial_map.add(tile, merge=merge)
@@ -153,17 +151,17 @@ class TileList(Exportable, MutableSequence):
         tile._parent = self._parent
 
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
         mode = ValidationMode(mode)
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
+        if mode is ValidationMode.DISABLED:
             return output
 
         for tile in self:
             # TODO: more sophisticated
-            output += tile.validate(mode=mode, force=force)
+            output += tile.validate(mode=mode)
 
         return output
 
@@ -229,8 +227,9 @@ class TileList(Exportable, MutableSequence):
         # TODO: handle slices
 
         # Check tile
-        if not isinstance(value, Tile):
-            raise TypeError("Entry in TileList must be a Tile")
+        if get_mode():
+            if not isinstance(value, Tile):
+                raise TypeError("Entry in TileList must be a Tile")
 
         self.spatial_map.remove(self._root[idx])
 

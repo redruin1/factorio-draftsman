@@ -113,7 +113,7 @@ class TestUpgradePlanner:
             "version": encode_version(*__factorio_version_info__),
         }
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             upgrade_planner.description = 100
             assert upgrade_planner.description == 100
 
@@ -146,7 +146,7 @@ class TestUpgradePlanner:
             "version": encode_version(*__factorio_version_info__),
         }
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             upgrade_planner.icons = "incorrect"
             assert upgrade_planner.icons == "incorrect"
 
@@ -230,7 +230,7 @@ class TestUpgradePlanner:
         ]
 
         # Test None
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             upgrade_planner.mappers = "incorrect"
             assert upgrade_planner.mappers == "incorrect"
 

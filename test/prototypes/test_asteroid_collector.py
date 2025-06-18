@@ -82,7 +82,7 @@ class TestAsteroidCollector:
             {"index": 2, "name": "metallic-asteroid-chunk"},
         ]
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             ac.chunk_filter = "wrong"
             assert ac.chunk_filter == "wrong"
 
@@ -97,7 +97,7 @@ class TestAsteroidCollector:
             ac.read_contents = "wrong"
         assert ac.read_contents == True
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             ac.read_contents = "wrong"
             assert ac.read_contents == "wrong"
 

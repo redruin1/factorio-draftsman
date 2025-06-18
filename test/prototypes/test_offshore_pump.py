@@ -121,7 +121,7 @@ class TestOffshorePump:
             pump.connect_to_logistic_network = "incorrect"
         assert pump.connect_to_logistic_network == True
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             pump.connect_to_logistic_network = "incorrect"
             assert pump.connect_to_logistic_network == "incorrect"
             assert pump.to_dict() == {

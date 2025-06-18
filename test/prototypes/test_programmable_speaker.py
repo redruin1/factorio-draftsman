@@ -153,7 +153,7 @@ class TestProgrammableSpeakerTesting:
         with pytest.raises(DataFormatError):
             ProgrammableSpeaker(tags="incorrect")
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker = ProgrammableSpeaker(tags="incorrect")
         with pytest.raises(DataFormatError):
             speaker.validate().reissue_all()
@@ -197,7 +197,7 @@ class TestProgrammableSpeakerTesting:
             assert speaker.volume == 10.0
 
         # No Error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.volume = "incorrect"
             assert speaker.volume == "incorrect"
 
@@ -217,7 +217,7 @@ class TestProgrammableSpeakerTesting:
             speaker.global_playback = "incorrect"
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.global_playback = "incorrect"
             assert speaker.global_playback == "incorrect"
             assert speaker.to_dict() == {
@@ -238,7 +238,7 @@ class TestProgrammableSpeakerTesting:
             speaker.show_alert = "incorrect"
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.show_alert = "incorrect"
             assert speaker.show_alert == "incorrect"
             assert speaker.to_dict() == {
@@ -259,7 +259,7 @@ class TestProgrammableSpeakerTesting:
             speaker.allow_polyphony = "incorrect"
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.allow_polyphony = "incorrect"
             assert speaker.allow_polyphony == "incorrect"
             assert speaker.to_dict() == {
@@ -280,7 +280,7 @@ class TestProgrammableSpeakerTesting:
             speaker.show_alert_on_map = "incorrect"
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.show_alert_on_map = "incorrect"
             assert speaker.show_alert_on_map == "incorrect"
             assert speaker.to_dict() == {
@@ -321,7 +321,7 @@ class TestProgrammableSpeakerTesting:
             speaker.alert_message = False
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.alert_message = False
             assert speaker.alert_message == False
             assert speaker.to_dict() == {
@@ -341,7 +341,7 @@ class TestProgrammableSpeakerTesting:
             speaker.signal_value_is_pitch = "incorrect"
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.signal_value_is_pitch = "incorrect"
             assert speaker.signal_value_is_pitch == "incorrect"
             assert speaker.to_dict() == {
@@ -380,7 +380,7 @@ class TestProgrammableSpeakerTesting:
             speaker.instrument_id = TypeError
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.instrument_id = "incorrect"
             assert speaker.instrument_id == "incorrect"
             assert speaker.to_dict() == {
@@ -467,7 +467,7 @@ class TestProgrammableSpeakerTesting:
             speaker.note_id = TypeError
 
         # No error
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.note_id = "incorrect"
             assert speaker.note_id == "incorrect"
             assert speaker.to_dict() == {

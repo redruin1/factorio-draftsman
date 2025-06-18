@@ -8,6 +8,7 @@ information you want from the entity in question and access it via Draftsman
 script.
 """
 
+from draftsman.constants import ValidationMode
 from draftsman.entity import Inserter
 from draftsman import validators
 
@@ -26,7 +27,7 @@ def main():
 
     # These first class attributes will return `None` if the detected entity is
     # unrecognized in the current configuration:
-    with validators.disabled():
+    with validators.set_mode(ValidationMode.MINIMUM):
         unknown_inserter = Inserter("unknown")
     print(unknown_inserter.collision_mask)
     print(unknown_inserter.circuit_wire_max_distance)

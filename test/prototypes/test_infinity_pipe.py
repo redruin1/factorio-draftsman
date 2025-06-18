@@ -98,7 +98,7 @@ class TestInfinityPipe:
         with pytest.raises(DataFormatError):
             pipe.fluid_name = TypeError
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             pipe.fluid_name = False
             assert pipe.fluid_name == False
             assert pipe.to_dict() == {
@@ -117,7 +117,7 @@ class TestInfinityPipe:
         with pytest.raises(DataFormatError):
             pipe.percentage = -1
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             pipe.percentage = -1
             assert pipe.percentage == -1
             assert pipe.to_dict() == {
@@ -138,7 +138,7 @@ class TestInfinityPipe:
         with pytest.raises(DataFormatError):
             pipe.mode = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             pipe.mode = "incorrect"
             assert pipe.mode == "incorrect"
             assert pipe.to_dict() == {
@@ -181,7 +181,7 @@ class TestInfinityPipe:
 
         pipe = InfinityPipe("infinity-pipe")
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             pipe.temperature = "incorrect"
             assert pipe.temperature == "incorrect"
             assert pipe.to_dict() == {

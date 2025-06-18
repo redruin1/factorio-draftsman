@@ -1,6 +1,6 @@
 # test_lamp.py
 
-from draftsman.constants import LampColorMode
+from draftsman.constants import LampColorMode, ValidationMode
 from draftsman.entity import Lamp, lamps, Container
 from draftsman.error import DataFormatError
 import draftsman.validators
@@ -54,7 +54,7 @@ class TestLamp:
         with pytest.raises(DataFormatError):
             lamp.use_colors = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             lamp.use_colors = "incorrect"
             assert lamp.use_colors == "incorrect"
             assert lamp.to_dict() == {

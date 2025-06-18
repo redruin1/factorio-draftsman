@@ -53,7 +53,7 @@ class TestTile:
             tile = Tile(name=100)
 
         # Incorrect type with validation off
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             tile = Tile(name=100)
         assert tile.name == 100
         with pytest.raises(DataFormatError):

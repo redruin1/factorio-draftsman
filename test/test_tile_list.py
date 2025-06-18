@@ -7,7 +7,7 @@ from draftsman.classes.tile_list import TileList
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, UnreasonablySizedBlueprintError
 import draftsman.validators
-from draftsman.warning import OverlappingObjectsWarning
+from draftsman.warning import OverlappingObjectsWarning, UnknownTileWarning
 
 import pytest
 
@@ -132,7 +132,7 @@ class TestTileList:
         assert blueprint.tiles[1].name == "refined-concrete"
 
         # No overlapping warning
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             blueprint.tiles[0] = Tile("refined-concrete", position=(1, 1))
 
         # Incorrect type
@@ -178,11 +178,15 @@ class TestTileList:
         blueprint = Blueprint()
 
         # No validation case
-        assert blueprint.tiles.validate(mode="none") == ValidationResult([], [])
+        assert blueprint.tiles.validate(mode=ValidationMode.DISABLED) == ValidationResult([], [])
 
-        # TODO: reimplement
-        # blueprint.tiles.validate_assignment = "none"
-        # blueprint.tiles[0] = "incorrect"
+        # Test adding busted tile
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            busted_tile = Tile("incorrect")
 
-        # with pytest.raises(DataFormatError):
-        #     blueprint.tiles.validate().reissue_all()
+        with pytest.warns(UnknownTileWarning):
+            blueprint.tiles.append(busted_tile)
+
+        # Test nested validation
+        with pytest.warns(UnknownTileWarning):
+            blueprint.tiles.validate().reissue_all()

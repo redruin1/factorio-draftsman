@@ -115,7 +115,7 @@ class TestTrainStop:
             stop = TrainStop("train-stop", direction=Direction.NORTHWEST)
         
         # Ignore incorrect direction
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             stop = TrainStop(
                 "train-stop", direction=Direction.NORTHWEST
             )
@@ -186,7 +186,7 @@ class TestTrainStop:
             "control_behavior": {"send_to_train": False},
         }
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             train_stop.send_to_train = "incorrect"
             assert train_stop.send_to_train == "incorrect"
             assert train_stop.to_dict() == {
@@ -205,7 +205,7 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.read_from_train = "wrong"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             train_stop.read_from_train = "incorrect"
             assert train_stop.read_from_train == "incorrect"
             assert train_stop.to_dict() == {
@@ -224,7 +224,7 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.read_stopped_train = "wrong"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             train_stop.read_stopped_train = "incorrect"
             assert train_stop.read_stopped_train == "incorrect"
             assert train_stop.to_dict() == {
@@ -271,7 +271,7 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.signal_limits_trains = "wrong"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             train_stop.signal_limits_trains = "incorrect"
             assert train_stop.signal_limits_trains == "incorrect"
             assert train_stop.to_dict() == {
@@ -315,7 +315,7 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.read_trains_count = "wrong"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             train_stop.read_trains_count = "incorrect"
             assert train_stop.read_trains_count == "incorrect"
             assert train_stop.to_dict() == {

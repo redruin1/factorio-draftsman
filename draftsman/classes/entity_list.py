@@ -467,7 +467,7 @@ class EntityList(Exportable, MutableSequence):
         mode = ValidationMode(mode)
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE:
+        if mode is ValidationMode.DISABLED:
             return output
 
         for entity in self:

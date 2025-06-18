@@ -475,7 +475,7 @@ class TestBlueprint:
         assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
 
         # Warn unknown entity (list)
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             # No warning
             blueprint.entities = [
                 new_entity("undocumented-entity")
@@ -485,7 +485,7 @@ class TestBlueprint:
             blueprint.entities.validate().reissue_all()  # Warning
 
         # Warn unknown entity (individual)
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             # No warning
             blueprint.entities[-1] = new_entity(
                 "undocumented-entity"
@@ -2925,9 +2925,6 @@ class TestBlueprint:
 
         assert blueprint1 != entity
 
-    # def test_JSON_schema(self): # TODO
-    #     Blueprint.JSON_schema()
-
     def test_unreasonable_size(self):
         blueprint = Blueprint()
 
@@ -2939,14 +2936,13 @@ class TestBlueprint:
         with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.validate().reissue_all()
 
-        blueprint.validate(mode=ValidationMode.NONE).reissue_all()
+        blueprint.validate(mode=ValidationMode.DISABLED).reissue_all()
 
         blueprint.entities.clear()
 
-        # TODO: reimplement
         blueprint.tiles.append("landfill")
         blueprint.tiles.append("landfill", position=(15000, 0))
         with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.validate().reissue_all()
 
-        blueprint.validate(mode=ValidationMode.NONE).reissue_all()
+        blueprint.validate(mode=ValidationMode.DISABLED).reissue_all()

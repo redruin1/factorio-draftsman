@@ -325,7 +325,7 @@ class TestCargoWagon:
             wagon.inventory.bar = "incorrect"
         assert wagon.inventory.bar == 100
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             wagon.inventory.bar = "incorrect"
             assert wagon.inventory.bar == "incorrect"
             assert wagon.to_dict() == {

@@ -70,7 +70,7 @@ class TestInfinityContainer:
         with pytest.raises(DataFormatError):
             container.remove_unfiltered_items = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             container.remove_unfiltered_items = "incorrect"
             assert container.remove_unfiltered_items == "incorrect"
 

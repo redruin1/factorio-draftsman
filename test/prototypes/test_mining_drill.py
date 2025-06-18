@@ -211,7 +211,7 @@ class TestMiningDrill:
         with pytest.raises(DataFormatError):
             mining_drill.read_resources = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             mining_drill.read_resources = "incorrect"
             assert mining_drill.read_resources == "incorrect"
             assert mining_drill.to_dict() == {

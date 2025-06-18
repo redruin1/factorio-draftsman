@@ -148,7 +148,7 @@ class TestTransportBelt:
             belt.circuit_enabled = "incorrect"
         assert belt.circuit_enabled == True
 
-        with draftsman.validators.set_mode(ValidationMode.NONE):
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             belt.circuit_enabled = "incorrect"
             assert belt.circuit_enabled == "incorrect"
             assert belt.to_dict() == {
@@ -177,7 +177,7 @@ class TestTransportBelt:
             belt.read_contents = "incorrect"
         assert belt.read_contents == True
 
-        with draftsman.validators.set_mode(ValidationMode.NONE):
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             belt.read_contents = "incorrect"
             assert belt.read_contents == "incorrect"
             assert belt.to_dict() == {

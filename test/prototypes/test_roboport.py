@@ -137,7 +137,7 @@ class TestRoboport:
         with pytest.raises(DataFormatError):
             roboport.read_logistics = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             roboport.read_logistics = "incorrect"
             assert roboport.read_logistics == "incorrect"
             assert roboport.to_dict() == {
@@ -156,7 +156,7 @@ class TestRoboport:
         with pytest.raises(DataFormatError):
             roboport.read_robot_stats = "incorrect"
 
-        with draftsman.validators.disabled():
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
             roboport.read_robot_stats = "incorrect"
             assert roboport.read_robot_stats == "incorrect"
             assert roboport.to_dict() == {
