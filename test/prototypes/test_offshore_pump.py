@@ -7,6 +7,7 @@ from draftsman.signatures import (
     Condition,
     SignalID,
 )
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -120,16 +121,14 @@ class TestOffshorePump:
             pump.connect_to_logistic_network = "incorrect"
         assert pump.connect_to_logistic_network == True
 
-        pump.validate_assignment = "none"
-        assert pump.validate_assignment == ValidationMode.NONE
-
-        pump.connect_to_logistic_network = "incorrect"
-        assert pump.connect_to_logistic_network == "incorrect"
-        assert pump.to_dict() == {
-            "name": "offshore-pump",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"connect_to_logistic_network": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            pump.connect_to_logistic_network = "incorrect"
+            assert pump.connect_to_logistic_network == "incorrect"
+            assert pump.to_dict() == {
+                "name": "offshore-pump",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"connect_to_logistic_network": "incorrect"},
+            }
 
     def test_set_logistics_condition(self):
         pump = OffshorePump("offshore-pump")

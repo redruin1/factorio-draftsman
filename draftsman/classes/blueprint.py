@@ -527,9 +527,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         return aabb_to_dimensions(self.get_world_bounding_box())
 
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
-        result = super().validate(mode=mode, force=force)
+        result = super().validate(mode=mode)
 
         for class_validator in type(self).__attrs_class_validators__:
             class_validator(self, mode=mode)
@@ -823,6 +823,9 @@ def structure_blueprint_1_0_factory(t: type):
                             )
 
                     del entity["neighbours"]
+
+        if wires == []:
+            del blueprint_dict["wires"]
 
         # Schedules are split into "records" which holds stops and the new interrupts
         if "schedules" in blueprint_dict:

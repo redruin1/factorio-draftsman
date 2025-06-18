@@ -24,6 +24,8 @@ import copy
 from typing import Any, Literal, Mapping, Optional, Union
 
 
+# TODO: update for 2.0
+
 @attrs.define
 class WaitCondition(Exportable):
     """
@@ -466,7 +468,8 @@ class Schedule(Exportable):
     # =========================================================================
 
     locomotives: list[Association] = attrs.field(
-        factory=list, validator=instance_of(list[Association])
+        factory=list, 
+        validator=instance_of(list) # TODO: list[Association]
     )
     """
     The list of :py:class:`Association`s to each :py:class:`Locomotive` that

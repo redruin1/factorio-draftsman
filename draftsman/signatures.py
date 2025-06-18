@@ -76,8 +76,8 @@ def known_name(type: str, structure: dict, issued_warning: Warning):
 
     @conditional(ValidationMode.STRICT)
     def validator(
-        inst: Exportable,
-        attr: attrs.Attribute,
+        _inst: Exportable,
+        _attr: attrs.Attribute,
         value: str,
     ) -> str:
         if value not in structure:
@@ -216,7 +216,7 @@ class SignalID(Exportable):
     removed on import/export cycle.
     """
 
-    type: Literal[SignalIDType] = attrs.field(
+    type: SignalIDType = attrs.field(
         validator=one_of(SignalIDType), metadata={"omit": False}
     )
     """
@@ -263,18 +263,17 @@ class SignalID(Exportable):
             return value
 
     @type.validator
+    @conditional(ValidationMode.STRICT)
     def check_type_matches_name(
-        self, attribute, value, mode: Optional[ValidationMode] = None
+        self, _attr: attrs.Attribute, value: SignalIDType
     ):
-        mode = mode if mode is not None else self.validate_assignment
-        if mode >= ValidationMode.STRICT:
-            if self.name in signals.raw:
-                expected_types = signals.get_signal_types(self.name)
-                if value not in expected_types:
-                    msg = "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
-                        self.name, expected_types, value
-                    )
-                    warnings.warn(MalformedSignalWarning(msg))
+        if self.name in signals.raw:
+            expected_types = signals.get_signal_types(self.name)
+            if value not in expected_types:
+                msg = "Known signal '{}' was given a mismatching type (expected one of {}, found '{}')".format(
+                    self.name, expected_types, value
+                )
+                warnings.warn(MalformedSignalWarning(msg))
 
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
@@ -318,22 +317,15 @@ class SignalIDBase(Exportable):
         try:
             return signals.get_signal_types(self.name)[0]
         except InvalidSignalError:
-            return "item"
+            msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
+                repr(self.name)
+            )
+            raise IncompleteSignalError(msg) from None
 
     @classmethod
     def converter(cls, value):
         if isinstance(value, str):
-            try:
-                # TODO: make function to grab default signal type
-                if "item" in signals.get_signal_types(value):
-                    return cls(name=value, type="item")
-                else:
-                    return cls(name=value, type=signals.get_signal_types(value)[0])
-            except InvalidSignalError as e:
-                msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
-                    repr(value)
-                )
-                raise IncompleteSignalError(msg) from None
+            return cls(name=value)
         elif isinstance(value, dict):
             return cls(**value)
         else:
@@ -1055,21 +1047,31 @@ class ManualSection(Exportable):
     logistics sections as well as constant combinators signal groups.
     """
 
-    def _index_in_range(self, attr, value, mode: Optional[ValidationMode] = None):
-        mode = mode if mode is not None else self.validate_assignment
+    # def _index_in_range(self, attr, value, mode: Optional[ValidationMode] = None):
+    #     mode = mode if mode is not None else self.validate_assignment
 
-        if mode >= ValidationMode.MINIMUM:
-            if not (1 <= value <= 100):
-                msg = "Index ({}) must be in range [1, 100]".format(value)
-                raise IndexError(msg)
+    #     if mode >= ValidationMode.MINIMUM:
+    #         if not (1 <= value <= 100):
+    #             msg = "Index ({}) must be in range [1, 100]".format(value)
+    #             raise IndexError(msg)
 
     index: LuaDouble = attrs.field(
-        validator=and_(instance_of(LuaDouble), _index_in_range)
+        validator=instance_of(LuaDouble)
     )
     """
     Location of the logistics section within the entity, 1-indexed. Hard capped
     to 100 manual sections per entity.
     """
+
+    @index.validator
+    @conditional(ValidationMode.MINIMUM)
+    def _index_validator(self, attr, value):
+        """
+        Can only have 100 signal sections per entity.
+        """
+        if not (1 <= value <= 100):
+                msg = "Index ({}) must be in range [1, 100]".format(value)
+                raise IndexError(msg)
 
     def _filters_converter(value: list[Any]) -> list[SignalFilter]:
         # TODO: more robust testing
@@ -1738,7 +1740,7 @@ class FilteredInventory(Exportable):
         eq=False,
     )
 
-    _size_func = attrs.field(default=lambda _: None, init=False, repr=False, eq=False)
+    _size_func = attrs.field(init=False, repr=False, eq=False)
 
     def _set_parent(
         self, entity: Any, old_inventory: "FilteredInventory", size_func=None

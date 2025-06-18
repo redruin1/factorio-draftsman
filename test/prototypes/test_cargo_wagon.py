@@ -11,6 +11,7 @@ from draftsman.signatures import (
     InventoryPosition,
     EquipmentComponent,
 )
+import draftsman.validators
 from draftsman.warning import (
     BarWarning,
     EquipmentGridWarning,
@@ -26,38 +27,38 @@ import pytest
 def valid_cargo_wagon():
     if len(cargo_wagons) == 0:
         return None
-    return CargoWagon(
-        "cargo-wagon",
-        id="test",
-        quality="uncommon",
-        tile_position=(1, 1),
-        orientation=Orientation.EAST,
-        inventory=FilteredInventory(
-            bar=10,
-            filters=[ItemFilter(index=0, name="iron-ore")],
-        ),
-        item_requests=[
-            BlueprintInsertPlan(
-                id="iron-ore",
-                items=ItemInventoryPositions(
-                    in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.cargo_wagon, stack=0, count=50
-                        )
-                    ]
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return CargoWagon(
+            "cargo-wagon",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            inventory=FilteredInventory(
+                bar=10,
+                filters=[ItemFilter(index=0, name="iron-ore")],
+            ),
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="iron-ore",
+                    items=ItemInventoryPositions(
+                        in_inventory=[
+                            InventoryPosition(
+                                inventory=Inventory.cargo_wagon, stack=0, count=50
+                            )
+                        ]
+                    ),
                 ),
-            ),
-            BlueprintInsertPlan(
-                id="energy-shield-equipment",
-                items=ItemInventoryPositions(grid_count=1),
-            ),
-        ],
-        equipment=[
-            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-        ],
-        tags={"blah": "blah"},
-        validate_assignment="none",
-    )
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                ),
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            tags={"blah": "blah"},
+        )
 
 
 class TestCargoWagon:
@@ -157,9 +158,8 @@ class TestCargoWagon:
         }
 
         # Unknown wagon
-        wagon = CargoWagon(
-            "unknown-cargo-wagon", validate_assignment=ValidationMode.MINIMUM
-        )
+        with pytest.warns(UnknownEntityWarning):
+            wagon = CargoWagon("unknown-cargo-wagon")
         assert wagon.orientation == Orientation.NORTH
         assert wagon.collision_set is None
         assert wagon.to_dict() == {
@@ -172,6 +172,23 @@ class TestCargoWagon:
 
         with pytest.raises(DataFormatError):
             wagon.orientation = "incorrect"
+
+    def test_inventory_size(self):
+        wagon = CargoWagon("cargo-wagon")
+        assert wagon.inventory.size == 40
+        
+        assert wagon.prototype.get("quality_affects_inventory_size", False) is False
+        wagon.quality = "legendary"
+        assert wagon.inventory.size == 40
+
+        # Manually override to test the modded case
+        wagon.prototype["quality_affects_inventory_size"] = True
+        assert wagon.inventory.size == 100
+
+        with pytest.warns(UnknownEntityWarning):
+            wagon = CargoWagon("unknown wagon")
+        assert wagon.inventory.size is None
+
 
     def test_set_inventory_filters(self):
         wagon = CargoWagon("cargo-wagon")
@@ -233,9 +250,6 @@ class TestCargoWagon:
             wagon.inventory.filters = "incorrect"
         assert wagon.inventory.filters[0].name == "unknown"
 
-        wagon.validate_assignment = "none"
-        assert wagon.validate_assignment == ValidationMode.NONE
-
     def test_set_inventory_filter(self):
         wagon = CargoWagon("cargo-wagon")
 
@@ -254,9 +268,7 @@ class TestCargoWagon:
         wagon.inventory.set_filter(0, None)
         assert wagon.inventory.filters == []
 
-        # Ensure errors even if validation is off
-        wagon.validate_assignment = "none"
-        assert wagon.validate_assignment == ValidationMode.NONE
+        # TODO: Ensure errors even if validation is off
         with pytest.raises(DataFormatError):
             wagon.inventory.set_filter("incorrect", 0)
 
@@ -304,25 +316,23 @@ class TestCargoWagon:
             "inventory": {"bar": 10},
         }
 
-        wagon.inventory.validate_assignment = ValidationMode.PEDANTIC # TODO: FIXME
-        with pytest.warns(BarWarning):
-            wagon.inventory.bar = 100
-        assert wagon.inventory.bar == 100
+        with draftsman.validators.set_mode(ValidationMode.PEDANTIC):
+            with pytest.warns(BarWarning):
+                wagon.inventory.bar = 100
+            assert wagon.inventory.bar == 100
 
         with pytest.raises(DataFormatError):
             wagon.inventory.bar = "incorrect"
         assert wagon.inventory.bar == 100
 
-        wagon.inventory.validate_assignment = "none"
-        assert wagon.inventory.validate_assignment == ValidationMode.NONE
-
-        wagon.inventory.bar = "incorrect"
-        assert wagon.inventory.bar == "incorrect"
-        assert wagon.to_dict() == {
-            "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
-            "inventory": {"bar": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            wagon.inventory.bar = "incorrect"
+            assert wagon.inventory.bar == "incorrect"
+            assert wagon.to_dict() == {
+                "name": "cargo-wagon",
+                "position": {"x": 1.0, "y": 2.5},
+                "inventory": {"bar": "incorrect"},
+            }
 
     def test_mergable_with(self):
         wagon1 = CargoWagon("cargo-wagon")

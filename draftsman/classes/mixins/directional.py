@@ -154,7 +154,7 @@ class DirectionalMixin(Exportable):
 
     def _set_direction(self, attr: attrs.Attribute, value: Any):
         value = attr.converter(value)
-        attr.validator(self, attr, value, mode=self.validate_assignment)
+        attr.validator(self, attr, value)
         object.__setattr__(self, "direction", value)  # Prevent recursion
 
         if not self.square:
@@ -202,9 +202,11 @@ class DirectionalMixin(Exportable):
         if value not in self.valid_directions:
             # TODO: should we convert it for the user, or let it be wrong?
             msg = (
-                "'{}' only has 4-way rotation; will be converted to '{}' on import".format(
-                    type(self).__name__, value.to_4_way()
-                ),
+                "Direction '{}' is disallowed for '{}' entities; only the following directions are permitted:\n\t{}".format(
+                    value.name,
+                    type(self).__name__,
+                    self.valid_directions
+                )
             )
             warnings.warn(DirectionWarning(msg))
 

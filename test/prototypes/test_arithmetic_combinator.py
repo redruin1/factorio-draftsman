@@ -6,6 +6,7 @@ from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import ArithmeticCombinator, arithmetic_combinators, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -339,18 +340,16 @@ class TestArithmeticCombinator:
         with pytest.warns(UnknownSignalWarning):
             combinator.output_signal = {"name": "unknown", "type": "virtual"}
 
-        combinator.validate_assignment = "minimum"
-        assert combinator.validate_assignment is ValidationMode.MINIMUM
-
         # No warnings
-        combinator.output_signal = "signal-everything"
-        assert combinator.output_signal == SignalID(
-            name="signal-everything", type="virtual"
-        )
-        combinator.output_signal = "signal-each"
-        assert combinator.output_signal == SignalID(
-            name="signal-each", type="virtual"
-        )
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            combinator.output_signal = "signal-everything"
+            assert combinator.output_signal == SignalID(
+                name="signal-everything", type="virtual"
+            )
+            combinator.output_signal = "signal-each"
+            assert combinator.output_signal == SignalID(
+                name="signal-each", type="virtual"
+            )
 
         # Errors
         with pytest.raises(DataFormatError):

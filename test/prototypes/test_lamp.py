@@ -3,6 +3,7 @@
 from draftsman.constants import LampColorMode
 from draftsman.entity import Lamp, lamps, Container
 from draftsman.error import DataFormatError
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -53,15 +54,14 @@ class TestLamp:
         with pytest.raises(DataFormatError):
             lamp.use_colors = "incorrect"
 
-        lamp.validate_assignment = "none"
-
-        lamp.use_colors = "incorrect"
-        assert lamp.use_colors == "incorrect"
-        assert lamp.to_dict() == {
-            "name": "small-lamp",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"use_colors": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            lamp.use_colors = "incorrect"
+            assert lamp.use_colors == "incorrect"
+            assert lamp.to_dict() == {
+                "name": "small-lamp",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"use_colors": "incorrect"},
+            }
 
     def test_mergable_with(self):
         lamp1 = Lamp("small-lamp")

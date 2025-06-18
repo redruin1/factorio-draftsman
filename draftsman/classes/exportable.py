@@ -202,6 +202,8 @@ class ValidationResult:
         self.warning_list: List[Warning] = warning_list
 
     def reissue_all(self, stacklevel=2):
+        print(self.error_list)
+        print(self.warning_list)
         for error in self.error_list:
             raise error
         for warning in self.warning_list:
@@ -237,10 +239,7 @@ class ValidationResult:
         return self
 
     def __str__(self):  # pragma: no coverage
-        return "ValidationResult{{\n    errors={},\n    warnings={}\n}}".format(
-            pprint.pformat(self.error_list, indent=4),
-            pprint.pformat(self.warning_list, indent=4),
-        )
+        return pprint.pformat({"error_list": self.error_list, "warning_list": self.warning_list}, indent=4)
 
     def __repr__(self):  # pragma: no coverage
         return "ValidationResult{{errors={}, warnings={}}}".format(
@@ -302,22 +301,22 @@ class Exportable:
 
     # =========================================================================
 
-    validate_assignment: ValidationMode = attrs.field(
-        default=ValidationMode.STRICT,
-        converter=ValidationMode,
-        validator=instance_of(ValidationMode),
-        repr=False,
-        eq=False,
-        kw_only=True,
-        metadata={"omit": True},
-    )
-    """
-    Toggleable flag that indicates whether assignments to this object should
-    be validated, and how. Can be set in the constructor of the entity or
-    changed at any point during runtime. Note that this is on a per-entity
-    basis, so multiple instances of otherwise identical entities can have
-    different validation configurations.
-    """
+    # validate_assignment: ValidationMode = attrs.field(
+    #     default=ValidationMode.STRICT,
+    #     converter=ValidationMode,
+    #     validator=instance_of(ValidationMode),
+    #     repr=False,
+    #     eq=False,
+    #     kw_only=True,
+    #     metadata={"omit": True},
+    # )
+    # """
+    # Toggleable flag that indicates whether assignments to this object should
+    # be validated, and how. Can be set in the constructor of the entity or
+    # changed at any point during runtime. Note that this is on a per-entity
+    # basis, so multiple instances of otherwise identical entities can have
+    # different validation configurations.
+    # """
 
     # @property
     # def validate_assignment(
@@ -382,22 +381,17 @@ class Exportable:
         value: Optional[dict],
     ):
         """Warns the user if the ``extra_keys`` dict is populated."""
-        if value:  # is not empty:
-            msg = "'{}' object has no attribute(s) {}; allowed fields are {}".format(
+        if value:
+            msg = "'{}' object has had the following unrecognized keys:\n{}".format(
                 type(self).__name__,
-                list(value.keys()),
-                [
-                    attr.name
-                    for attr in attrs.fields(type(self))
-                    if not attr.name.startswith("_")
-                ],
+                pprint.pformat(value)
             )
             warnings.warn(UnknownKeywordWarning(msg))
 
     # =========================================================================
 
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
         """
         Validates the called object against it's known format.
@@ -438,14 +432,17 @@ class Exportable:
         for a in attrs.fields(self.__class__):
             v = a.validator
             if v is not None:
-                v(
-                    self,
-                    a,
-                    getattr(self, a.name),
-                    mode=mode,
-                    error_list=res.error_list,
-                    warning_list=res.warning_list,
-                )
+                try:
+                    v(
+                        self,
+                        a,
+                        getattr(self, a.name),
+                        mode=mode,
+                        error_list=res.error_list,
+                        warning_list=res.warning_list,
+                    )
+                except Exception as e:
+                    raise e
         return res
 
     @classmethod
@@ -453,7 +450,6 @@ class Exportable:
         cls,
         d: dict,
         version: Optional[tuple[int, ...]] = None,
-        # validation: ValidationMode = ValidationMode.NONE, # TODO: decide
     ) -> Self:
         """
         TODO
@@ -623,7 +619,6 @@ def make_exportable_structure_factory_func(
                     attr_name = attr.alias if attr.alias != attr.name else attr.name
 
                 value = try_pop_location(input_dict, dict_loc)
-                # print(value)
                 if value is None:
                     continue
 
@@ -671,7 +666,7 @@ def make_exportable_structure_factory_func(
             # print(location_dict)
             # print(res)
             # return res
-            return cls(**res, validate_assignment=ValidationMode.NONE)
+            return cls(**res)
 
         return structure_hook
 

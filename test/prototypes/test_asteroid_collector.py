@@ -5,6 +5,7 @@ from draftsman.prototypes.container import Container
 from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.signatures import AsteroidChunkID, Condition, FilteredInventory
+import draftsman.validators
 
 from draftsman.data.entities import asteroid_collectors
 
@@ -81,9 +82,9 @@ class TestAsteroidCollector:
             {"index": 2, "name": "metallic-asteroid-chunk"},
         ]
 
-        ac.validate_assignment = "none"
-        ac.chunk_filter = "wrong"
-        assert ac.chunk_filter == "wrong"
+        with draftsman.validators.disabled():
+            ac.chunk_filter = "wrong"
+            assert ac.chunk_filter == "wrong"
 
     def test_read_contents(self):
         ac = AsteroidCollector("asteroid-collector")
@@ -96,9 +97,9 @@ class TestAsteroidCollector:
             ac.read_contents = "wrong"
         assert ac.read_contents == True
 
-        ac.validate_assignment = "none"
-        ac.read_contents = "wrong"
-        assert ac.read_contents == "wrong"
+        with draftsman.validators.disabled():
+            ac.read_contents = "wrong"
+            assert ac.read_contents == "wrong"
 
     def test_include_hands(self):
         ac = AsteroidCollector("asteroid-collector")

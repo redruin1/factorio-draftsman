@@ -32,9 +32,6 @@ def define(cls):
     reduce repetition.
     """
 
-    def field_transformer(cls, fields):
-        pass
-
     # Grab all specified class validators
     model_validators = [
         v for _, v in cls.__dict__.items() if hasattr(v, "__attrs_class_validator__")

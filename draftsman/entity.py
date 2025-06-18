@@ -234,8 +234,7 @@ def new_entity(name: str, **kwargs) -> Entity:
 
 def new_entity_from_dict(
     d: dict,
-    version: Optional[tuple[int]] = None,
-    validation: ValidationMode = ValidationMode.NONE,
+    version: Optional[tuple[int]] = None
 ) -> Entity:
     """
     Factory function similar to :py:meth:`.new_entity`, but using `Entity.from_dict()`
@@ -257,6 +256,4 @@ def new_entity_from_dict(
         of :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
-    return get_entity_class(d.get("name", None)).from_dict(
-        d, version=version, validation=validation
-    )
+    return get_entity_class(d.get("name", None)).from_dict(d, version=version)

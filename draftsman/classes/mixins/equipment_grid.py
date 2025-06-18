@@ -88,13 +88,13 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
 
     # =========================================================================
 
-    @property
-    def allowed_equipment() -> Optional[set]:  # TODO, not very easy to calculate
-        """
-        The set of equipment names that can be inserted into this entity's
-        equipment grid.
-        """
-        return None
+    # @property
+    # def allowed_equipment() -> Optional[set]:  # TODO, not very easy to calculate
+    #     """
+    #     The set of equipment names that can be inserted into this entity's
+    #     equipment grid.
+    #     """
+    #     return None
 
     # =========================================================================
 
@@ -136,23 +136,24 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
             msg = "This entity does not have an equipment grid to modify."
             warnings.warn(EquipmentGridWarning(msg))
 
-    @equipment.validator
-    @conditional(ValidationMode.PEDANTIC)
-    def _equipment_validator(self, _: attrs.Attribute, value: list[EquipmentGrid]):
-        """
-        Ensure that the equipment being specified will actually fit inside of
-        this equipment grid.
-        """
-        # If we have no equipment grid or we don't know what kind of equipment
-        # should be allowed, early exit
-        if self.equipment_grid is None or self.allowed_equipment is None:
-            return
-        for equipment in value:
-            if equipment.id not in self.allowed_equipment:
-                msg = "Equipment '{}' cannot be inserted into this entity's equipment grid".format(
-                    equipment.id
-                )
-                warnings.warn(EquipmentGridWarning(msg))
+    # TODO
+    # @equipment.validator
+    # @conditional(ValidationMode.PEDANTIC)
+    # def _equipment_validator(self, _: attrs.Attribute, value: list[EquipmentGrid]):
+    #     """
+    #     Ensure that the equipment being specified will actually fit inside of
+    #     this equipment grid.
+    #     """
+    #     # If we have no equipment grid or we don't know what kind of equipment
+    #     # should be allowed, early exit
+    #     if self.equipment_grid is None or self.allowed_equipment is None:
+    #         return
+    #     for equipment in value:
+    #         if equipment.id not in self.allowed_equipment:
+    #             msg = "Equipment '{}' cannot be inserted into this entity's equipment grid".format(
+    #                 equipment.id
+    #             )
+    #             warnings.warn(EquipmentGridWarning(msg))
 
     # =========================================================================
 

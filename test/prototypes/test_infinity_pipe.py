@@ -3,6 +3,7 @@
 from draftsman.constants import ValidationMode
 from draftsman.entity import InfinityPipe, infinity_pipes, Container
 from draftsman.error import DataFormatError
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownFluidWarning,
@@ -97,16 +98,14 @@ class TestInfinityPipe:
         with pytest.raises(DataFormatError):
             pipe.fluid_name = TypeError
 
-        pipe.validate_assignment = "none"
-        assert pipe.validate_assignment == ValidationMode.NONE
-
-        pipe.fluid_name = False
-        assert pipe.fluid_name == False
-        assert pipe.to_dict() == {
-            "name": "infinity-pipe",
-            "position": {"x": 0.5, "y": 0.5},
-            "infinity_settings": {"name": False},
-        }
+        with draftsman.validators.disabled():
+            pipe.fluid_name = False
+            assert pipe.fluid_name == False
+            assert pipe.to_dict() == {
+                "name": "infinity-pipe",
+                "position": {"x": 0.5, "y": 0.5},
+                "infinity_settings": {"name": False},
+            }
 
     def test_set_percentage(self):
         pipe = InfinityPipe()
@@ -118,16 +117,14 @@ class TestInfinityPipe:
         with pytest.raises(DataFormatError):
             pipe.percentage = -1
 
-        pipe.validate_assignment = "none"
-        assert pipe.validate_assignment == ValidationMode.NONE
-
-        pipe.percentage = -1
-        assert pipe.percentage == -1
-        assert pipe.to_dict() == {
-            "name": "infinity-pipe",
-            "position": {"x": 0.5, "y": 0.5},
-            "infinity_settings": {"percentage": -1},
-        }
+        with draftsman.validators.disabled():
+            pipe.percentage = -1
+            assert pipe.percentage == -1
+            assert pipe.to_dict() == {
+                "name": "infinity-pipe",
+                "position": {"x": 0.5, "y": 0.5},
+                "infinity_settings": {"percentage": -1},
+            }
 
     def test_set_mode(self):
         pipe = InfinityPipe("infinity-pipe")
@@ -141,16 +138,14 @@ class TestInfinityPipe:
         with pytest.raises(DataFormatError):
             pipe.mode = "incorrect"
 
-        pipe.validate_assignment = "none"
-        assert pipe.validate_assignment == ValidationMode.NONE
-
-        pipe.mode = "incorrect"
-        assert pipe.mode == "incorrect"
-        assert pipe.to_dict() == {
-            "name": "infinity-pipe",
-            "position": {"x": 0.5, "y": 0.5},
-            "infinity_settings": {"mode": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            pipe.mode = "incorrect"
+            assert pipe.mode == "incorrect"
+            assert pipe.to_dict() == {
+                "name": "infinity-pipe",
+                "position": {"x": 0.5, "y": 0.5},
+                "infinity_settings": {"mode": "incorrect"},
+            }
 
     def test_set_temperature(self):
         pipe = InfinityPipe("infinity-pipe")
@@ -186,16 +181,14 @@ class TestInfinityPipe:
 
         pipe = InfinityPipe("infinity-pipe")
 
-        pipe.validate_assignment = "none"
-        assert pipe.validate_assignment == ValidationMode.NONE
-
-        pipe.temperature = "incorrect"
-        assert pipe.temperature == "incorrect"
-        assert pipe.to_dict() == {
-            "name": "infinity-pipe",
-            "position": {"x": 0.5, "y": 0.5},
-            "infinity_settings": {"temperature": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            pipe.temperature = "incorrect"
+            assert pipe.temperature == "incorrect"
+            assert pipe.to_dict() == {
+                "name": "infinity-pipe",
+                "position": {"x": 0.5, "y": 0.5},
+                "infinity_settings": {"temperature": "incorrect"},
+            }
 
     def test_mergable_with(self):
         pipe1 = InfinityPipe("infinity-pipe")

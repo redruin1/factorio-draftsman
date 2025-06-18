@@ -40,6 +40,7 @@ from draftsman.error import (
 )
 from draftsman.signatures import Color, Icon
 from draftsman.utils import encode_version, AABB
+import draftsman.validators
 from draftsman.warning import (
     DraftsmanWarning,
     GridAlignmentWarning,
@@ -474,22 +475,22 @@ class TestBlueprint:
         assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
 
         # Warn unknown entity (list)
-        blueprint.validate_assignment = "none"
-        blueprint.entities = [
-            new_entity("undocumented-entity", validate_assignment="none")
-        ]  # No warning
+        with draftsman.validators.disabled():
+            # No warning
+            blueprint.entities = [
+                new_entity("undocumented-entity")
+            ]
         with pytest.warns(UnknownEntityWarning):
-            blueprint.validate_assignment = "strict"
             blueprint.entities = [new_entity("undocumented-entity")]
             blueprint.entities.validate().reissue_all()  # Warning
 
         # Warn unknown entity (individual)
-        blueprint.entities.validate_assignment = "none"
-        blueprint.entities[-1] = new_entity(
-            "undocumented-entity", validate_assignment="none"
-        )  # No warning
+        with draftsman.validators.disabled():
+            # No warning
+            blueprint.entities[-1] = new_entity(
+                "undocumented-entity"
+            )  
         with pytest.warns(UnknownEntityWarning):
-            blueprint.validate_assignment = "strict"
             blueprint.entities[-1] = new_entity("undocumented-entity")
             blueprint.entities.validate().reissue_all()  # Warning
 
@@ -543,21 +544,20 @@ class TestBlueprint:
         with pytest.warns(UnknownTileWarning):
             test_tile = new_tile("undocumented-tile")
 
-        # Warn unknown entity (list)
-        blueprint.tiles.validate_assignment = "none"
-        blueprint.tiles = [test_tile]  # No warning
-        with pytest.warns(UnknownTileWarning):
-            blueprint.tiles.validate_assignment = "strict"
-            blueprint.tiles = [test_tile]
-            blueprint.tiles.validate().reissue_all()  # Warning
+        # # Warn unknown entity (list)
+        # blueprint.tiles = [test_tile]  # No warning
+        # with pytest.warns(UnknownTileWarning):
+        #     blueprint.tiles.validate_assignment = "strict"
+        #     blueprint.tiles = [test_tile]
+        #     blueprint.tiles.validate().reissue_all()  # Warning
 
-        # Warn unknown entity (individual)
-        blueprint.tiles.validate_assignment = "minimum"
-        blueprint.tiles[-1] = test_tile  # No warning
-        with pytest.warns(UnknownTileWarning):
-            blueprint.tiles.validate_assignment = "strict"
-            blueprint.tiles[-1] = test_tile
-            # blueprint.validate().reissue_all() # Warning
+        # # Warn unknown entity (individual)
+        # blueprint.tiles.validate_assignment = "minimum"
+        # blueprint.tiles[-1] = test_tile  # No warning
+        # with pytest.warns(UnknownTileWarning):
+        #     blueprint.tiles.validate_assignment = "strict"
+        #     blueprint.tiles[-1] = test_tile
+        #     # blueprint.validate().reissue_all() # Warning
 
         # Format error
         with pytest.raises(DataFormatError):

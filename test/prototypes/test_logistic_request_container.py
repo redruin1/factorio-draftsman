@@ -9,6 +9,7 @@ from draftsman.entity import (
 )
 from draftsman.error import DataFormatError
 from draftsman.signatures import SignalFilter, ManualSection
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownItemWarning,
@@ -337,16 +338,14 @@ class TestRequestContainer:
         with pytest.raises(DataFormatError):
             container.request_from_buffers = "incorrect"
 
-        container.validate_assignment = "none"
-        assert container.validate_assignment == ValidationMode.NONE
-
-        container.request_from_buffers = "incorrect"
-        assert container.request_from_buffers == "incorrect"
-        assert container.to_dict() == {
-            "name": "requester-chest",
-            "position": {"x": 0.5, "y": 0.5},
-            "request_filters": {"request_from_buffers": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            container.request_from_buffers = "incorrect"
+            assert container.request_from_buffers == "incorrect"
+            assert container.to_dict() == {
+                "name": "requester-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "request_filters": {"request_from_buffers": "incorrect"},
+            }
 
     def test_mergable_with(self):
         container1 = LogisticRequestContainer("requester-chest")

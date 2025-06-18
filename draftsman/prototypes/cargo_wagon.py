@@ -22,7 +22,6 @@ def _cargo_wagon_inventory_size(entity: "CargoWagon") -> Optional[uint16]:
     """
     Gets the inventory size of this cargo wagon.
     """
-    print("cargo wagon inventory size")
     inventory_size = entities.raw.get(entity.name, {"inventory_size": None})[
         "inventory_size"
     ]

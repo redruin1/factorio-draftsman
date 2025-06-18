@@ -1,6 +1,6 @@
 # test_locomotive.py
 
-from draftsman.constants import Orientation, Inventory
+from draftsman.constants import Orientation, Inventory, ValidationMode
 from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -10,6 +10,7 @@ from draftsman.signatures import (
     InventoryPosition,
     EquipmentComponent,
 )
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -20,36 +21,36 @@ import pytest
 def valid_locomotive():
     if len(locomotives) == 0:
         return None
-    return Locomotive(
-        "cargo-wagon",
-        id="test",
-        quality="uncommon",
-        tile_position=(1, 1),
-        orientation=Orientation.EAST,
-        color=(0.5, 0.5, 0.5),
-        item_requests=[
-            BlueprintInsertPlan(
-                id="coal",
-                items=ItemInventoryPositions(
-                    in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.fuel, stack=0, count=50
-                        )
-                    ]
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return Locomotive(
+            "locomotive",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            color=(0.5, 0.5, 0.5),
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="coal",
+                    items=ItemInventoryPositions(
+                        in_inventory=[
+                            InventoryPosition(
+                                inventory=Inventory.fuel, stack=0, count=50
+                            )
+                        ]
+                    ),
                 ),
-            ),
-            BlueprintInsertPlan(
-                id="energy-shield-equipment",
-                items=ItemInventoryPositions(grid_count=1),
-            ),
-        ],
-        equipment=[
-            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-        ],
-        enable_logistics_while_moving=False,
-        tags={"blah": "blah"},
-        validate_assignment="none",
-    )
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                ),
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            enable_logistics_while_moving=False,
+            tags={"blah": "blah"},
+        )
 
 
 class TestLocomotive:

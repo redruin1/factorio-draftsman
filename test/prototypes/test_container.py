@@ -11,6 +11,7 @@ from draftsman.signatures import (
     ItemInventoryPositions,
     InventoryPosition,
 )
+import draftsman.validators
 from draftsman.warning import (
     BarWarning,
     ItemCapacityWarning,
@@ -94,19 +95,23 @@ class TestContainer:
     def test_bar(self):
         container = Container("wooden-chest")
 
+        # Normal operation
+        container.bar = 10
+        assert container.bar == 10
+
         # No warning, because it's pedantic level
         container.bar = 100
         assert container.bar == 100
 
-        container.validate_assignment = "pedantic"
-        assert container.validate_assignment == ValidationMode.PEDANTIC
+        with draftsman.validators.set_mode(ValidationMode.PEDANTIC):
+            # Normal operation
+            container.bar = 10
+            assert container.bar == 10
 
-        container.bar = 10
-        assert container.bar == 10
-
-        with pytest.warns(BarWarning):
-            container.bar = 100
-        assert container.bar == 100
+            # Pedantic warning
+            with pytest.warns(BarWarning):
+                container.bar = 100
+            assert container.bar == 100
 
         # Disabled bar
         # Since no chest with disabled bar exists, we coerce the data to fit
@@ -115,11 +120,9 @@ class TestContainer:
         with pytest.warns(BarWarning):
             container.bar = 2
 
-        container.validate_assignment = "minimum"
-        assert container.validate_assignment == ValidationMode.MINIMUM
-
-        container.bar = 2
-        assert container.bar == 2
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            container.bar = 2
+            assert container.bar == 2
 
         # Make sure an unknown entity issues error if out of range...
         with pytest.warns(UnknownEntityWarning):

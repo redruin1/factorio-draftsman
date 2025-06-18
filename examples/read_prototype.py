@@ -9,6 +9,7 @@ script.
 """
 
 from draftsman.entity import Inserter
+from draftsman import validators
 
 
 def main():
@@ -25,7 +26,8 @@ def main():
 
     # These first class attributes will return `None` if the detected entity is
     # unrecognized in the current configuration:
-    unknown_inserter = Inserter("unknown", validate_assignment="none")
+    with validators.disabled():
+        unknown_inserter = Inserter("unknown")
     print(unknown_inserter.collision_mask)
     print(unknown_inserter.circuit_wire_max_distance)
     print(unknown_inserter.filter_count)

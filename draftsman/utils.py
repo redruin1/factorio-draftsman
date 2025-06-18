@@ -15,7 +15,7 @@ import json
 import math
 from functools import wraps
 
-# import six
+import attr
 from thefuzz import process
 from typing import Optional, Union, TYPE_CHECKING
 import warnings
@@ -797,12 +797,10 @@ def dict_merge(a: dict, b: dict) -> dict:
     """
     for key in b:
         if key in a:
-            if isinstance(a[key], dict) and isinstance(
-                b[key], dict
-            ):  # pragma: no branch
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
                 dict_merge(a[key], b[key])
             else:
-                a[key] = b[key]  # pragma: no coverage
+                a[key] = b[key]
         else:
             a[key] = b[key]
     return a
@@ -995,7 +993,7 @@ def get_suggestion(name, choices, n=3, cutoff=60):
         # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))
 
 
-def fix_incorrect_pre_init(cls):
+def fix_incorrect_pre_init(cls): # pragma: no coverage
     """
     Attrs erroneously passes default values to `__attrs_pre_init__` even when
     given values during init. We add a sentinel value to the pre-init call so
@@ -1011,6 +1009,45 @@ def fix_incorrect_pre_init(cls):
     cls.__init__ = new_init
 
     return cls
+
+
+def attrs_reuse(attribute: attr.Attribute, **field_kwargs): # pragma: no coverage
+    """
+    Takes a frozen attribute and returns a _CountingAttr object for inheritance
+    purposes.
+    """
+    args = {
+        "validator": attribute.validator,
+        "repr": attribute.repr,
+        "cmp": None,
+        "hash": attribute.hash,
+        "init": attribute.init,
+        "converter": attribute.converter,
+        "metadata": attribute.metadata,
+        "type": attribute.type,
+        "kw_only": attribute.kw_only,
+        "eq": attribute.eq,
+        "order": attribute.order,
+        "on_setattr": attribute.on_setattr,
+        "alias": attribute.alias,
+    }
+
+    # Map the single "validator" object back down to it's aliased pair.
+    # Additionally, we help the user out a little bit by automatically
+    # overwriting the compliment `default` or `factory` function when
+    # overriding; so if a field already has a `default=3`, using
+    # `reuse(factory=lambda: 3)` won't complain about having both kinds of
+    # defaults defined.
+    if "default" not in field_kwargs and "factory" not in field_kwargs:
+        if isinstance(attribute.default, attr.Factory):
+            field_kwargs["factory"] = attribute.default.factory
+        else:
+            field_kwargs["default"] = attribute.default
+
+    args.update(field_kwargs)
+
+    # Send through attrib so we reuse the same errors + syntax sugar
+    return attr.attrib(**args)
 
 
 def calculate_occupied_slots(item_requests: list, inventory_id: int) -> int:

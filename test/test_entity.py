@@ -1,5 +1,6 @@
 # entity.py
 
+from draftsman import __factorio_version_info__
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
@@ -8,7 +9,7 @@ from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
 from draftsman.utils import AABB, version_tuple_to_string
-from draftsman import __factorio_version_info__
+import draftsman.validators
 from draftsman.serialization import draftsman_converters
 
 import pytest
@@ -280,10 +281,12 @@ class TestAllEntities:
 
 class TestEntityBase:
     def test_similar_entities(self):
-        assert Entity("entity", validate_assignment="none").similar_entities == []
+        with draftsman.validators.disabled():
+            assert Entity("entity").similar_entities == []
 
     def test_get_type(self):
-        assert Entity("entity", validate_assignment="none").type is None
+        with draftsman.validators.disabled():
+            assert Entity("entity", validate_assignment="none").type is None
 
         container = Container("wooden-chest")
         assert container.type == "container"
@@ -711,13 +714,14 @@ class TestEntityFactory:
         assert e.position.x == 0.5 and e.position.y == 0.5
         assert e.bar == 5
 
-        e = new_entity_from_dict(
-            {
-                "name": "who knows",
-                "position": {"x": 0.5, "y": 0.5},
-                "bar": 5,
-            }
-        )
+        with pytest.warns(UnknownEntityWarning):
+            e = new_entity_from_dict(
+                {
+                    "name": "who knows",
+                    "position": {"x": 0.5, "y": 0.5},
+                    "bar": 5,
+                }
+            )
         assert isinstance(e, Entity)
         assert e.name == "who knows"
         assert e.position.x == 0.5 and e.position.y == 0.5

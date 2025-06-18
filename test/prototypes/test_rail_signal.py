@@ -1,9 +1,10 @@
 # test_rail_signal.py
 
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction
 from draftsman.entity import RailSignal, rail_signals, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID, Condition
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -125,16 +126,14 @@ class TestRailSignal:
         with pytest.raises(DataFormatError):
             rail_signal.enable_disable = "incorrect"
 
-        rail_signal.validate_assignment = "none"
-        assert rail_signal.validate_assignment == ValidationMode.NONE
-
-        rail_signal.enable_disable = "incorrect"
-        assert rail_signal.enable_disable == "incorrect"
-        assert rail_signal.to_dict() == {
-            "name": "rail-signal",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_close_signal": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            rail_signal.enable_disable = "incorrect"
+            assert rail_signal.enable_disable == "incorrect"
+            assert rail_signal.to_dict() == {
+                "name": "rail-signal",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_close_signal": "incorrect"},
+            }
 
     def test_read_signal(self):
         rail_signal = RailSignal("rail-signal")
@@ -146,16 +145,14 @@ class TestRailSignal:
         with pytest.raises(DataFormatError):
             rail_signal.read_signal = "incorrect"
 
-        rail_signal.validate_assignment = "none"
-        assert rail_signal.validate_assignment == ValidationMode.NONE
-
-        rail_signal.read_signal = "incorrect"
-        assert rail_signal.read_signal == "incorrect"
-        assert rail_signal.to_dict() == {
-            "name": "rail-signal",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_read_signal": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            rail_signal.read_signal = "incorrect"
+            assert rail_signal.read_signal == "incorrect"
+            assert rail_signal.to_dict() == {
+                "name": "rail-signal",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_read_signal": "incorrect"},
+            }
 
     def test_red_output_signal(self):
         rail_signal = RailSignal("rail-signal")

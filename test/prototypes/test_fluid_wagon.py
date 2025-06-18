@@ -1,6 +1,6 @@
 # test_fluid_wagon.py
 
-from draftsman.constants import Orientation
+from draftsman.constants import Orientation, ValidationMode
 from draftsman.entity import FluidWagon, fluid_wagons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -8,6 +8,7 @@ from draftsman.signatures import (
     ItemInventoryPositions,
     EquipmentComponent,
 )
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
@@ -18,24 +19,24 @@ import pytest
 def valid_fluid_wagon():
     if len(fluid_wagons) == 0:
         return None
-    return FluidWagon(
-        "cargo-wagon",
-        id="test",
-        quality="uncommon",
-        tile_position=(1, 1),
-        orientation=Orientation.EAST,
-        item_requests=[
-            BlueprintInsertPlan(
-                id="energy-shield-equipment",
-                items=ItemInventoryPositions(grid_count=1),
-            ),
-        ],
-        equipment=[
-            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-        ],
-        tags={"blah": "blah"},
-        validate_assignment="none",
-    )
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return FluidWagon(
+            "fluid-wagon",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                ),
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            tags={"blah": "blah"},
+        )
 
 
 class TestFluidWagon:

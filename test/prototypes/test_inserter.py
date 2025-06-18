@@ -9,6 +9,7 @@ from draftsman.constants import (
 from draftsman.entity import Inserter, inserters, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID, Condition, ItemFilter
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -200,15 +201,14 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.spoil_priority = "incorrect"
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.spoil_priority = "incorrect"
-        assert inserter.spoil_priority == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "spoil_priority": "incorrect",
-        }
+        with draftsman.validators.disabled():
+            inserter.spoil_priority = "incorrect"
+            assert inserter.spoil_priority == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "stack-inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "spoil_priority": "incorrect",
+            }
 
     def test_set_read_contents(self):
         inserter = Inserter("inserter")
@@ -230,16 +230,14 @@ class TestInserter:
             inserter.read_hand_contents = "incorrect"
         assert inserter.read_hand_contents == True
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-
-        inserter.read_hand_contents = "incorrect"
-        assert inserter.read_hand_contents == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_read_hand_contents": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            inserter.read_hand_contents = "incorrect"
+            assert inserter.read_hand_contents == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_read_hand_contents": "incorrect"},
+            }
 
     def test_set_read_mode(self):
         inserter = Inserter("inserter")
@@ -318,15 +316,14 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.circuit_set_filters = "incorrect"
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.circuit_set_filters = "incorrect"
-        assert inserter.circuit_set_filters == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_set_filters": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            inserter.circuit_set_filters = "incorrect"
+            assert inserter.circuit_set_filters == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "stack-inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_set_filters": "incorrect"},
+            }
 
     def test_set_circuit_set_stack_size(self):
         inserter = Inserter("stack-inserter")
@@ -347,15 +344,14 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.circuit_set_stack_size = "incorrect"
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.circuit_set_stack_size = "incorrect"
-        assert inserter.circuit_set_stack_size == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_set_stack_size": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            inserter.circuit_set_stack_size = "incorrect"
+            assert inserter.circuit_set_stack_size == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "stack-inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_set_stack_size": "incorrect"},
+            }
 
     def test_set_stack_size_control_signal(self):
         inserter = Inserter("stack-inserter")

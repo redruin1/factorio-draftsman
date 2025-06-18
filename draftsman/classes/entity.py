@@ -18,15 +18,16 @@ from draftsman.signatures import (
     get_suggestion,
     uint64,
 )
-from draftsman.utils import aabb_to_dimensions, get_first, passes_surface_conditions
+from draftsman.utils import aabb_to_dimensions, attrs_reuse, get_first, passes_surface_conditions
 from draftsman.validators import and_, conditional, instance_of, one_of
-from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning
+from draftsman.warning import GridAlignmentWarning, UnknownEntityWarning, UnknownKeywordWarning
 
 from draftsman.data.planets import get_surface_properties
 
 import attrs
 import copy
 import math
+import pprint
 from typing import Any, Optional
 import warnings
 import weakref
@@ -97,7 +98,6 @@ class Entity(EntityLike, Exportable):
         tags: dict[str, Any] | None = attrs.NOTHING,
         entity_number: uint64 | None = None,
         *,
-        validate_assignment: Any = ValidationMode.STRICT,
         extra_keys: dict[Any, Any] | None = None,
         **kwargs
     ):
@@ -109,16 +109,18 @@ class Entity(EntityLike, Exportable):
             tile_position=tile_position,
             tags=tags,
             entity_number=entity_number,
-            validate_assignment=validate_assignment,
             extra_keys=extra_keys,
         )
         if self.extra_keys:
-            self.extra_keys.update(kwargs)
+            self.extra_keys = {**self.extra_keys, **kwargs}
         elif kwargs:
             self.extra_keys = kwargs
 
     def __attrs_post_init__(self):
-        self._set_tile_position(None, self.tile_position)
+        # Set the tile position back to what it should be
+        self._set_tile_position(
+            attrs.fields(Entity).tile_position, self.tile_position
+        )
 
     # =========================================================================
 
@@ -235,25 +237,28 @@ class Entity(EntityLike, Exportable):
 
     # =========================================================================
 
-    def _set_position(self, _: attrs.Attribute, value: Any):
+    def _set_position(self, attr: attrs.Attribute, value: Any):
         self.position.update_from_other(value, float)
         self.tile_position.update(
             round(self.position.x - self.tile_width / 2),
             round(self.position.y - self.tile_height / 2),
         )
 
-        if self.validate_assignment and self.double_grid_aligned:
-            if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
-                cast_position = Vector(
-                    math.floor(self.tile_position.x / 2) * 2,
-                    math.floor(self.tile_position.y / 2) * 2,
-                )
-                msg = (
-                    "Double-grid aligned entity is not placed along chunk grid; "
-                    "entity's tile position will be cast from {} to {} when "
-                    "imported".format(self.tile_position, cast_position)
-                )
-                warnings.warn(GridAlignmentWarning(msg))
+        value = attr.converter(value)
+        attr.validator(self, attr, value)
+
+        # if self.validate_assignment and self.double_grid_aligned:
+        #     if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
+        #         cast_position = Vector(
+        #             math.floor(self.tile_position.x / 2) * 2,
+        #             math.floor(self.tile_position.y / 2) * 2,
+        #         )
+        #         msg = (
+        #             "Double-grid aligned entity is not placed along chunk grid; "
+        #             "entity's tile position will be cast from {} to {} when "
+        #             "imported".format(self.tile_position, cast_position)
+        #         )
+        #         warnings.warn(GridAlignmentWarning(msg))
 
         return self.position
 
@@ -291,17 +296,11 @@ class Entity(EntityLike, Exportable):
         entity.
         """
         return _PosVector(self.tile_width / 2, self.tile_height / 2, self)
-
-    # =========================================================================
-
-    def _set_tile_position(self, attr, value):
-        self.tile_position.update_from_other(value, int)
-        self.position.update(
-            self.tile_position.x + self.tile_width / 2,
-            self.tile_position.y + self.tile_height / 2,
-        )
-
-        if self.validate_assignment and self.double_grid_aligned:
+    
+    @position.validator
+    @conditional(ValidationMode.MINIMUM)
+    def _position_validator(self, _: attrs.Attribute, value: Vector):
+        if self.double_grid_aligned:
             if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
                 cast_position = Vector(
                     math.floor(self.tile_position.x / 2) * 2,
@@ -313,6 +312,31 @@ class Entity(EntityLike, Exportable):
                     "imported".format(self.tile_position, cast_position)
                 )
                 warnings.warn(GridAlignmentWarning(msg))
+
+    # =========================================================================
+
+    def _set_tile_position(self, attr: attrs.Attribute, value: Any):
+        self.tile_position.update_from_other(value, int)
+        self.position.update(
+            self.tile_position.x + self.tile_width / 2,
+            self.tile_position.y + self.tile_height / 2,
+        )
+
+        value = attr.converter(value)
+        attr.validator(self, attr, value)
+
+        # if self.validate_assignment and self.double_grid_aligned:
+        #     if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
+        #         cast_position = Vector(
+        #             math.floor(self.tile_position.x / 2) * 2,
+        #             math.floor(self.tile_position.y / 2) * 2,
+        #         )
+        #         msg = (
+        #             "Double-grid aligned entity is not placed along chunk grid; "
+        #             "entity's tile position will be cast from {} to {} when "
+        #             "imported".format(self.tile_position, cast_position)
+        #         )
+        #         warnings.warn(GridAlignmentWarning(msg))
 
         return self.tile_position
 
@@ -352,6 +376,25 @@ class Entity(EntityLike, Exportable):
             self.position.y - self.tile_height / 2,
             self,
         )
+    
+    @tile_position.validator
+    @conditional(ValidationMode.MINIMUM)
+    def _tile_position_validator(self, attr: attrs.Attribute, value: Vector):
+        """
+        Ensure that the tile lives on a double grid if double grid aligned.
+        """
+        if self.double_grid_aligned:
+            if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
+                cast_position = Vector(
+                    math.floor(self.tile_position.x / 2) * 2,
+                    math.floor(self.tile_position.y / 2) * 2,
+                )
+                msg = (
+                    "Double-grid aligned entity is not placed along chunk grid; "
+                    "entity's tile position will be cast from {} to {} when "
+                    "imported".format(self.tile_position, cast_position)
+                )
+                warnings.warn(GridAlignmentWarning(msg))
 
     # =========================================================================
 
@@ -571,6 +614,27 @@ class Entity(EntityLike, Exportable):
     """
 
     # =========================================================================
+
+    extra_keys = attrs_reuse(attrs.fields(Exportable).extra_keys, validator=None)
+
+    @extra_keys.validator
+    @conditional(ValidationMode.STRICT)
+    def _extra_keys_validator(
+        self,
+        _: attrs.Attribute,
+        value: Optional[dict],
+    ):
+        """
+        Issue warnings if `extra_keys` is not empty, *except* in the cases where
+        self is a generic :py:class:`.Entity`.
+        """
+        if value and type(self) is not Entity:
+            msg = "'{}' object has had the following unrecognized keys:\n{}".format(
+                type(self).__name__,
+                pprint.pformat(value)
+            )
+            warnings.warn(UnknownKeywordWarning(msg))
+
 
     def is_placable_on(self, surface_name: str) -> bool:
         """

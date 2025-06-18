@@ -31,24 +31,56 @@ def get_mode():
     global _validation_mode
     return _validation_mode
 
-def set_mode(mode: ValidationMode) -> None:
-    global _validation_mode
-    _validation_mode = ValidationMode(mode)
-
-@contextmanager
-def disabled():
+def set_mode(mode: ValidationMode):
     """
-    Create a context manager wherin all Draftsman validators are disabled. 
-    Similar to :py:meth:`attrs.validators.disabled()` but only for Draftsman
-    validators.
+    Either set the global validation level for all subsequent statements:
+
+    .. example::
+
+        import draftsman.validators
+
+        draftsman.validators.set_mode(ValidationMode.PEDANTIC)
+        
+        assert draftsman.validators.get_mode() is ValidationMode.PEDANTIC
+
+    Or set the validation level only for a specific block of code:
+
+    .. example::
+
+        assert draftsman.validators.get_mode() is ValidationMode.STRICT
+
+        with draftsman.validators.set_mode(ValidationMode.NONE):
+            assert draftsman.validators.get_mode() is ValidationMode.NONE
+
+        assert draftsman.validators.get_mode() is ValidationMode.STRICT
+
+    .. NOTE::
+
+        This function does NOT affect calls to :py:meth:`Exportable.validate`. # TODO
     """
     global _validation_mode
     original_mode = _validation_mode
-    set_mode(ValidationMode.NONE)
-    try:
-        yield
-    finally:
-        set_mode(original_mode)
+    _validation_mode = ValidationMode(mode)
+
+    class ValidationContext:
+        def __enter__(self):
+            pass
+
+        def __exit__(self, typ, value, traceback):
+            global _validation_mode
+            _validation_mode = original_mode
+
+    return ValidationContext()
+
+def disabled():
+    """
+    Shorthand for writing:
+
+    .. code-block::
+
+        draftsman.validators.set_mode(ValidationMode.NONE)
+    """
+    return set_mode(ValidationMode.NONE)
 
 
 def conditional(severity):
@@ -61,10 +93,11 @@ def conditional(severity):
 
     def decorator(meth):
         def class_validator(
-            self,
+            *args,
             mode=None,
             error_list: Optional[list] = None,
             warning_list: Optional[list] = None,
+            **kwargs,
         ):
             """Validator wrapper for ``@classvalidator``."""
             mode = mode if mode is not None else _validation_mode
@@ -73,7 +106,7 @@ def conditional(severity):
 
             try:
                 with warnings.catch_warnings(record=True) as ws:
-                    meth(self)
+                    meth(*args)
             except Exception as e:
                 if error_list is None:
                     raise e
@@ -87,9 +120,7 @@ def conditional(severity):
                 warning_list.extend([w.message for w in ws])
 
         def attr_validator(
-            self,
-            attr,
-            value,
+            *args,
             mode=None,
             error_list: Optional[list] = None,
             warning_list: Optional[list] = None,
@@ -100,7 +131,7 @@ def conditional(severity):
                 return
             try:
                 with warnings.catch_warnings(record=True) as ws:
-                    meth(self, attr, value)
+                    meth(*args)
             except Exception as e:
                 if error_list is None:
                     raise e
@@ -163,17 +194,23 @@ attr._make.and_ = and_
 
 class _OrValidator:
     def __init__(self, validators):
+        print(validators)
         self.validators = validators
 
+    @conditional(ValidationMode.MINIMUM)
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
+        print("\t", attr.name)
         messages = []
-        for i, validator in enumerate(self.validators):
+        for validator in self.validators:
+            print(validator)
             try:
                 validator(inst, attr, value, **kwargs)
+                print("passed")
                 return
             except DataFormatError as e:
                 messages.append(str(e))
 
+        print("messages:", messages)
         msg = "{} did not match any of {}\n\t{}".format(
             repr(value),
             repr(self.validators),
@@ -186,13 +223,11 @@ def or_(*validators):
     return _OrValidator(validators)
 
 
-def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
-    mode = kwargs.get("mode", None)
-    mode = mode if mode is not None else inst.validate_assignment
-    if mode:  # pragma: no branch
-        if not value is None:
-            msg = "{} was not None".format(repr(value))
-            raise DataFormatError(msg)
+@conditional(ValidationMode.MINIMUM)
+def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any):
+    if not value is None:
+        msg = "{} was not None".format(repr(value))
+        raise DataFormatError(msg)
 
 
 class _InstanceOfValidator:
@@ -205,21 +240,16 @@ class _InstanceOfValidator:
             self.cls = cls
             self.extra_validator = None
 
-    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
-        mode = kwargs.get("mode", None)
-        if mode is None:
-            if hasattr(inst, "validate_assignment"):
-                mode = inst.validate_assignment
-            else:
-                return
-        # mode = mode if mode is not None else inst.validate_assignment
-        if mode:
-            if not isinstance(value, self.cls):
-                name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
-                msg = "'{}' must be an instance of {}".format(attr.name, name)
-                raise DataFormatError(msg)
-            if self.extra_validator:
-                self.extra_validator(inst, attr, value, **kwargs)
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any):
+        # mode = mode if mode is not None else _validation_mode
+        # if mode:
+        if not isinstance(value, self.cls):
+            name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+            msg = "'{}' must be an instance of {}".format(attr.name, name)
+            raise DataFormatError(msg)
+        # if self.extra_validator:
+        #     self.extra_validator(inst, attr, value, **kwargs)
 
 
 class _ArgsAreValidator:
@@ -237,7 +267,7 @@ class _ArgsAreValidator:
         self, inst: "Exportable", attr: attrs.Attribute, value: list, **kwargs
     ):
         mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else inst.validate_assignment
+        mode = mode if mode is not None else _validation_mode
         if mode:
             for i, v in enumerate(value):
                 if not isinstance(v, self.cls):
@@ -262,12 +292,15 @@ def instance_of(cls: type):
             if u is type(None):  # schizo
                 vs.append(is_none)
             else:
-                vs.append(_InstanceOfValidator(u))
+                vs.append(instance_of(u)) # Optional annotateds
         return _OrValidator(tuple(vs))
-    if get_origin(cls) is list:
+    elif get_origin(cls) is list:
         return _AndValidator(
             (_InstanceOfValidator(get_origin(cls)), _ArgsAreValidator(get_args(cls)[0]))
         )
+    elif get_origin(cls) is Annotated:
+        args = get_args(cls)
+        return _AndValidator((_InstanceOfValidator(args[0]), args[1]))
     else:
         return _InstanceOfValidator(cls)
 
@@ -276,9 +309,9 @@ class _OneOfValidator:
     def __init__(self, values):
         self.values = values
 
-    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
+    def __call__(self, _inst: "Exportable", _attr: attrs.Attribute, value: Any, **kwargs):
         mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else inst.validate_assignment
+        mode = mode if mode is not None else _validation_mode
         if mode:
             if value not in self.values:
                 msg = "value {} not one of {}".format(repr(value), self.values)
@@ -301,13 +334,11 @@ class _NumberValidator:
     compare_op = attrs.field()
     compare_func = attrs.field()
 
-    def __call__(self, inst, attr, value, **kwargs):
-        mode = kwargs.get("mode", None)
-        mode = mode if mode is not None else inst.validate_assignment
-        if mode:
-            if value is not None and not self.compare_func(value, self.bound):
-                msg = f"'{attr.name}' must be {self.compare_op} {self.bound}: {value}"
-                raise DataFormatError(msg)
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, _inst: "Exportable", attr, value, **kwargs):
+        if value is not None and not self.compare_func(value, self.bound):
+            msg = f"'{attr.name}' must be {self.compare_op} {self.bound}: {repr(value)}"
+            raise DataFormatError(msg)
 
     def __repr__(self):  # pragma: no coverage
         return f"<Validator for x {self.compare_op} {self.bound}>"

@@ -6,6 +6,7 @@ from draftsman.error import (
     DataFormatError,
 )
 from draftsman.signatures import InfinityInventoryFilter
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -69,11 +70,9 @@ class TestInfinityContainer:
         with pytest.raises(DataFormatError):
             container.remove_unfiltered_items = "incorrect"
 
-        container.validate_assignment = "none"
-        assert container.validate_assignment == ValidationMode.NONE
-
-        container.remove_unfiltered_items = "incorrect"
-        assert container.remove_unfiltered_items == "incorrect"
+        with draftsman.validators.disabled():
+            container.remove_unfiltered_items = "incorrect"
+            assert container.remove_unfiltered_items == "incorrect"
 
     def test_set_infinity_filter(self):
         container = InfinityContainer()

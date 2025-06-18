@@ -4,6 +4,7 @@ from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import TrainStop, train_stops, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import Color, SignalID
+import draftsman.validators
 from draftsman.warning import (
     GridAlignmentWarning,
     DirectionWarning,
@@ -108,17 +109,19 @@ class TestTrainStop:
                 {"name": "train-stop", "invalid_keyword": "whatever"}
             )
             stop.validate().reissue_all()
+
         # Incorrect direction
         with pytest.warns(DirectionWarning):
             stop = TrainStop("train-stop", direction=Direction.NORTHWEST)
-            stop.validate().reissue_all()
+        
         # Ignore incorrect direction
-        stop = TrainStop(
-            "train-stop", direction=Direction.NORTHWEST, validate_assignment="none"
-        )
-        assert stop.direction is Direction.NORTHWEST
-        stop.direction = Direction.SOUTHSOUTHEAST
-        assert stop.direction is Direction.SOUTHSOUTHEAST
+        with draftsman.validators.disabled():
+            stop = TrainStop(
+                "train-stop", direction=Direction.NORTHWEST
+            )
+            assert stop.direction is Direction.NORTHWEST
+            stop.direction = Direction.SOUTHSOUTHEAST
+            assert stop.direction is Direction.SOUTHSOUTHEAST
 
         # Errors
         with pytest.raises(DataFormatError):
@@ -183,16 +186,14 @@ class TestTrainStop:
             "control_behavior": {"send_to_train": False},
         }
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.send_to_train = "incorrect"
-        assert train_stop.send_to_train == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"send_to_train": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            train_stop.send_to_train = "incorrect"
+            assert train_stop.send_to_train == "incorrect"
+            assert train_stop.to_dict() == {
+                "name": "train-stop",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"send_to_train": "incorrect"},
+            }
 
     def test_set_read_from_train(self):
         train_stop = TrainStop()
@@ -204,16 +205,14 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.read_from_train = "wrong"
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.read_from_train = "incorrect"
-        assert train_stop.read_from_train == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"read_from_train": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            train_stop.read_from_train = "incorrect"
+            assert train_stop.read_from_train == "incorrect"
+            assert train_stop.to_dict() == {
+                "name": "train-stop",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"read_from_train": "incorrect"},
+            }
 
     def test_set_read_stopped_train(self):
         train_stop = TrainStop()
@@ -225,16 +224,14 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.read_stopped_train = "wrong"
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.read_stopped_train = "incorrect"
-        assert train_stop.read_stopped_train == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"read_stopped_train": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            train_stop.read_stopped_train = "incorrect"
+            assert train_stop.read_stopped_train == "incorrect"
+            assert train_stop.to_dict() == {
+                "name": "train-stop",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"read_stopped_train": "incorrect"},
+            }
 
     def test_set_train_stopped_signal(self):
         train_stop = TrainStop()
@@ -274,16 +271,14 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.signal_limits_trains = "wrong"
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.signal_limits_trains = "incorrect"
-        assert train_stop.signal_limits_trains == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"set_trains_limit": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            train_stop.signal_limits_trains = "incorrect"
+            assert train_stop.signal_limits_trains == "incorrect"
+            assert train_stop.to_dict() == {
+                "name": "train-stop",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"set_trains_limit": "incorrect"},
+            }
 
     def test_set_trains_limit_signal(self):
         train_stop = TrainStop()
@@ -320,16 +315,14 @@ class TestTrainStop:
         with pytest.raises(DataFormatError):
             train_stop.read_trains_count = "wrong"
 
-        train_stop.validate_assignment = "none"
-        assert train_stop.validate_assignment == ValidationMode.NONE
-
-        train_stop.read_trains_count = "incorrect"
-        assert train_stop.read_trains_count == "incorrect"
-        assert train_stop.to_dict() == {
-            "name": "train-stop",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"read_trains_count": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            train_stop.read_trains_count = "incorrect"
+            assert train_stop.read_trains_count == "incorrect"
+            assert train_stop.to_dict() == {
+                "name": "train-stop",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"read_trains_count": "incorrect"},
+            }
 
     def test_set_trains_count_signal(self):
         train_stop = TrainStop()

@@ -4,6 +4,7 @@ from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
 from draftsman.error import DataFormatError, InvalidTileError
+import draftsman.validators
 from draftsman.warning import UnknownTileWarning
 
 import pytest
@@ -24,14 +25,14 @@ class TestTile:
 
         # Invalid name
         with pytest.warns(UnknownTileWarning, match="Unknown tile 'weeeeee'"):
-            tile = Tile("weeeeee").validate().reissue_all()
+            tile = Tile("weeeeee")
 
         # Invalid name with suggestion
         with pytest.warns(
             UnknownTileWarning,
             match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
-            tile = Tile("stonepath").validate().reissue_all()
+            tile = Tile("stonepath")
 
         # TODO: test closure
         # with self.assertRaises(InvalidTileError):
@@ -45,21 +46,18 @@ class TestTile:
             UnknownTileWarning,
             match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
-            tile = Tile("stonepath").validate().reissue_all()
+            tile = Tile("stonepath")
 
+        # Incorrect type
         with pytest.raises(DataFormatError):
-            tile = Tile(name=100).validate().reissue_all()
+            tile = Tile(name=100)
 
-        # validation off
-        tile = Tile(name=100, validate_assignment="none")
+        # Incorrect type with validation off
+        with draftsman.validators.disabled():
+            tile = Tile(name=100)
         assert tile.name == 100
-
-        # TODO: test closure
-        # with self.assertRaises(InvalidTileError):
-        #     tile = Tile("incorrect")
-        #     with tile.validate() as issues:
-        #         for error in issues:
-        #             raise error
+        with pytest.raises(DataFormatError):
+            tile.validate().reissue_all()
 
     def test_set_name(self):
         tile = Tile("hazard-concrete-left")
@@ -132,13 +130,14 @@ class TestTileFactory:
 
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        tile = Tile.from_dict(
-            {
-                "name": "unknown",
-                "position": {"x": 1, "y": 1},
-                "unknown_attribute": "value",
-            }
-        )
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            tile = Tile.from_dict(
+                {
+                    "name": "unknown",
+                    "position": {"x": 1, "y": 1},
+                    "unknown_attribute": "value",
+                }
+            )
         assert tile.to_dict() == {
             "name": "unknown",
             "position": {"x": 1, "y": 1},

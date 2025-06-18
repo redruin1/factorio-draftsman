@@ -247,12 +247,8 @@ class TestActiveContainer:
         chest = LogisticActiveContainer("active-provider-chest")
         assert chest.size == 48
 
-        assert (
-            LogisticActiveContainer(
-                "unknown-chest", validate_assignment="none"
-            ).size
-            == None
-        )
+        with pytest.warns(UnknownEntityWarning):
+            assert LogisticActiveContainer("unknown-chest").size is None
 
     @pytest.mark.skipif(
         "quality" not in mods.versions, reason="Quality mod not enabled"

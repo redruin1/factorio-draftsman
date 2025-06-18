@@ -9,6 +9,7 @@ from draftsman.constants import ValidationMode, Direction
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
+import draftsman.validators
 from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
 
 import pytest
@@ -309,9 +310,8 @@ class TestEntityList:
             blueprint.entities[0] = new_entity("substation")
 
         # No overlapping warning
-        blueprint.entities.validate_assignment = "none"
-        assert blueprint.entities.validate_assignment == ValidationMode.NONE
-        blueprint.entities[0] = new_entity("substation")
+        with draftsman.validators.disabled():
+            blueprint.entities[0] = new_entity("substation")
 
         with pytest.raises(TypeError):
             blueprint.entities[0] = "something incorrect"

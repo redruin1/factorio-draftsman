@@ -6,6 +6,7 @@ from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError, UnreasonablySizedBlueprintError
+import draftsman.validators
 from draftsman.warning import OverlappingObjectsWarning
 
 import pytest
@@ -131,9 +132,8 @@ class TestTileList:
         assert blueprint.tiles[1].name == "refined-concrete"
 
         # No overlapping warning
-        blueprint.tiles.validate_assignment = "none"
-        assert blueprint.tiles.validate_assignment == ValidationMode.NONE
-        blueprint.tiles[0] = Tile("refined-concrete", position=(1, 1))
+        with draftsman.validators.disabled():
+            blueprint.tiles[0] = Tile("refined-concrete", position=(1, 1))
 
         # Incorrect type
         with pytest.raises(TypeError):

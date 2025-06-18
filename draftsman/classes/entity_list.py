@@ -64,9 +64,6 @@ class EntityList(Exportable, MutableSequence):
         parent: "EntityCollection" = None,
         initlist: Optional[list[EntityLike]] = [],
         copy: bool = True,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
     ):
         """
         Instantiates a new ``EntityList``.
@@ -99,8 +96,6 @@ class EntityList(Exportable, MutableSequence):
                 self.append(name, **elem)
             else:
                 raise TypeError("Constructor either takes EntityLike or dict entries")
-
-        self.validate_assignment = validate_assignment
 
     @reissue_warnings
     def append(
@@ -298,7 +293,7 @@ class EntityList(Exportable, MutableSequence):
         # and save some overhead
         # print(get_enabled())
         # print(self.validate_assignment)
-        if get_mode() and self.validate_assignment:
+        if get_mode():
             # Validate the object itself
             # entitylike.validate(mode=self.validate_assignment).reissue_all()
             # Check for issues regarding placing this entity in the parent object
@@ -467,17 +462,17 @@ class EntityList(Exportable, MutableSequence):
         self.spatial_map.clear()
 
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
         mode = ValidationMode(mode)
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
+        if mode is ValidationMode.NONE:
             return output
 
         for entity in self:
             # TODO: more sophisticated
-            output += entity.validate(mode=mode, force=force)
+            output += entity.validate(mode=mode)
 
         return output
 
@@ -528,8 +523,8 @@ class EntityList(Exportable, MutableSequence):
 
         # Check for overlapping entities
         # validate = self._parent.validate_assignment
-        if self.validate_assignment:
-            value.validate(mode=self.validate_assignment).reissue_all()
+        if get_mode():
+            value.validate(mode=get_mode()).reissue_all()
             self.spatial_map.validate_insert(value, False)
 
         # Add the new entity and its children

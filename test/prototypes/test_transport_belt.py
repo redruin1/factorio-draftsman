@@ -2,8 +2,9 @@
 
 from draftsman.constants import Direction, BeltReadMode, ValidationMode
 from draftsman.entity import TransportBelt, transport_belts, Container
-from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.error import DataFormatError
 from draftsman.signatures import Condition
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -147,15 +148,14 @@ class TestTransportBelt:
             belt.circuit_enabled = "incorrect"
         assert belt.circuit_enabled == True
 
-        belt.validate_assignment = "none"
-        assert belt.validate_assignment == ValidationMode.NONE
-        belt.circuit_enabled = "incorrect"
-        assert belt.circuit_enabled == "incorrect"
-        assert belt.to_dict() == {
-            "name": "transport-belt",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_enabled": "incorrect"},
-        }
+        with draftsman.validators.set_mode(ValidationMode.NONE):
+            belt.circuit_enabled = "incorrect"
+            assert belt.circuit_enabled == "incorrect"
+            assert belt.to_dict() == {
+                "name": "transport-belt",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_enabled": "incorrect"},
+            }
 
     def test_set_read_contents(self):
         belt = TransportBelt("transport-belt")
@@ -177,16 +177,14 @@ class TestTransportBelt:
             belt.read_contents = "incorrect"
         assert belt.read_contents == True
 
-        belt.validate_assignment = "none"
-        assert belt.validate_assignment == ValidationMode.NONE
-
-        belt.read_contents = "incorrect"
-        assert belt.read_contents == "incorrect"
-        assert belt.to_dict() == {
-            "name": "transport-belt",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_read_hand_contents": "incorrect"},
-        }
+        with draftsman.validators.set_mode(ValidationMode.NONE):
+            belt.read_contents = "incorrect"
+            assert belt.read_contents == "incorrect"
+            assert belt.to_dict() == {
+                "name": "transport-belt",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_read_hand_contents": "incorrect"},
+            }
 
     def test_set_read_mode(self):
         belt = TransportBelt("transport-belt")

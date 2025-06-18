@@ -386,14 +386,14 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         return  # Do nothing
 
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
         # Validate regular attributes
         output = ValidationResult([], [])
 
         # Validate recursive attributes
-        output += self.entities.validate(mode=mode, force=force)
-        output += self.tiles.validate(mode=mode, force=force)
+        output += self.entities.validate(mode=mode)
+        output += self.tiles.validate(mode=mode)
 
         # if len(output.error_list) == 0:
         #     # Set the `is_valid` attribute
@@ -521,18 +521,46 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
     #     return result
 
 
-draftsman_converters.add_hook_fns(
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     Group,
     lambda fields: {
+        ("blueprint", "item"): None,
+        ("blueprint", "label"): None,
+        ("blueprint", "label_color"): None,
+        ("blueprint", "description"): None,
+        ("blueprint", "icons"): None,
+        ("blueprint", "version"): None,
+        ("blueprint", "snap-to-grid"): None,
+        ("blueprint", "absolute-snapping"): None,
+        ("blueprint", "position-relative-to-grid"): None,
         ("blueprint", "entities"): fields.entities.name,
         ("blueprint", "tiles"): fields.tiles.name,
-        ("blueprint", "schedules"): fields.schedules.name,
         ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
         ("blueprint", "stock_connections"): fields.stock_connections.name,
     },
 )
 
-
 draftsman_converters.get_version((1, 0)).register_structure_hook(
     Group, structure_blueprint_1_0_factory(Group)
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    Group,
+    lambda fields: {
+        ("blueprint", "item"): None,
+        ("blueprint", "label"): None,
+        ("blueprint", "label_color"): None,
+        ("blueprint", "description"): None,
+        ("blueprint", "icons"): None,
+        ("blueprint", "version"): None,
+        ("blueprint", "snap-to-grid"): None,
+        ("blueprint", "absolute-snapping"): None,
+        ("blueprint", "position-relative-to-grid"): None,
+        ("blueprint", "entities"): fields.entities.name,
+        ("blueprint", "tiles"): fields.tiles.name,
+        ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        ("blueprint", "stock_connections"): fields.stock_connections.name,
+    },
 )

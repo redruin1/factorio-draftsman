@@ -4,6 +4,7 @@ from draftsman.constants import ValidationMode
 from draftsman.entity import Roboport, roboports, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -136,16 +137,14 @@ class TestRoboport:
         with pytest.raises(DataFormatError):
             roboport.read_logistics = "incorrect"
 
-        roboport.validate_assignment = "none"
-        assert roboport.validate_assignment == ValidationMode.NONE
-
-        roboport.read_logistics = "incorrect"
-        assert roboport.read_logistics == "incorrect"
-        assert roboport.to_dict() == {
-            "name": "roboport",
-            "position": {"x": 2, "y": 2},
-            "control_behavior": {"read_logistics": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            roboport.read_logistics = "incorrect"
+            assert roboport.read_logistics == "incorrect"
+            assert roboport.to_dict() == {
+                "name": "roboport",
+                "position": {"x": 2, "y": 2},
+                "control_behavior": {"read_logistics": "incorrect"},
+            }
 
     def test_set_read_robot_stats(self):
         roboport = Roboport()
@@ -157,16 +156,14 @@ class TestRoboport:
         with pytest.raises(DataFormatError):
             roboport.read_robot_stats = "incorrect"
 
-        roboport.validate_assignment = "none"
-        assert roboport.validate_assignment == ValidationMode.NONE
-
-        roboport.read_robot_stats = "incorrect"
-        assert roboport.read_robot_stats == "incorrect"
-        assert roboport.to_dict() == {
-            "name": "roboport",
-            "position": {"x": 2, "y": 2},
-            "control_behavior": {"read_robot_stats": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            roboport.read_robot_stats = "incorrect"
+            assert roboport.read_robot_stats == "incorrect"
+            assert roboport.to_dict() == {
+                "name": "roboport",
+                "position": {"x": 2, "y": 2},
+                "control_behavior": {"read_robot_stats": "incorrect"},
+            }
 
     def test_set_available_logistics_signal(self):
         roboport = Roboport()

@@ -12,6 +12,7 @@ from draftsman.error import (
     IncompleteSignalError,
 )
 from draftsman.signatures import SignalID, Condition
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -129,16 +130,33 @@ class TestProgrammableSpeakerTesting:
         }
 
         # Warnings
+        unknown_keyword_dict = {
+            "name": "programmable-speaker",
+            "position": {"x": 0.5, "y": 0.5}, 
+            "control_behavior": {
+                "circuit_parameters": {
+                    "instrument_id": 1,
+                    "note_id": 1,
+                },
+                "unused_keyword": "whatever"
+            }
+        }
         with pytest.warns(UnknownKeywordWarning):
-            ProgrammableSpeaker.from_dict(
-                {"name": "programmable-speaker", "unused_keyword": "whatever"}
-            ).validate().reissue_all()
+            speaker = ProgrammableSpeaker.from_dict(unknown_keyword_dict)
+        speaker.extra_keys["name"] = "programmable-speaker"
+        assert speaker.to_dict() == unknown_keyword_dict
+        
         with pytest.warns(UnknownEntityWarning):
-            ProgrammableSpeaker("not a programmable speaker").validate().reissue_all()
+            ProgrammableSpeaker("not a programmable speaker")
 
         # Errors
         with pytest.raises(DataFormatError):
-            ProgrammableSpeaker(tags="incorrect").validate().reissue_all()
+            ProgrammableSpeaker(tags="incorrect")
+
+        with draftsman.validators.disabled():
+            speaker = ProgrammableSpeaker(tags="incorrect")
+        with pytest.raises(DataFormatError):
+            speaker.validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in programmable_speakers:
@@ -170,22 +188,20 @@ class TestProgrammableSpeakerTesting:
         assert speaker.volume == 10.0
 
         # Only warns on PEDANTIC
-        speaker.validate_assignment = ValidationMode.PEDANTIC
+        with draftsman.validators.set_mode(ValidationMode.PEDANTIC):
+            speaker.volume = 0.5
+            assert speaker.volume == 0.5
 
-        speaker.volume = 0.5
-        assert speaker.volume == 0.5
-
-        with pytest.warns(VolumeRangeWarning):
-            speaker.volume = 10.0
-        assert speaker.volume == 10.0
+            with pytest.warns(VolumeRangeWarning):
+                speaker.volume = 10.0
+            assert speaker.volume == 10.0
 
         # No Error
-        speaker.validate_assignment = "none"
-        speaker.volume = "incorrect"
-        assert speaker.volume == "incorrect"
+        with draftsman.validators.disabled():
+            speaker.volume = "incorrect"
+            assert speaker.volume == "incorrect"
 
         # Error
-        speaker.validate_assignment = "strict"
         with pytest.raises(DataFormatError):
             speaker.volume = "incorrect"
 
@@ -201,16 +217,14 @@ class TestProgrammableSpeakerTesting:
             speaker.global_playback = "incorrect"
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.global_playback = "incorrect"
-        assert speaker.global_playback == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "parameters": {"playback_globally": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            speaker.global_playback = "incorrect"
+            assert speaker.global_playback == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "parameters": {"playback_globally": "incorrect"},
+            }
 
     def test_set_show_alert(self):
         speaker = ProgrammableSpeaker()
@@ -224,16 +238,14 @@ class TestProgrammableSpeakerTesting:
             speaker.show_alert = "incorrect"
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.show_alert = "incorrect"
-        assert speaker.show_alert == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "alert_parameters": {"show_alert": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            speaker.show_alert = "incorrect"
+            assert speaker.show_alert == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "alert_parameters": {"show_alert": "incorrect"},
+            }
 
     def test_set_polyphony(self):
         speaker = ProgrammableSpeaker()
@@ -247,16 +259,14 @@ class TestProgrammableSpeakerTesting:
             speaker.allow_polyphony = "incorrect"
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.allow_polyphony = "incorrect"
-        assert speaker.allow_polyphony == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "parameters": {"allow_polyphony": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            speaker.allow_polyphony = "incorrect"
+            assert speaker.allow_polyphony == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "parameters": {"allow_polyphony": "incorrect"},
+            }
 
     def test_set_show_alert_on_map(self):
         speaker = ProgrammableSpeaker()
@@ -270,16 +280,14 @@ class TestProgrammableSpeakerTesting:
             speaker.show_alert_on_map = "incorrect"
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.show_alert_on_map = "incorrect"
-        assert speaker.show_alert_on_map == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "alert_parameters": {"show_on_map": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            speaker.show_alert_on_map = "incorrect"
+            assert speaker.show_alert_on_map == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "alert_parameters": {"show_on_map": "incorrect"},
+            }
 
     def test_set_alert_icon(self):
         speaker = ProgrammableSpeaker()
@@ -313,16 +321,14 @@ class TestProgrammableSpeakerTesting:
             speaker.alert_message = False
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.alert_message = False
-        assert speaker.alert_message == False
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "alert_parameters": {"alert_message": False},
-        }
+        with draftsman.validators.disabled():
+            speaker.alert_message = False
+            assert speaker.alert_message == False
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "alert_parameters": {"alert_message": False},
+            }
 
     def test_set_signal_value_is_pitch(self):
         speaker = ProgrammableSpeaker()
@@ -335,18 +341,16 @@ class TestProgrammableSpeakerTesting:
             speaker.signal_value_is_pitch = "incorrect"
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.signal_value_is_pitch = "incorrect"
-        assert speaker.signal_value_is_pitch == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {
-                "circuit_parameters": {"signal_value_is_pitch": "incorrect"}
-            },
-        }
+        with draftsman.validators.disabled():
+            speaker.signal_value_is_pitch = "incorrect"
+            assert speaker.signal_value_is_pitch == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {
+                    "circuit_parameters": {"signal_value_is_pitch": "incorrect"}
+                },
+            }
 
     def test_set_instrument_id(self):
         speaker = ProgrammableSpeaker()
@@ -367,30 +371,29 @@ class TestProgrammableSpeakerTesting:
         assert speaker.instrument_id == 100
 
         # No warnings
-        speaker.validate_assignment = ValidationMode.MINIMUM
-        speaker.instrument_id = 100
-        assert speaker.instrument_id == 100
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            speaker.instrument_id = 100
+            assert speaker.instrument_id == 100
 
         # Errors
         with pytest.raises(DataFormatError):
             speaker.instrument_id = TypeError
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.instrument_id = "incorrect"
-        assert speaker.instrument_id == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_parameters": {"instrument_id": "incorrect"}},
-        }
+        with draftsman.validators.disabled():
+            speaker.instrument_id = "incorrect"
+            assert speaker.instrument_id == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_parameters": {"instrument_id": "incorrect"}},
+            }
 
         # Test validation with unknown programmable speaker
-        unknown = ProgrammableSpeaker(
-            "programmable-speaker-2", validate_assignment="none"
-        )
+        with pytest.warns(UnknownEntityWarning):
+            unknown = ProgrammableSpeaker(
+                "programmable-speaker-2"
+            )
         unknown.instrument_id = 10
         assert unknown.instrument_id == 10
 
@@ -444,12 +447,11 @@ class TestProgrammableSpeakerTesting:
         assert speaker.note_name == None
 
         # No warning
-        speaker.validate_assignment = "minimum"
-        assert speaker.validate_assignment is ValidationMode.MINIMUM
-        speaker.note_id = 100
-        assert speaker.note_id == 100
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            speaker.note_id = 100
+            assert speaker.note_id == 100
 
-        speaker.validate_assignment = "strict"
+        # with draftsman.validators.set_mode(ValidationMode.STRICT):
         # Handle the case where the instrument is unknown
         with pytest.warns(UnknownInstrumentWarning):
             speaker.instrument_id = 100
@@ -465,16 +467,14 @@ class TestProgrammableSpeakerTesting:
             speaker.note_id = TypeError
 
         # No error
-        speaker.validate_assignment = "none"
-        assert speaker.validate_assignment == ValidationMode.NONE
-
-        speaker.note_id = "incorrect"
-        assert speaker.note_id == "incorrect"
-        assert speaker.to_dict() == {
-            "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_parameters": {"note_id": "incorrect"}},
-        }
+        with draftsman.validators.disabled():
+            speaker.note_id = "incorrect"
+            assert speaker.note_id == "incorrect"
+            assert speaker.to_dict() == {
+                "name": "programmable-speaker",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_parameters": {"note_id": "incorrect"}},
+            }
 
     def test_set_note_name(self):
         speaker = ProgrammableSpeaker()

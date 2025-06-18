@@ -3,6 +3,12 @@
 from draftsman.constants import Direction, Inventory
 from draftsman.entity import Furnace, furnaces, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
+)
 from draftsman.warning import (
     ModuleCapacityWarning,
     ModuleNotAllowedWarning,
@@ -13,12 +19,6 @@ from draftsman.warning import (
     UnknownEntityWarning,
     UnknownItemWarning,
     UnknownKeywordWarning,
-)
-from draftsman.signatures import (
-    BlueprintInsertPlan,
-    ItemID,
-    ItemInventoryPositions,
-    InventoryPosition,
 )
 
 from collections.abc import Hashable
@@ -113,7 +113,8 @@ class TestFurnace:
         assert furnace.fuel_input_size == 0
         assert furnace.fuel_output_size == 0
 
-        furnace = Furnace("unknown-furnace", validate_assignment="none")
+        with pytest.warns(UnknownEntityWarning):
+            furnace = Furnace("unknown-furnace")
         assert furnace.energy_source is None
         assert furnace.fuel_input_size is None
         assert furnace.fuel_output_size is None

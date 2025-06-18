@@ -1,12 +1,13 @@
 # test_selector_combinator.py
 
 from draftsman.constants import Direction
+from draftsman.error import InvalidSignalError, IncompleteSignalError
 from draftsman.prototypes.selector_combinator import (
     SelectorCombinator,
     selector_combinators,
 )
 from draftsman.signatures import SignalID, SignalIDBase, QualityFilter
-from draftsman.warning import PureVirtualDisallowedWarning, UnknownEntityWarning
+from draftsman.warning import PureVirtualDisallowedWarning, UnknownEntityWarning, UnknownSignalWarning
 
 import pytest
 
@@ -51,6 +52,24 @@ def test_flags():
         assert selector.dual_power_connectable == False
         assert selector.circuit_connectable == True
         assert selector.dual_circuit_connectable == True
+
+
+def test_signal_id_base():
+    with pytest.raises(IncompleteSignalError):
+        SignalIDBase("error signal")
+
+    selector = SelectorCombinator("selector-combinator")
+    with pytest.raises(IncompleteSignalError):
+        selector.set_mode_quality_transfer(
+            select_quality_from_signal=True,
+            source_signal="error signal"
+        )
+
+    with pytest.warns(UnknownSignalWarning):
+        selector.set_mode_quality_transfer(
+            select_quality_from_signal=True,
+            source_signal={"name": "error signal", "type": "virtual"}
+        )
 
 
 def test_set_mode():

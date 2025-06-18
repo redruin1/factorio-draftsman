@@ -7,6 +7,7 @@ from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
 from draftsman.error import DataFormatError, InvalidTileError
 from draftsman.serialization import draftsman_converters
+from draftsman.validators import get_mode
 
 import attrs
 from collections.abc import MutableSequence
@@ -58,9 +59,6 @@ class TileList(Exportable, MutableSequence):
         self,
         parent: "TileCollection",
         initlist: Optional[list[Tile]] = None,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
     ) -> None:
         """
         TODO
@@ -85,8 +83,6 @@ class TileList(Exportable, MutableSequence):
                     raise DataFormatError(
                         "TileList only takes either Tile or dict entries"
                     )
-
-        self.validate_assignment = validate_assignment
 
     def append(
         self, name: Union[str, Tile], copy: bool = True, merge: bool = False, **kwargs
@@ -140,7 +136,7 @@ class TileList(Exportable, MutableSequence):
             raise TypeError("Entry in TileList must be a Tile")
 
         # Handle overlapping and merging
-        if True:  # TODO: FIXME
+        if get_mode():
             # tile.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(tile, merge=merge)
 
@@ -238,8 +234,8 @@ class TileList(Exportable, MutableSequence):
 
         self.spatial_map.remove(self._root[idx])
 
-        if self.validate_assignment:
-            value.validate(mode=self.validate_assignment).reissue_all()
+        if get_mode():
+            # value.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(value, merge=False)
 
         self.spatial_map.add(value, merge=False)

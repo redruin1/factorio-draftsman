@@ -4,6 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.constants import WaitConditionType, WaitConditionCompareType
 from draftsman.error import DataFormatError
+import draftsman.validators
 from draftsman.signatures import Condition
 
 import pytest
@@ -32,13 +33,12 @@ class TestWaitCondition:
         assert w.ticks == None
         assert w.condition == Condition()
 
-        w = WaitCondition(
-            "incorrect", compare_type="incorrect", validate_assignment="none"
-        )
+        with draftsman.validators.disabled():
+            w = WaitCondition("incorrect", compare_type="incorrect")
         assert w.type == "incorrect"
         assert w.compare_type == "incorrect"
-        assert w.ticks == None
-        assert w.condition == None
+        assert w.ticks is None
+        assert w.condition is None
         assert w.to_dict() == {"type": "incorrect", "compare_type": "incorrect"}
 
         with pytest.raises(DataFormatError):

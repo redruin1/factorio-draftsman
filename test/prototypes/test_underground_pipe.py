@@ -32,12 +32,10 @@ class TestUndergroundPipe:
             pipe = UndergroundPipe.from_dict(
                 {"name": "pipe-to-ground", "unused_keyword": 10}
             )
-            pipe.validate().reissue_all()
 
         # Errors
         with pytest.warns(UnknownEntityWarning):
             pipe = UndergroundPipe("this is not an underground pipe")
-            pipe.validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in underground_pipes:

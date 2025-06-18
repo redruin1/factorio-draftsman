@@ -13,7 +13,6 @@ from draftsman.classes.vector import Vector
 from draftsman.constants import Direction, WaitConditionType
 from draftsman.entity import *
 from draftsman.error import (
-    DraftsmanError,
     DataFormatError,
     InvalidWireTypeError,
     InvalidConnectionSideError,
@@ -26,6 +25,7 @@ from draftsman.error import (
 )
 from draftsman.signatures import StockConnection
 from draftsman.utils import encode_version, AABB
+import draftsman.validators
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
@@ -702,8 +702,8 @@ class TestGroup:
     def test_disable_entity_overlapping_warning(self):
         group = Group("test")
         group.entities.append("transport-belt")
-        group.entities.validate_assignment = "none"
-        group.entities.append("transport-belt")  # No warning
+        with draftsman.validators.disabled():
+            group.entities.append("transport-belt")  # No warning
         assert len(group.entities) == 2
 
         group.entities.validate_assignment = "strict"

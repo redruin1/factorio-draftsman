@@ -13,6 +13,7 @@ from draftsman.error import (
 )
 from draftsman.signatures import Icon, Mapper
 from draftsman.utils import encode_version
+import draftsman.validators
 from draftsman.warning import (
     DraftsmanWarning,
     IndexWarning,
@@ -112,11 +113,9 @@ class TestUpgradePlanner:
             "version": encode_version(*__factorio_version_info__),
         }
 
-        upgrade_planner.validate_assignment = "none"
-        assert upgrade_planner.validate_assignment == ValidationMode.NONE
-
-        upgrade_planner.description = 100
-        assert upgrade_planner.description == 100
+        with draftsman.validators.disabled():
+            upgrade_planner.description = 100
+            assert upgrade_planner.description == 100
 
     def test_icons(self):
         upgrade_planner = UpgradePlanner()
@@ -147,11 +146,9 @@ class TestUpgradePlanner:
             "version": encode_version(*__factorio_version_info__),
         }
 
-        upgrade_planner.validate_assignment = "none"
-        assert upgrade_planner.validate_assignment == ValidationMode.NONE
-
-        upgrade_planner.icons = "incorrect"
-        assert upgrade_planner.icons == "incorrect"
+        with draftsman.validators.disabled():
+            upgrade_planner.icons = "incorrect"
+            assert upgrade_planner.icons == "incorrect"
 
     def test_set_icons(self):
         upgrade_planner = UpgradePlanner()
@@ -233,11 +230,9 @@ class TestUpgradePlanner:
         ]
 
         # Test None
-        upgrade_planner.validate_assignment = "none"
-        assert upgrade_planner.validate_assignment == ValidationMode.NONE
-
-        upgrade_planner.mappers = "incorrect"
-        assert upgrade_planner.mappers == "incorrect"
+        with draftsman.validators.disabled():
+            upgrade_planner.mappers = "incorrect"
+            assert upgrade_planner.mappers == "incorrect"
 
     def test_set_mapping(self):
         upgrade_planner = UpgradePlanner()
@@ -342,25 +337,26 @@ class TestUpgradePlanner:
             upgrade_planner.remove_mapping("inserter", "fast-inserter", "incorrect")
 
     def test_pop_mapping(self):
-        upgrade_planner = UpgradePlanner(validate_assignment="minimum")
+        upgrade_planner = UpgradePlanner()
 
-        upgrade_planner.mappers = [
-            Mapper(
-                index=1,
-                from_={"name": "express-transport-belt", "type": "entity"},
-                to={"name": "transport-belt", "type": "entity"},
-            ),
-            Mapper(
-                index=1,
-                from_={"name": "assembling-machine-2", "type": "entity"},
-                to={"name": "assembling-machine-1", "type": "entity"},
-            ),
-            Mapper(
-                index=0,
-                from_={"name": "fast-transport-belt", "type": "entity"},
-                to={"name": "transport-belt", "type": "entity"},
-            ),
-        ]
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            upgrade_planner.mappers = [
+                Mapper(
+                    index=1,
+                    from_={"name": "express-transport-belt", "type": "entity"},
+                    to={"name": "transport-belt", "type": "entity"},
+                ),
+                Mapper(
+                    index=1,
+                    from_={"name": "assembling-machine-2", "type": "entity"},
+                    to={"name": "assembling-machine-1", "type": "entity"},
+                ),
+                Mapper(
+                    index=0,
+                    from_={"name": "fast-transport-belt", "type": "entity"},
+                    to={"name": "transport-belt", "type": "entity"},
+                ),
+            ]
 
         # Remove mapping with index 0
         upgrade_planner.pop_mapping(0)
@@ -632,8 +628,9 @@ class TestUpgradePlanner:
         #     validation_result.reissue_all()
 
         # Multiple mappings sharing the same index
-        upgrade_planner = UpgradePlanner(validate_assignment="minimum")
-        upgrade_planner.mappers = [{"index": 0}, {"index": 0}]
+        upgrade_planner = UpgradePlanner()
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            upgrade_planner.mappers = [{"index": 0}, {"index": 0}]
         goal = ValidationResult(
             error_list=[],
             warning_list=[

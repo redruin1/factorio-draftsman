@@ -1,6 +1,6 @@
 # test_artillery_wagon.py
 
-from draftsman.constants import Inventory, Orientation
+from draftsman.constants import Inventory, Orientation, ValidationMode
 from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -9,6 +9,7 @@ from draftsman.signatures import (
     InventoryPosition,
     EquipmentComponent,
 )
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -19,36 +20,36 @@ import pytest
 def valid_artillery_wagon():
     if len(artillery_wagons) == 0:
         return None
-    return ArtilleryWagon(
-        "artillery-wagon",
-        id="test",
-        quality="uncommon",
-        tile_position=(1, 1),
-        orientation=Orientation.EAST,
-        item_requests=[
-            BlueprintInsertPlan(
-                id="artillery-shell",
-                items=ItemInventoryPositions(
-                    in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.artillery_wagon_ammo, stack=0, count=1
-                        )
-                    ]
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return ArtilleryWagon(
+            "artillery-wagon",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="artillery-shell",
+                    items=ItemInventoryPositions(
+                        in_inventory=[
+                            InventoryPosition(
+                                inventory=Inventory.artillery_wagon_ammo, stack=0, count=1
+                            )
+                        ]
+                    ),
                 ),
-            ),
-            BlueprintInsertPlan(
-                id="energy-shield-equipment",
-                items=ItemInventoryPositions(grid_count=1),
-            ),
-        ],
-        equipment=[
-            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-        ],
-        enable_logistics_while_moving=False,
-        auto_target=False,
-        tags={"blah": "blah"},
-        validate_assignment="none",  # Ignore the fact that this item has no equipment grid
-    )
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                ),
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            enable_logistics_while_moving=False,
+            auto_target=False,
+            tags={"blah": "blah"},
+        )
 
 
 class TestArtilleryWagon:

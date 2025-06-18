@@ -3,6 +3,7 @@
 from draftsman.constants import ValidationMode
 from draftsman.entity import HeatInterface, heat_interfaces, Container
 from draftsman.error import DataFormatError
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -61,13 +62,12 @@ class TestHeatInterface:
         assert interface.temperature == -1000
 
         # Single warning on pedantic
-        interface.validate_assignment = "pedantic"
-        assert interface.validate_assignment == ValidationMode.PEDANTIC
-        interface.temperature = 100
-        assert interface.temperature == 100
-        with pytest.warns(TemperatureRangeWarning):
-            interface.temperature = -1000
-        assert interface.temperature == -1000
+        with draftsman.validators.set_mode(ValidationMode.PEDANTIC):
+            interface.temperature = 100
+            assert interface.temperature == 100
+            with pytest.warns(TemperatureRangeWarning):
+                interface.temperature = -1000
+            assert interface.temperature == -1000
 
         # Errors
         with pytest.raises(DataFormatError):

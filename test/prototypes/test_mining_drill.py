@@ -14,6 +14,7 @@ from draftsman.signatures import (
     InventoryPosition,
     Condition,
 )
+import draftsman.validators
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
@@ -210,16 +211,14 @@ class TestMiningDrill:
         with pytest.raises(DataFormatError):
             mining_drill.read_resources = "incorrect"
 
-        mining_drill.validate_assignment = "none"
-        assert mining_drill.validate_assignment == ValidationMode.NONE
-
-        mining_drill.read_resources = "incorrect"
-        assert mining_drill.read_resources == "incorrect"
-        assert mining_drill.to_dict() == {
-            "name": "burner-mining-drill",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"circuit_read_resources": "incorrect"},
-        }
+        with draftsman.validators.disabled():
+            mining_drill.read_resources = "incorrect"
+            assert mining_drill.read_resources == "incorrect"
+            assert mining_drill.to_dict() == {
+                "name": "burner-mining-drill",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"circuit_read_resources": "incorrect"},
+            }
 
     def test_set_read_mode(self):
         mining_drill = MiningDrill("burner-mining-drill")
