@@ -48,13 +48,13 @@ class ValidationResult:
             return False
         for i in range(len(self.error_list)):
             if (
-                type(self.error_list[i]) != type(other.error_list[i])
+                type(self.error_list[i]) is not type(other.error_list[i])
                 or self.error_list[i].args != other.error_list[i].args
             ):
                 return False
         for i in range(len(self.warning_list)):
             if (
-                type(self.warning_list[i]) != type(other.warning_list[i])
+                type(self.warning_list[i]) is not type(other.warning_list[i])
                 or self.warning_list[i].args != other.warning_list[i].args
             ):
                 return False
@@ -62,7 +62,7 @@ class ValidationResult:
 
     def __iadd__(self, other):
         if not isinstance(other, ValidationResult):  # pragma: no coverage
-            raise NotImplemented
+            raise NotImplementedError
         self.warning_list += other.warning_list
         self.error_list += other.error_list
         return self

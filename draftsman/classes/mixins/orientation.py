@@ -4,7 +4,7 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import Exportable
 from draftsman.constants import Orientation
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import Rectangle, get_first, fix_incorrect_pre_init
+from draftsman.utils import Rectangle, get_first
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data import entities

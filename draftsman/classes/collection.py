@@ -4,16 +4,14 @@ from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.train_configuration import TrainConfiguration
-from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
+from draftsman.classes.schedule import Schedule
 from draftsman.classes.schedule_list import ScheduleList
-from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, Orientation
 from draftsman.signatures import StockConnection
 from draftsman.error import (
-    DraftsmanError,
     EntityNotPowerConnectableError,
     InvalidWireTypeError,
     InvalidConnectionSideError,
@@ -24,24 +22,19 @@ from draftsman.types import RollingStock
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
-    TooManyConnectionsWarning,
 )
 from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
-from draftsman.validators import instance_of
 
 import attrs
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 import math
-from typing import Any, Literal, Optional, Sequence, Type, Union, TYPE_CHECKING
+from typing import Any, Literal, Optional, Sequence, Union
 import warnings
 
+from typing import TYPE_CHECKING
 
-# TODO: move this
-from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
-
-RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
-
-# if TYPE_CHECKING:  # pragma: no coverage
+if TYPE_CHECKING:  # pragma: no coverage
+    from draftsman.entity import Locomotive
 
 
 @attrs.define(slots=False)
@@ -1321,7 +1314,7 @@ class EntityCollection(metaclass=ABCMeta):
 
     def set_train_schedule(
         self,
-        train_cars: Union[Locomotive, list[RollingStock]],
+        train_cars: Union["Locomotive", list[RollingStock]],
         schedule: Optional[Schedule],
     ) -> None:
         """

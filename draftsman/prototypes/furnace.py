@@ -21,7 +21,7 @@ from draftsman.data.entities import furnaces
 from draftsman.data import entities, recipes
 
 import attrs
-from typing import Iterable, Optional
+from typing import Iterable
 
 
 @fix_incorrect_pre_init

@@ -1,7 +1,6 @@
 # heat_interface.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import conditional, instance_of, one_of, try_convert

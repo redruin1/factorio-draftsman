@@ -15,12 +15,11 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ModuleID, QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import assembling_machines
-from draftsman.data import entities, modules
+from draftsman.data import modules
 
 import attrs
 from typing import Iterable, Optional

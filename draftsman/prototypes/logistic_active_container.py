@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,

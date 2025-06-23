@@ -87,7 +87,7 @@ from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import EntityCollection, TileCollection
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.vector import Vector
-from draftsman.constants import LegacyDirection, ValidationMode
+from draftsman.constants import ValidationMode
 from draftsman.error import (
     DraftsmanError,
     UnreasonablySizedBlueprintError,
@@ -108,17 +108,7 @@ from draftsman.validators import classvalidator, conditional, instance_of, try_c
 import attrs
 from builtins import int
 import copy
-from typing import Any, Literal, Optional, Sequence, Union
-from pydantic import (
-    ConfigDict,
-    Field,
-    PrivateAttr,
-    ValidationError,
-    ValidationInfo,
-    field_validator,
-    field_serializer,
-    model_validator,
-)
+from typing import Literal, Optional
 
 
 def _convert_wires_to_associations(wires: list[list[int]], entities):
@@ -682,9 +672,9 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.position_relative_to_grid.name,
         ("blueprint", "entities"): fields.entities.name,
         ("blueprint", "tiles"): fields.tiles.name,
-        None: fields.wires.name,
+        # None: fields.wires.name,
         ("blueprint", "schedules"): fields.schedules.name,
-        None: fields.stock_connections.name,
+        # None: fields.stock_connections.name,
     },
 )
 
@@ -707,18 +697,18 @@ def structure_blueprint_1_0_factory(t: type):
         # instances with all of their data intact, and then the user would call a
         # separate function `migrate(version)` which would then swap/remove/update
         # entities
-        legacy_entity_conversions = {
-            "curved-rail": "legacy-curved-rail",
-            "straight-rail": "legacy-straight-rail",
-            "logistic-chest-requester": "requester-chest",
-            "logistic-chest-buffer": "buffer-chest",
-            "logistic-chest-storage": "storage-chest",
-            "logistic-chest-active-provider": "active-provider-chest",
-            "logistic-chest-passive-provider": "passive-provider-chest",
-            "filter-inserter": "inserter",  # TODO: LegacyFilterInserter(?)
-            "stack-inserter": "bulk-inserter",
-            "stack-filter-inserter": "bulk-inserter",
-        }
+        # legacy_entity_conversions = {
+        #     "curved-rail": "legacy-curved-rail",
+        #     "straight-rail": "legacy-straight-rail",
+        #     "logistic-chest-requester": "requester-chest",
+        #     "logistic-chest-buffer": "buffer-chest",
+        #     "logistic-chest-storage": "storage-chest",
+        #     "logistic-chest-active-provider": "active-provider-chest",
+        #     "logistic-chest-passive-provider": "passive-provider-chest",
+        #     "filter-inserter": "inserter",  # TODO: LegacyFilterInserter(?)
+        #     "stack-inserter": "bulk-inserter",
+        #     "stack-filter-inserter": "bulk-inserter",
+        # }
         # TODO: just use defines already...
         wire_types = {
             ("1", "red"): 1,

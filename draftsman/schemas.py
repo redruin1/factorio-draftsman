@@ -1,13 +1,6 @@
 # schemas.py
 
-from draftsman import __factorio_version_info__
-from draftsman.serialization import MASTER_CONVERTER_OMIT_NONE_DEFAULTS
 
-from typing import Optional
-
-
-import copy
-import jsonschema
 import referencing
 
 _schemas: dict[str, referencing.Resource] = {}

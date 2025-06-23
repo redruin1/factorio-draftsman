@@ -159,12 +159,12 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     Lamp,
     lambda fields: {
         ("control_behavior", "use_colors"): fields.use_colors.name,
-        None: fields.color_mode.name,
-        None: fields.red_signal.name,
-        None: fields.green_signal.name,
-        None: fields.blue_signal.name,
-        None: fields.rgb_signal.name,
-        None: fields.always_on.name,
+        # None: fields.color_mode.name,
+        # None: fields.red_signal.name,
+        # None: fields.green_signal.name,
+        # None: fields.blue_signal.name,
+        # None: fields.rgb_signal.name,
+        # None: fields.always_on.name,
         "color": fields.color.name,
     },
 )

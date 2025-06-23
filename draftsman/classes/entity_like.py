@@ -1,7 +1,6 @@
 # entitylike.py
 
 from abc import ABCMeta, abstractmethod
-import copy
 
 from typing import Optional, Union
 

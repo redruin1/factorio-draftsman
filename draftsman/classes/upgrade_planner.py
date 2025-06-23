@@ -7,18 +7,13 @@
     >>> UpgradePlanner.Format.schema_json(indent=4)
 """
 
-from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
-from draftsman.classes.exportable import (
-    ValidationResult,
-)
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, items
-from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Mapper, MapperID, uint8
-from draftsman.utils import encode_version, reissue_warnings
-from draftsman.validators import and_, conditional, instance_of
+from draftsman.utils import reissue_warnings
+from draftsman.validators import conditional, instance_of
 from draftsman.warning import (
     IndexWarning,
     NoEffectWarning,
@@ -28,8 +23,7 @@ from draftsman.warning import (
 
 import attrs
 import bisect
-from pydantic import ConfigDict, Field, ValidationInfo, field_validator, model_validator
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Literal, Optional, Sequence, Union
 import warnings
 
 

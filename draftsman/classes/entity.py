@@ -30,13 +30,11 @@ from draftsman.utils import (
     aabb_to_dimensions,
     attrs_reuse,
     get_first,
-    fix_incorrect_pre_init,
     passes_surface_conditions,
     reissue_warnings,
 )
-from draftsman.validators import conditional, instance_of, one_of, try_convert
+from draftsman.validators import conditional, instance_of, one_of
 from draftsman.warning import (
-    DirectionWarning,
     GridAlignmentWarning,
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -865,7 +863,7 @@ class Entity(EntityLike, Exportable):
 
     def mergable_with(self, other: "Entity") -> bool:
         return (
-            type(self) == type(other)
+            type(self) is type(other)
             and self.name == other.name
             and self.global_position == other.global_position
             and self.id == other.id
@@ -911,8 +909,8 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "entity_number": fields._entity_number.name,
         "name": fields.name.name,
         "position": fields.position.name,
-        None: fields.mirror.name,
-        None: fields.quality.name,
+        # None: fields.mirror.name,
+        # None: fields.quality.name,
         "items": (
             _export_fields.item_requests,
             lambda d, _: [

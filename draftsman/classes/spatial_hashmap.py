@@ -88,7 +88,7 @@ class SpatialHashMap(SpatialDataStructure):
                 cell.remove(item)
                 if not cell:
                     del self.map[cell_coord]
-            except:
+            except KeyError:
                 pass
 
     def recursive_remove(self, item: SpatialLike) -> None:

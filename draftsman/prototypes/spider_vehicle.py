@@ -7,7 +7,6 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     ColorMixin,
     EnergySourceMixin,
-    OrientationMixin,
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Color

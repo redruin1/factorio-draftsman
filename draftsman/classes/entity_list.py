@@ -6,20 +6,17 @@ from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashM
 from draftsman.constants import ValidationMode
 from draftsman.entity import get_entity_class, new_entity
 from draftsman.error import (
-    DataFormatError,
     DuplicateIDError,
-    InvalidAssociationError,
-    InvalidEntityError,
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import reissue_warnings
-from draftsman.validators import get_mode, classvalidator
+from draftsman.validators import get_mode
 from draftsman import utils
 
 import cattrs
 from collections.abc import MutableSequence
 from copy import deepcopy
-from typing import Any, Callable, Iterator, Literal, Optional, Union
+from typing import Callable, Iterator, Optional, Union
 
 from typing import TYPE_CHECKING
 
@@ -782,13 +779,12 @@ class EntityList(Exportable, MutableSequence):
 
 
 def _entity_list_structure_factory(cls, converter: cattrs.Converter):
-    def structure_hook(l: list, t: type):
-        # print("l", l)
+    def structure_hook(input_list: list, t: type):
         return EntityList(
             None,
             [
                 converter.structure(elem, get_entity_class(elem.get("name", None)))
-                for elem in l
+                for elem in input_list
             ],
             copy=False,
         )

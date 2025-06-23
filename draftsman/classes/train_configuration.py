@@ -1,13 +1,9 @@
 # train_configuration.py
 
 from draftsman.entity import new_entity
-from draftsman.prototypes.locomotive import Locomotive
-from draftsman.prototypes.cargo_wagon import CargoWagon
-from draftsman.prototypes.fluid_wagon import FluidWagon
-from draftsman.prototypes.artillery_wagon import ArtilleryWagon
 
 from math import ceil
-from typing import Literal, Union
+from typing import Literal
 import re
 
 

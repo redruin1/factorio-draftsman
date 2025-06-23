@@ -535,20 +535,6 @@ def run_data_lifecycle(
 
     # Adds path to Lua `package.path`.
     lua_add_path = lua.globals()["lua_add_path"]
-    # Set Lua `package.path` to a specific value.
-    lua_set_path = lua.globals()["lua_set_path"]
-    # Unload all cached files. Lua attempts to save time when requiring files
-    # by only loading each file once, and reusing the file when requiring with
-    # the same name. This can lead to problems when two mods have the same name
-    # for a file, where Lua will load the incorrect one and create issues.
-    # To counteract this, we completly unload all files with this function,
-    # which is called at the end of every load stage.
-    lua_unload_cache = lua.globals()["lua_unload_cache"]
-    # In order to properly search archives, we need to keep track of which file
-    # and mod we're currently in. Due to a number of reasons, this needs to be
-    # done manually; this function empties the stack of mods that we've
-    # traversed through in preparation for loading the next mod's stage.
-    lua_wipe_mods = lua.globals()["lua_wipe_mods"]
 
     # Register `python_require` in lua context.
     # This function is in charge of reading a required file from a zip archive
@@ -1759,9 +1745,6 @@ def update_draftsman_data(
         version_file.write(
             "__factorio_version_info__ = {}\n".format(str(factorio_version_info))
         )
-
-    data_raw = convert_table_to_dict(lua_instance.globals().data.raw)
-    # print(data_raw.keys())
 
     # At this point, `data.raw` in `lua_instance` and should(!) be properly
     # initialized. Hence, we can now extract the data we wish:

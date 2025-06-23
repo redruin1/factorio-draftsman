@@ -10,7 +10,6 @@ from draftsman.data import entities, qualities
 import attrs
 import math
 from typing import Optional
-import weakref
 
 
 def _trunk_inventory_size(entity) -> Optional[uint16]:

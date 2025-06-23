@@ -11,7 +11,6 @@ from datetime import timedelta
 from enum import IntEnum, Enum
 from functools import total_ordering
 import math
-from pydantic_core import core_schema
 
 
 class Direction(IntEnum):

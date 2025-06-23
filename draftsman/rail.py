@@ -11,7 +11,15 @@ from draftsman.classes.schedule import (
     WaitCondition,
     WaitConditions,
     WaitConditionType,
-    WaitConditionCompareType,
 )  # TODO: probably makes sense to move this to it's own file, so we can reuse it for space platform schedules/interrupts
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.train_configuration import TrainConfiguration
+
+__all__ = [
+    "Schedule",
+    "WaitCondition",
+    "WaitConditions",
+    "WaitConditionType",
+    "ScheduleList",
+    "TrainConfiguration",
+]

@@ -10,7 +10,7 @@ from draftsman.classes.group import Group
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.vector import Vector
-from draftsman.constants import Direction, WaitConditionType
+from draftsman.constants import ValidationMode
 from draftsman.entity import *
 from draftsman.error import (
     DataFormatError,

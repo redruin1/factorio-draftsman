@@ -6,11 +6,8 @@ from draftsman.classes.exportable import (
 )
 from draftsman.constants import (
     Ticks,
-    ValidationMode,
     WaitConditionType,
-    WaitConditionCompareType,
 )
-from draftsman.error import DataFormatError
 from draftsman.prototypes.locomotive import Locomotive
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
@@ -21,7 +18,7 @@ from draftsman.validators import instance_of, one_of, try_convert
 
 import attrs
 import copy
-from typing import Any, Literal, Mapping, Optional, Union
+from typing import Literal, Optional, Union
 
 
 # TODO: update for 2.0
@@ -309,7 +306,10 @@ class WaitConditions:
 
 
 draftsman_converters.register_structure_hook(
-    WaitConditions, lambda l, _: WaitConditions([WaitCondition(**elem) for elem in l])
+    WaitConditions,
+    lambda input_list, _: WaitConditions(
+        [WaitCondition(**elem) for elem in input_list]
+    ),
 )
 
 

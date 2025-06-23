@@ -5,7 +5,6 @@ Alias module. Imports :py:class:`.Tile` under the namespace ``draftsman``.
 """
 
 from draftsman.classes.tile import Tile
-from draftsman.classes.exportable import ValidationMode
 
 
 def new_tile(name: str, **kwargs):

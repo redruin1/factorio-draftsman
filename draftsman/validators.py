@@ -3,6 +3,7 @@
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 
+import attr
 import attrs
 
 import inspect
@@ -180,8 +181,6 @@ def and_(*validators):
 # This allows us to use the builtin `@attr.validator` decorator with our custom
 # function signatures without remorse, and (hopefully) without breaking compat
 # with any other library that happens to use the same attrs features.
-import attr
-
 attr._make.and_ = and_
 
 
@@ -213,7 +212,7 @@ def or_(*validators):
 
 @conditional(ValidationMode.MINIMUM)
 def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any):
-    if not value is None:
+    if value is not None:
         msg = "{} was not None".format(repr(value))
         raise DataFormatError(msg)
 

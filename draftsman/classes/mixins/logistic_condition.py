@@ -6,7 +6,7 @@ from draftsman.signatures import Comparator, Condition, SignalID, int32
 from draftsman.validators import instance_of
 
 import attrs
-from typing import Literal, Union
+from typing import Union
 
 
 @attrs.define(slots=False)

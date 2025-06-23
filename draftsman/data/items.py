@@ -29,7 +29,7 @@ def add_group(name: str, order: str = "", subgroups=[], **kwargs):
     # Prioritize existing data if present
     existing_data = raw.get(name, {})
     order = existing_data.get("order", order)
-    items = existing_data.get("subgroups", subgroups)
+    # items = existing_data.get("subgroups", subgroups)
     # Assign
     new_data = {
         **existing_data,
@@ -210,7 +210,7 @@ def get_weight(
         key=lambda x: (
             # Sort the first 3 descending (True, then False)
             not (x["name"] == item_name),
-            not (not item_name in {product["name"] for product in x["results"]}),
+            not (item_name not in {product["name"] for product in x["results"]}),
             not (x.get("allow_as_intermediate", True)),
             # And the last 3 ascending (a -> z)
             x.get("category", "crafting"),

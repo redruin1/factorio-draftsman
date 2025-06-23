@@ -3,7 +3,7 @@
 from draftsman.utils import get_suggestion
 from draftsman._factorio_version import __factorio_version_info__
 from draftsman.error import IncorrectModFormatError, MissingModError
-from draftsman.utils import version_string_to_tuple, version_tuple_to_string
+from draftsman.utils import version_string_to_tuple
 
 import io
 import json
@@ -219,7 +219,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     parameter (if present).
     """
 
-    external_mod_version = None  # Optional (the version indicated by filepath)
+    # external_mod_version = None  # Optional (the version indicated by filepath)
 
     if mod_name.lower().endswith(".zip"):
         # Zip file
@@ -232,7 +232,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
             )
         folder_name = m.group(1)
         mod_name = m.group(2).replace(" ", "")
-        external_mod_version = m.group(3)
+        # external_mod_version = m.group(3)
         files = zipfile.ZipFile(mod_location, mode="r")
 
         # There is no restriction on the name of the internal folder, just
@@ -287,7 +287,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
             )
 
-        mod_version = mod_info["version"]
+        # mod_version = mod_info["version"]
         is_archive = True
         location = mod_location  # containing_dir + "/" + mod_name
 
@@ -301,7 +301,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 )
             )
         mod_name = m.group(1)
-        external_mod_version = m.group(2)
+        # external_mod_version = m.group(2)
         try:
             with open(os.path.join(mod_location, "info.json"), "r") as info_file:
                 mod_info = json.load(info_file)
@@ -311,7 +311,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
             )
 
         mod_folder = mod_location
-        mod_version = mod_info.get("version", "")  # "core" doesn't have a version
+        # mod_version = mod_info.get("version", "")  # "core" doesn't have a version
         is_archive = False
         files = None
         location = mod_location

@@ -17,7 +17,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.validators import instance_of, one_of
+from draftsman.validators import one_of
 
 from draftsman.data.entities import inserters
 

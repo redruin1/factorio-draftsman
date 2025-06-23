@@ -15,7 +15,6 @@ from draftsman.signatures import (
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 from draftsman.data import mods
-from draftsman.warning import PureVirtualDisallowedWarning  # TODO
 
 from draftsman.data.entities import constant_combinators
 from draftsman.data import entities

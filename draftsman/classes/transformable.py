@@ -2,7 +2,7 @@
 
 from draftsman.error import RotationError, FlippingError
 from draftsman.classes.vector import Vector
-from draftsman.warning import GridAlignmentWarning, FlippingWarning
+from draftsman.warning import GridAlignmentWarning
 
 from typing import Literal
 import warnings

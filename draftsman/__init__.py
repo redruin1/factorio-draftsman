@@ -13,8 +13,18 @@ methods and classes designed to write clean, self-documenting scripts.
 `draftsman` is also well-documented, well-tested, and easy to install.
 """
 
-from draftsman._version import __version__, __version_info__
-from draftsman._factorio_version import __factorio_version__, __factorio_version_info__
+from draftsman._version import (
+    __version__ as __version__,
+    __version_info__ as __version_info__,
+)
+
+# TODO: the following should probably be removed; better to grab the value
+# dynamically from `data.mods`, as this means that you can update your entire
+# Draftsman environment halfway through your script (if desired)
+from draftsman._factorio_version import (
+    __factorio_version__ as __factorio_version__,
+    __factorio_version_info__ as __factorio_version_info__,
+)
 
 import attrs
 

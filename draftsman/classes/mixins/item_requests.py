@@ -1,22 +1,5 @@
 # item_requests.py
 
-from draftsman.classes.exportable import Exportable
-from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    BlueprintInsertPlan,
-    ItemID,
-    ItemInventoryPositions,
-    InventoryPosition,
-    uint32,
-)
-from draftsman.utils import reissue_warnings
-from draftsman.validators import instance_of
-
-import attrs
-from copy import deepcopy
-
-from typing import Literal, Optional
-
 
 # @attrs.define(slots=False)
 # class ItemRequestMixin(Exportable):

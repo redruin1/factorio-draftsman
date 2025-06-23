@@ -10,7 +10,6 @@ from draftsman.classes.mixins import (
     RequestFiltersMixin,
     InventoryMixin,
 )
-from draftsman.serialization import draftsman_converters
 
 from draftsman.data.entities import logistic_buffer_containers
 

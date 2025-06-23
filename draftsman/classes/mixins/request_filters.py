@@ -131,18 +131,18 @@ _export_fields = attrs.fields(_ExportedRequestFiltersMixin)
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     RequestFiltersMixin,
     lambda fields: {
-        None: fields.trash_not_requested.name,
+        # None: fields.trash_not_requested.name,
         "request_from_buffers": fields.request_from_buffers.name,
-        None: fields.requests_enabled.name,
+        # None: fields.requests_enabled.name,
         "request_filters": (
             _export_fields.sections,
             lambda d, _: [{"index": 1, "filters": d}],
         ),
     },
     lambda fields, converter: {
-        None: fields.trash_not_requested.name,
+        # None: fields.trash_not_requested.name,
         "request_from_buffers": fields.request_from_buffers.name,
-        None: fields.requests_enabled.name,
+        # None: fields.requests_enabled.name,
         "request_filters": (
             _export_fields.sections,
             lambda inst: converter.unstructure(inst.sections[0].filters)

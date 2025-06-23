@@ -311,7 +311,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "arithmetic_conditions",
             "first_signal",
         ): fields.first_operand.name,  # Overwrites if found
-        None: fields.first_operand_wires.name,
+        # None: fields.first_operand_wires.name,
         (
             "control_behavior",
             "arithmetic_conditions",
@@ -327,7 +327,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "arithmetic_conditions",
             "second_signal",
         ): fields.second_operand.name,  # Overwrites if found
-        None: fields.second_operand_wires.name,
+        # None: fields.second_operand_wires.name,
         (
             "control_behavior",
             "arithmetic_conditions",
@@ -347,7 +347,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             if not isinstance(inst.first_operand, int)
             else None,
         ),
-        None: fields.first_operand_wires.name,
+        # None: fields.first_operand_wires.name,
         (
             "control_behavior",
             "arithmetic_conditions",
@@ -365,7 +365,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             if not isinstance(inst.second_operand, int)
             else None,
         ),
-        None: fields.second_operand_wires.name,
+        # None: fields.second_operand_wires.name,
         (
             "control_behavior",
             "arithmetic_conditions",

@@ -122,11 +122,11 @@ class InventoryMixin(Exportable):
 
     @bar.validator
     @conditional(ValidationMode.STRICT)
-    def _bar_validator(self, _: attrs.Attribute, value: uint16):
+    def _bar_validator(self, _: attrs.Attribute, value: Optional[uint16]):
         """
         Ensure this entity has a bar that can be controlled.
         """
-        if self.inventory_bar_enabled is False:
+        if self.inventory_bar_enabled is False and value is not None:
             msg = "This entity does not have bar control"
             warnings.warn(BarWarning(msg))
 

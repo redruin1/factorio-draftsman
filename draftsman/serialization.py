@@ -2,7 +2,6 @@
 
 import attrs
 import cattrs
-from cattrs.gen._shared import find_structure_handler
 from cattrs._compat import is_bare_final
 from cattrs.fns import identity
 from cattrs.gen._lc import generate_unique_filename
@@ -458,7 +457,7 @@ def make_unstructure_function_from_schema(
             populate_invocate_tree(invocation_tree["children"][loc[0]], loc[1:], invoke)
 
     def calc_getitem(loc):
-        return "".join([f"['{l}']" for l in loc])
+        return "".join([f"['{item}']" for item in loc])
 
     for dict_loc, inst_loc in schema.items():
         # print(dict_loc, inst_loc)
@@ -549,10 +548,12 @@ def make_unstructure_function_from_schema(
             lines.append(f"  if {conditions}:")
             subloc = []
 
-            for i, l in enumerate(dict_loc):
-                subloc.append(l)
+            for i, loc in enumerate(dict_loc):
+                subloc.append(loc)
                 if i != len(dict_loc) - 1:
-                    lines.append(f"    if '{l}' not in res{calc_getitem(subloc[:-1])}:")
+                    lines.append(
+                        f"    if '{loc}' not in res{calc_getitem(subloc[:-1])}:"
+                    )
                     lines.append(f"      res{calc_getitem(subloc)} = {{}}")
                 else:
                     if user_handler:
@@ -567,11 +568,11 @@ def make_unstructure_function_from_schema(
                 lines.append(f"  if instance.{attr_name} is not None:")
                 subloc = []
 
-                for i, l in enumerate(dict_loc):
-                    subloc.append(l)
+                for i, loc in enumerate(dict_loc):
+                    subloc.append(loc)
                     if i != len(dict_loc) - 1:
                         lines.append(
-                            f"    if '{l}' not in res{calc_getitem(subloc[:-1])}:"
+                            f"    if '{loc}' not in res{calc_getitem(subloc[:-1])}:"
                         )
                         lines.append(f"      res{calc_getitem(subloc)} = {{}}")
                     else:

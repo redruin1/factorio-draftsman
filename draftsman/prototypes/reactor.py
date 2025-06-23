@@ -13,8 +13,7 @@ from draftsman.validators import instance_of
 from draftsman.data.entities import reactors
 
 import attrs
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+from typing import Optional
 
 
 @attrs.define

@@ -44,37 +44,24 @@
     }
 """
 
-from draftsman import __factorio_version_info__
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.exportable import Exportable
-from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
+from draftsman.constants import FilterMode, TileSelectionMode
 from draftsman.data import items
-from draftsman.error import DataFormatError
-from draftsman.warning import IndexWarning, UnknownEntityWarning, UnknownTileWarning
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     # EntityFilter,
     # TileFilter,
     # normalize_icons,
     uint8,
-    uint16,
     uint64,
     EntityID,
     TileID,
 )
-from draftsman.utils import encode_version, reissue_warnings
 from draftsman.validators import instance_of, try_convert
 
 import attrs
-from pydantic import (
-    ConfigDict,
-    Field,
-    ValidatorFunctionWrapHandler,
-    ValidationInfo,
-    ValidationError,
-    field_validator,
-)
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Literal, Optional
 
 
 @attrs.define

@@ -23,7 +23,7 @@ from draftsman.error import (
     IncompleteSignalError,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import encode_version, get_suggestion
+from draftsman.utils import get_suggestion
 from draftsman.validators import (
     and_,
     lt,
@@ -51,7 +51,7 @@ from typing_extensions import Annotated
 
 import attrs
 from attrs import NOTHING
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Any, Literal, Optional
 import warnings
 import weakref
 
@@ -252,7 +252,7 @@ class SignalID(Exportable):
                     return cls(name=value, type="item")
                 else:
                     return cls(name=value, type=signals.get_signal_types(value)[0])
-            except InvalidSignalError as e:
+            except InvalidSignalError:
                 msg = "Unknown signal name {}; either specify the full dictionary, or update your environment".format(
                     repr(value)
                 )
@@ -878,10 +878,10 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "index": fields.index.name,
         "name": fields.name.name,
         "count": fields.count.name,
-        None: fields.type.name,
-        None: fields.quality.name,
-        None: fields.comparator.name,
-        None: fields.max_count.name,
+        # None: fields.type.name,
+        # None: fields.quality.name,
+        # None: fields.comparator.name,
+        # None: fields.max_count.name,
     },
 )
 

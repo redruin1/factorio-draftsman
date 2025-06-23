@@ -3,7 +3,6 @@
 from draftsman.classes.collection import EntityCollection
 from draftsman.classes.entity_like import EntityLike
 from draftsman.entity import TransportBelt, UndergroundBelt, Splitter
-from draftsman.constants import Direction
 
 from typing import Union
 from typing import cast as typing_cast

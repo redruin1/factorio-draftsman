@@ -5,7 +5,6 @@
 
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import (
-    Blueprint,
     structure_blueprint_1_0_factory,
     _convert_wires_to_associations,
     _convert_schedules_to_associations,
@@ -14,14 +13,11 @@ from draftsman.classes.blueprint import (
 from draftsman.classes.collection import EntityCollection, TileCollection
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
-from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import Exportable, ValidationMode, ValidationResult
 from draftsman.classes.schedule import Schedule
-from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.transformable import Transformable
-from draftsman.classes.vector import Vector, PrimitiveVector
+from draftsman.classes.vector import Vector
 from draftsman.error import (
-    DraftsmanError,
     IncorrectBlueprintTypeError,
 )
 from draftsman.signatures import StockConnection

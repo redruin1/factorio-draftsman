@@ -1,24 +1,19 @@
 # tilelist.py
 
-import draftsman
 from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
-from draftsman.error import DataFormatError, InvalidTileError
+from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import get_mode
 
 import attrs
 from collections.abc import MutableSequence
 from copy import deepcopy
-from pydantic import ConfigDict, ValidationError
 from typing import (
-    Any,
     Callable,
     Iterator,
-    List,
-    Literal,
     Optional,
     Union,
     TYPE_CHECKING,

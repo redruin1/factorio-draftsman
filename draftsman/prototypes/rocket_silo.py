@@ -137,9 +137,9 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
     RocketSilo,
     lambda fields: {
         "auto_launch": fields.auto_launch.name,
-        None: fields.read_items_mode.name,
-        None: fields.use_transitional_requests.name,
-        None: fields.transitional_request_index.name,
+        # None: fields.read_items_mode.name,
+        # None: fields.use_transitional_requests.name,
+        # None: fields.transitional_request_index.name,
     },
 )
 

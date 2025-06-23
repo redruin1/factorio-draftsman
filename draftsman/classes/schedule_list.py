@@ -5,9 +5,7 @@ from draftsman.serialization import draftsman_converters
 from draftsman.error import DataFormatError
 
 import cattrs
-from pydantic import GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
-from typing import Any, Callable, Iterator, MutableSequence
+from typing import Callable, Iterator, MutableSequence
 
 
 class ScheduleList(MutableSequence):
@@ -83,8 +81,10 @@ class ScheduleList(MutableSequence):
 
 
 def _schedule_list_structure_factory(cls, converter: cattrs.Converter):
-    def structure_hook(l: list, t: type):
-        return ScheduleList([converter.structure(elem, Schedule) for elem in l])
+    def structure_hook(input_list: list, t: type):
+        return ScheduleList(
+            [converter.structure(elem, Schedule) for elem in input_list]
+        )
 
     return structure_hook
 

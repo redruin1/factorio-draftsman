@@ -58,7 +58,6 @@
     }
 """
 
-from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner

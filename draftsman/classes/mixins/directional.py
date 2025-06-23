@@ -5,13 +5,10 @@ from draftsman.classes.exportable import Exportable
 from draftsman.constants import (
     Direction,
     ValidationMode,
-    FOUR_WAY_DIRECTIONS,
-    EIGHT_WAY_DIRECTIONS,
-    SIXTEEN_WAY_DIRECTIONS,
 )
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
-from draftsman.validators import and_, conditional, instance_of, try_convert
+from draftsman.validators import conditional, instance_of, try_convert
 from draftsman.utils import aabb_to_dimensions, get_first
 from draftsman.warning import DirectionWarning
 
@@ -68,18 +65,12 @@ class DirectionalMixin(Exportable):
         except KeyError:
             static_collision_set = entities.collision_sets.get(name, None)
             _rotated_collision_sets[name] = {}
-            for i in SIXTEEN_WAY_DIRECTIONS:
+            for i in self.valid_directions:
                 if self.collision_set_rotated and static_collision_set is not None:
-                    closest_direction = i.to_closest_valid_direction(
-                        self.valid_directions
-                    )
-                    rotated_collision_set = static_collision_set.rotate(
-                        closest_direction
-                    )
-                    # try:
-                    #     rotated_collision_set =
-                    # except ValueError:
-                    #     rotated_collision_set = None
+                    # closest_direction = i.to_closest_valid_direction(
+                    #     self.valid_directions
+                    # )
+                    rotated_collision_set = static_collision_set.rotate(i)
                 else:
                     rotated_collision_set = static_collision_set
 
@@ -172,7 +163,9 @@ class DirectionalMixin(Exportable):
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
-        return _rotated_collision_sets.get(self.name, {}).get(self.direction, None)
+        return _rotated_collision_sets.get(self.name, {}).get(
+            self.direction.to_closest_valid_direction(self.valid_directions), None
+        )
 
     # =========================================================================
 

@@ -14,7 +14,7 @@ from draftsman.signatures import (
     SignalID,
     uint32,
 )
-from draftsman.validators import conditional, and_, instance_of
+from draftsman.validators import conditional, instance_of
 from draftsman.warning import (
     UnknownInstrumentWarning,
     UnknownNoteWarning,

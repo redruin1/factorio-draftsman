@@ -276,8 +276,8 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     EquipmentGridMixin,
     lambda fields: {
-        None: fields.enable_logistics_while_moving.name,
-        None: fields.equipment.name,
+        # None: fields.enable_logistics_while_moving.name,
+        # None: fields.equipment.name,
     },
 )
 

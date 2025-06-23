@@ -879,7 +879,7 @@ def parse_energy(energy_string: str) -> int:
     }
 
     ending = energy_string[-1]
-    if not ending in {"J", "W"}:
+    if ending not in {"J", "W"}:
         raise ValueError("'{}' missing Joule or Watts specifier".format(energy_string))
 
     multiplier = 1 / 60 if ending == "W" else 1

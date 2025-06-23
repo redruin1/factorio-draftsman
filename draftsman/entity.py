@@ -5,13 +5,8 @@ Entity alias module. Imports the base-class :py:class:`.Entity`, as well as
 all the prototypes in :py:mod:`draftsman.prototypes`.
 """
 
-from draftsman import __factorio_version_info__
-from draftsman.classes.entity import Entity
-from draftsman.constants import ValidationMode
-from draftsman.error import InvalidEntityError
-from draftsman.data.entities import of_type, raw
-
 # fmt: off
+from draftsman.classes.entity import Entity
 from draftsman.prototypes.accumulator import Accumulator, accumulators
 from draftsman.prototypes.agricultural_tower import AgriculturalTower, agricultural_towers
 from draftsman.prototypes.ammo_turret import AmmoTurret, ammo_turrets
@@ -101,7 +96,104 @@ from draftsman.prototypes.underground_pipe import UndergroundPipe, underground_p
 from draftsman.prototypes.wall import Wall, walls
 # fmt: on
 
+from draftsman.data.entities import raw
+
 from typing import Optional
+
+# fmt: off
+__all__ = [
+    "Entity",
+    "Accumulator", "accumulators",
+    "AgriculturalTower", "agricultural_towers",
+    "AmmoTurret", "ammo_turrets",
+    "ArithmeticCombinator", "arithmetic_combinators",
+    "ArtilleryTurret", "artillery_turrets",
+    "ArtilleryWagon", "artillery_wagons",
+    "AssemblingMachine", "assembling_machines",
+    "AsteroidCollector", "asteroid_collectors",
+    "Beacon", "beacons",
+    "Boiler", "boilers",
+    "BurnerGenerator", "burner_generators",
+    "Car", "cars",
+    "CargoBay", "cargo_bays",
+    "CargoLandingPad", "cargo_landing_pads",
+    "CargoWagon", "cargo_wagons",
+    "ConstantCombinator", "constant_combinators",
+    "Container", "containers",
+    "CurvedRailA", "curved_rails_a",
+    "CurvedRailB", "curved_rails_b",
+    "DeciderCombinator", "decider_combinators",
+    "DisplayPanel", "display_panels",
+    "ElectricEnergyInterface", "electric_energy_interfaces",
+    "ElectricPole", "electric_poles",
+    "ElectricTurret", "electric_turrets",
+    "ElevatedCurvedRailA", "elevated_curved_rails_a",
+    "ElevatedCurvedRailB", "elevated_curved_rails_b",
+    "ElevatedHalfDiagonalRail", "elevated_half_diagonal_rails",
+    "ElevatedStraightRail", "elevated_straight_rails",
+    "FluidTurret", "fluid_turrets",
+    "FluidWagon", "fluid_wagons",
+    "Furnace", "furnaces",
+    "FusionGenerator", "fusion_generators",
+    "FusionReactor", "fusion_reactors",
+    "Gate", "gates",
+    "Generator", "generators",
+    "HalfDiagonalRail", "half_diagonal_rails",
+    "HeatInterface", "heat_interfaces",
+    "HeatPipe", "heat_pipes",
+    "InfinityContainer", "infinity_containers",
+    "InfinityPipe", "infinity_pipes",
+    "Inserter", "inserters",
+    "Lab", "labs",
+    "Lamp", "lamps",
+    "LandMine", "land_mines",
+    "LegacyCurvedRail", "legacy_curved_rails",
+    "LegacyStraightRail", "legacy_straight_rails",
+    "LightningAttractor", "lightning_attractors",
+    "LinkedBelt", "linked_belts",
+    "LinkedContainer", "linked_containers",
+    "Loader", "loaders",
+    "Locomotive", "locomotives",
+    "LogisticActiveContainer", "logistic_active_containers",
+    "LogisticBufferContainer", "logistic_buffer_containers",
+    "LogisticPassiveContainer", "logistic_passive_containers",
+    "LogisticRequestContainer", "logistic_request_containers",
+    "LogisticStorageContainer", "logistic_storage_containers",
+    "MiningDrill", "mining_drills",
+    "OffshorePump", "offshore_pumps",
+    "Pipe", "pipes",
+    "PlayerPort", "player_ports",
+    "PowerSwitch", "power_switches",
+    "ProgrammableSpeaker", "programmable_speakers",
+    "Pump", "pumps",
+    "Radar", "radars",
+    "RailChainSignal", "rail_chain_signals",
+    "RailRamp", "rail_ramps",
+    "RailSignal", "rail_signals",
+    "RailSupport", "rail_supports",
+    "Reactor", "reactors",
+    "Roboport", "roboports",
+    "RocketSilo", "rocket_silos",
+    "SelectorCombinator", "selector_combinators",
+    "SimpleEntityWithForce", "simple_entities_with_force",
+    "SimpleEntityWithOwner", "simple_entities_with_owner",
+    "SolarPanel", "solar_panels",
+    "SpacePlatformHub", "space_platform_hubs",
+    "SpiderVehicle", "spider_vehicles",
+    "Splitter", "splitters",
+    "StorageTank", "storage_tanks",
+    "StraightRail", "straight_rails",
+    "Thruster", "thrusters",
+    "TrainStop", "train_stops",
+    "TransportBelt", "transport_belts",
+    "UndergroundBelt", "underground_belts",
+    "UndergroundPipe", "underground_pipes",
+    "Wall", "walls",
+    "get_entity_class",
+    "new_entity",
+    "new_entity_from_dict",
+]
+# fmt: on
 
 
 def get_entity_class(name: str) -> type[Entity]:

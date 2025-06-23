@@ -10,7 +10,6 @@ from draftsman.signatures import (
     QualityID,
     uint32,
 )
-from draftsman.warning import ModuleCapacityWarning, ModuleNotAllowedWarning
 
 from typing import Iterable, Optional
 

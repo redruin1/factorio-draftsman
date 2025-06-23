@@ -2,9 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import InventoryMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import InfinityInventoryFilter, uint16, uint32
 from draftsman.validators import instance_of
@@ -14,8 +11,7 @@ from draftsman.data import items
 
 import attrs
 import copy
-from pydantic import ConfigDict, Field, ValidationError
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional
 
 
 @attrs.define

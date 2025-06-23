@@ -2,14 +2,12 @@
 
 import draftsman
 from draftsman._version import __version__
-from draftsman._factorio_version import __factorio_version__
 
 from draftsman.environment.mod_list import discover_mods, display_mods, set_mods_enabled
-from draftsman.environment.mod_settings import read_mod_settings, write_mod_settings
+from draftsman.environment.mod_settings import read_mod_settings
 from draftsman.environment.update import specify_factorio_version, update_draftsman_data
 
 import argparse
-import json
 import os
 
 
@@ -37,9 +35,9 @@ def main():
     """
     # Determine where the module is installed
     draftsman_install_folder = os.path.dirname(os.path.abspath(draftsman.__file__))
-    draftsman_environment_folder = os.path.join(
-        draftsman_install_folder, "environment"
-    )  # TODO
+    # draftsman_environment_folder = os.path.join(
+    #     draftsman_install_folder, "environment"
+    # )  # TODO
 
     default_game_path = os.path.join(draftsman_install_folder, "factorio-data")
     default_mod_path = os.path.join(draftsman_install_folder, "factorio-mods")
@@ -78,12 +76,12 @@ def main():
     subparsers = parser.add_subparsers(dest="operation", help="Operation:")
 
     # `draftsman list`
-    list_command = subparsers.add_parser(
+    list_command = subparsers.add_parser(  # noqa: F841
         "list", help="Lists information about all mods in the current environment."
     )
 
     # `draftsman mod-settings [mod.setting=value, ...]`
-    mod_settings_command = subparsers.add_parser(
+    mod_settings_command = subparsers.add_parser(  # noqa: F841
         "mod-settings",
         help="Displays all custom mod settings in `mod-settings.dat`, if present.",
     )
@@ -137,7 +135,7 @@ def main():
     # )
 
     # `draftsman version [-h]`
-    version_command = subparsers.add_parser(
+    version_command = subparsers.add_parser(  # noqa: F841
         "version", help="Displays the current Draftsman version."
     )
 

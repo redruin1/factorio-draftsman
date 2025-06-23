@@ -3,7 +3,6 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
-    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
