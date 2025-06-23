@@ -132,20 +132,20 @@ class TestProgrammableSpeakerTesting:
         # Warnings
         unknown_keyword_dict = {
             "name": "programmable-speaker",
-            "position": {"x": 0.5, "y": 0.5}, 
+            "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
                 "circuit_parameters": {
                     "instrument_id": 1,
                     "note_id": 1,
                 },
-                "unused_keyword": "whatever"
-            }
+                "unused_keyword": "whatever",
+            },
         }
         with pytest.warns(UnknownKeywordWarning):
             speaker = ProgrammableSpeaker.from_dict(unknown_keyword_dict)
         speaker.extra_keys["name"] = "programmable-speaker"
         assert speaker.to_dict() == unknown_keyword_dict
-        
+
         with pytest.warns(UnknownEntityWarning):
             ProgrammableSpeaker("not a programmable speaker")
 
@@ -386,14 +386,14 @@ class TestProgrammableSpeakerTesting:
             assert speaker.to_dict() == {
                 "name": "programmable-speaker",
                 "position": {"x": 0.5, "y": 0.5},
-                "control_behavior": {"circuit_parameters": {"instrument_id": "incorrect"}},
+                "control_behavior": {
+                    "circuit_parameters": {"instrument_id": "incorrect"}
+                },
             }
 
         # Test validation with unknown programmable speaker
         with pytest.warns(UnknownEntityWarning):
-            unknown = ProgrammableSpeaker(
-                "programmable-speaker-2"
-            )
+            unknown = ProgrammableSpeaker("programmable-speaker-2")
         unknown.instrument_id = 10
         assert unknown.instrument_id == 10
 

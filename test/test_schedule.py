@@ -64,9 +64,7 @@ class TestWaitCondition:
 
         w = WaitCondition(
             "circuit",
-            condition=Condition(
-                first_signal="signal-A", comparator="<", constant=100
-            ),
+            condition=Condition(first_signal="signal-A", comparator="<", constant=100),
         )
         assert w.to_dict() == {
             "type": "circuit",
@@ -151,9 +149,7 @@ class TestWaitCondition:
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
             "circuit",
-            condition=Condition(
-                first_signal="signal-A", comparator="==", constant=100
-            ),
+            condition=Condition(first_signal="signal-A", comparator="==", constant=100),
         )
         sum1 = signal_sent & conditions
         assert isinstance(sum1, WaitConditions)
@@ -225,9 +221,7 @@ class TestWaitCondition:
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
             "circuit",
-            condition=Condition(
-                first_signal="signal-A", comparator="==", constant=100
-            ),
+            condition=Condition(first_signal="signal-A", comparator="==", constant=100),
         )
         sum1 = signal_sent | conditions
         assert isinstance(sum1, WaitConditions)

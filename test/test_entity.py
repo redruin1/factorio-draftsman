@@ -207,22 +207,25 @@ def grab_json_file(*path) -> dict:
     with open(os.path.join(*path), "r") as json_file:
         return json.load(json_file)
 
+
 def retrieve_from_path(uri: str) -> Resource:
     print(uri)
-    return Resource.from_contents(grab_json_file("factorio-blueprint-schemas", "schemas", uri))
+    return Resource.from_contents(
+        grab_json_file("factorio-blueprint-schemas", "schemas", uri)
+    )
+
+
 registry = Registry(retrieve=retrieve_from_path)
 
-versions_to_test = (
-    (1, 0, 0), 
-    (2, 0, 0)
-)
+versions_to_test = ((1, 0, 0), (2, 0, 0))
+
 
 @pytest.mark.parametrize("entity", entity_fixtures)
 class TestAllEntities:
     @pytest.mark.parametrize(
         "version",
         versions_to_test,
-        ids=[version_tuple_to_string(t) for t in versions_to_test]
+        ids=[version_tuple_to_string(t) for t in versions_to_test],
     )
     def test_output_matches_JSON_schema(
         self,
@@ -244,17 +247,20 @@ class TestAllEntities:
             )
 
         try:
-            entity_schema = grab_json_file("factorio-blueprint-schemas", "schemas", version_tuple_to_string(version), "entity", entity.type + ".json")
+            entity_schema = grab_json_file(
+                "factorio-blueprint-schemas",
+                "schemas",
+                version_tuple_to_string(version),
+                "entity",
+                entity.type + ".json",
+            )
         except FileNotFoundError:
             pytest.skip(
                 reason="No schema for '{}' on version {}".format(entity_name, version)
             )
 
         Draft202012Validator.check_schema(entity_schema)
-        validator = Draft202012Validator(
-            schema=entity_schema,
-            registry=registry
-        )
+        validator = Draft202012Validator(schema=entity_schema, registry=registry)
         # Test every `exclude_...` configuration
         for exclude_none, exclude_defaults in itertools.product(
             (True, False), (True, False)
@@ -366,7 +372,6 @@ class TestEntityBase:
         assert iron_chest.collision_mask == None
         assert (iron_chest.tile_width, iron_chest.tile_height) == (0, 0)
         assert iron_chest.inventory_bar_enabled == None
-        assert iron_chest.allowed_items == None
         assert iron_chest.get_world_bounding_box() == None
 
         with pytest.raises(DataFormatError):

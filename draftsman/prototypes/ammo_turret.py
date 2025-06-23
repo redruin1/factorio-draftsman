@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ItemRequestMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,
@@ -23,7 +22,6 @@ import attrs
 @fix_incorrect_pre_init
 @attrs.define
 class AmmoTurret(
-    ItemRequestMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,

@@ -84,10 +84,7 @@ class TrainStop(
 
     # =========================================================================
 
-    priority: LuaDouble = attrs.field(
-        default=50, 
-        validator=instance_of(LuaDouble)
-    )
+    priority: LuaDouble = attrs.field(default=50, validator=instance_of(LuaDouble))
     """
     The static priority that schedules should use to bias trains to or away from 
     this train stop. Overridden by :py:attr:`.`
@@ -173,10 +170,7 @@ class TrainStop(
 
     # =========================================================================
 
-    set_priority: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    set_priority: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not the priority of this train stop should be set via the circuit
     network. The signal used is determined by :py:attr:`.priority_signal`.
@@ -249,6 +243,6 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ("control_behavior", "read_trains_count"): fields.read_trains_count.name,
         ("control_behavior", "trains_count_signal"): fields.trains_count_signal.name,
         ("control_behavior", "set_priority"): fields.set_priority.name,
-        ("control_behavior", "priority_signal"): fields.priority_signal.name
+        ("control_behavior", "priority_signal"): fields.priority_signal.name,
     },
 )

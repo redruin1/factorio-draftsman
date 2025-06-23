@@ -6,7 +6,6 @@ from draftsman.classes.mixins import (
     ReadRailSignalMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    # EightWayDirectionalMixin,
     DirectionalMixin,
 )
 from draftsman.constants import Direction, SIXTEEN_WAY_DIRECTIONS

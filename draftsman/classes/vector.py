@@ -63,9 +63,9 @@ class Vector:
 
     # =========================================================================
 
-    @staticmethod
+    @classmethod
     def from_other(
-        other: Union["Vector", PrimitiveVector], type_cast: Callable = float
+        cls, other: Union["Vector", PrimitiveVector], type_cast: Callable = float
     ) -> "Vector":
         """
         Converts a PrimitiveVector into a :py:class:`.Vector`. Also handles the
@@ -78,12 +78,14 @@ class Vector:
 
         :returns: A new :py:class:`.Vector` with the same position as ``point``.
         """
-        if isinstance(other, Vector):
-            return other
+        if other is None:  # TODO: this shouldn't be here
+            return None
+        elif isinstance(other, Vector):
+            return cls(type_cast(other.x), type_cast(other.y))
         elif isinstance(other, (tuple, list)):
-            return Vector(type_cast(other[0]), type_cast(other[1]))
+            return cls(type_cast(other[0]), type_cast(other[1]))
         elif isinstance(other, dict):
-            return Vector(type_cast(other["x"]), type_cast(other["y"]))
+            return cls(type_cast(other["x"]), type_cast(other["y"]))
         else:
             raise DataFormatError(
                 "Could not resolve '{}' to a Vector object".format(other)
@@ -108,7 +110,7 @@ class Vector:
         :param type_cast: The data type to coerce the input variables towards.
         """
         if isinstance(other, Vector):
-            self.update(other.x, other.y)
+            self.update(type_cast(other.x), type_cast(other.y))
         elif isinstance(other, (tuple, list)):
             self.update(type_cast(other[0]), type_cast(other[1]))
         elif isinstance(other, dict):

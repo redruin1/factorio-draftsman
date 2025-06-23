@@ -4,7 +4,7 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import Exportable
 from draftsman.constants import Orientation
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import Rectangle
+from draftsman.utils import Rectangle, get_first, fix_incorrect_pre_init
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data import entities
@@ -18,6 +18,39 @@ class OrientationMixin(Exportable):
     """
     Used in trains and wagons to specify their direction.
     """
+
+    def __attrs_pre_init__(self, name=attrs.NOTHING, *args, first_call=None, **kwargs):
+        if not first_call:
+            return
+
+        name = (
+            name if name is not attrs.NOTHING else get_first(self.similar_entities)
+        )  # TODO: attr default
+        object.__setattr__(self, "name", name)
+        object.__setattr__(
+            self, "orientation", kwargs.get("orientation", Orientation.NORTH)
+        )  # TODO: attr default
+        self._collision_set = self.get_default_collision_set()
+
+        # super().__attrs_pre_init__()
+
+    # =========================================================================
+
+    @property
+    def tile_width(self) -> int:
+        # Tile width/height of orientable entities (vehicles/trains) is a little
+        # less meaningful when the have non-cardinal orientations, and is
+        # generally unintuitive. Therefore we override the tile width/height
+        # to zero and have the `tile_position` be identical to `position`.
+        return 0
+
+    # =========================================================================
+
+    @property
+    def tile_height(self) -> int:
+        return 0
+
+    # =========================================================================
 
     def _set_orientation(self, attr: attrs.Attribute, value):
         # Convert

@@ -3,7 +3,6 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ArtilleryAutoTargetMixin,
-    ItemRequestMixin,
     ReadAmmoMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,
@@ -20,7 +19,6 @@ import attrs
 
 @attrs.define
 class ArtilleryTurret(
-    ItemRequestMixin,
     ArtilleryAutoTargetMixin,
     ReadAmmoMixin,
     LogisticConditionMixin,

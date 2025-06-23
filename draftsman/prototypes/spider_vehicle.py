@@ -5,7 +5,6 @@ from draftsman.classes.mixins import (
     VehicleMixin,
     EquipmentGridMixin,
     RequestFiltersMixin,
-    ItemRequestMixin,
     ColorMixin,
     EnergySourceMixin,
     OrientationMixin,
@@ -25,7 +24,6 @@ class SpiderVehicle(
     VehicleMixin,
     EquipmentGridMixin,
     RequestFiltersMixin,
-    ItemRequestMixin,
     ColorMixin,
     EnergySourceMixin,
     # OrientationMixin, # Don't think there actually is an orientation here

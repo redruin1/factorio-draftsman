@@ -3,7 +3,12 @@
 from draftsman.constants import Inventory, SiloReadMode
 from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import BlueprintInsertPlan, ItemID, ItemInventoryPositions, InventoryPosition
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
+)
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
@@ -73,7 +78,7 @@ class TestRocketSilo:
                             stack=1,
                         ),
                     ]
-                )
+                ),
             )
         ]
 

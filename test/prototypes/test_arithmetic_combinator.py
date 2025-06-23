@@ -90,6 +90,7 @@ class TestArithmeticCombinator:
                     "second_signal_networks": {"green": True, "red": True},
                 }
             },
+            "items": [],
             "tags": {},
         }
         assert combinator.to_dict(exclude_none=False, exclude_defaults=False) == {
@@ -111,6 +112,7 @@ class TestArithmeticCombinator:
                     "output_signal": None,
                 }
             },
+            "items": [],
             "tags": {},
         }
 
@@ -223,18 +225,12 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_conditions()
         combinator.first_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        assert combinator.first_operand == SignalID(
-            name="signal-each", type="virtual"
-        )
-        assert combinator.output_signal == SignalID(
-            name="signal-each", type="virtual"
-        )
+        assert combinator.first_operand == SignalID(name="signal-each", type="virtual")
+        assert combinator.output_signal == SignalID(name="signal-each", type="virtual")
 
         # Setting to the same signal should issue no warnings
         combinator.first_operand = "signal-each"
-        assert combinator.first_operand == SignalID(
-            name="signal-each", type="virtual"
-        )
+        assert combinator.first_operand == SignalID(name="signal-each", type="virtual")
 
         # Setting to non special should issue a warning, but not remove the output
         # TODO: reimplement
@@ -295,18 +291,12 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_conditions()
         combinator.second_operand = "signal-each"
         combinator.output_signal = "signal-each"
-        assert combinator.second_operand == SignalID(
-            name="signal-each", type="virtual"
-        )
-        assert combinator.output_signal == SignalID(
-            name="signal-each", type="virtual"
-        )
+        assert combinator.second_operand == SignalID(name="signal-each", type="virtual")
+        assert combinator.output_signal == SignalID(name="signal-each", type="virtual")
 
         # Setting to the same signal should issue no warnings
         combinator.second_operand = "signal-each"
-        assert combinator.second_operand == SignalID(
-            name="signal-each", type="virtual"
-        )
+        assert combinator.second_operand == SignalID(name="signal-each", type="virtual")
 
         # Setting to non special should issue a warning, but not remove the output
         # TODO: reimplement

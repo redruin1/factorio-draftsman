@@ -11,5 +11,5 @@ try:
         _data = pickle.load(inp)
         raw: dict[str, dict] = _data[0]
 
-except FileNotFoundError: # pragma: no coverage
+except FileNotFoundError:  # pragma: no coverage
     raw: dict[str, dict] = {}

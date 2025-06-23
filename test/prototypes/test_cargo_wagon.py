@@ -64,13 +64,11 @@ def valid_cargo_wagon():
 class TestCargoWagon:
     def test_constructor_init(self):
         cargo_wagon = CargoWagon(
-            "cargo-wagon",
-            tile_position=[0, 0],
-            inventory={"bar": 0}
+            "cargo-wagon", tile_position=[0, 0], inventory={"bar": 0}
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
             "inventory": {"bar": 0},
         }
 
@@ -80,8 +78,8 @@ class TestCargoWagon:
             orientation=0.75,
             inventory={
                 "bar": 10,
-                "filters": ["transport-belt", "transport-belt", "transport-belt"]   
-            }
+                "filters": ["transport-belt", "transport-belt", "transport-belt"],
+            },
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -107,8 +105,8 @@ class TestCargoWagon:
                     {"index": 0, "name": "transport-belt"},
                     {"index": 1, "name": "transport-belt"},
                     {"index": 2, "name": "transport-belt"},
-                ]   
-            }
+                ],
+            },
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -146,7 +144,7 @@ class TestCargoWagon:
         assert wagon.orientation == Orientation.NORTH
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
         }
 
         wagon.orientation = 0.0
@@ -154,7 +152,7 @@ class TestCargoWagon:
         assert wagon.collision_set.shapes[0].angle == 0
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
         }
 
         # Unknown wagon
@@ -176,7 +174,7 @@ class TestCargoWagon:
     def test_inventory_size(self):
         wagon = CargoWagon("cargo-wagon")
         assert wagon.inventory.size == 40
-        
+
         assert wagon.prototype.get("quality_affects_inventory_size", False) is False
         wagon.quality = "legendary"
         assert wagon.inventory.size == 40
@@ -189,13 +187,12 @@ class TestCargoWagon:
             wagon = CargoWagon("unknown wagon")
         assert wagon.inventory.size is None
 
-
     def test_set_inventory_filters(self):
         wagon = CargoWagon("cargo-wagon")
         assert wagon.inventory.filters == []
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
         }
 
         # Shorthand format
@@ -207,7 +204,7 @@ class TestCargoWagon:
         ]
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
             "inventory": {
                 "filters": [
                     {"index": 1, "name": "iron-ore"},
@@ -305,14 +302,14 @@ class TestCargoWagon:
         assert wagon.inventory.bar == None
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
         }
 
         wagon.inventory.bar = 10
         assert wagon.inventory.bar == 10
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
             "inventory": {"bar": 10},
         }
 
@@ -330,7 +327,7 @@ class TestCargoWagon:
             assert wagon.inventory.bar == "incorrect"
             assert wagon.to_dict() == {
                 "name": "cargo-wagon",
-                "position": {"x": 1.0, "y": 2.5},
+                "position": {"x": 0.0, "y": 0.0},
                 "inventory": {"bar": "incorrect"},
             }
 
@@ -339,10 +336,7 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory={
-                "bar": 1,
-                "filters": [{"index": 1, "name": "transport-belt"}]   
-            }
+            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
         )
 
         assert wagon1.mergable_with(wagon2)
@@ -360,10 +354,7 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory={
-                "bar": 1,
-                "filters": [{"index": 1, "name": "transport-belt"}]   
-            }
+            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
         )
 
         wagon1.merge(wagon2)

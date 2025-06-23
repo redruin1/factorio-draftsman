@@ -18,207 +18,207 @@ from copy import deepcopy
 from typing import Literal, Optional
 
 
-@attrs.define(slots=False)
-class ItemRequestMixin(Exportable):
-    """
-    Enables an entity to request items during its construction.
+# @attrs.define(slots=False)
+# class ItemRequestMixin(Exportable):
+#     """
+#     Enables an entity to request items during its construction.
 
-    Note that this is *not* for Logistics requests such as requester and buffer
-    chests (that's what
-    :py:class:`~.mixins.request_filters.RequestFiltersMixin` is for).
-    Instead this is for specifying additional construction components, things
-    like speed modules for beacons or productivity modules for assembling
-    machines.
-    """
+#     Note that this is *not* for Logistics requests such as requester and buffer
+#     chests (that's what
+#     :py:class:`~.mixins.request_filters.RequestFiltersMixin` is for).
+#     Instead this is for specifying additional construction components, things
+#     like speed modules for beacons or productivity modules for assembling
+#     machines.
+#     """
 
-    @property  # TODO abstractproperty
-    def allowed_items(self) -> Optional[set[str]]:
-        pass  # return set()
+#     @property  # TODO abstractproperty
+#     def allowed_items(self) -> Optional[set[str]]:
+#         pass  # return set()
 
-    # =========================================================================
+#     # =========================================================================
 
-    def _items_converter(value):
-        if value is None:
-            return []
-        elif isinstance(value, list):
-            res = [None] * len(value)
-            for i, elem in enumerate(value):
-                res[i] = BlueprintInsertPlan.converter(elem)
-            return res
-        else:
-            return value
+#     def _items_converter(value):
+#         if value is None:
+#             return []
+#         elif isinstance(value, list):
+#             res = [None] * len(value)
+#             for i, elem in enumerate(value):
+#                 res[i] = BlueprintInsertPlan.converter(elem)
+#             return res
+#         else:
+#             return value
 
-    item_requests: list[BlueprintInsertPlan] = attrs.field(
-        factory=list,
-        converter=_items_converter,
-        validator=instance_of(list[BlueprintInsertPlan]),
-    )
-    """
-    A list of items to deliver to the entity. Not to be confused with logistics
-    requests (which are persistent), item requests are only fulfilled once when
-    the entity is first constructed. Most notably, modules are requested to
-    entities with this field.
+#     item_requests: list[BlueprintInsertPlan] = attrs.field(
+#         factory=list,
+#         converter=_items_converter,
+#         validator=instance_of(list[BlueprintInsertPlan]),
+#     )
+#     """
+#     A list of items to deliver to the entity. Not to be confused with logistics
+#     requests (which are persistent), item requests are only fulfilled once when
+#     the entity is first constructed. Most notably, modules are requested to
+#     entities with this field.
 
-    For user-friendly ways to modify this array, see TODO and TODO.
-    """
+#     For user-friendly ways to modify this array, see TODO and TODO.
+#     """
 
-    # =========================================================================
+#     # =========================================================================
 
-    @reissue_warnings
-    def set_item_request(
-        self,
-        item: str,
-        count: Optional[uint32] = None,
-        quality: Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "any"
-        ] = "normal",
-        inventory: uint32 = 0,
-        slot: Optional[uint32] = None,
-    ):
-        """
-        Requests an amount of an item. Removes the item request if ``count`` is
-        set to ``0`` or ``None``. Manages ``module_slots_occupied``.
+#     @reissue_warnings
+#     def set_item_request(
+#         self,
+#         item: str,
+#         count: Optional[uint32] = None,
+#         quality: Literal[
+#             "normal", "uncommon", "rare", "epic", "legendary", "any"
+#         ] = "normal",
+#         inventory: uint32 = 0,
+#         slot: Optional[uint32] = None,
+#     ):
+#         """
+#         Requests an amount of an item. Removes the item request if ``count`` is
+#         set to ``0`` or ``None``. Manages ``module_slots_occupied``.
 
-        Raises a number of warnings if the requested item is mismatched for the
-        type of entity you're requesting items for. For example,
-        :py:class:`.ModuleLimitationWarning` will be raised when requesting an
-        item that is not a module to a Beacon entity.
+#         Raises a number of warnings if the requested item is mismatched for the
+#         type of entity you're requesting items for. For example,
+#         :py:class:`.ModuleLimitationWarning` will be raised when requesting an
+#         item that is not a module to a Beacon entity.
 
-        :param item: The string name of the requested item.
-        :param quality: The quality of the requested item.
-        :param count: The desired amount of that item. If omitted a count of
-            ``0`` will be assumed.
-        :param inventory: The particular inventory to request this item to. If
-            omitted it will default to the first (typically only) inventory.
-        :param slot: The particular slot in the inventory to place the item. The
-            next open slot will be chosen automatically if omitted.
+#         :param item: The string name of the requested item.
+#         :param quality: The quality of the requested item.
+#         :param count: The desired amount of that item. If omitted a count of
+#             ``0`` will be assumed.
+#         :param inventory: The particular inventory to request this item to. If
+#             omitted it will default to the first (typically only) inventory.
+#         :param slot: The particular slot in the inventory to place the item. The
+#             next open slot will be chosen automatically if omitted.
 
-        :exception TypeError: If ``item`` is anything other than a ``str``, or
-            if ``count`` is anything other than an ``int`` or ``None``.
-        :exception InvalidItemError: If ``item`` is not a valid item name.
-        :exception ValueError: If ``count`` is less than zero.
-        """
-        if count is None:
-            count = 0
+#         :exception TypeError: If ``item`` is anything other than a ``str``, or
+#             if ``count`` is anything other than an ``int`` or ``None``.
+#         :exception InvalidItemError: If ``item`` is not a valid item name.
+#         :exception ValueError: If ``count`` is less than zero.
+#         """
+#         if count is None:
+#             count = 0
 
-        if count == 0:
-            # TODO: better removal across multiple categories
-            # (Might be better to abstract this into `remove_item_request` or similar)
-            self.item_requests = [
-                i_item for i_item in self.item_requests if i_item.id.name != item
-            ]
-        else:
-            # Try to find an existing entry for `item` with the same quality
-            existing_spec = next(
-                filter(
-                    lambda x: x.id.name == item and x.id.quality == quality,
-                    self.item_requests,
-                ),
-                None,
-            )
-            if existing_spec is None:
-                # If not, add a new item entry
-                if slot is None:
-                    slot = len(self.item_requests)
-                self.item_requests += [
-                    BlueprintInsertPlan(
-                        id=ItemID(name=item, quality=quality),
-                        items=ItemInventoryPositions(
-                            in_inventory=[
-                                InventoryPosition(
-                                    inventory=inventory,
-                                    stack=slot,
-                                    count=count,
-                                )
-                            ]
-                        ),
-                    )
-                ]
-            else:
-                # Try to find an existing entry at the same slot in the same inventory
-                # TODO: what if there's an entry, but slot is None? Do we just pick
-                # the first valid entry?
-                if slot is None:
-                    slot = 0
-                existing_slot = next(
-                    filter(
-                        lambda x: x.inventory == inventory and x.stack == slot,
-                        existing_spec.items.in_inventory,
-                    ),
-                    None,
-                )
-                if existing_slot is None:
-                    # If not, make a new one
-                    existing_spec.items.in_inventory.append(
-                        InventoryPosition(inventory=inventory, stack=slot, count=count)
-                    )
-                else:
-                    # If so, simply modify the count
-                    existing_slot.count = count
+#         if count == 0:
+#             # TODO: better removal across multiple categories
+#             # (Might be better to abstract this into `remove_item_request` or similar)
+#             self.item_requests = [
+#                 i_item for i_item in self.item_requests if i_item.id.name != item
+#             ]
+#         else:
+#             # Try to find an existing entry for `item` with the same quality
+#             existing_spec = next(
+#                 filter(
+#                     lambda x: x.id.name == item and x.id.quality == quality,
+#                     self.item_requests,
+#                 ),
+#                 None,
+#             )
+#             if existing_spec is None:
+#                 # If not, add a new item entry
+#                 if slot is None:
+#                     slot = len(self.item_requests)
+#                 self.item_requests += [
+#                     BlueprintInsertPlan(
+#                         id=ItemID(name=item, quality=quality),
+#                         items=ItemInventoryPositions(
+#                             in_inventory=[
+#                                 InventoryPosition(
+#                                     inventory=inventory,
+#                                     stack=slot,
+#                                     count=count,
+#                                 )
+#                             ]
+#                         ),
+#                     )
+#                 ]
+#             else:
+#                 # Try to find an existing entry at the same slot in the same inventory
+#                 # TODO: what if there's an entry, but slot is None? Do we just pick
+#                 # the first valid entry?
+#                 if slot is None:
+#                     slot = 0
+#                 existing_slot = next(
+#                     filter(
+#                         lambda x: x.inventory == inventory and x.stack == slot,
+#                         existing_spec.items.in_inventory,
+#                     ),
+#                     None,
+#                 )
+#                 if existing_slot is None:
+#                     # If not, make a new one
+#                     existing_spec.items.in_inventory.append(
+#                         InventoryPosition(inventory=inventory, stack=slot, count=count)
+#                     )
+#                 else:
+#                     # If so, simply modify the count
+#                     existing_slot.count = count
 
-    # =========================================================================
+#     # =========================================================================
 
-    def merge(self, other: "ItemRequestMixin"):
-        super().merge(other)
+#     def merge(self, other: "ItemRequestMixin"):
+#         super().merge(other)
 
-        self.item_requests = deepcopy(other.item_requests)
-
-
-# TODO: versioning
+#         self.item_requests = deepcopy(other.item_requests)
 
 
-@attrs.define
-class _ExportItemRequest1_0:
-    item_requests: dict = attrs.field(factory=dict)
+# # TODO: versioning
 
 
-_export_fields = attrs.fields(_ExportItemRequest1_0)
+# @attrs.define
+# class _ExportItemRequest1_0:
+#     item_requests: dict = attrs.field(factory=dict)
 
-draftsman_converters.get_version((1, 0)).add_hook_fns(
-    ItemRequestMixin,
-    lambda fields: {
-        "items": (
-            _export_fields.item_requests,
-            lambda d, _: [
-                {
-                    "id": {"name": k, "quality": "normal"},
-                    "items": {
-                        "in_inventory": [
-                            # TODO: this is actually very hard to do properly
-                            # Modules for example should be split up between
-                            # multiple stacks, but fuel requests for locos
-                            # shouldn't; how to discern?
-                            # Should also check to see how Factorio itself
-                            # migrates it, if at all
-                            {
-                                # "Default" inventory; works for most cases
-                                "inventory": 1,
-                                "stack": 0,
-                                "count": v,
-                            }
-                        ]
-                    },
-                }
-                for k, v in d.items()
-            ],
-        )
-    },
-    lambda fields, converter: {
-        "items": (
-            _export_fields.item_requests,
-            lambda inst: {
-                item_request.id.name: sum(
-                    loc.count for loc in item_request.items.in_inventory
-                )
-                for item_request in inst.item_requests
-                # Skip non-normal item requests since they are unresolvable pre 2.0
-                if item_request.id.quality == "normal"
-            },
-        )
-    },
-)
 
-draftsman_converters.get_version((2, 0)).add_hook_fns(
-    ItemRequestMixin,
-    lambda fields: {"items": fields.item_requests.name},
-)
+# _export_fields = attrs.fields(_ExportItemRequest1_0)
+
+# draftsman_converters.get_version((1, 0)).add_hook_fns(
+#     ItemRequestMixin,
+#     lambda fields: {
+#         "items": (
+#             _export_fields.item_requests,
+#             lambda d, _: [
+#                 {
+#                     "id": {"name": k, "quality": "normal"},
+#                     "items": {
+#                         "in_inventory": [
+#                             # TODO: this is actually very hard to do properly
+#                             # Modules for example should be split up between
+#                             # multiple stacks, but fuel requests for locos
+#                             # shouldn't; how to discern?
+#                             # Should also check to see how Factorio itself
+#                             # migrates it, if at all
+#                             {
+#                                 # "Default" inventory; works for most cases
+#                                 "inventory": 1,
+#                                 "stack": 0,
+#                                 "count": v,
+#                             }
+#                         ]
+#                     },
+#                 }
+#                 for k, v in d.items()
+#             ],
+#         )
+#     },
+#     lambda fields, converter: {
+#         "items": (
+#             _export_fields.item_requests,
+#             lambda inst: {
+#                 item_request.id.name: sum(
+#                     loc.count for loc in item_request.items.in_inventory
+#                 )
+#                 for item_request in inst.item_requests
+#                 # Skip non-normal item requests since they are unresolvable pre 2.0
+#                 if item_request.id.quality == "normal"
+#             },
+#         )
+#     },
+# )
+
+# draftsman_converters.get_version((2, 0)).add_hook_fns(
+#     ItemRequestMixin,
+#     lambda fields: {"items": fields.item_requests.name},
+# )

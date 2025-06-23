@@ -58,16 +58,13 @@ setup(
     },
     include_package_data = True,
     install_requires = [
-        "pydantic >= 2.3.0",
+        "attrs >= 25.3.0",
+        "cattrs >= 24.1.3",
         "lupa >= 2.0",
         "GitPython >= 3.1.43",
         "typing",
         "typing_extensions; python_version < '3.8'",
         "thefuzz",
-        # "importlib-resources; python_version < '3.7'",
-        # "enum34; python_version < '3.4'",
-        # "future; python_version < '3.0'",
-        # "unittest2 >= 1.1.0; python_version < '3.0'",
     ],
     entry_points = {
         'console_scripts': [

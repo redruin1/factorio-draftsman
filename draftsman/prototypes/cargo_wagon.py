@@ -3,7 +3,6 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     EquipmentGridMixin,
-    ItemRequestMixin,
     OrientationMixin,
 )
 from draftsman.serialization import draftsman_converters
@@ -36,7 +35,6 @@ def _cargo_wagon_inventory_size(entity: "CargoWagon") -> Optional[uint16]:
 @attrs.define
 class CargoWagon(
     EquipmentGridMixin,
-    ItemRequestMixin,
     OrientationMixin,
     Entity,
 ):

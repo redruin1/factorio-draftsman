@@ -136,7 +136,9 @@ class TileList(Exportable, MutableSequence):
             raise TypeError("Entry in TileList must be a Tile")
 
         tile.validate(mode=get_mode()).reissue_all()
-        self.spatial_map.validate_insert(tile, merge=merge) # TODO: remove this and integrate it into `add()`
+        self.spatial_map.validate_insert(
+            tile, merge=merge
+        )  # TODO: remove this and integrate it into `add()`
 
         # Add to tile map
         tile = self.spatial_map.add(tile, merge=merge)

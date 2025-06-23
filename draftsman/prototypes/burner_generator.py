@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ItemRequestMixin,
     EnergySourceMixin,
     DirectionalMixin,
 )
@@ -15,7 +14,7 @@ import attrs
 
 @fix_incorrect_pre_init
 @attrs.define
-class BurnerGenerator(ItemRequestMixin, EnergySourceMixin, DirectionalMixin, Entity):
+class BurnerGenerator(EnergySourceMixin, DirectionalMixin, Entity):
     """
     A electrical generator that only requires fuel in order to function.
     """

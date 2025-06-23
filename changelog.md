@@ -35,6 +35,7 @@
         assert draftsman.validators.get_mode() is ValidationMode.STRICT
         ```
 * Calling a objects `validate()` method is now guaranteed to also validate all of its children
+* Removed `RequestItemsMixin` and implemented it directly in `Entity` (since all entities can request construction items)
 
 
 ## 2.0.3

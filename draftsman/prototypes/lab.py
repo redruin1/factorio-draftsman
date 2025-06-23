@@ -1,7 +1,7 @@
 # lab.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import ModulesMixin, ItemRequestMixin, EnergySourceMixin
+from draftsman.classes.mixins import ModulesMixin, EnergySourceMixin
 from draftsman.constants import Inventory
 from draftsman.signatures import ModuleID, QualityID
 
@@ -13,7 +13,7 @@ from typing import Iterable, Optional
 
 
 @attrs.define
-class Lab(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
+class Lab(ModulesMixin, EnergySourceMixin, Entity):
     """
     An entity that consumes items and produces research.
     """

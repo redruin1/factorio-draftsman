@@ -41,10 +41,12 @@ class TestElectricEnergyInterface:
             "name": "electric-energy-interface",
             "quality": "normal",
             "position": {"x": 1.0, "y": 1.0},
+            "direction": 0,
             "mirror": False,
             "buffer_size": 10000000000.0,
             "power_production": 8333333333.0,
             "power_usage": 0.0,
+            "items": [],
             "tags": {},
         }
 

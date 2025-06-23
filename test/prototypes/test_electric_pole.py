@@ -75,10 +75,9 @@ class TestElectricPole:
         with pytest.warns(UnknownEntityWarning):
             pole = ElectricPole("unknown pole")
         assert pole.circuit_wire_max_distance is None
-        
+
         pole.quality = "legendary"
         assert pole.circuit_wire_max_distance is None
-
 
     def test_mergable_with(self):
         group = Group()

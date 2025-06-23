@@ -52,4 +52,44 @@ class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
 
     # =========================================================================
 
+    @property
+    def static_tile_width(self) -> int:
+        return 4
+
+    # =========================================================================
+
+    @property
+    def static_tile_height(self) -> int:
+        return 8
+
+    # =========================================================================
+
+    @property
+    def tile_width(self) -> int:
+        if self.direction in {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHEAST,
+        }:
+            return 4
+        else:
+            return 8
+
+    # =========================================================================
+
+    @property
+    def tile_height(self) -> int:
+        if self.direction in {
+            Direction.NORTH,
+            Direction.NORTHEAST,
+            Direction.SOUTH,
+            Direction.SOUTHEAST,
+        }:
+            return 8
+        else:
+            return 4
+
+    # =========================================================================
+
     __hash__ = Entity.__hash__

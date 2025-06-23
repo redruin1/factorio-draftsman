@@ -5,7 +5,6 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     InputIngredientsMixin,
     ModulesMixin,
-    ItemRequestMixin,
     CraftingMachineMixin,
     LogisticConditionMixin,
     CircuitConditionMixin,
@@ -32,7 +31,6 @@ from typing import Iterable, Optional
 class AssemblingMachine(
     InputIngredientsMixin,
     ModulesMixin,
-    ItemRequestMixin,
     CraftingMachineMixin,
     LogisticConditionMixin,
     CircuitConditionMixin,

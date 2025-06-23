@@ -264,15 +264,9 @@ class TestBlueprint:
         # Multiple Icon
         blueprint.icons = ("signal-A", "signal-B", "signal-C")
         assert blueprint.icons == [
-            Icon(
-                **{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
-            ),
-            Icon(
-                **{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}
-            ),
-            Icon(
-                **{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}
-            ),
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
         ]
 
         # Raw signal dicts:
@@ -288,9 +282,7 @@ class TestBlueprint:
                 {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
             ]
             assert blueprint.icons == [
-                Icon(
-                    **{"signal": {"name": "some-signal", "type": "item"}, "index": 1}
-                )
+                Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
             ]
 
         # None
@@ -477,9 +469,7 @@ class TestBlueprint:
         # Warn unknown entity (list)
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             # No warning
-            blueprint.entities = [
-                new_entity("undocumented-entity")
-            ]
+            blueprint.entities = [new_entity("undocumented-entity")]
         with pytest.warns(UnknownEntityWarning):
             blueprint.entities = [new_entity("undocumented-entity")]
             blueprint.entities.validate().reissue_all()  # Warning
@@ -487,9 +477,7 @@ class TestBlueprint:
         # Warn unknown entity (individual)
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             # No warning
-            blueprint.entities[-1] = new_entity(
-                "undocumented-entity"
-            )  
+            blueprint.entities[-1] = new_entity("undocumented-entity")
         with pytest.warns(UnknownEntityWarning):
             blueprint.entities[-1] = new_entity("undocumented-entity")
             blueprint.entities.validate().reissue_all()  # Warning
@@ -587,7 +575,7 @@ class TestBlueprint:
             "entities": [
                 {
                     "name": "locomotive",
-                    "position": {"x": 1.0, "y": 3.0},
+                    "position": {"x": 0.0, "y": 0.0},
                     "entity_number": 1,
                 }
             ],
@@ -655,19 +643,12 @@ class TestBlueprint:
         blueprint = Blueprint()
         blueprint.entities.append("rail-chain-signal")
         with pytest.warns(OverlappingObjectsWarning):
-            blueprint.entities.append("straight-rail", direction=Direction.SOUTHEAST)
+            blueprint.entities.append("straight-rail", direction=Direction.NORTHWEST)
 
         # Test broadphase positive, but narrowphase negative
         blueprint = Blueprint()
         blueprint.entities.append("legacy-curved-rail")
         blueprint.entities.append("wooden-chest", tile_position=(0, 4))
-
-        # Unreasonable size
-        blueprint = Blueprint()
-        blueprint.entities.append("inserter")
-        # TODO: reimplement
-        # with pytest.raises(UnreasonablySizedBlueprintError):
-        #     blueprint.entities.append("inserter", tile_position=(0, 100000))
 
     def test_change_entity_id(self):
         blueprint = Blueprint()

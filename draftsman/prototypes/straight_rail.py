@@ -44,6 +44,18 @@ class StraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     # =========================================================================
 
     @property
+    def tile_width(self) -> int:
+        return 2
+
+    # =========================================================================
+
+    @property
+    def tile_height(self) -> int:
+        return 2
+
+    # =========================================================================
+
+    @property
     def valid_directions(self) -> set[Direction]:
         return EIGHT_WAY_DIRECTIONS
 

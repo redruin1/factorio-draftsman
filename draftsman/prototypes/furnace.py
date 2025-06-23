@@ -4,7 +4,6 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     InputIngredientsMixin,
     ModulesMixin,
-    ItemRequestMixin,
     CraftingMachineMixin,
     EnergySourceMixin,
     LogisticConditionMixin,
@@ -30,7 +29,6 @@ from typing import Iterable, Optional
 class Furnace(
     InputIngredientsMixin,
     ModulesMixin,
-    ItemRequestMixin,
     CraftingMachineMixin,
     EnergySourceMixin,
     LogisticConditionMixin,

@@ -26,7 +26,7 @@ def valid_train_stop():
 class TestTrainStop:
     def test_constructor_init(self):
         train_stop = TrainStop(
-            "train-stop", tile_position=[0, 0], direction=Direction.EAST
+            "train-stop", tile_position=(0, 0), direction=Direction.EAST
         )
         assert train_stop.to_dict() == {
             "name": "train-stop",
@@ -113,12 +113,10 @@ class TestTrainStop:
         # Incorrect direction
         with pytest.warns(DirectionWarning):
             stop = TrainStop("train-stop", direction=Direction.NORTHWEST)
-        
+
         # Ignore incorrect direction
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
-            stop = TrainStop(
-                "train-stop", direction=Direction.NORTHWEST
-            )
+            stop = TrainStop("train-stop", direction=Direction.NORTHWEST)
             assert stop.direction is Direction.NORTHWEST
             stop.direction = Direction.SOUTHSOUTHEAST
             assert stop.direction is Direction.SOUTHSOUTHEAST

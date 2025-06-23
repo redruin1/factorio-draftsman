@@ -6,9 +6,7 @@ from draftsman.entity import (
     logistic_active_containers,
     Container,
 )
-from draftsman.signatures import (
-    BlueprintInsertPlan
-)
+from draftsman.signatures import BlueprintInsertPlan
 from draftsman.error import InvalidEntityError, DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -136,11 +134,8 @@ class TestActiveContainer:
             },
             "connections": {},
             "control_behavior": {
-                "circuit_condition": {
-                    "comparator": "<",
-                    "constant": 0
-                },
-                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
+                "circuit_condition": {"comparator": "<", "constant": 0},
+                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS,
             },
             "tags": {},
         }
@@ -157,11 +152,8 @@ class TestActiveContainer:
             },
             "connections": {},
             "control_behavior": {
-                "circuit_condition": {
-                    "comparator": "<",
-                    "constant": 0
-                },
-                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
+                "circuit_condition": {"comparator": "<", "constant": 0},
+                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS,
             },
             "tags": {},
         }
@@ -193,11 +185,8 @@ class TestActiveContainer:
                 }
             ],
             "control_behavior": {
-                "circuit_condition": {
-                    "comparator": "<",
-                    "constant": 0
-                },
-                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS
+                "circuit_condition": {"comparator": "<", "constant": 0},
+                "circuit_mode_of_operation": LogisticModeOfOperation.SEND_CONTENTS,
             },
             "tags": {},
         }
@@ -226,11 +215,8 @@ class TestActiveContainer:
                 }
             ],
             "control_behavior": {
-                "circuit_condition": {
-                    "comparator": "<",
-                    "constant": 0
-                },
-                "circuit_mode_of_operation": LogisticModeOfOperation.NONE
+                "circuit_condition": {"comparator": "<", "constant": 0},
+                "circuit_mode_of_operation": LogisticModeOfOperation.NONE,
             },
             "tags": {},
         }

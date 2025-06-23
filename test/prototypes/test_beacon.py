@@ -7,7 +7,7 @@ from draftsman.signatures import (
     BlueprintInsertPlan,
     ItemID,
     ItemInventoryPositions,
-    InventoryPosition
+    InventoryPosition,
 )
 from draftsman.warning import (
     ModuleCapacityWarning,
@@ -61,7 +61,7 @@ class TestBeacon:
                             stack=0,
                         ),
                     ]
-                )
+                ),
             )
         ]
 
@@ -78,7 +78,7 @@ class TestBeacon:
                             stack=0,
                         ),
                     ]
-                )
+                ),
             ),
             BlueprintInsertPlan(
                 id=ItemID(name="productivity-module-3", quality="legendary"),
@@ -89,8 +89,8 @@ class TestBeacon:
                             stack=1,
                         ),
                     ]
-                )
-            )
+                ),
+            ),
         ]
 
     # def test_set_item_request(self):

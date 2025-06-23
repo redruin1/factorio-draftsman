@@ -392,4 +392,6 @@ class TestEntityList:
     def test_validate(self):
         blueprint = Blueprint()
 
-        assert blueprint.entities.validate(mode=ValidationMode.DISABLED) == ValidationResult([], [])
+        assert blueprint.entities.validate(
+            mode=ValidationMode.DISABLED
+        ) == ValidationResult([], [])

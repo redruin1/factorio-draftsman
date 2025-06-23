@@ -178,7 +178,9 @@ class TestTileList:
         blueprint = Blueprint()
 
         # No validation case
-        assert blueprint.tiles.validate(mode=ValidationMode.DISABLED) == ValidationResult([], [])
+        assert blueprint.tiles.validate(
+            mode=ValidationMode.DISABLED
+        ) == ValidationResult([], [])
 
         # Test adding busted tile
         with draftsman.validators.set_mode(ValidationMode.DISABLED):

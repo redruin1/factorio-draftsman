@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ItemRequestMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,
@@ -22,7 +21,6 @@ import attrs
 @fix_incorrect_pre_init
 @attrs.define
 class FluidTurret(
-    ItemRequestMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,

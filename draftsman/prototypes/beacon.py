@@ -3,7 +3,6 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ModulesMixin,
-    ItemRequestMixin,
     EnergySourceMixin,
 )
 from draftsman.constants import Inventory
@@ -16,7 +15,7 @@ from typing import Iterable
 
 
 @attrs.define
-class Beacon(ModulesMixin, ItemRequestMixin, EnergySourceMixin, Entity):
+class Beacon(ModulesMixin, EnergySourceMixin, Entity):
     """
     An entity designed to apply module effects to other machines in its radius.
     """

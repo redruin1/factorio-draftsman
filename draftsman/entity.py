@@ -232,10 +232,7 @@ def new_entity(name: str, **kwargs) -> Entity:
     return get_entity_class(name)(name, **kwargs)
 
 
-def new_entity_from_dict(
-    d: dict,
-    version: Optional[tuple[int]] = None
-) -> Entity:
+def new_entity_from_dict(d: dict, version: Optional[tuple[int]] = None) -> Entity:
     """
     Factory function similar to :py:meth:`.new_entity`, but using `Entity.from_dict()`
     as opposed to the entity's constructor. Allows you to generically construct

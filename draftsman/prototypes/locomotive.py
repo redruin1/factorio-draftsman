@@ -3,12 +3,12 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     EquipmentGridMixin,
-    ItemRequestMixin,
     ColorMixin,
     EnergySourceMixin,
     OrientationMixin,
 )
 from draftsman.signatures import Color
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import locomotives
@@ -17,10 +17,10 @@ import attrs
 from typing import Optional
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class Locomotive(
     EquipmentGridMixin,
-    ItemRequestMixin,
     ColorMixin,
     EnergySourceMixin,
     OrientationMixin,

@@ -172,15 +172,9 @@ class TestUpgradePlanner:
         # Multiple known
         upgrade_planner.icons = ["signal-A", "signal-B", "signal-C"]
         assert upgrade_planner.icons == [
-            Icon(
-                **{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
-            ),
-            Icon(
-                **{"index": 2, "signal": {"name": "signal-B", "type": "virtual"}}
-            ),
-            Icon(
-                **{"index": 3, "signal": {"name": "signal-C", "type": "virtual"}}
-            ),
+            Icon(**{"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}),
+            Icon(**{"index": 2, "signal": {"name": "signal-B", "type": "virtual"}}),
+            Icon(**{"index": 3, "signal": {"name": "signal-C", "type": "virtual"}}),
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",

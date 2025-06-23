@@ -7,7 +7,11 @@ from draftsman.prototypes.selector_combinator import (
     selector_combinators,
 )
 from draftsman.signatures import SignalID, SignalIDBase, QualityFilter
-from draftsman.warning import PureVirtualDisallowedWarning, UnknownEntityWarning, UnknownSignalWarning
+from draftsman.warning import (
+    PureVirtualDisallowedWarning,
+    UnknownEntityWarning,
+    UnknownSignalWarning,
+)
 
 import pytest
 
@@ -61,14 +65,13 @@ def test_signal_id_base():
     selector = SelectorCombinator("selector-combinator")
     with pytest.raises(IncompleteSignalError):
         selector.set_mode_quality_transfer(
-            select_quality_from_signal=True,
-            source_signal="error signal"
+            select_quality_from_signal=True, source_signal="error signal"
         )
 
     with pytest.warns(UnknownSignalWarning):
         selector.set_mode_quality_transfer(
             select_quality_from_signal=True,
-            source_signal={"name": "error signal", "type": "virtual"}
+            source_signal={"name": "error signal", "type": "virtual"},
         )
 
 
@@ -170,6 +173,4 @@ def test_set_mode():
     }
 
     with pytest.warns(PureVirtualDisallowedWarning):
-        selector.set_mode_quality_transfer(
-            destination_signal="signal-everything"
-        )
+        selector.set_mode_quality_transfer(destination_signal="signal-everything")

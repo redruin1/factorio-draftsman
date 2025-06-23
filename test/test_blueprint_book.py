@@ -254,9 +254,7 @@ class TestBlueprintBook:
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
         blueprint_book.label_color = (0.5, 0.1, 0.5)
-        assert blueprint_book.label_color == Color(
-            **{"r": 0.5, "g": 0.1, "b": 0.5}
-        )
+        assert blueprint_book.label_color == Color(**{"r": 0.5, "g": 0.1, "b": 0.5})
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -304,15 +302,9 @@ class TestBlueprintBook:
         # Multiple Icons
         blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
         assert blueprint_book.icons == [
-            Icon(
-                **{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}
-            ),
-            Icon(
-                **{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}
-            ),
-            Icon(
-                **{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}
-            ),
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
         ]
 
         # Raw signal dicts

@@ -993,7 +993,7 @@ def get_suggestion(name, choices, n=3, cutoff=60):
         # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))
 
 
-def fix_incorrect_pre_init(cls): # pragma: no coverage
+def fix_incorrect_pre_init(cls):  # pragma: no coverage
     """
     Attrs erroneously passes default values to `__attrs_pre_init__` even when
     given values during init. We add a sentinel value to the pre-init call so
@@ -1011,7 +1011,7 @@ def fix_incorrect_pre_init(cls): # pragma: no coverage
     return cls
 
 
-def attrs_reuse(attribute: attr.Attribute, **field_kwargs): # pragma: no coverage
+def attrs_reuse(attribute: attr.Attribute, **field_kwargs):  # pragma: no coverage
     """
     Takes a frozen attribute and returns a _CountingAttr object for inheritance
     purposes.

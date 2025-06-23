@@ -217,7 +217,13 @@ class TestAssemblingMachine:
 
     def test_allowed_effects(self):
         machine = AssemblingMachine("assembling-machine-3")
-        assert machine.allowed_effects == {'pollution', 'productivity', 'speed', 'consumption', 'quality'}
+        assert machine.allowed_effects == {
+            "pollution",
+            "productivity",
+            "speed",
+            "consumption",
+            "quality",
+        }
 
         with pytest.warns(UnknownEntityWarning):
             machine = AssemblingMachine("unknown-machine")
@@ -246,14 +252,13 @@ class TestAssemblingMachine:
                         InventoryPosition(
                             inventory=Inventory.assembling_machine_modules,
                             stack=3,
-                        )
+                        ),
                     ]
-                )
+                ),
             )
         ]
 
         # TODO: warn if exceeds module slots
-
 
     # def test_set_item_request(self): # TODO: reimplement
     #     machine = AssemblingMachine("assembling-machine-3")

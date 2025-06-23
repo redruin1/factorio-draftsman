@@ -19,7 +19,7 @@ import copy
 from typing import Any, List, Optional
 from typing_extensions import Self
 import warnings
-import pprint # TODO: find something better
+import pprint  # TODO: find something better
 
 
 class ValidationResult:
@@ -68,7 +68,9 @@ class ValidationResult:
         return self
 
     def __str__(self):  # pragma: no coverage
-        return pprint.pformat({"error_list": self.error_list, "warning_list": self.warning_list}, indent=4)
+        return pprint.pformat(
+            {"error_list": self.error_list, "warning_list": self.warning_list}, indent=4
+        )
 
     def __repr__(self):  # pragma: no coverage
         return "ValidationResult{{errors={}, warnings={}}}".format(
@@ -191,8 +193,7 @@ class Exportable:
         """Warns the user if the ``extra_keys`` dict is populated."""
         if value:
             msg = "'{}' object has had the following unrecognized keys:\n{}".format(
-                type(self).__name__,
-                pprint.pformat(value)
+                type(self).__name__, pprint.pformat(value)
             )
             warnings.warn(UnknownKeywordWarning(msg))
 
@@ -257,12 +258,12 @@ class Exportable:
         version: Optional[tuple[int, ...]] = None,
     ) -> Self:
         """
-        Attempts to construct a new instance of this class from a Python 
+        Attempts to construct a new instance of this class from a Python
         dictionary in JSON format.
 
         :param d: The dictionary to interpret.
         :param version: The Factorio version that the input data is compliant
-            with. If omitted, Draftsman will default to the version of the 
+            with. If omitted, Draftsman will default to the version of the
             current environment.
         """
         if version is None:

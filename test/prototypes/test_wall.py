@@ -332,6 +332,8 @@ class TestWall:
                 "circuit_read_sensor": True,
                 "output_signal": {"name": "signal-B", "type": "virtual"},
             },
+            "direction": 0,
+            "items": {},
             "tags": {"some": "stuff"},
         }
         d_2_0 = {
@@ -357,12 +359,16 @@ class TestWall:
                     "type": "virtual",
                 },
             },
+            "direction": 0,
+            "items": [],
             "tags": {"some": "stuff"},
         }
         # Load 1.0 dict
         wall = Wall.from_dict(d_1_0, version=(1, 0))
         assert wall.extra_keys is None
         # Output should be equivalent
+        print(wall.position)
+        print(wall.tile_position)
         assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
         # Should be able to output a 2.0 dict
         assert wall.to_dict(version=(2, 0), exclude_defaults=False) == d_2_0
@@ -519,9 +525,7 @@ class TestWall:
 
         # Unknown dict
         wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-        assert wall.output_signal == SignalID(
-            name="unknown-signal", type="virtual"
-        )
+        assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         wall.output_signal = DataFormatError
@@ -554,9 +558,7 @@ class TestWall:
 
         # Unknown dict
         wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-        assert wall.output_signal == SignalID(
-            name="unknown-signal", type="virtual"
-        )
+        assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
@@ -591,9 +593,7 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == SignalID(
-                name="unknown-signal", type="virtual"
-            )
+            assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
@@ -628,9 +628,7 @@ class TestWall:
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-            assert wall.output_signal == SignalID(
-                name="unknown-signal", type="virtual"
-            )
+            assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         with pytest.raises(DataFormatError):

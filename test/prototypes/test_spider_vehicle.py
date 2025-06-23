@@ -99,8 +99,8 @@ def test_constructor():
             "sections": [],
             "trash_not_requested": False,
         },
-        'ammo_inventory': {'filters': []},
-        'trunk_inventory': {'filters': []},
+        "ammo_inventory": {"filters": []},
+        "trunk_inventory": {"filters": []},
         "tags": {},
     }
 
@@ -133,6 +133,7 @@ def test_inventory_sizes():
     assert spidertron.ammo_inventory.size is None
     assert spidertron.trunk_inventory.size is None
 
+
 def test_equipment_grid():
     """
     Test the read-only equipment grid attribute matches the expected values and
@@ -154,6 +155,7 @@ def test_equipment_grid():
     assert spidertron.equipment_grid.width == 15
     assert spidertron.equipment_grid.height == 11
     assert spidertron.equipment_grid.locked is False
+
 
 def test_equipment():
     """

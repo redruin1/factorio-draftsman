@@ -34,7 +34,7 @@ class TestLegacyCurvedRail:
         )
         assert curved_rail.to_dict() == {
             "name": "legacy-curved-rail",
-            "position": {"x": 4.0, "y": 1.0},
+            "position": {"x": 4.0, "y": 2.0},
             "direction": Direction.NORTHWEST,
         }
 

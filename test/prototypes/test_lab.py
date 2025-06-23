@@ -77,7 +77,13 @@ class TestLab:
 
     def test_allowed_effects(self):
         lab = Lab("lab")
-        assert lab.allowed_effects == {"speed", "pollution", "productivity", "quality", "consumption"}
+        assert lab.allowed_effects == {
+            "speed",
+            "pollution",
+            "productivity",
+            "quality",
+            "consumption",
+        }
 
     def test_request_modules(self):
         lab = Lab("lab")
@@ -94,9 +100,9 @@ class TestLab:
                         InventoryPosition(
                             inventory=Inventory.lab_modules,
                             stack=1,
-                        )
+                        ),
                     ]
-                )
+                ),
             )
         ]
 

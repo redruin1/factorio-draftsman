@@ -54,7 +54,7 @@ class TestAsteroidCollector:
                 {"index": 2, "name": "metallic-asteroid-chunk"},
             ],
         }
-        
+
         # Assert no issues
         collector.validate(mode=ValidationMode.PEDANTIC).reissue_all()
 

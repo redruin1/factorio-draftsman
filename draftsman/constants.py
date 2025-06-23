@@ -102,12 +102,18 @@ class Direction(IntEnum):
         """
         return Direction((self.value - (4 if not eight_way else 2)) % 16)
 
-    def to_4_way(self) -> "Direction":
+    def to_closest_valid_direction(self, valid_directions) -> "Direction":
         """
-        Floor this direction to the closest 4-way direction below its current
-        value.
+        Floor this direction to the closest valid direction. ``valid_directions``
+        must be exactly one of the constants ``FOUR_WAY_DIRECTIONS``,
+        ``EIGHT_WAY_DIRECTIONS``, or ``SIXTEEN_WAY_DIRECTIONS``.
         """
-        return Direction(int(self / 4) * 4)
+        if valid_directions is FOUR_WAY_DIRECTIONS:
+            return Direction((round(self.value / 4) * 4) % 16)
+        elif valid_directions is EIGHT_WAY_DIRECTIONS:
+            return Direction((math.floor(self.value / 2) * 2) % 16)
+        else:  # valid_directions is SIXTEEN_WAY_DIRECTIONS:
+            return self
 
     def to_orientation(self) -> "Orientation":
         """
@@ -871,10 +877,10 @@ class ValidationMode(Enum):
         take place, meaning that all values will still attempt to be coerced to
         their internal form whenever possible.
     * ``MINIMUM``
-        The minimum amount of validation needed in order to validate that the 
-        structure of the object conforms to what Factorio expects. Importing an 
-        object that has been validated with this mode is not guaranteed to 
-        succeed, as while the object might be structurally correct, the data 
+        The minimum amount of validation needed in order to validate that the
+        structure of the object conforms to what Factorio expects. Importing an
+        object that has been validated with this mode is not guaranteed to
+        succeed, as while the object might be structurally correct, the data
         inside of it might still be malformed.
     * ``STRICT``
         The default mode. Includes all of the errors from ``MINIMUM``,

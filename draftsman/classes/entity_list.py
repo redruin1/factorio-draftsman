@@ -164,10 +164,10 @@ class EntityList(Exportable, MutableSequence):
 
     @utils.reissue_warnings
     def extend(
-        self, 
-        entities: list[Union[str, EntityLike]], 
-        copy: bool=True, 
-        merge: bool=False
+        self,
+        entities: list[Union[str, EntityLike]],
+        copy: bool = True,
+        merge: bool = False,
     ) -> None:
         """
         Extends this list with the list provided. Computationally the same

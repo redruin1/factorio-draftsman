@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ItemRequestMixin,
     CircuitConnectableMixin,
     InventoryMixin,
 )
@@ -13,7 +12,7 @@ import attrs
 
 
 @attrs.define
-class Container(InventoryMixin, ItemRequestMixin, CircuitConnectableMixin, Entity):
+class Container(InventoryMixin, CircuitConnectableMixin, Entity):
     """
     An entity that holds items.
     """

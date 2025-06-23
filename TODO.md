@@ -1,5 +1,7 @@
 # TODO
 
+### Fix what line warnings point to
+
 ### Make all entities directional / request items
 This seems to be the default behavior per [https://lua-api.factorio.com/latest/concepts/BlueprintEntity.html](https://lua-api.factorio.com/latest/concepts/BlueprintEntity.html)
 

@@ -3,15 +3,16 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ModulesMixin,
-    ItemRequestMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RecipeMixin,
     EnergySourceMixin,
+    DirectionalMixin,
 )
 from draftsman.constants import Inventory, SiloReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ModuleID, QualityID, RecipeID, uint32
+from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
@@ -20,14 +21,15 @@ import attrs
 from typing import Iterable, Optional
 
 
+@fix_incorrect_pre_init
 @attrs.define
 class RocketSilo(
     ModulesMixin,
-    ItemRequestMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     RecipeMixin,
     EnergySourceMixin,
+    DirectionalMixin,
     Entity,
 ):
     """

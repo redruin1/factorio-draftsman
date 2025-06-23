@@ -1,9 +1,9 @@
 # electric_energy_interface.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import EnergySourceMixin
+from draftsman.classes.mixins import EnergySourceMixin, DirectionalMixin
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import parse_energy
+from draftsman.utils import parse_energy, fix_incorrect_pre_init
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import electric_energy_interfaces
@@ -13,8 +13,9 @@ import attrs
 from typing import Optional
 
 
+@fix_incorrect_pre_init
 @attrs.define
-class ElectricEnergyInterface(EnergySourceMixin, Entity):
+class ElectricEnergyInterface(EnergySourceMixin, DirectionalMixin, Entity):
     """
     An entity that interfaces with an electrical grid.
     """

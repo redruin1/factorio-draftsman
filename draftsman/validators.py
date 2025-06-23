@@ -43,7 +43,7 @@ def set_mode(mode: ValidationMode):
         import draftsman.validators
 
         draftsman.validators.set_mode(ValidationMode.PEDANTIC)
-        
+
         assert draftsman.validators.get_mode() is ValidationMode.PEDANTIC
 
     Or set the validation level only for a specific block of code:
@@ -91,7 +91,7 @@ def conditional(severity):
             error_list: Optional[list] = None,
             warning_list: Optional[list] = None,
             **kwargs,
-        ):
+        ):  # pragma: no coverage
             """Validator wrapper for ``@classvalidator``."""
             mode = mode if mode is not None else _validation_mode
             if mode < severity:
@@ -235,14 +235,10 @@ class _ArgsAreValidator:
         self.cls = cls
 
     @conditional(ValidationMode.MINIMUM)
-    def __call__(
-        self, _inst: "Exportable", _attr: attrs.Attribute, value: list
-    ):
+    def __call__(self, _inst: "Exportable", _attr: attrs.Attribute, value: list):
         for i, v in enumerate(value):
             if not isinstance(v, self.cls):
-                name = (
-                    self.cls if isinstance(self.cls, tuple) else self.cls.__name__
-                )
+                name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
                 msg = "Element {} in list ({}) is not an instance of {}".format(
                     i, repr(v), name
                 )
@@ -259,7 +255,7 @@ def instance_of(cls: type):
             if u is type(None):  # schizo
                 vs.append(is_none)
             else:
-                vs.append(instance_of(u)) # Optional annotateds
+                vs.append(instance_of(u))  # Optional annotateds
         return _OrValidator(tuple(vs))
     elif get_origin(cls) is list:
         return _AndValidator(

@@ -2,7 +2,13 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import Exportable
-from draftsman.constants import Direction, ValidationMode, FOUR_WAY_DIRECTIONS
+from draftsman.constants import (
+    Direction,
+    ValidationMode,
+    FOUR_WAY_DIRECTIONS,
+    EIGHT_WAY_DIRECTIONS,
+    SIXTEEN_WAY_DIRECTIONS,
+)
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import and_, conditional, instance_of, try_convert
@@ -28,18 +34,18 @@ _rotated_collision_sets: dict[str, list[CollisionSet]] = {}
 @attrs.define(slots=False)
 class DirectionalMixin(Exportable):
     """
-    Allows the Entity to be rotated in the 4 cardinal directions. Sets the
-    ``rotatable`` attribute to ``True``.
+    Permits this entity to be able to specify its :py:attr:`.direction`
+    attribute, a discrete rotation value. Exactly how many directions an entity
+    can occupy (no-rotation, 4-way, 8-way, 16-way) is determined via it's
+    :py:attr:`~.Entity.flags`.
+
+    All entities are directional, except for vehicle/rolling stock entities,
+    which instead have an ``orientation``.
 
     .. seealso::
 
-        :py:class:`~.mixins.eight_way_directional.EightWayDirectionalMixin`
+        :py:class:`~.OrientationMixin`
     """
-
-    # TODO: all entities are likely directional; whether or not direction has
-    # an effect is likely based on prototype["flags"]["not-rotatable"]
-    # Plus, this also indicates what level of rotation directions this entity
-    # supports via "building-direction-8-way" and "building-direction-16-way"
 
     def __attrs_pre_init__(self, name=attrs.NOTHING, first_call=None, **kwargs):
         # Make sure this is the first time calling pre-init (bugfix until attrs
@@ -48,31 +54,56 @@ class DirectionalMixin(Exportable):
             return
 
         # Call parent pre-init
-        super().__attrs_pre_init__()
+        # super().__attrs_pre_init__()
         # name = kwargs.get("name", get_first(self.similar_entities))
         name = name if name is not attrs.NOTHING else get_first(self.similar_entities)
-        # print(name)
+        object.__setattr__(self, "name", name)
 
         # We generate collision sets on an as-needed basis for each unique
         # entity that is instantiated
         # Automatically generate a set of rotated collision sets for every
         # orientation
-        if self.collision_set_rotated:
-            try:
-                _rotated_collision_sets[name]
-            except KeyError:
-                # Automatically generate a set of rotated collision sets for every
-                # orientation
-                # TODO: would probably be better to do this in env.py, but how?
-                known_collision_set = entities.collision_sets.get(name, None)
-                if known_collision_set:
-                    _rotated_collision_sets[name] = {}
-                    for i in self.valid_directions:
-                        _rotated_collision_sets[name][i] = known_collision_set.rotate(i)
+        try:
+            _rotated_collision_sets[name]
+        except KeyError:
+            static_collision_set = entities.collision_sets.get(name, None)
+            _rotated_collision_sets[name] = {}
+            for i in SIXTEEN_WAY_DIRECTIONS:
+                if self.collision_set_rotated and static_collision_set is not None:
+                    closest_direction = i.to_closest_valid_direction(
+                        self.valid_directions
+                    )
+                    rotated_collision_set = static_collision_set.rotate(
+                        closest_direction
+                    )
+                    # try:
+                    #     rotated_collision_set =
+                    # except ValueError:
+                    #     rotated_collision_set = None
                 else:
-                    _rotated_collision_sets[name] = {}
-                    for i in self.valid_directions:
-                        _rotated_collision_sets[name][i] = None
+                    rotated_collision_set = static_collision_set
+
+                _rotated_collision_sets[name][i] = rotated_collision_set
+
+            # if self.collision_set_rotated:
+            #     # Automatically generate a set of rotated collision sets for every
+            #     # orientation
+            #     # TODO: would probably be better to do this in env.py, but how?
+            #     static_collision_set = entities.collision_sets.get(name, None)
+            #     if static_collision_set:
+            #         _rotated_collision_sets[name] = {}
+            #         for i in self.valid_directions:
+            #             _rotated_collision_sets[name][i] = static_collision_set.rotate(i)
+            #     else:
+            #         _rotated_collision_sets[name] = {}
+            #         for i in self.valid_directions:
+            #             _rotated_collision_sets[name][i] = None
+            # else:
+            #     # populate the `_rotated_collision_sets` dict, put have all entries
+            #     # point to the same item so we don't use too much memory
+            #     _rotated_collision_sets[name] = static_collision_set
+            #     # for i in self.valid_directions:
+            #     #     _rotated_collision_sets[name][i] = known_collision_set
 
         # The default position function uses `tile_width`/`tile_height`, which
         # use `collision_set`, which for rotatable entities is derived from the
@@ -89,7 +120,17 @@ class DirectionalMixin(Exportable):
 
     @property
     def rotatable(self) -> bool:
-        return True
+        try:
+            # If the base prototype has a concept of direction, whether or not
+            # this particular entity can rotate is determined by the
+            # "not-rotatable" flag
+            return "not-rotatable" not in self.flags
+        except TypeError:
+            # In the unknown case, take the flexible option and assume that the
+            # entity may enable direction
+            return True
+
+    # =========================================================================
 
     @property
     def collision_set_rotated(self) -> bool:
@@ -99,37 +140,46 @@ class DirectionalMixin(Exportable):
         directions they can exist as but reuse the same collision set for all of
         them. Not exported; read only.
         """
-        return True
+        return self.rotatable and not self.square
 
-    @property
-    def square(self) -> bool:
-        """
-        Whether or not the tile width of this entity matches it's tile height.
-        Not exported; read only.
-        """
-        return self.tile_width == self.tile_height
+    # =========================================================================
 
-    @property
-    def valid_directions(self) -> set[Direction]:
-        """
-        A set containing all directions that this entity can face. Not exported;
-        read only.
-        """
-        return FOUR_WAY_DIRECTIONS
+    # @property
+    # def valid_directions(self) -> set[Direction]:
+    #     """
+    #     A set containing all directions that this entity can face. Not exported;
+    #     read only.
+    #     """
+    #     """
+    #     A set containing all directions that this entity can face. Not exported;
+    #     read only.
+    #     """
+    #     if not self.rotatable:
+    #         return {Direction.NORTH}
+    #     try:
+    #         if "building-direction-8-way" in self.flags:
+    #             return EIGHT_WAY_DIRECTIONS
+    #         elif "building-direction-16-way" in self.flags:
+    #             return SIXTEEN_WAY_DIRECTIONS
+    #         else:
+    #             return FOUR_WAY_DIRECTIONS
+    #     except TypeError:
+    #         # In the unknown case, assume that the entity could occupy any valid
+    #         # direction
+    #         return SIXTEEN_WAY_DIRECTIONS
+
+    # =========================================================================
 
     @property
     def collision_set(self) -> Optional[CollisionSet]:
-        try:
-            return _rotated_collision_sets.get(self.name, {}).get(
-                self.direction.to_4_way(), None
-            )
-        except AttributeError:
-            return None
+        return _rotated_collision_sets.get(self.name, {}).get(self.direction, None)
+
+    # =========================================================================
 
     @property  # Cache?
     def tile_width(self) -> int:
         if "tile_width" in self.prototype and "tile_height" in self.prototype:
-            if self.direction in {Direction.EAST, Direction.WEST}:
+            if self.direction in {Direction.EAST, Direction.WEST}:  # TODO: more generic
                 return self.prototype["tile_height"]
             else:
                 return self.prototype["tile_width"]
@@ -138,10 +188,12 @@ class DirectionalMixin(Exportable):
                 self.collision_set.get_bounding_box() if self.collision_set else None
             )[0]
 
+    # =========================================================================
+
     @property  # Cache?
     def tile_height(self) -> int:
         if "tile_width" in self.prototype and "tile_height" in self.prototype:
-            if self.direction in {Direction.EAST, Direction.WEST}:
+            if self.direction in {Direction.EAST, Direction.WEST}:  # TODO: more generic
                 return self.prototype["tile_width"]
             else:
                 return self.prototype["tile_height"]
@@ -193,7 +245,7 @@ class DirectionalMixin(Exportable):
     @conditional(ValidationMode.STRICT)
     def _direction_validator(
         self,
-        _: attrs.Attribute,
+        _attr: attrs.Attribute,
         value: Direction,
     ):
         """
@@ -201,12 +253,8 @@ class DirectionalMixin(Exportable):
         """
         if value not in self.valid_directions:
             # TODO: should we convert it for the user, or let it be wrong?
-            msg = (
-                "Direction '{}' is disallowed for '{}' entities; only the following directions are permitted:\n\t{}".format(
-                    value.name,
-                    type(self).__name__,
-                    self.valid_directions
-                )
+            msg = "Direction '{}' is disallowed for '{}' entities; only the following directions are permitted:\n\t{}".format(
+                value.name, type(self).__name__, self.valid_directions
             )
             warnings.warn(DirectionWarning(msg))
 

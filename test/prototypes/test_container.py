@@ -38,9 +38,7 @@ def valid_container():
                 id="iron-ore",
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.chest, stack=0, count=50
-                        )
+                        InventoryPosition(inventory=Inventory.chest, stack=0, count=50)
                     ]
                 ),
             )
@@ -132,7 +130,7 @@ class TestContainer:
 
         # But no warning since inventory size is unknown
         assert container.size is None
-        container.bar = 100 # Nothing
+        container.bar = 100  # Nothing
 
     def test_set_item_request(self):
         container = Container("wooden-chest")
@@ -144,12 +142,8 @@ class TestContainer:
                 id=ItemID(name="iron-plate"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.chest, stack=0, count=50
-                        ),
-                        InventoryPosition(
-                            inventory=Inventory.chest, stack=3, count=50
-                        ),
+                        InventoryPosition(inventory=Inventory.chest, stack=0, count=50),
+                        InventoryPosition(inventory=Inventory.chest, stack=3, count=50),
                     ]
                 ),
             )
@@ -163,12 +157,8 @@ class TestContainer:
                 id=ItemID(name="iron-plate"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.chest, stack=0, count=50
-                        ),
-                        InventoryPosition(
-                            inventory=Inventory.chest, stack=3, count=50
-                        ),
+                        InventoryPosition(inventory=Inventory.chest, stack=0, count=50),
+                        InventoryPosition(inventory=Inventory.chest, stack=3, count=50),
                     ]
                 ),
             ),
@@ -176,9 +166,7 @@ class TestContainer:
                 id=ItemID(name="iron-ore"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.chest, stack=0, count=50
-                        )
+                        InventoryPosition(inventory=Inventory.chest, stack=0, count=50)
                     ]
                 ),
             ),

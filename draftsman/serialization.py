@@ -21,110 +21,110 @@ MASTER_CONVERTER_OMIT_NONE_DEFAULTS = cattrs.Converter(omit_if_default=True)
 
 
 # @MASTER_CONVERTER.register_structure_hook_factory(attrs.has)
-def regular_structure_factory(cls, converter):
-    def resolve_location(sd, location):
-        """
-        Try and grab a nested key from a `location` tuple, and return the value
-        if found.
-        """
-        while len(location) > 1:
-            sd = sd[location[0]]
-            location = location[1:]
-        return sd[location[0]]
+# def regular_structure_factory(cls, converter):
+#     def resolve_location(sd, location):
+#         """
+#         Try and grab a nested key from a `location` tuple, and return the value
+#         if found.
+#         """
+#         while len(location) > 1:
+#             sd = sd[location[0]]
+#             location = location[1:]
+#         return sd[location[0]]
 
-    def structure_hook(d, _):
-        res = {}
-        for attr in attrs.fields(cls):
-            attr: attrs.Attribute
-            # print(attr)
-            if not attr.init:
-                continue
-            location = attr.metadata.get("location", (attr.name,))
-            if location is None:
-                continue
-            # sd = d
-            # while len(location) > 1:
-            #     sd = sd[location[0]]
-            #     location = location[1:]
-            # print(sd)
-            # Try getting the attribute from the input dict; If it fails, it's
-            # either a default or an error which will be caught later
-            try:
-                value = resolve_location(d, location)
-            except (KeyError, TypeError):
-                continue
-            # If the input object has its own special structuring hook, use that
-            handler = find_structure_handler(attr, attr.type, converter)
-            if handler is not None:
-                res[attr.name] = handler(value, attr.type)
-            else:
-                res[attr.name] = value
-        return cls(**res)
+#     def structure_hook(d, _):
+#         res = {}
+#         for attr in attrs.fields(cls):
+#             attr: attrs.Attribute
+#             # print(attr)
+#             if not attr.init:
+#                 continue
+#             location = attr.metadata.get("location", (attr.name,))
+#             if location is None:
+#                 continue
+#             # sd = d
+#             # while len(location) > 1:
+#             #     sd = sd[location[0]]
+#             #     location = location[1:]
+#             # print(sd)
+#             # Try getting the attribute from the input dict; If it fails, it's
+#             # either a default or an error which will be caught later
+#             try:
+#                 value = resolve_location(d, location)
+#             except (KeyError, TypeError):
+#                 continue
+#             # If the input object has its own special structuring hook, use that
+#             handler = find_structure_handler(attr, attr.type, converter)
+#             if handler is not None:
+#                 res[attr.name] = handler(value, attr.type)
+#             else:
+#                 res[attr.name] = value
+#         return cls(**res)
 
-    return structure_hook
-
-
-MASTER_CONVERTER.register_structure_hook_factory(attrs.has, regular_structure_factory)
+#     return structure_hook
 
 
-@MASTER_CONVERTER.register_unstructure_hook_factory(attrs.has)
-def regular_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
-    def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
-        res = {}
-        for attr in attrs.fields(type(inst)):
-            attr: attrs.Attribute
-            cattrs_hook = converter.get_unstructure_hook(attr.type)
-            value = getattr(inst, attr.name)
-            unstructured_value = cattrs_hook(value)
-            if not attr.metadata.get("omit", False):
-                location = attr.metadata.get("location", (attr.name,))
-                r = res
-                for i, loc in enumerate(location):
-                    # print(i, loc)
-                    # print(res)
-                    if i < len(location) - 1:
-                        if loc not in r:
-                            r[loc] = {}
-                        r = r[loc]
-                    else:
-                        r[loc] = unstructured_value
-                        break
-                # res[attr.name] = unstructured_value
-        return res
-
-    return unstructure_hook
+# MASTER_CONVERTER.register_structure_hook_factory(attrs.has, regular_structure_factory)
 
 
-@MASTER_CONVERTER_OMIT_NONE.register_unstructure_hook_factory(attrs.has)
-def omit_none_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
-    def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
-        res = {}
-        for attr in attrs.fields(type(inst)):
-            attr: attrs.Attribute
-            cattrs_hook = converter.get_unstructure_hook(attr.type)
-            value = getattr(inst, attr.name)
-            unstructured_value = cattrs_hook(value)
-            if unstructured_value is not None and not attr.metadata.get("omit", False):
-                location = attr.metadata.get("location", (attr.name,))
-                r = res
-                for i, loc in enumerate(location):
-                    # print(i, loc)
-                    # print(res)
-                    if i < len(location) - 1:
-                        if loc not in r:
-                            r[loc] = {}
-                        r = r[loc]
-                    else:
-                        r[loc] = unstructured_value
-                        break
-                # res[attr.name] = unstructured_value
-        return res
+# @MASTER_CONVERTER.register_unstructure_hook_factory(attrs.has)
+# def regular_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
+#     def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
+#         res = {}
+#         for attr in attrs.fields(type(inst)):
+#             attr: attrs.Attribute
+#             cattrs_hook = converter.get_unstructure_hook(attr.type)
+#             value = getattr(inst, attr.name)
+#             unstructured_value = cattrs_hook(value)
+#             if not attr.metadata.get("omit", False):
+#                 location = attr.metadata.get("location", (attr.name,))
+#                 r = res
+#                 for i, loc in enumerate(location):
+#                     # print(i, loc)
+#                     # print(res)
+#                     if i < len(location) - 1:
+#                         if loc not in r:
+#                             r[loc] = {}
+#                         r = r[loc]
+#                     else:
+#                         r[loc] = unstructured_value
+#                         break
+#                 # res[attr.name] = unstructured_value
+#         return res
 
-    return unstructure_hook
+#     return unstructure_hook
+
+
+# @MASTER_CONVERTER_OMIT_NONE.register_unstructure_hook_factory(attrs.has)
+# def omit_none_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
+#     def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
+#         res = {}
+#         for attr in attrs.fields(type(inst)):
+#             attr: attrs.Attribute
+#             cattrs_hook = converter.get_unstructure_hook(attr.type)
+#             value = getattr(inst, attr.name)
+#             unstructured_value = cattrs_hook(value)
+#             if unstructured_value is not None and not attr.metadata.get("omit", False):
+#                 location = attr.metadata.get("location", (attr.name,))
+#                 r = res
+#                 for i, loc in enumerate(location):
+#                     # print(i, loc)
+#                     # print(res)
+#                     if i < len(location) - 1:
+#                         if loc not in r:
+#                             r[loc] = {}
+#                         r = r[loc]
+#                     else:
+#                         r[loc] = unstructured_value
+#                         break
+#                 # res[attr.name] = unstructured_value
+#         return res
+
+#     return unstructure_hook
 
 
 def is_default(self: attrs.AttrsInstance, attribute: attrs.Attribute, value: Any):
-    if isinstance(attribute.default, attrs.Factory):
+    if isinstance(attribute.default, attrs.Factory):  # pragma: no coverage
         if attribute.default.takes_self:
             return value == attribute.default.factory(self)
         else:
@@ -133,35 +133,35 @@ def is_default(self: attrs.AttrsInstance, attribute: attrs.Attribute, value: Any
         return attribute.default == value
 
 
-@MASTER_CONVERTER_OMIT_DEFAULTS.register_unstructure_hook_factory(attrs.has)
-def omit_default_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
-    def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
-        res = {}
-        for attr in attrs.fields(type(inst)):
-            attr: attrs.Attribute
-            cattrs_hook = converter.get_unstructure_hook(attr.type)
-            value = getattr(inst, attr.name)
-            unstructured_value = cattrs_hook(value)
-            if not (
-                is_default(inst, attr, value)
-                and not attr.metadata.get("omit", None) is False
-            ):
-                location = attr.metadata.get("location", (attr.name,))
-                r = res
-                for i, loc in enumerate(location):
-                    # print(i, loc)
-                    # print(res)
-                    if i < len(location) - 1:
-                        if loc not in r:
-                            r[loc] = {}
-                        r = r[loc]
-                    else:
-                        r[loc] = unstructured_value
-                        break
-                # res[attr.name] = unstructured_value
-        return res
+# @MASTER_CONVERTER_OMIT_DEFAULTS.register_unstructure_hook_factory(attrs.has)
+# def omit_default_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
+#     def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
+#         res = {}
+#         for attr in attrs.fields(type(inst)):
+#             attr: attrs.Attribute
+#             cattrs_hook = converter.get_unstructure_hook(attr.type)
+#             value = getattr(inst, attr.name)
+#             unstructured_value = cattrs_hook(value)
+#             if not (
+#                 is_default(inst, attr, value)
+#                 and not attr.metadata.get("omit", None) is False
+#             ):
+#                 location = attr.metadata.get("location", (attr.name,))
+#                 r = res
+#                 for i, loc in enumerate(location):
+#                     # print(i, loc)
+#                     # print(res)
+#                     if i < len(location) - 1:
+#                         if loc not in r:
+#                             r[loc] = {}
+#                         r = r[loc]
+#                     else:
+#                         r[loc] = unstructured_value
+#                         break
+#                 # res[attr.name] = unstructured_value
+#         return res
 
-    return unstructure_hook
+#     return unstructure_hook
 
 
 @MASTER_CONVERTER_OMIT_NONE_DEFAULTS.register_unstructure_hook_factory(attrs.has)
@@ -174,19 +174,16 @@ def omit_none_default_unstructure_factory(
             attr: attrs.Attribute
             cattrs_hook = converter.get_unstructure_hook(attr.type)
             value = getattr(inst, attr.name)
-            # print(attr.name)
-            # print(type(inst))
-            # print(value)
             unstructured_value = cattrs_hook(value)
-            if attr.metadata.get("omit", None) is False or (
+            if attr.metadata.get("omit", None) is False or (  # pragma: no branch
                 value is not None and not is_default(inst, attr, value)
             ):
                 location = attr.metadata.get("location", (attr.name,))
                 r = res
-                for i, loc in enumerate(location):
+                for i, loc in enumerate(location):  # pragma: no branch
                     # print(i, loc)
                     # print(res)
-                    if i < len(location) - 1:
+                    if i < len(location) - 1:  # pragma: no coverage
                         if loc not in r:
                             r[loc] = {}
                         r = r[loc]
@@ -217,7 +214,6 @@ class ConverterVersion:
         self.structure_funcs = {}
         self.unstructure_funcs = {}
         self.schemas = {}
-        self.cls_schemas = {}
 
     def register_structure_hook(self, *args, **kwargs):
         for _, converter in self.converters.items():
@@ -247,9 +243,6 @@ class ConverterVersion:
         self.structure_funcs[cls] = structure_func
         if unstructure_func is not None:
             self.unstructure_funcs[cls] = unstructure_func
-
-    def get_schema(self, cls):
-        return self.cls_schemas[cls]
 
     def get_structure_dict(self, cls: type) -> dict:
         res = {}
@@ -434,67 +427,6 @@ draftsman_converters.add_version((2, 0))
 #     return fields
 
 
-# def make_structure_function_from_schema(
-#     cls: type, converter: cattrs.Converter, schema: dict
-# ):
-#     def try_pop_location(subdict, loc):
-#         """
-#         Traverse loc and try to pop that item, as well as any subdicts that
-#         become empty in the process.
-#         """
-#         if loc is None:
-#             return None
-#         if len(loc) == 1:
-#             try:
-#                 return subdict.pop(loc[0], None)
-#             except AttributeError:
-#                 return None
-#         if loc[0] not in subdict:
-#             return None
-#         result = try_pop_location(subdict[loc[0]], loc[1:])
-#         if subdict[loc[0]] == {}:
-#             subdict.pop(loc[0])
-#         return result
-
-#     class_attrs = attrs.fields(cls)
-#     # version_data = draftsman_converters.get_version(version_tuple)
-#     # location_dict = version_data.get_location_dict(cls)
-
-#     def structure_hook(input_dict: dict, _: type):
-#         res = {}
-#         for attr in class_attrs:
-#             # attr_name = attr.alias if attr.alias is not None else attr.name
-#             # print("attr name:", attr.name, attr.alias)
-#             if attr.name not in schema:
-#                 continue
-#             loc = schema[attr.name]
-
-#             value = try_pop_location(input_dict, loc)
-#             # print(value)
-#             if value is None:
-#                 continue
-#             handler = find_structure_handler(attr, attr.type, converter)
-#             if handler is not None:
-#                 # import inspect
-#                 # print(inspect.getsource(handler))
-#                 try:
-#                     res[attr.name] = handler(value, attr.type)
-#                 except Exception as e:
-#                     raise DataFormatError(e) from None
-#             else:
-#                 res[attr.name] = value
-
-#         if input_dict:
-#             res["extra_keys"] = input_dict
-
-#         # print(location_dict)
-#         # print(res)
-#         return res
-#         # return cls(**res)
-
-#     return structure_hook
-
-
 def make_unstructure_function_from_schema(
     cls: type,
     converter: cattrs.Converter,
@@ -535,9 +467,6 @@ def make_unstructure_function_from_schema(
         handler = None
         user_handler = False
         if isinstance(inst_loc, attrs.Attribute):  # TODO: make this baseline
-            # handler = inst_loc
-            # attr_name = "_".join(dict_loc)
-            # print("\t", attr_name)
             a = inst_loc
             attr_name = a.name
         elif isinstance(inst_loc, tuple):
@@ -548,42 +477,29 @@ def make_unstructure_function_from_schema(
         else:
             a: attrs.Attribute = getattr(attrs.fields(cls), inst_loc)
             attr_name = a.name
-            # source_attr_name = a.name
 
         omittable = a.metadata.get("omit", True)
         never_null = a.metadata.get("never_null", False)
-
-        # override = kwargs.get(attr_name, neutral)
-        # if override.omit:
-        #     continue
-        # if override.omit is None and not a.init and not _cattrs_include_init_false:
-        #     continue
-        # if override.rename is None:
-        #     kn = attr_name if not _cattrs_use_alias else a.alias
-        # else:
-        #     kn = override.rename
-
         d = a.default
 
         # For each attribute, we try resolving the type here and now.
         # If a type is manually overwritten, this function should be
         # regenerated.
-        if handler is None:
+        if handler is None:  # pragma: no coverage
             if a.type is not None:
                 t = a.type
 
-                # if handler is None:
                 if (
                     is_bare_final(t)
                     and a.default is not attrs.NOTHING
                     and not isinstance(a.default, attrs.Factory)
-                ):  # pragma: no branch
+                ):
                     # This is a special case where we can use the
                     # type of the default to dispatch on.
-                    t = a.default.__class__  # pragma: no coverage
+                    t = a.default.__class__
                 try:
                     handler = converter.get_unstructure_hook(t, cache_result=False)
-                except RecursionError:  # pragma: no coverage
+                except RecursionError:
                     # There's a circular reference somewhere down the line
                     handler = converter.unstructure
             else:

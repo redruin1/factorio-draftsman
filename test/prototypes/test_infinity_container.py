@@ -178,7 +178,9 @@ class TestInfinityContainer:
 
         assert container1.remove_unfiltered_items == True
         assert container1.filters == [
-            InfinityInventoryFilter(index=1, name="iron-ore", count=100, mode="at-least")
+            InfinityInventoryFilter(
+                index=1, name="iron-ore", count=100, mode="at-least"
+            )
         ]
 
     def test_eq(self):

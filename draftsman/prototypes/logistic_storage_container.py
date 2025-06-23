@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     CircuitEnableMixin,
@@ -23,7 +22,6 @@ import attrs
 @attrs.define
 class LogisticStorageContainer(
     InventoryMixin,
-    ItemRequestMixin,
     # LogisticModeOfOperationMixin,
     CircuitConditionMixin,  # TODO: does this have a condition on 2.0?
     CircuitEnableMixin,

@@ -165,9 +165,7 @@ class TestFurnace:
                 id=ItemID(name="coal", quality="legendary"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(
-                            inventory=Inventory.fuel, stack=0, count=50
-                        )
+                        InventoryPosition(inventory=Inventory.fuel, stack=0, count=50)
                     ]
                 ),
             )
@@ -194,7 +192,7 @@ class TestFurnace:
                             stack=1,
                         ),
                     ]
-                )
+                ),
             )
         ]
 

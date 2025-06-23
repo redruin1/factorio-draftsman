@@ -4,7 +4,6 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ArtilleryAutoTargetMixin,
     EquipmentGridMixin,
-    ItemRequestMixin,
     OrientationMixin,
 )
 
@@ -17,7 +16,6 @@ import attrs
 class ArtilleryWagon(
     ArtilleryAutoTargetMixin,
     EquipmentGridMixin,
-    ItemRequestMixin,
     OrientationMixin,
     Entity,
 ):

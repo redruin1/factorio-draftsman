@@ -1,6 +1,12 @@
 # test_constants.py
 
-from draftsman.constants import Direction, LegacyDirection
+from draftsman.constants import (
+    Direction,
+    LegacyDirection,
+    FOUR_WAY_DIRECTIONS,
+    EIGHT_WAY_DIRECTIONS,
+    SIXTEEN_WAY_DIRECTIONS,
+)
 from draftsman.utils import Vector
 
 
@@ -24,6 +30,22 @@ def test_previous_direction():
 
     assert LegacyDirection.NORTH.previous() is LegacyDirection.WEST
     assert LegacyDirection.NORTH.previous(eight_way=True) is LegacyDirection.NORTHWEST
+
+
+def test_to_closest_valid_direction():
+    assert (
+        Direction.EASTNORTHEAST.to_closest_valid_direction(FOUR_WAY_DIRECTIONS)
+        is Direction.EAST
+    )
+    assert (
+        Direction.EASTNORTHEAST.to_closest_valid_direction(EIGHT_WAY_DIRECTIONS)
+        is Direction.NORTHEAST
+    )
+    # Redundant, but it's valid API
+    assert (
+        Direction.EASTNORTHEAST.to_closest_valid_direction(SIXTEEN_WAY_DIRECTIONS)
+        is Direction.EASTNORTHEAST
+    )
 
 
 def test_direction_to_orientation():

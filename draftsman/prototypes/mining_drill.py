@@ -3,7 +3,6 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     ModulesMixin,
-    ItemRequestMixin,
     CircuitReadResourceMixin,
     CircuitConditionMixin,
     CircuitEnableMixin,
@@ -28,7 +27,6 @@ from typing import Iterable, Optional
 @attrs.define
 class MiningDrill(
     ModulesMixin,
-    ItemRequestMixin,
     CircuitReadResourceMixin,
     CircuitConditionMixin,
     LogisticConditionMixin,

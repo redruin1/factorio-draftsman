@@ -1,7 +1,6 @@
 # modules.py
 
 from draftsman.data import entities, modules
-from .item_requests import ItemRequestMixin
 from draftsman.signatures import (
     BlueprintInsertPlan,
     ItemID,
@@ -16,7 +15,7 @@ from draftsman.warning import ModuleCapacityWarning, ModuleNotAllowedWarning
 from typing import Iterable, Optional
 
 
-class ModulesMixin(ItemRequestMixin):
+class ModulesMixin:
     """
     (Implicitly inherits :py:class:`~.ItemRequestMixin`)
 

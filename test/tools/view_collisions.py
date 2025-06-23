@@ -6,8 +6,8 @@ Provides a simple GUI output scaled to the size of the blueprint using TKinter.
 """
 
 from draftsman.blueprintable import Blueprint
-from draftsman.classes.group import Group
-from draftsman.utils import flatten_entities
+from draftsman.constants import Direction
+from draftsman.utils import flatten_entities, Vector
 
 from tkinter import *
 
@@ -15,9 +15,12 @@ import math
 
 
 def main():
-    bp_string = input()
+    # bp_string = input()
 
-    blueprint = Blueprint.from_string(bp_string)
+    blueprint = Blueprint()
+    blueprint.entities.append("rail-chain-signal")
+    # with pytest.warns(OverlappingObjectsWarning):
+    blueprint.entities.append("straight-rail", direction=Direction.NORTHWEST)
     print(blueprint.get_world_bounding_box())
 
     entity_list = flatten_entities(blueprint.entities)
@@ -26,7 +29,7 @@ def main():
 
     screen_size = 1000
 
-    translation = blueprint.get_world_bounding_box().top_left
+    translation = Vector.from_other(blueprint.get_world_bounding_box().top_left, int)
 
     root = Tk()
     root.title("test")
@@ -73,6 +76,8 @@ def main():
 
     for entity in entity_list:
         g_pos = entity.global_position - translation
+        print(entity.global_position)
+        print(translation)
         canvas.create_rectangle(
             (g_pos.x - 0.1) * scale,
             (g_pos.y - 0.1) * scale,

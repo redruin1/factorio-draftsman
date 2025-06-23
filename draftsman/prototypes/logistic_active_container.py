@@ -2,7 +2,6 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    ItemRequestMixin,
     LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,
@@ -21,7 +20,6 @@ import attrs
 @attrs.define
 class LogisticActiveContainer(
     InventoryMixin,
-    ItemRequestMixin,
     # LogisticModeOfOperationMixin,
     CircuitConditionMixin,
     ControlBehaviorMixin,

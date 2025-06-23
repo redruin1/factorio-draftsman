@@ -3,7 +3,6 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     VehicleMixin,
-    ItemRequestMixin,
     EquipmentGridMixin,
     EnergySourceMixin,
     OrientationMixin,
@@ -18,7 +17,6 @@ import attrs
 class Car(
     VehicleMixin,
     EquipmentGridMixin,
-    ItemRequestMixin,
     EnergySourceMixin,
     OrientationMixin,
     Entity,

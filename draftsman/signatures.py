@@ -264,9 +264,7 @@ class SignalID(Exportable):
 
     @type.validator
     @conditional(ValidationMode.STRICT)
-    def check_type_matches_name(
-        self, _attr: attrs.Attribute, value: SignalIDType
-    ):
+    def check_type_matches_name(self, _attr: attrs.Attribute, value: SignalIDType):
         if self.name in signals.raw:
             expected_types = signals.get_signal_types(self.name)
             if value not in expected_types:
@@ -1055,9 +1053,7 @@ class ManualSection(Exportable):
     #             msg = "Index ({}) must be in range [1, 100]".format(value)
     #             raise IndexError(msg)
 
-    index: LuaDouble = attrs.field(
-        validator=instance_of(LuaDouble)
-    )
+    index: LuaDouble = attrs.field(validator=instance_of(LuaDouble))
     """
     Location of the logistics section within the entity, 1-indexed. Hard capped
     to 100 manual sections per entity.
@@ -1070,8 +1066,8 @@ class ManualSection(Exportable):
         Can only have 100 signal sections per entity.
         """
         if not (1 <= value <= 100):
-                msg = "Index ({}) must be in range [1, 100]".format(value)
-                raise IndexError(msg)
+            msg = "Index ({}) must be in range [1, 100]".format(value)
+            raise IndexError(msg)
 
     def _filters_converter(value: list[Any]) -> list[SignalFilter]:
         # TODO: more robust testing
