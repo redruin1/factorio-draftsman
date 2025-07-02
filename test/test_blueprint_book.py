@@ -297,14 +297,14 @@ class TestBlueprintBook:
         # Single Icon
         blueprint_book.icons = ["signal-A"]
         assert blueprint_book.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0})
         ]
         # Multiple Icons
         blueprint_book.icons = ["signal-A", "signal-B", "signal-C"]
         assert blueprint_book.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 2}),
         ]
 
         # Raw signal dicts
@@ -317,16 +317,16 @@ class TestBlueprintBook:
 
         with pytest.warns(UnknownSignalWarning):
             blueprint_book.icons = [
-                {"signal": {"name": "some-signal", "type": "virtual"}}
+                Icon(**{"signal": {"name": "some-signal", "type": "virtual"}, "index": 0})
             ]
             assert blueprint_book.icons == [
                 Icon(
-                    **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 1}
+                    **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 0}
                 )
             ]
 
         # None
-        blueprint_book.icons = None
+        blueprint_book.icons = []
         assert blueprint_book.icons == []
         assert blueprint_book.to_dict() == {
             "blueprint_book": {

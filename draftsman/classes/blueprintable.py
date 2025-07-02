@@ -205,18 +205,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     def _icons_converter(value):
-        if value is None:
-            return []
-        elif isinstance(value, Sequence) and not isinstance(value, str):
+        # This function is slow, but since icons will never be greater than 4
+        # items long it should be fine
+        if isinstance(value, Sequence) and not isinstance(value, str):
             res = [None] * len(value)
             for i, elem in enumerate(value):
                 if isinstance(elem, str):
-                    res[i] = Icon(
-                        index=i + 1,
-                        signal=elem,
-                    )
+                    res[i] = Icon(index=i, signal=elem)
                 else:
-                    res[i] = Icon.converter(elem, index=i + 1)
+                    res[i] = elem
             return res
         else:
             return value
@@ -321,10 +318,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         default=None, validator=instance_of(Optional[uint16])
     )
     """
-    The 0-indexed location of the blueprintable in a parent
-    :py:class:`BlueprintBook`. This member is automatically generated if
-    omitted, but can be manually set with this attribute. ``index`` has no
-    meaning when the blueprintable is not located inside another BlueprintBook.
+    The location of the blueprintable in a parent :py:class:`BlueprintBook`. 
+    This member is automatically generated if omitted, but can be manually set 
+    with this attribute. ``index`` has no meaning when the blueprintable is not 
+    located inside another BlueprintBook.
 
     :getter: Gets the index of this blueprintable, or ``None`` if not set.
         A blueprintable's index is only generated when exporting with

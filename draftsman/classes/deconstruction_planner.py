@@ -73,7 +73,7 @@ class DeconstructionPlanner(Blueprintable):
     class EntityFilter(Exportable):
         index: Optional[uint64] = attrs.field(validator=instance_of(uint64))
         """
-        Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
+        Position of the filter in the DeconstructionPlanner. Seems to 
         behave more like a sorting key rather than a numeric index; if omitted, 
         entities will be sorted by their Factorio order when imported instead
         of specific slots in the GUI, contrary to what index would seem to imply.
@@ -87,7 +87,7 @@ class DeconstructionPlanner(Blueprintable):
     class TileFilter(Exportable):
         index: Optional[uint64] = attrs.field(validator=instance_of(uint64))
         """
-        Position of the filter in the DeconstructionPlanner, 0-based. Seems to 
+        Position of the filter in the DeconstructionPlanner. Seems to 
         behave more like a sorting key rather than a numeric index; if omitted, 
         entities will be sorted by their Factorio order when imported instead
         of specific slots in the GUI, contrary to what index would seem to imply.

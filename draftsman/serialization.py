@@ -75,6 +75,10 @@ class ConverterVersion:
         for _, converter in self.converters.items():
             converter.register_structure_hook(*args, **kwargs)
 
+    def register_structure_hook_func(self, *args, **kwargs):
+        for _, converter in self.converters.items():
+            converter.register_structure_hook_func(*args, **kwargs)
+
     def register_structure_hook_factory(self, *args, **kwargs):
         for _, converter in self.converters.items():
             converter.register_structure_hook_factory(*args, **kwargs)
@@ -82,6 +86,10 @@ class ConverterVersion:
     def register_unstructure_hook(self, *args, **kwargs):
         for _, converter in self.converters.items():
             converter.register_unstructure_hook(*args, **kwargs)
+
+    def register_unstructure_hook_func(self, *args, **kwargs):
+        for _, converter in self.converters.items():
+            converter.register_unstructure_hook_func(*args, **kwargs)
 
     def register_unstructure_hook_factory(self, *args, **kwargs):
         for _, converter in self.converters.items():
@@ -156,9 +164,17 @@ class DraftsmanConverters:
         for version in self.versions.values():
             version.register_structure_hook(*args, **kwargs)
 
+    def register_structure_hook_func(self, *args, **kwargs):
+        for version in self.versions.values():
+            version.register_structure_hook_func(*args, **kwargs)
+
     def register_structure_hook_factory(self, *args, **kwargs):
         for version in self.versions.values():
             version.register_structure_hook_factory(*args, **kwargs)
+
+    def register_unstructure_hook_func(self, *args, **kwargs):
+        for version in self.versions.values():
+            version.register_unstructure_hook_func(*args, **kwargs)
 
     def register_unstructure_hook(self, *args, **kwargs):
         for version in self.versions.values():
@@ -280,6 +296,8 @@ def make_unstructure_function_from_schema(
         never_null = a.metadata.get("never_null", False)
         d = a.default
 
+        # print(handler, a.type)
+
         # For each attribute, we try resolving the type here and now.
         # If a type is manually overwritten, this function should be
         # regenerated.
@@ -296,6 +314,7 @@ def make_unstructure_function_from_schema(
                     # type of the default to dispatch on.
                     t = a.default.__class__
                 try:
+                    # print("get_hook")
                     handler = converter.get_unstructure_hook(t, cache_result=False)
                 except RecursionError:
                     # There's a circular reference somewhere down the line
@@ -304,6 +323,8 @@ def make_unstructure_function_from_schema(
                 handler = converter.unstructure
 
         is_identity = handler == identity
+
+        # print(handler)
 
         if not is_identity:
             unstruct_handler_name = f"__c_unstr_{attr_name}"
@@ -410,6 +431,7 @@ def make_unstructure_function_from_schema(
     fname = generate_unique_filename(
         cls, "unstructure {}".format(version), lines=total_lines
     )
+    # print(script)
 
     eval(compile(script, fname, "exec"), globs)
 

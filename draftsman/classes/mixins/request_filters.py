@@ -124,7 +124,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             _export_fields.sections,
             lambda d, _: [
                 ManualSection(
-                    index=1, filters=converter.structure(d, list[SignalFilter])
+                    index=0, filters=converter.structure(d, list[SignalFilter])
                 )
             ],
         ),

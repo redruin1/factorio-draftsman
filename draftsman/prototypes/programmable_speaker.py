@@ -234,7 +234,7 @@ class ProgrammableSpeaker(
         validator=instance_of(Optional[uint32]),
     )
     """
-    Numeric index of the instrument, 0-indexed.
+    Numeric index of the instrument.
 
     :exception InvalidInstrumentID: If set to a number that is not
         recognized as a valid instrument index for this speaker.

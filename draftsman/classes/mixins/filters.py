@@ -73,8 +73,7 @@ class FiltersMixin(Exportable):
         comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "=",
     ):
         """
-        Sets one of the item filters of the Entity. `index` in this function is
-        in 0-based notation.
+        Sets one of the item filters of the Entity.
 
         :param index: The index of the filter to set.
         :param item: The string name of the item to filter.
@@ -91,7 +90,7 @@ class FiltersMixin(Exportable):
         found_index = None
         for i in range(len(self.filters)):
             filter = self.filters[i]
-            if filter.index == index + 1:
+            if filter.index == index:
                 if item is None:
                     del self.filters[i]
                 else:

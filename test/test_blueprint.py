@@ -260,37 +260,34 @@ class TestBlueprint:
         # Single Icon
         blueprint.icons = ["signal-A"]
         assert blueprint.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
-        ]
-        assert blueprint.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0})
         ]
         # Multiple Icon
         blueprint.icons = ("signal-A", "signal-B", "signal-C")
         assert blueprint.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 2}),
         ]
 
         # Raw signal dicts:
 
-        blueprint.icons = [{"signal": "signal-A", "index": 2}]
+        blueprint.icons = [Icon(**{"signal": "signal-A", "index": 1})]
         assert blueprint.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
 
         # Unrecognized dict
         with pytest.warns(UnknownSignalWarning):
             blueprint.icons = [
-                {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
+                Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 0})
             ]
             assert blueprint.icons == [
-                Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
+                Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 0})
             ]
 
         # None
-        blueprint.icons = None
+        blueprint.icons = []
         assert blueprint.icons == []
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",

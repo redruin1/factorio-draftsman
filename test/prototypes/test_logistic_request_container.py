@@ -70,7 +70,7 @@ class TestRequestContainer:
         }
 
         request_chest = LogisticRequestContainer(
-            sections=[ManualSection(index=1, filters=[("iron-ore", 100)])],
+            sections=[ManualSection(index=0, filters=[("iron-ore", 100)])],
             request_from_buffers=True,
         )
         assert request_chest.to_dict() == {
@@ -97,7 +97,7 @@ class TestRequestContainer:
         request_chest = LogisticRequestContainer(
             sections=[
                 ManualSection(
-                    index=1, filters=[SignalFilter(index=1, name="iron-ore", count=100)]
+                    index=0, filters=[SignalFilter(index=0, name="iron-ore", count=100)]
                 )
             ]
         )
@@ -207,21 +207,21 @@ class TestRequestContainer:
             ("coal", 300),
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
-            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
-            SignalFilter(index=3, name="coal", count=300, comparator="="),
+            SignalFilter(index=0, name="iron-ore", count=100, comparator="="),
+            SignalFilter(index=1, name="copper-ore", count=200, comparator="="),
+            SignalFilter(index=2, name="coal", count=300, comparator="="),
         ]
 
         # Longhand
         section.filters = [
-            SignalFilter(index=1, name="iron-ore", count=100),
-            SignalFilter(index=2, name="copper-ore", count=200),
-            SignalFilter(index=3, name="coal", count=300),
+            SignalFilter(index=0, name="iron-ore", count=100),
+            SignalFilter(index=1, name="copper-ore", count=200),
+            SignalFilter(index=2, name="coal", count=300),
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100),
-            SignalFilter(index=2, name="copper-ore", count=200),
-            SignalFilter(index=3, name="coal", count=300),
+            SignalFilter(index=0, name="iron-ore", count=100),
+            SignalFilter(index=1, name="copper-ore", count=200),
+            SignalFilter(index=2, name="coal", count=300),
         ]
 
         # Error
@@ -452,10 +452,10 @@ class TestRequestContainer:
         assert len(chest.sections) == 1
         assert chest.sections == [
             ManualSection(
-                index=1,
+                index=0,
                 filters=[
                     SignalFilter(
-                        index=1,
+                        index=0,
                         name="iron-plate",
                         count=50,
                     )

@@ -1,7 +1,5 @@
 # TODO
 
-### Figure out a way to normalize all the 1-based indexes to only exist on import/export and have everything be 0-based internally
-
 ### Add `children` attribute to Blueprints/Groups, and use that to store nested Groups
 This would make `entities` and `tiles` 1-dimensional lists again, and tree traversal would be more explicit
 ```py

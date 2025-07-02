@@ -127,7 +127,7 @@ class ConstantCombinator(
         self.sections += [
             ManualSection(
                 group=group,
-                index=index + 1 if index is not None else len(self.sections) + 1,
+                index=index if index is not None else len(self.sections),
                 active=active,
             )
         ]

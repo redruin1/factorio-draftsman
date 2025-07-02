@@ -219,10 +219,10 @@ class TestBufferContainer:
         assert len(chest.sections) == 1
         assert chest.sections == [
             ManualSection(
-                index=1,
+                index=0,
                 filters=[
                     SignalFilter(
-                        index=1,
+                        index=0,
                         name="iron-plate",
                         count=50,
                     )

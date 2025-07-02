@@ -50,10 +50,21 @@ from typing_extensions import Annotated
 
 import attrs
 from attrs import NOTHING
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Literal, Optional, Sequence, TypeVar, get_args
 import warnings
 import weakref
 
+# Flag type to indicate that this item should be reduced to
+OneIndexed = TypeVar("OneIndexed")
+# def check_func(cls):
+#     return OneIndexed in get_args(cls)
+
+draftsman_converters.register_structure_hook_func(
+    lambda cls: OneIndexed in get_args(cls), lambda v, _: v - 1
+)
+draftsman_converters.register_unstructure_hook_func(
+    lambda cls: OneIndexed in get_args(cls), lambda v: v + 1
+)
 
 int32 = Annotated[int, and_(ge(-(2**31)), lt(2**31))]
 # TODO: description about floating point issues
@@ -294,7 +305,7 @@ draftsman_converters.add_hook_fns(
 class TargetID(Exportable):
     index: uint32 = attrs.field(validator=instance_of(uint32))
     """
-    Index of the target in the GUI, 0-based.
+    Index of the target in the GUI.
     """
     name: str = attrs.field(validator=instance_of(str))  # TODO: TargetName?
     """
@@ -336,19 +347,10 @@ class Icon(Exportable):
     """
     Which signal icon to display.
     """
-    index: uint8 = attrs.field(validator=instance_of(uint8))
+    index: Annotated[uint8, OneIndexed] = attrs.field(validator=instance_of(uint8))
     """
-    Numeric index of the icon, 1-based.
+    Numeric index of the icon.
     """
-
-    @classmethod
-    def converter(cls, value, index):
-        try:
-            if "index" not in value:
-                value["index"] = index
-            return cls(**value)
-        except TypeError:
-            return value
 
 
 draftsman_converters.add_hook_fns(
@@ -358,47 +360,6 @@ draftsman_converters.add_hook_fns(
         "index": fields.index.name,
     },
 )
-
-
-# def normalize_icons(value: Any):
-#     if isinstance(value, str):
-#         return value
-#     elif isinstance(value, Sequence):
-#         result = []
-#         for i, signal in enumerate(value):
-#             if isinstance(signal, str):
-#                 result.append({"index": i + 1, "signal": signal_dict(signal)})
-#             elif isinstance(signal, dict) and "type" in signal:
-#                 result.append({"index": i + 1, "signal": signal})
-#             else:
-#                 result.append(signal)
-#         return result
-#     else:
-#         return value
-
-
-# class Icons(DraftsmanRootModel):
-#     root: list[Icon] = Field(
-#         ...,
-#         max_length=4,
-#         description="""
-#         The list of all icons used by this object. Hard-capped to 4 entries
-#         total; having more than 4 will raise an error in import.
-#         """,
-#     )
-
-#     @model_validator(mode="before")
-#     def normalize_icons(cls, value: Any):
-#         if isinstance(value, Sequence):
-#             result = [None] * len(value)
-#             for i, signal in enumerate(value):
-#                 if isinstance(signal, str):
-#                     result[i] = {"index": i + 1, "signal": signal}
-#                 else:
-#                     result[i] = signal
-#             return result
-#         else:
-#             return value
 
 
 @attrs.define(hash=True)
@@ -531,14 +492,11 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class ItemFilter(Exportable):
-    index: int64 = attrs.field(
-        converter=try_convert(
-            lambda index: index + 1
-        ),  # Convert from zero-indexed to 1-indexed
+    index: Annotated[int64, OneIndexed] = attrs.field(
         validator=instance_of(int64),
     )
     """
-    Index of the filter in the GUI, 1-indexed.
+    Index of the filter in the GUI.
     """
     name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))
     """
@@ -594,22 +552,12 @@ class SignalFilter(Exportable):
     of :py:class:`.ConstantCombinator`s.
     """
 
-    index: int64 = attrs.field(
-        # TODO: handle indexes properly
-        # I want to perform the + 1 step inside of the Exportable object so
-        # that if it fails due to invalid type it gets wrapped by the error
-        # handler, but it introduces overlap between "importing from dict" and
-        # "constructing python object"
-        # This makes mes think that the true ideal would be to customize cattrs
-        # so that the value only changes on import/export (but that means the
-        # cattrs side needs to be more error robust)
-        # converter=try_convert(lambda index: index + 1),
+    index: Annotated[int64, OneIndexed] = attrs.field(
         validator=instance_of(int64),
     )
     """
-    Numeric index of the signal in the combinator, 1-based. Typically the 
-    index of the signal in the parent 'filters' key, but this is not 
-    strictly enforced. 
+    Numeric index of the signal in the combinator. Typically the index of the 
+    signal in the parent 'filters' key, but this is not strictly enforced. 
     """
     name: SignalIDName = attrs.field(validator=instance_of(SignalIDName))
     """
@@ -622,7 +570,6 @@ class SignalFilter(Exportable):
     """
     type: Optional[SignalIDType] = attrs.field(
         validator=or_(is_none, one_of(SignalIDType))
-        # metadata={"omit": False}
     )
     """
     Type of the signal.
@@ -768,10 +715,12 @@ class ManualSection(Exportable):
     logistics sections as well as constant combinators signal groups.
     """
 
-    index: LuaDouble = attrs.field(validator=instance_of(LuaDouble))
+    index: Annotated[LuaDouble, OneIndexed] = attrs.field(
+        validator=instance_of(LuaDouble)
+    )
     """
-    Location of the logistics section within the entity, 1-indexed. Hard capped
-    to 100 manual sections per entity.
+    Location of the logistics section within the entity. Hard capped to 100 
+    sections per entity.
     """
 
     @index.validator
@@ -780,8 +729,8 @@ class ManualSection(Exportable):
         """
         Can only have 100 signal sections per entity.
         """
-        if not (1 <= value <= 100):
-            msg = "Index ({}) must be in range [1, 100]".format(value)
+        if not (0 <= value < 100):
+            msg = "Index ({}) must be in range [0, 100)".format(value)
             raise IndexError(msg)
 
     def _filters_converter(value: list[Any]) -> list[SignalFilter]:
@@ -789,7 +738,7 @@ class ManualSection(Exportable):
             for i, entry in enumerate(value):
                 if isinstance(entry, tuple):
                     value[i] = SignalFilter(
-                        index=i + 1,
+                        index=i,
                         name=entry[0],
                         count=entry[1],
                     )
@@ -913,129 +862,6 @@ draftsman_converters.add_hook_fns(
 )
 
 
-# class Section(DraftsmanBaseModel):
-#     index: uint32  # TODO: 0-based or 1-based?
-#     filters: Optional[list[SignalFilter]] = []
-#     group: Optional[str] = Field(
-#         None,
-#         description="Name of this particular signal section group.",
-#     )
-
-#     def set_signal(
-#         self,
-#         index: int64,
-#         name: Union[str, None],
-#         count: int32 = 0,
-#         quality: Literal[
-#             "normal",
-#             "uncommon",
-#             "rare",
-#             "epic",
-#             "legendary",
-#             "quality-unknown",
-#             "any",
-#         ] = "normal",
-#         type: Optional[str] = None,
-#     ) -> None:
-#         try:
-#             new_entry = SignalFilter(
-#                 index=index,
-#                 name=name,
-#                 type=type,
-#                 quality=quality,
-#                 comparator="=",
-#                 count=count,
-#             )
-#             new_entry.index += 1
-#         except ValidationError as e:
-#             raise DataFormatError(e) from None
-
-#         new_filters = [] if self.filters is None else self.filters
-
-#         # Check to see if filters already contains an entry with the same index
-#         existing_index = None
-#         for i, signal_filter in enumerate(new_filters):
-#             if index + 1 == signal_filter["index"]:  # Index already exists in the list
-#                 if name is None:  # Delete the entry
-#                     del new_filters[i]
-#                 else:
-#                     new_filters[i] = new_entry
-#                 existing_index = i
-#                 break
-
-#         if existing_index is None:
-#             new_filters.append(new_entry)
-
-#     def get_signal(self, index):
-#         """
-#         Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-#         if it exists.
-
-#         :param index: The index of the signal to analyze.
-
-#         :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-#             ``None`` if nothing was found at that index.
-#         """
-#         if not self.filters:
-#             return None
-
-#         return next(
-#             (item for item in self.filters if item["index"] == index + 1),
-#             None,
-#         )
-
-#     @field_validator("filters", mode="before")
-#     @classmethod
-#     def normalize_input(cls, value: Any):
-#         if isinstance(value, list):
-#             for i, entry in enumerate(value):
-#                 if isinstance(entry, tuple):
-#                     # TODO: perhaps it would be better to modify the format so
-#                     # you must specify the signal type... or maybe not...
-#                     signal_types = get_signal_types(entry[0])
-#                     filter_type = (
-#                         "item" if "item" in signal_types else next(iter(signal_types))
-#                     )
-#                     value[i] = {
-#                         "index": i + 1,
-#                         "name": entry[0],
-#                         "type": filter_type,
-#                         "comparator": "=",
-#                         "count": entry[1],
-#                     }
-
-#         return value
-
-#     model_config = ConfigDict(validate_assignment=True)
-
-
-# class SignalSection(Section):
-#     filters: Optional[list[SignalFilter]] = []
-
-
-# class RequestSection(Section):
-#     filters: Optional[list[RequestFilter]] = []
-
-
-# class QualityFilter(DraftsmanBaseModel):
-#     quality: Optional[QualityName] = Field(
-#         "any", description="""The quality of the signal to compare against."""
-#     )
-#     comparator: Optional[Literal[">", "<", "=", "≥", "≤", "≠"]] = Field(
-#         "=",
-#         description="""The comparison operator to use when evaluating signal comparisons.""",
-#     )
-
-#     @field_validator("comparator", mode="before")
-#     @classmethod
-#     def normalize_comparator_python_equivalents(cls, input: Any):
-#         conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
-#         if input in conversions:
-#             return conversions[input]
-#         else:
-#             return input
-
-
 @attrs.define
 class QualityFilter(Exportable):
     quality: Literal[None, QualityID] = attrs.field(
@@ -1067,13 +893,15 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class InventoryPosition(Exportable):
-    inventory: uint32 = attrs.field(validator=instance_of(uint32))
+    inventory: uint32 = attrs.field(
+        validator=instance_of(uint32)
+    )
     """
-    Which inventory this item sits in, 1-indexed.
+    Which inventory this item sits in.
     """
     stack: uint32 = attrs.field(validator=instance_of(uint32))
     """
-    Which slot in the inventory this item sits in, 0-indexed.
+    Which slot in the inventory this item sits in.
     """
     count: Optional[uint32] = attrs.field(
         default=1, validator=instance_of(Optional[uint32])
@@ -1174,110 +1002,6 @@ draftsman_converters.add_hook_fns(
 )
 
 
-# class Sections(DraftsmanBaseModel):
-#     # class Section(DraftsmanBaseModel):
-#     #     index: uint32
-#     #     filters: Optional[list[SignalFilter]] = []
-#     #     group: Optional[str] = Field(
-#     #         None,
-#     #         description="Name of this particular signal section group.",
-#     #     )
-
-#     #     def set_signal(
-#     #         self,
-#     #         index: int64,
-#     #         name: Union[str, None],
-#     #         count: int32 = 0,
-#     #         quality: Literal[
-#     #             "normal",
-#     #             "uncommon",
-#     #             "rare",
-#     #             "epic",
-#     #             "legendary",
-#     #             "quality-unknown",
-#     #             "any",
-#     #         ] = "normal",
-#     #         type: Optional[str] = None,
-#     #     ) -> None:
-#     #         try:
-#     #             new_entry = SignalFilter(
-#     #                 index=index,
-#     #                 name=name,
-#     #                 type=type,
-#     #                 quality=quality,
-#     #                 comparator="=",
-#     #                 count=count,
-#     #             )
-#     #             new_entry.index += 1
-#     #         except ValidationError as e:
-#     #             raise DataFormatError(e) from None
-
-#     #         new_filters = [] if self.filters is None else self.filters
-
-#     #         # Check to see if filters already contains an entry with the same index
-#     #         existing_index = None
-#     #         for i, signal_filter in enumerate(new_filters):
-#     #             if (
-#     #                 index + 1 == signal_filter["index"]
-#     #             ):  # Index already exists in the list
-#     #                 if name is None:  # Delete the entry
-#     #                     del new_filters[i]
-#     #                 else:
-#     #                     new_filters[i] = new_entry
-#     #                 existing_index = i
-#     #                 break
-
-#     #         if existing_index is None:
-#     #             new_filters.append(new_entry)
-
-#     #     def get_signal(self, index):
-#     #         """
-#     #         Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-#     #         if it exists.
-
-#     #         :param index: The index of the signal to analyze.
-
-#     #         :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-#     #             ``None`` if nothing was found at that index.
-#     #         """
-#     #         if not self.filters:
-#     #             return None
-
-#     #         return next(
-#     #             (item for item in self.filters if item["index"] == index + 1),
-#     #             None,
-#     #         )
-
-#     #     @field_validator("filters", mode="before")
-#     #     @classmethod
-#     #     def normalize_input(cls, value: Any):
-#     #         if isinstance(value, list):
-#     #             for i, entry in enumerate(value):
-#     #                 if isinstance(entry, tuple):
-#     #                     value[i] = {
-#     #                         "index": i + 1,
-#     #                         "name": entry[0],
-#     #                         "type": next(iter(get_signal_types(entry[0]))),
-#     #                         "comparator": "=",
-#     #                         "count": entry[1],
-#     #                         "max_count": entry[1],
-#     #                     }
-
-#     #         return value
-
-#     #     model_config = ConfigDict(validate_assignment=True)
-
-#     sections: Optional[list[Section]] = Field([], description="""TODO""")
-
-#     def __getitem__(self, key):
-#         # Custom getitem for this thing specfically
-#         # return self.sections[key]
-#         if isinstance(key, str):
-#             return next(section for section in self.sections if section.group == key)
-#         else:
-#             return self.sections[key]
-
-
 @attrs.define
 class EquipmentID(Exportable):
     name: str = attrs.field()  # TODO: validators, EquipmentName
@@ -1323,8 +1047,7 @@ class EquipmentComponent(Exportable):
         validator=instance_of(Vector),
     )
     """
-    The integer coordinate of the top leftmost tile in which this item sits, 
-    0-based.
+    The integer coordinate of the top leftmost tile in which this item sits.
     """
 
 
@@ -1369,9 +1092,7 @@ class Inventory(Exportable):
 
     _size_func = attrs.field(init=False, repr=False, eq=False)
 
-    def _set_parent(
-        self, entity: Any, old_inventory: "Inventory", size_func=None
-    ):
+    def _set_parent(self, entity: Any, old_inventory: "Inventory", size_func=None):
         if old_inventory is not None:
             old_inventory._parent = None
         self._parent = weakref.ref(entity)
@@ -1463,7 +1184,7 @@ class Inventory(Exportable):
         # Check to see if filters already contains an entry with the same index
         found_index = None
         for i, filter in enumerate(self.filters):
-            if filter.index == index + 1:  # Index already exists in the list
+            if filter.index == index:  # Index already exists in the list
                 if item is None:
                     # Delete the entry
                     del self.filters[i]

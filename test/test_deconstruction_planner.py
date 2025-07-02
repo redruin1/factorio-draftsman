@@ -86,11 +86,11 @@ class TestDeconstructionPlannerTesting:
 
         decon_planner.icons = [
             "signal-A",
-            {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
+            Icon(signal="signal-B", index=1)
         ]
         assert decon_planner.icons == [
-            Icon(signal="signal-A", index=1),
-            Icon(signal="signal-B", index=2),
+            Icon(signal="signal-A", index=0),
+            Icon(signal="signal-B", index=1),
         ]
 
     def test_set_entity_filter_mode(self):

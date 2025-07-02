@@ -42,7 +42,7 @@ class TestConstantCombinator:
             tile_position=[0, 2],
             sections=[
                 ManualSection(
-                    index=1,
+                    index=0,
                     filters=[
                         ("signal-A", 100),
                         ("signal-B", 200),
@@ -221,10 +221,10 @@ class TestConstantCombinator:
             tile_position=(0, 0),
             sections=[
                 ManualSection(
-                    index=1,
+                    index=0,
                     filters=[
                         SignalFilter(
-                            index=1,
+                            index=0,
                             name="iron-plate",
                             type="item",
                             quality="normal",

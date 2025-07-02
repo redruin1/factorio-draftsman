@@ -758,9 +758,9 @@ class Entity(EntityLike, Exportable):
         :param quality: The quality of the requested item.
         :param count: The desired amount of that item. If omitted a count of
             ``0`` will be assumed.
-        :param inventory: The particular inventory to request this item to, 
-            since entities can have more than one distinct inventories to 
-            request items to. If omitted, it will default to ``1``, which is 
+        :param inventory: The particular inventory to request this item to,
+            since entities can have more than one distinct inventories to
+            request items to. If omitted, it will default to ``1``, which is
             usally the "primary" inventory.
         :param slot: The particular slot in the inventory to place the item. The
             next open slot will be chosen automatically if omitted.
