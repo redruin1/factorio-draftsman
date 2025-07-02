@@ -23,16 +23,12 @@ class OrientationMixin(Exportable):
         if not first_call:
             return
 
-        name = (
-            name if name is not attrs.NOTHING else get_first(self.similar_entities)
-        )  # TODO: attr default
+        name = name if name is not attrs.NOTHING else get_first(self.similar_entities)
         object.__setattr__(self, "name", name)
         object.__setattr__(
             self, "orientation", kwargs.get("orientation", Orientation.NORTH)
-        )  # TODO: attr default
+        )
         self._collision_set = self.get_default_collision_set()
-
-        # super().__attrs_pre_init__()
 
     # =========================================================================
 

@@ -21,8 +21,7 @@ import attrs
 @attrs.define
 class LogisticStorageContainer(
     InventoryMixin,
-    # LogisticModeOfOperationMixin,
-    CircuitConditionMixin,  # TODO: does this have a condition on 2.0?
+    CircuitConditionMixin,
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
@@ -50,7 +49,7 @@ class LogisticStorageContainer(
     .. NOTE::
 
         Only has an effect on versions of Factorio >= 2.0. On prior versions,
-        this value is hardcoded to always read the contents to the circuit 
+        this value is hardcoded to always read the chest contents to the circuit 
         network if connected by wire.
     """
 
@@ -68,7 +67,7 @@ class _ExportLogisticActiveContainer:
 
 _export_fields = attrs.fields(_ExportLogisticActiveContainer)
 
-# TODO: still not a fan of defining hooks like this
+
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     LogisticStorageContainer,
     lambda fields: {

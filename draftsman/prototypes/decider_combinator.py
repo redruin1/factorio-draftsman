@@ -29,6 +29,7 @@ from typing import Literal, Optional
 
 # Matrix of values, where keys are the name of the first_operand and
 # the values are sets of signals that cannot be set as output_signal
+# TODO: reimplement
 _signal_blacklist = {
     "signal-everything": {"signal-anything", "signal-each"},
     "signal-anything": {"signal-each"},
@@ -149,21 +150,27 @@ class DeciderCombinator(
             else:
                 return NotImplemented
 
-        @classmethod
-        def converter(cls, value):
-            if isinstance(value, dict):
-                return cls(**value)
-            return value
-
-    class Input:  # TODO: does this need to be an attrs class? we probably do want validation at least...
+    @attrs.define
+    class Input(Exportable):
         """
         Purely abstract helper object useful for defining complex decider conditions
         ergonomically.
         """
 
-        def __init__(self, signal, networks: set[str] = {"red", "green"}):
-            self.signal = signal
-            self.networks = networks
+        signal: SignalID = attrs.field(
+            converter=SignalID.converter, validator=instance_of(SignalID)
+        )
+        """
+        TODO
+        """
+        networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
+        )
+        """
+        TODO
+        """
 
         def _output_condition(self, comparator, other) -> "DeciderCombinator.Condition":
             if isinstance(other, DeciderCombinator.Input):
@@ -243,12 +250,6 @@ class DeciderCombinator(
         number.
         """
 
-        @classmethod
-        def converter(cls, value):
-            if isinstance(value, dict):
-                return cls(**value)
-            return value
-
     # =========================================================================
 
     @property
@@ -263,93 +264,37 @@ class DeciderCombinator(
 
     # =========================================================================
 
-    def _conditions_converter(value):
-        if isinstance(value, list):
-            res = [None] * len(value)
-            for i, elem in enumerate(value):
-                res[i] = DeciderCombinator.Condition.converter(elem)
-            return res
-        return value
-
     conditions: list[Condition] = attrs.field(
         factory=list,
-        converter=_conditions_converter,
         validator=instance_of(list[Condition]),
     )
+    """
+    The list of all circuit conditions that this decider combinator contains.
+    Each one is evaluated sequentially (in order) and is conjoined with the 
+    previous conditoin either with ``"and"`` or ``"or"``.
+
+    .. NOTE::
+
+        When exporting to Factorio 1.0, only the first condition in this list 
+        will end up in the serialized result.
+    """
 
     # =========================================================================
-
-    def _outputs_converter(value):
-        if isinstance(value, list):
-            res = [None] * len(value)
-            for i, elem in enumerate(value):
-                res[i] = DeciderCombinator.Output.converter(elem)
-            return res
-        return value
 
     outputs: list[Output] = attrs.field(
         factory=list,
-        converter=_outputs_converter,
         validator=instance_of(list[Output]),
     )
     """
-    TODO
+    The list of all circuit_outputs that this decider combinator contains.
+    Each indivdiual signal or set of signals are combined together on the output
+    wire frame.
+
+    .. NOTE::
+
+        When exporting to Factorio 1.0, only the first output in this list will 
+        end up in the serialized dictionary.
     """
-
-    # =========================================================================
-
-    # @reissue_warnings
-    # def set_decider_conditions(
-    #     self,
-    #     first_operand: Union[str, SignalID, None] = None,
-    #     operation: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-    #     second_operand: Union[str, SignalID, int32, None] = 0,
-    #     output_signal: Union[str, SignalID, None] = None,
-    #     copy_count_from_input: bool = True,
-    # ):
-    #     """
-    #     Set the operation for the ``DeciderCombinator`` all at once. All of the
-    #     restrictions to the individual attributes still apply.
-
-    #     :param first_operand: The name of the first signal to set, or ``None``.
-    #     :param operation: The comparison operator to use. See :py:data:`.COMPARATOR`
-    #         for more information on valid values.
-    #     :param second_operand: The name of the second signal, some constant, or
-    #         ``None``.
-    #     :param output_signal: The name of the output signal to set, or ``None``.
-    #     :param copy_count_from_input: Whether or not to copy input signal values
-    #         to output signal values. Defaults to ``None``, which also means ``True``.
-
-    #     :exception DataFormatError: If the any of the arguments fail to match
-    #         their correct formats.
-    #     """
-    #     new_control_behavior = {
-    #         "decider_conditions": {
-    #             "first_signal": first_operand,
-    #             "comparator": operation,
-    #             "output_signal": output_signal,
-    #             "copy_count_from_input": copy_count_from_input,
-    #         }
-    #     }
-
-    #     if isinstance(second_operand, (int, float)):
-    #         new_control_behavior["decider_conditions"]["constant"] = second_operand
-    #     else:
-    #         new_control_behavior["decider_conditions"]["second_signal"] = second_operand
-
-    #     # Set
-    #     self.control_behavior = new_control_behavior
-
-    # def remove_decider_conditions(self):
-    #     """
-    #     Wipes all the values from the ``"decider_conditions"`` key in this
-    #     entity's control behavior. Allows you to quickly clear all values
-    #     associated with this entity without having to manually reset each
-    #     attribute.
-    #     """
-    #     self.control_behavior.decider_conditions = (
-    #         __class__.Format.ControlBehavior.DeciderConditions()
-    #     )
 
     def merge(self, other: "DeciderCombinator"):
         super().merge(other)

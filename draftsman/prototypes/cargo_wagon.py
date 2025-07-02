@@ -51,8 +51,6 @@ class CargoWagon(
     # =========================================================================
 
     inventory: Optional[FilteredInventory] = attrs.field(
-        # factory=FilteredInventory,
-        converter=FilteredInventory.converter,
         validator=and_(
             instance_of(Optional[FilteredInventory]),
             lambda self, _, value, **kwargs: value._set_parent(

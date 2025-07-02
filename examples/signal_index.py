@@ -10,7 +10,7 @@ and store many thousands of signals on a single wire.
 The combinator is populated with all user-selectable signals as well as many 
 hidden signals. Certain signals can have different types: `transport-belt` can
 have a  type of `item`, `entity`, or `recipe`, and each one of these is 
-considred a  different signal by the circuit network. Each one of those signal 
+considered a  different signal by the circuit network. Each one of those signal 
 types is also multiplexed by the number of quality levels available, which is 6
 if you include the special quality `quality-unknown` (which this script uses).
 
@@ -94,7 +94,7 @@ def main():
     blueprint.label = "Signal Index Dictionary"
     blueprint.label_color = (1.0, 0.0, 1.0, 1.0)
     # blueprint.icons = ["signal-I", "signal-D"]
-    blueprint.set_icons("signal-I", "signal-D")
+    blueprint.icons = ["signal-I", "signal-D"]
     blueprint.description = "A dictionary of unique signals to unique index."
 
     combinator = ConstantCombinator("constant-combinator", direction=Direction.SOUTH)

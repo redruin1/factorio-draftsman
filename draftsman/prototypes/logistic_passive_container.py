@@ -66,7 +66,7 @@ class _ExportLogisticActiveContainer:
 
 _export_fields = attrs.fields(_ExportLogisticActiveContainer)
 
-# TODO: still not a fan of defining hooks like this
+
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     LogisticPassiveContainer,
     lambda fields: {

@@ -38,6 +38,8 @@ class RecipeMixin(Exportable):
 
     # =========================================================================
 
+    # TODO: move to parent and rename to `allowed_inputs`, subclass on children
+    # as necessary
     @property
     def allowed_input_ingredients(self):
         """
@@ -96,7 +98,8 @@ class RecipeMixin(Exportable):
             )
             warnings.warn(RecipeLimitationWarning(msg))
 
-    # TODO: this should be in ModulesMixin
+    # TODO: create `allowed_modules` property and just reference that, then update
+    # in subclasses as needed
     @recipe.validator
     @conditional(ValidationMode.STRICT)
     def _(

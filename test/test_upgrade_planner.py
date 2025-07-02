@@ -1,17 +1,17 @@
 # test_upgrade_planner.py
 
-from draftsman import __factorio_version_info__
-from draftsman.classes.upgrade_planner import UpgradePlanner
+# from draftsman import mods.versions["base"]
+from draftsman.classes.upgrade_planner import UpgradePlanner, Mapper, UpgradeMapperSource, UpgradeMapperDestination
 from draftsman.classes.exportable import ValidationResult
 from draftsman.constants import ValidationMode
-from draftsman.data import entities, items
+from draftsman.data import entities, items, mods
 from draftsman.error import (
     IncorrectBlueprintTypeError,
     MalformedBlueprintStringError,
     DataFormatError,
     InvalidMapperError,
 )
-from draftsman.signatures import Icon, Mapper
+from draftsman.signatures import Icon
 from draftsman.utils import encode_version
 import draftsman.validators
 from draftsman.warning import (
@@ -35,7 +35,7 @@ class TestUpgradePlanner:
         upgrade_planner = UpgradePlanner()
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # String
@@ -74,7 +74,7 @@ class TestUpgradePlanner:
                     }
                 ]
             },
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Warnings
@@ -93,6 +93,59 @@ class TestUpgradePlanner:
         with pytest.raises(MalformedBlueprintStringError):
             UpgradePlanner.from_string("0lmaothisiswrong")
 
+    def test_versioning(self):
+        upgrade_planner = UpgradePlanner()
+        upgrade_planner.set_mapping(
+            UpgradeMapperSource(
+                type="entity",
+                name="transport-belt",
+                comparator="<",
+                quality="legendary"
+            ),
+            UpgradeMapperDestination(
+                type="entity",
+                name="fast-transport-belt",
+                quality="legendary"
+            ),
+            index=0,
+        )
+
+        assert upgrade_planner.to_dict(version=(1, 0))["upgrade_planner"] == {
+            "item": "upgrade-planner",
+            "settings": {
+                "mappers": [
+                    {
+                        "index": 0,
+                        "from": {"name": "transport-belt", "type": "entity"},
+                        "to": {"name": "fast-transport-belt", "type": "entity"},
+                    }
+                ]
+            },
+            "version": encode_version(*mods.versions["base"]),
+        }
+        assert upgrade_planner.to_dict(version=(2, 0))["upgrade_planner"] == {
+            "item": "upgrade-planner",
+            "settings": {
+                "mappers": [
+                    {
+                        "index": 0,
+                        "from": {
+                            "name": "transport-belt", 
+                            "type": "entity",
+                            "comparator": "<",
+                            "quality": "legendary"
+                        },
+                        "to": {
+                            "name": "fast-transport-belt", 
+                            "type": "entity",
+                            "quality": "legendary"
+                        },
+                    }
+                ]
+            },
+            "version": encode_version(*mods.versions["base"]),
+        }
+
     def test_description(self):
         upgrade_planner = UpgradePlanner()
 
@@ -101,7 +154,7 @@ class TestUpgradePlanner:
         assert upgrade_planner.description == "some description"
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
             "settings": {"description": "some description"},
         }
 
@@ -110,7 +163,7 @@ class TestUpgradePlanner:
         assert upgrade_planner.description == ""
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
@@ -129,7 +182,7 @@ class TestUpgradePlanner:
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
             "settings": {
                 "icons": [
                     {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
@@ -143,7 +196,7 @@ class TestUpgradePlanner:
         # assert "icons" not in upgrade_planner["upgrade_planner"]["settings"]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
@@ -161,7 +214,7 @@ class TestUpgradePlanner:
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
             "settings": {
                 "icons": [
                     {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}}
@@ -178,7 +231,7 @@ class TestUpgradePlanner:
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
             "settings": {
                 "icons": [
                     {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},

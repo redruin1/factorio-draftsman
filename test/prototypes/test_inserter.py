@@ -1,5 +1,7 @@
 # test_inserter.py
 
+from draftsman.classes.group import Group
+from draftsman.classes.vector import Vector
 from draftsman.constants import (
     Direction,
     InserterReadMode,
@@ -47,8 +49,8 @@ def valid_inserter():
         use_filters=True,
         filters=[ItemFilter(index=0, name="iron-ore")],
         circuit_set_filters=True,
-        pickup_position=(1, 1),
-        drop_position=(1, 0),
+        pickup_position_offset=(1, 1),
+        drop_position_offset=(1, 0),
         filter_mode="blacklist",
         spoil_priority="spoiled-first",
         tags={"blah": "blah"},
@@ -130,6 +132,75 @@ class TestInserter:
 
     def test_filter_count(self):
         assert Inserter("inserter").filter_count == 5
+
+    def test_pickup_position(self):
+        inserter = Inserter("inserter", direction=Direction.NORTH)
+        assert inserter.pickup_position == Vector(0.5, -0.5)
+        # Test different direction
+        inserter.direction = Direction.EAST
+        assert inserter.pickup_position == Vector(1.5, 0.5)
+        # Test different position
+        inserter.tile_position = (10, 10)
+        assert inserter.pickup_position == Vector(11.5, 10.5)
+        # Test custom offset
+        inserter.pickup_position_offset = (1, 1)
+        assert inserter.pickup_position == Vector(12.5, 11.5)
+
+        # Test long-handed inserter
+        long_inserter = Inserter("long-handed-inserter", direction=Direction.NORTH)
+        assert long_inserter.pickup_position == Vector(0.5, -1.5)
+        # Test different direction
+        long_inserter.direction = Direction.EAST
+        assert long_inserter.pickup_position == Vector(2.5, 0.5)
+        # Test different position
+        long_inserter.tile_position = (10, 10)
+        assert long_inserter.pickup_position == Vector(12.5, 10.5)
+        # Test custom offset
+        long_inserter.pickup_position_offset = (1, 1)
+        assert long_inserter.pickup_position == Vector(13.5, 11.5)
+
+        # Test that Group positions are respected
+        group = Group(position=(10, 10))
+        group.entities.append(inserter, id="inserter")
+        assert group.entities["inserter"].pickup_position == Vector(22.5, 21.5)
+
+        with pytest.warns(UnknownEntityWarning):
+            assert Inserter("some unknown inserter").pickup_position == Vector(0, 0)
+
+    def test_dropoff_position(self):
+        inserter = Inserter("inserter", direction=Direction.NORTH)
+        assert inserter.drop_position == Vector(0.5, 1.7)
+        # Test different direction
+        inserter.direction = Direction.EAST
+        assert inserter.drop_position == Vector(-0.7, 0.5)
+        # Test different position
+        inserter.tile_position = (10, 10)
+        assert inserter.drop_position == Vector(9.3, 10.5)
+        # Test custom offset
+        inserter.drop_position_offset = (1, 1)
+        assert inserter.drop_position == Vector(10.3, 11.5)
+
+        # Test long-handed inserter
+        long_inserter = Inserter("long-handed-inserter", direction=Direction.NORTH)
+        assert long_inserter.drop_position == Vector(0.5, 2.7)
+        # Test different direction
+        long_inserter.direction = Direction.EAST
+        # assert long_inserter.drop_position == Vector(-1.7, 0.5)
+        assert long_inserter.drop_position._data == pytest.approx((-1.7, 0.5))
+        # Test different position
+        long_inserter.tile_position = (10, 10)
+        assert long_inserter.drop_position == Vector(8.3, 10.5)
+        # Test custom offset
+        long_inserter.drop_position_offset = (1, 1)
+        assert long_inserter.drop_position == Vector(9.3, 11.5)
+
+        # Test that Group positions are respected
+        group = Group(position=(10, 10))
+        group.entities.append(inserter, id="inserter")
+        assert group.entities["inserter"].drop_position == Vector(20.3, 21.5)
+
+        with pytest.warns(UnknownEntityWarning):
+            assert Inserter("some unknown inserter").drop_position == Vector(0, 0)
 
     def test_set_filters(self):
         inserter = Inserter("inserter")
@@ -410,10 +481,10 @@ class TestInserter:
     def test_custom_hand_positions(self):
         inserter = Inserter("stack-inserter")
 
-        inserter.pickup_position = [0, -2]
-        assert inserter.pickup_position == [0, -2]
-        inserter.drop_position = [0, 2]
-        assert inserter.drop_position == [0, 2]
+        inserter.pickup_position_offset = [0, -2]
+        assert inserter.pickup_position_offset == Vector(0, -2)
+        inserter.drop_position_offset = [0, 2]
+        assert inserter.drop_position_offset == Vector(0, 2)
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},

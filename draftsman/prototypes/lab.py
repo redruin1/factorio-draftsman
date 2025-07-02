@@ -6,7 +6,7 @@ from draftsman.constants import Inventory
 from draftsman.signatures import ModuleID, QualityID
 
 from draftsman.data.entities import labs
-from draftsman.data import entities
+from draftsman.data import entities, modules
 
 import attrs
 from typing import Iterable, Optional
@@ -35,7 +35,21 @@ class Lab(ModulesMixin, EnergySourceMixin, Entity):
 
     # =========================================================================
 
-    # TODO: in a perfect world
+    @property
+    def module_slots_occupied(self) -> int:
+        return len(
+            {
+                inv_pos.stack
+                for req in self.item_requests
+                if req.id.name in modules.raw
+                for inv_pos in req.items.in_inventory
+                if inv_pos.inventory == Inventory.lab_modules
+            }
+        )
+
+    # =========================================================================
+
+    # TODO: should be evolve
     # item_requests = attrs.fields(ItemRequestMixin).item_requests.reuse()
 
     # @item_requests.validator()

@@ -132,7 +132,6 @@ except FileNotFoundError:  # pragma: no coverage
     collision_sets: dict[str, CollisionSet] = {}
 
 
-# TODO: should these be here?
 ALL_EFFECTS = {"speed", "productivity", "consumption", "pollution", "quality"}
 ALL_EFFECTS_EXCEPT_QUALITY = {
     "speed",

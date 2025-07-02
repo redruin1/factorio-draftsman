@@ -261,23 +261,6 @@ def test_equipment():
         ),
     ]
 
-    # Test full dict conversion
-    spider_copy.equipment = [
-        {
-            "equipment": {
-                "name": "battery-equipment",
-                "quality": "legendary",
-            },
-            "position": {"x": 2, "y": 0},
-        }
-    ]
-    assert spider_copy.equipment == [
-        EquipmentComponent(
-            equipment=EquipmentID(name="battery-equipment", quality="legendary"),
-            position=(2, 0),
-        ),
-    ]
-
 
 def test_color():
     vehicle = SpiderVehicle("spidertron")

@@ -41,14 +41,10 @@ def _ensure_valid_virtual_signal(self, attr, value):
 
 @conditional(ValidationMode.STRICT)
 def _ensure_proper_each_configuration(
-    self, attr, value, mode=None, warning_list: Optional[list] = None
+    self,
+    _attr,
+    value,
 ):
-    # TODO: ensure this is only called on validation of the entire
-    # thing
-
-    # Ensure that if the output signal is set to "signal-each",
-    # one of the input signals must also be "signal-each"
-    # TODO: write this better
     each_in_inputs = False
     if (
         isinstance(self.first_operand, SignalID)
@@ -130,12 +126,13 @@ class ArithmeticCombinator(
         validator=instance_of(CircuitNetworkSelection),
     )
     """
-    TODO
+    Which wire colors should the first signal read from when calculating. If 
+    :py:attr:`.first_operand` is a constant, this attribute has no effect.
 
     .. NOTE::
 
         In Factorio 1.0, inputs always utilize both wires regardless of this 
-        value, and this value is stripped when exporting to that version.
+        value.
     """
 
     # =========================================================================
@@ -202,7 +199,13 @@ class ArithmeticCombinator(
         validator=instance_of(CircuitNetworkSelection),
     )
     """
-    TODO
+    Which wire colors should the second signal read from when calculating. If 
+    :py:attr:`.second_operand` is a constant, this attribute has no effect.
+
+    .. NOTE::
+
+        In Factorio 1.0, inputs always utilize both wires regardless of this 
+        value.
     """
 
     # =========================================================================
@@ -238,7 +241,7 @@ class ArithmeticCombinator(
     # =========================================================================
 
     @reissue_warnings
-    def set_arithmetic_conditions(
+    def set_arithmetic_condition(
         self,
         first_operand: Union[str, SignalID, int32, None] = None,
         first_operand_wires: set[Literal["red", "green"]] = {"red", "green"},

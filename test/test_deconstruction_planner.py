@@ -1,12 +1,8 @@
 # test_deconstruction_planner.py
 
-from draftsman import __factorio_version_info__
-from draftsman.classes.deconstruction_planner import (
-    DeconstructionPlanner,
-    EntityFilter,
-    TileFilter,
-)
+from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
+from draftsman.data import mods
 from draftsman.error import DataFormatError
 from draftsman.signatures import Icon
 from draftsman.utils import encode_version
@@ -21,7 +17,7 @@ class TestDeconstructionPlannerTesting:
         decon_planner = DeconstructionPlanner()
         assert decon_planner.to_dict()["deconstruction_planner"] == {
             "item": "deconstruction-planner",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # String
@@ -50,7 +46,7 @@ class TestDeconstructionPlannerTesting:
                 "tile_filter_mode": FilterMode.BLACKLIST,
                 "trees_and_rocks_only": True,
             },
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # TODO: reimplement
@@ -74,7 +70,7 @@ class TestDeconstructionPlannerTesting:
         # assert broken_planner.version == "incorrect"
         # assert broken_planner.description == 100
         # # Fix
-        # broken_planner.version = __factorio_version_info__
+        # broken_planner.version = mods.versions["base"]
         # broken_planner.description = "an actual string"
         # broken_planner.validate().reissue_all()  # No errors or warnings
 
@@ -113,11 +109,10 @@ class TestDeconstructionPlannerTesting:
     def test_set_entity_filters(self):
         decon_planner = DeconstructionPlanner()
 
-        # Test Verbose
-        decon_planner.entity_filters = [
-            {"name": "transport-belt", "index": 0},
-            {"name": "fast-transport-belt", "index": 1},
-        ]
+        EntityFilter = DeconstructionPlanner.EntityFilter
+
+        # Test Shorthand
+        decon_planner.entity_filters = ["transport-belt", "fast-transport-belt"]
         assert decon_planner.entity_filters == [
             EntityFilter(**{"name": "transport-belt", "index": 0}),
             EntityFilter(**{"name": "fast-transport-belt", "index": 1}),
@@ -170,11 +165,10 @@ class TestDeconstructionPlannerTesting:
     def test_set_tile_filters(self):
         decon_planner = DeconstructionPlanner()
 
-        # Test Verbose
-        decon_planner.tile_filters = [
-            {"name": "concrete", "index": 0},
-            {"name": "stone-path", "index": 1},
-        ]
+        TileFilter = DeconstructionPlanner.TileFilter
+
+        # Test Shorthand
+        decon_planner.tile_filters = ["concrete", "stone-path"]
         assert decon_planner.tile_filters == [
             TileFilter(**{"name": "concrete", "index": 0}),
             TileFilter(**{"name": "stone-path", "index": 1}),
@@ -216,6 +210,8 @@ class TestDeconstructionPlannerTesting:
     def test_set_entity_filter(self):
         decon_planner = DeconstructionPlanner()
 
+        EntityFilter = DeconstructionPlanner.EntityFilter
+
         # Normal case
         decon_planner.set_entity_filter(0, "transport-belt")
         decon_planner.set_entity_filter(1, "fast-transport-belt")
@@ -246,6 +242,8 @@ class TestDeconstructionPlannerTesting:
 
     def test_set_tile_filter(self):
         decon_planner = DeconstructionPlanner()
+
+        TileFilter = DeconstructionPlanner.TileFilter
 
         # Normal case
         decon_planner.set_tile_filter(0, "concrete")

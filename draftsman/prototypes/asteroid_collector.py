@@ -44,7 +44,7 @@ class AsteroidCollector(
     # =========================================================================
 
     result_inventory: Optional[FilteredInventory] = attrs.field(
-        factory=FilteredInventory,  # TODO: maybe just make a regular `Inventory` object?
+        factory=FilteredInventory,
         converter=FilteredInventory.converter,
         validator=instance_of(Optional[FilteredInventory]),
     )
@@ -52,15 +52,6 @@ class AsteroidCollector(
     Internal inventory of this asteroid collector. Attempting to set the 
     :py:attr:`~.FilteredInventory.filters` of this object has no effect.
     """
-
-    # bar: Optional[uint16] = attrs.field(
-    #     default=None,
-    #     validator=and_(instance_of(Optional[uint16]), ensure_bar_less_than_inventory_size),
-    #     metadata={"never_null": True}
-    # )
-    # """
-    # The limiting bar of this Asteroid collector.
-    # """
 
     # =========================================================================
 
@@ -71,7 +62,7 @@ class AsteroidCollector(
                 if isinstance(elem, str):
                     res[i] = AsteroidChunkID(index=i + 1, name=elem)
                 else:
-                    res[i] = AsteroidChunkID.converter(elem)
+                    res[i] = elem
             return res
         else:
             return value
@@ -85,8 +76,6 @@ class AsteroidCollector(
     The set of manually specified chunk filters for this asteroid collector.
     Overridden by any circuit filters, if configured and present.
     """
-
-    # TODO: max chunk filters
 
     # =========================================================================
 

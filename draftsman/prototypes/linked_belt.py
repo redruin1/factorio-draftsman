@@ -11,15 +11,15 @@ import attrs
 
 @fix_incorrect_pre_init
 @attrs.define
-class LinkedBelt(DirectionalMixin, Entity):  # TODO: finish
+class LinkedBelt(DirectionalMixin, Entity):
     """
     A belt object that can transfer items over any distance, regardless of
     constraint, as long as the two are paired together.
 
-    .. WARNING::
+    .. NOTE::
 
-        Functionally, currently unimplemented. Need to analyze how mods use this
-        entity, as I can't seem to figure out the example one in the game.
+        This class (currently) provides no functionality on actually linking
+        belts together.
     """
 
     @property

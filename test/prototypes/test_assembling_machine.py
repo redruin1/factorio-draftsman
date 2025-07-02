@@ -231,6 +231,8 @@ class TestAssemblingMachine:
 
     def test_request_modules(self):
         machine = AssemblingMachine("assembling-machine-3")
+        assert machine.module_slots_occupied == 0
+
         machine.request_modules("productivity-module-3", (0, 1, 2, 3), "legendary")
         assert machine.item_requests == [
             BlueprintInsertPlan(
@@ -257,6 +259,7 @@ class TestAssemblingMachine:
                 ),
             )
         ]
+        assert machine.module_slots_occupied == 4
 
         # TODO: warn if exceeds module slots
 

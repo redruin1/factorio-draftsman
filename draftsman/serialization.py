@@ -7,6 +7,7 @@ from cattrs.fns import identity
 from cattrs.gen._lc import generate_unique_filename
 
 import functools
+import inspect
 from typing import Any, Callable, Optional, TypeVar
 
 T = TypeVar("T")
@@ -15,8 +16,6 @@ MASTER_CONVERTER = cattrs.Converter(omit_if_default=False)
 MASTER_CONVERTER_OMIT_NONE = cattrs.Converter(omit_if_default=False)
 MASTER_CONVERTER_OMIT_DEFAULTS = cattrs.Converter(omit_if_default=True)
 MASTER_CONVERTER_OMIT_NONE_DEFAULTS = cattrs.Converter(omit_if_default=True)
-
-# TODO: minimize boilerplate here
 
 
 # @MASTER_CONVERTER.register_structure_hook_factory(attrs.has)
@@ -195,12 +194,6 @@ def omit_none_default_unstructure_factory(
     return unstructure_hook
 
 
-# TODO
-# def _explicit_exclude(obj):
-#     excluded = {attr.name for attr in attrs.fields(obj) if not attr.metadata.get("excluded", True)}
-#     r = {k: v for k, v in MASTER_CONVERTER.get_unstructure_hook(obj)() if k not in excluded and v is not None}
-
-
 class ConverterVersion:
     def __init__(self):
         self.converters: dict[tuple[bool, bool], cattrs.Converter] = {
@@ -243,11 +236,16 @@ class ConverterVersion:
         if unstructure_func is not None:
             self.unstructure_funcs[cls] = unstructure_func
 
-    def get_structure_dict(self, cls: type) -> dict:
+    def get_structure_dict(self, cls: type, converter: cattrs.Converter) -> dict:
         res = {}
         for subcls in reversed(cls.mro()):
             if subcls in self.structure_funcs:
-                call_value = self.structure_funcs[subcls](attrs.fields(subcls))
+                if len(inspect.signature(self.structure_funcs[subcls]).parameters) == 1:
+                    call_value = self.structure_funcs[subcls](attrs.fields(subcls))
+                else:
+                    call_value = self.structure_funcs[subcls](
+                        attrs.fields(subcls), converter
+                    )
                 res.update(
                     {
                         (k,) if isinstance(k, str) else k: v
@@ -369,7 +367,6 @@ draftsman_converters.add_version((2, 0))
 #     Iterate over the "locations" in each field metadata and resolve any lambdas
 #     to fixed values.
 #     """
-#     # TODO: better
 #     # print([field.name for field in fields])
 #     for index, field in enumerate(fields):
 #         # print(field)
@@ -420,7 +417,6 @@ draftsman_converters.add_version((2, 0))
 #         # if issubclass(field.type, Enum):
 #         #     print(field.name)
 
-#     # TODO: something more sophisticated might be necessary
 #     # fields.sort(key=lambda attr: attr.name)
 #     # print([field.name for field in fields])
 #     return fields

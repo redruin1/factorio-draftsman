@@ -120,12 +120,16 @@ class TestBufferContainer:
             "buffer-chest",
             bar=10,
             sections=[
-                {
-                    "index": 1,
-                    "filters": [
-                        {"name": "utility-science-pack", "index": 1, "count": 10}
+                ManualSection(
+                    index=1,
+                    filters=[
+                        SignalFilter(
+                            index=1,
+                            name="utility-science-pack",
+                            count=10,
+                        )
                     ],
-                }
+                )
             ],
             tags={"some": "stuff"},
         )
@@ -144,17 +148,16 @@ class TestBufferContainer:
             "buffer-chest",
             bar=10,
             sections=[
-                {
-                    "index": 1,
-                    "filters": [
-                        {
-                            "name": "utility-science-pack",
-                            "index": 1,
-                            "count": 10,
-                            "comparator": "=",
-                        }
+                ManualSection(
+                    index=1,
+                    filters=[
+                        SignalFilter(
+                            index=1,
+                            name="utility-science-pack",
+                            count=10,
+                        )
                     ],
-                }
+                )
             ],
             tags={"some": "stuff"},
         )
@@ -166,17 +169,14 @@ class TestBufferContainer:
         assert container1.bar == 10
         assert container1.sections == [
             ManualSection(
-                **{
-                    "index": 1,
-                    "filters": [
-                        {
-                            "name": "utility-science-pack",
-                            "index": 1,
-                            "count": 10,
-                            "comparator": "=",
-                        }
-                    ],
-                }
+                index=1,
+                filters=[
+                    SignalFilter(
+                        index=1,
+                        name="utility-science-pack",
+                        count=10,
+                    )
+                ],
             )
         ]
         assert container1.tags == {"some": "stuff"}

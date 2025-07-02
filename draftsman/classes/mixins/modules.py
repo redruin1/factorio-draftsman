@@ -1,5 +1,6 @@
 # modules.py
 
+from draftsman.constants import Inventory
 from draftsman.data import entities, modules
 from draftsman.signatures import (
     BlueprintInsertPlan,
@@ -11,10 +12,11 @@ from draftsman.signatures import (
     uint32,
 )
 
+from abc import ABCMeta, abstractmethod
 from typing import Iterable, Optional
 
 
-class ModulesMixin:
+class ModulesMixin(metaclass=ABCMeta):
     """
     (Implicitly inherits :py:class:`~.ItemRequestMixin`)
 
@@ -35,14 +37,14 @@ class ModulesMixin:
     # =========================================================================
 
     @property
+    @abstractmethod
     def module_slots_occupied(self) -> int:
         """
         The total number of module slots that are currently taken by inserted
         modules. Not exported; read only.
         """
-        return sum(
-            [v for k, v in self.item_requests if k in modules.raw]
-        )  # TODO: FIXME
+        # Default to subclass implementation, as it depends on the inventory
+        pass  # pragma: no coverage
 
     # =========================================================================
 

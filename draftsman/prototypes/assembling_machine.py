@@ -53,7 +53,7 @@ class AssemblingMachine(
 
     # =========================================================================
 
-    # TODO: reimplement, but do so more specifically; i.e. allowed_inputs
+    # TODO: validate item requests match whichever recipe is currently selected
     # @property  # TODO abstractproperty
     # def allowed_items(self) -> Optional[set[str]]:
     #     if self.allowed_input_ingredients is None:
@@ -62,11 +62,25 @@ class AssemblingMachine(
     #         return self.allowed_modules + self.allowed_input_ingredients
 
     @property
-    def allowed_modules(self) -> Optional[set[str]]:  # TODO: maybe set?
+    def allowed_modules(self) -> Optional[set[str]]:
         if self.recipe is None:
             return super().allowed_modules
         else:
             return modules.get_modules_from_effects(self.allowed_effects, self.recipe)
+
+    # =========================================================================
+
+    @property
+    def module_slots_occupied(self) -> int:
+        return len(
+            {
+                inv_pos.stack
+                for req in self.item_requests
+                if req.id.name in modules.raw
+                for inv_pos in req.items.in_inventory
+                if inv_pos.inventory == Inventory.assembling_machine_modules
+            }
+        )
 
     # =========================================================================
 

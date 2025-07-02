@@ -27,6 +27,10 @@ class ArtilleryWagon(
     # kinds of ammo it uses
     # Though what about mods?
 
+    # @property # TODO: cache
+    # def allowed_items(self) -> Optional[set[str]]:
+    #     pass
+
     # =========================================================================
 
     @property

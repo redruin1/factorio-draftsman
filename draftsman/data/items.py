@@ -24,7 +24,8 @@ with pkg_resources.open_binary(data, "items.pkl") as inp:
 
 def add_group(name: str, order: str = "", subgroups=[], **kwargs):
     """
-    TODO
+    Adds a new item group to Draftsman's environment, which persists until the
+    end of the session.
     """
     # Prioritize existing data if present
     existing_data = raw.get(name, {})
@@ -46,7 +47,8 @@ def add_group(name: str, order: str = "", subgroups=[], **kwargs):
 
 def add_subgroup(name: str, group: str, items=[], order: str = "", **kwargs):
     """
-    TODO
+    Adds a new item subgroup to Draftsman's environment, which persists until
+    the end of the session.
     """
     # Prioritize existing data if present
     existing_data = raw.get(name, {})
@@ -83,7 +85,7 @@ def add_item(
 
     If you specify a subgroup name that does not exist in `items.subgroups`,
     then this function will create a new item subgroup and populate this dict
-    as well with a dummy value. Note that this new subgroup will
+    as well with a dummy value.
 
     If you want to add an item to custom groups, it likely makes more sense to
     run the functions `items.add_group` and `items.add_subgroup` with the
@@ -91,8 +93,6 @@ def add_item(
 
     Any modifications to the environment only persist for the remainder of that
     session.
-
-    TODO
     """
     # Prioritize existing data if present
     existing_data = raw.get(name, {})
@@ -149,7 +149,10 @@ def get_weight(
     If this item is not recognized by Draftsman, this function returns ``None``
     instead.
 
-    :param name:
+    :param item_name: The name of the item.
+    :param already_visited: Whether or not this particular item has already been
+        calculated in a recursive call to ``get_weight``. The caller should
+        always keep this argument ``None``.
 
     :returns: The weight of the item in kilograms, or ``None`` if unable to
         determine the item's weight.
@@ -218,7 +221,6 @@ def get_weight(
             x.get("order", ""),
         ),
     )[0]
-    # recipe = sorted_recipes[0]
 
     for ingredient in recipe["ingredients"]:
         if ingredient["type"] == "item":

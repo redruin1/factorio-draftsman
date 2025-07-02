@@ -174,7 +174,7 @@ class BlueprintBook(Blueprintable):
 
     item: str = attrs.field(
         default="blueprint-book",
-        # TODO: validators
+        validator=instance_of(str),
         metadata={
             "omit": False,
         },
@@ -221,8 +221,6 @@ class BlueprintBook(Blueprintable):
     def _blueprints_default(self):
         return BlueprintableList()
 
-
-# TODO: versioning
 
 draftsman_converters.add_hook_fns(
     BlueprintBook,

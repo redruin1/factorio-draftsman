@@ -15,9 +15,11 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
+from draftsman.classes.vector import Vector
+from draftsman.constants import Direction
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.validators import one_of
+from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import inserters
 
@@ -52,44 +54,106 @@ class Inserter(
 
     # =========================================================================
 
-    pickup_position: Optional[list[float]] = attrs.field(
-        default=None,
-        # TODO: validators
+    @property
+    def pickup_position(self) -> Vector:
+        """
+        Gets the current position in world space that this inserter will grab
+        items from.
+
+        This value is the sum of this entity's :py:attr:`.global_position`, it's
+        :py:attr:`.prototype` ``"pickup_position"``, and any custom
+        :py:attr:`.pickup_position_offset`. If this entity has no known
+        prototype or pickup offset, then both default to ``(0, 0)``.
+        """
+        try:
+            direction_matrix = {
+                Direction.NORTH: lambda p: p,
+                Direction.EAST: lambda p: (-p[1], p[0]),
+                Direction.SOUTH: lambda p: (-p[0], -p[1]),
+                Direction.WEST: lambda p: (p[1], -p[0]),
+            }
+            pickup_position = direction_matrix[self.direction](
+                self.prototype["pickup_position"]
+            )
+        except KeyError:  # Unknown entity/direction case
+            pickup_position = (0, 0)
+        return self.global_position + pickup_position + self.pickup_position_offset
+
+    # =========================================================================
+
+    @property
+    def drop_position(self) -> Vector:
+        """
+        Gets the current position in world space that this inserter will drop
+        items to.
+
+        This value is the sum of this entity's :py:attr:`.global_position`, it's
+        :py:attr:`.prototype` ``"pickup_position"``, and any custom
+        :py:attr:`.pickup_position_offset`. If this entity has no known
+        prototype or pickup offset, then both default to ``(0, 0)``.
+        """
+        try:
+            direction_matrix = {
+                Direction.NORTH: lambda p: p,
+                Direction.EAST: lambda p: (-p[1], p[0]),
+                Direction.SOUTH: lambda p: (-p[0], -p[1]),
+                Direction.WEST: lambda p: (p[1], -p[0]),
+            }
+            drop_position = direction_matrix[self.direction](
+                self.prototype["insert_position"]
+            )
+        except KeyError:  # Unknown entity/direction case
+            drop_position = (0, 0)
+        return self.global_position + drop_position + self.drop_position_offset
+
+    # =========================================================================
+
+    pickup_position_offset: Optional[Vector] = attrs.field(
+        factory=lambda: Vector(0, 0),
+        converter=Vector.from_other,
+        validator=instance_of(Optional[Vector]),
     )
     """
-    The configured pickup position of the inserter. This is *not* the position/
-    tile in world space that this inserter would grab an item from; it is 
-    instead a position "offset" used for when inserters have custom pickup/
-    dropoff locations (think adjustable inserter mods).
+    The configured pickup position "offset" used for when inserters have custom 
+    pickup/dropoff locations (think adjustable inserter mods).
 
-    TODO: what do the values mean?
+    The value is specified as an X/Y coordinate offset from where the position
+    would "normally" be. This offset coordinate is defined in world axes, so
+    a offset position of ``(0, 1)`` will always shift the inserter's hand 
+    position 1 tile southward.
 
     .. NOTE::
 
         Only inserters with the ``"allow_custom_vectors"`` key set to ``True`` 
         in their :py:attr:`.prototype` definition will actually allow setting
-        these values to have an effect in game.
+        these values to have an effect in game. In other words, only modded 
+        inserters (or vanilla inserters which have been tweaked with mods) can
+        actually change this behavior.
     """
 
     # =========================================================================
 
-    drop_position: Optional[list[float]] = attrs.field(
-        default=None,
-        # TODO: validators
+    drop_position_offset: Optional[Vector] = attrs.field(
+        factory=lambda: Vector(0, 0),
+        converter=Vector.from_other,
+        validator=instance_of(Optional[Vector]),
     )
     """
-    The configured drop position of the inserter. This is *not* the position/
-    tile in world space that this inserter would move an item to; it is instead 
-    a position "offset" used for when inserters have custom pickup/dropoff 
-    locations (think adjustable inserter mods).
+    The configured drop position "offset" used for when inserters have custom 
+    pickup/dropoff locations (think adjustable inserter mods).
 
-    TODO: what do the values mean?
+    The value is specified as an X/Y coordinate offset from where the position
+    would "normally" be. This offset coordinate is defined in world axes, so
+    a offset position of ``(0, 1)`` will always shift the inserter's hand 
+    position 1 tile southward.
 
     .. NOTE::
 
         Only inserters with the ``"allow_custom_vectors"`` key set to ``True`` 
         in their :py:attr:`.prototype` definition will actually allow setting
-        these values to have an effect in game.
+        these values to have an effect in game. In other words, only modded 
+        inserters (or vanilla inserters which have been tweaked with mods) can
+        actually change this behavior.
     """
 
     # =========================================================================
@@ -108,7 +172,7 @@ class Inserter(
     # =========================================================================
 
     spoil_priority: Literal["spoiled-first", "fresh-first", None] = attrs.field(
-        default=None,  # TODO: is this true?
+        default=None,
         validator=one_of("spoiled-first", "fresh-first", None),
     )
     """
@@ -126,8 +190,8 @@ class Inserter(
         super().merge(other)
 
         self.circuit_set_filters = other.circuit_set_filters
-        self.pickup_position = other.pickup_position
-        self.drop_position = other.drop_position
+        self.pickup_position_offset = other.pickup_position_offset
+        self.drop_position_offset = other.drop_position_offset
         self.filter_mode = other.filter_mode
         self.spoil_priority = other.spoil_priority
 
@@ -136,12 +200,34 @@ class Inserter(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
+@attrs.define
+class _Export:
+    pickup_position_offset: list[float] = [0, 0]
+    drop_position_offset: list[float] = [0, 0]
+
+
+_export_fields = attrs.fields(_Export)
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     Inserter,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
-        "pickup_position": fields.pickup_position.name,
-        "drop_position": fields.drop_position.name,
+        "pickup_position": fields.pickup_position_offset.name,
+        "drop_position": fields.drop_position_offset.name,
+        "filter_mode": fields.filter_mode.name,
+        None: fields.spoil_priority.name,
+    },
+    lambda fields, _: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": (
+            _export_fields.pickup_position_offset,
+            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+        ),
+        "drop_position": (
+            _export_fields.drop_position_offset,
+            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+        ),
         "filter_mode": fields.filter_mode.name,
         None: fields.spoil_priority.name,
     },
@@ -151,8 +237,21 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
     Inserter,
     lambda fields: {
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
-        "pickup_position": fields.pickup_position.name,
-        "drop_position": fields.drop_position.name,
+        "pickup_position": fields.pickup_position_offset.name,
+        "drop_position": fields.drop_position_offset.name,
+        "filter_mode": fields.filter_mode.name,
+        "spoil_priority": fields.spoil_priority.name,
+    },
+    lambda fields, _: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": (
+            _export_fields.pickup_position_offset,
+            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+        ),
+        "drop_position": (
+            _export_fields.drop_position_offset,
+            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+        ),
         "filter_mode": fields.filter_mode.name,
         "spoil_priority": fields.spoil_priority.name,
     },

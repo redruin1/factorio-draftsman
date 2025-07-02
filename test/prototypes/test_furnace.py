@@ -177,6 +177,8 @@ class TestFurnace:
 
     def test_request_modules(self):
         furnace = Furnace("electric-furnace")
+        assert furnace.module_slots_occupied == 0
+
         furnace.request_modules("productivity-module-3", (0, 1), "legendary")
         assert furnace.item_requests == [
             BlueprintInsertPlan(
@@ -195,6 +197,7 @@ class TestFurnace:
                 ),
             )
         ]
+        assert furnace.module_slots_occupied == 2
 
     def test_mergable_with(self):
         furnace1 = Furnace("stone-furnace")

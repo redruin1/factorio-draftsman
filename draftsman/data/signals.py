@@ -5,6 +5,7 @@ from draftsman.data import entities, modules
 from draftsman.error import InvalidSignalError, InvalidMapperError
 
 import pickle
+from typing import Literal
 
 import importlib.resources as pkg_resources
 
@@ -96,48 +97,32 @@ def get_signal_types(signal_name: str) -> list[str]:
         raise InvalidSignalError(msg)
 
 
-# def signal_dict(signal: str) -> dict:
-#     """
-#     Creates a SignalID ``dict`` from the given signal name.
-
-#     Uses :py:func:`get_signal_type` to get the type for the dictionary.
-
-#     :param signal_name: The name of the signal.
-
-#     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
-#     :exception InvalidSignalError: If the signal name is not contained within
-#         :py:mod:`draftsman.data.signals`, and thus it's type cannot be deduced.
-#     """
-#     if signal is None or isinstance(signal, dict):
-#         return signal
-#     else:
-#         if "item" in get_signal_types(signal):
-#             return {"name": str(signal), "type": "item"}
-#         else:
-#             return {"name": str(signal), "type": next(iter(get_signal_types(signal)))}
-
-
-def get_mapper_type(mapper_name: str) -> str:
+def get_mapper_type(mapper_name: str) -> Literal["item", "entity"]:
     """
-    TODO
+    Determines which mapper type this object should be if specifying from a bare
+    string.
+
+    :returns: Either ``"item"`` if the input name was a module, or ``"entity"``
+        if it is a known entity.
+    :exception InvalidMapperError: If the input string was neither a known
+        module nor a known entity (and thus the mapping type cannot be deduced).
     """
-    # TODO: actually check that this is the case (particularly with modded entities/items)
-    if mapper_name in modules.raw:  # TODO: should probably change
+    if mapper_name in modules.raw:
         return "item"
-    elif mapper_name in entities.raw:  # TODO: should probably change
+    elif mapper_name in entities.raw:
         return "entity"
     else:
         raise InvalidMapperError("'{}'".format(mapper_name))
 
 
-def mapper_dict(mapper: str) -> dict:
-    """
-    Creates a MappingID ``dict`` from  the given mapping name.
+# def mapper_dict(mapper: str) -> dict:
+#     """
+#     Creates a MappingID ``dict`` from  the given mapping name.
 
-    Uses :py:func:`get_mapping_type` to get the type for the dictionary.
+#     Uses :py:func:`get_mapping_type` to get the type for the dictionary.
 
-    :param signal_name: The name of the signal.
+#     :param signal_name: The name of the signal.
 
-    :returns: A dict with the ``"name"`` and ``"type"`` keys set.
-    """
-    return {"name": str(mapper), "type": get_mapper_type(mapper)}
+#     :returns: A dict with the ``"name"`` and ``"type"`` keys set.
+#     """
+#     return {"name": str(mapper), "type": get_mapper_type(mapper)}

@@ -19,15 +19,15 @@ class EnergySourceMixin:
     @property
     def energy_source(self) -> Optional[dict]:
         """
-        The energy source specification for this entity.
+        The energy source specification for this entity. See
+        https://lua-api.factorio.com/latest/types/BaseEnergySource.html
 
-        TODO
+
+        :returns: A dictionary containing the parameters of this energy source,
+            or ``None`` if this entity is not recognized by the current
+            Draftsman environment.
         """
-        energy_source = self.prototype.get("energy_source", None)
-        if energy_source is not None:
-            return energy_source
-        else:
-            return None
+        return self.prototype.get("energy_source", None)
 
     # =========================================================================
     # BurnerEnergySource
@@ -62,7 +62,7 @@ class EnergySourceMixin:
 
     # =========================================================================
 
-    @property  # TODO: cache?
+    @property  # cache?
     def allowed_fuel_items(self) -> Optional[set[str]]:
         """
         A set of strings, each one a valid item that can be used as a fuel

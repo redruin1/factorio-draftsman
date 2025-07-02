@@ -3,6 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.exportable import Exportable
 from draftsman.classes.mixins import (
+    PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
@@ -19,7 +20,11 @@ from typing import Optional
 
 @attrs.define
 class DisplayPanel(
-    ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity
+    PlayerDescriptionMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    DirectionalMixin,
+    Entity,
 ):
     """
     An entity which can display text and an icon to a surface or map view.
@@ -99,7 +104,6 @@ class DisplayPanel(
 
     messages: list[Message] = attrs.field(
         factory=list,
-        # TODO: converter
         validator=instance_of(list[Message]),
     )
     """

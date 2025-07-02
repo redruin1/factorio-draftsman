@@ -130,6 +130,12 @@ class Vector:
 
     # =========================================================================
 
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
     def __getitem__(self, index: Union[str, int]) -> Union[float, int]:
         if index == "x":
             return self._data[0]

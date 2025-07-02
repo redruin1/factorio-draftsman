@@ -23,7 +23,7 @@ class TargetPrioritiesMixin(Exportable):
                 if isinstance(elem, str):
                     res[i] = TargetID(index=i, name=elem)
                 else:
-                    res[i] = TargetID.converter(elem)
+                    res[i] = elem
             return res
         return value
 
@@ -114,9 +114,7 @@ class TargetPrioritiesMixin(Exportable):
         )
 
 
-# TODO: versioning
-
-draftsman_converters.add_hook_fns(
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     TargetPrioritiesMixin,
     lambda fields: {
         "priority_list": fields.priority_list.name,

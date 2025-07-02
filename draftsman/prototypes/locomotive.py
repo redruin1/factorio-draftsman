@@ -36,7 +36,7 @@ class Locomotive(
 
     # =========================================================================
 
-    # TODO: should be evolved
+    # TODO: should be evolve
     color: Optional[Color] = attrs.field(
         default=Color(r=234 / 255, g=17 / 255, b=0, a=127 / 255),
         converter=Color.converter,

@@ -1,10 +1,10 @@
 # test_blueprint_book.py
 
-from draftsman._factorio_version import __factorio_version_info__, __factorio_version__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintableList, BlueprintBook
+from draftsman.data import mods
 from draftsman.error import (
     InvalidSignalError,
     IncorrectBlueprintTypeError,
@@ -12,7 +12,7 @@ from draftsman.error import (
     IncompleteSignalError,
 )
 from draftsman.signatures import Color, Icon
-from draftsman.utils import encode_version, string_to_JSON
+from draftsman.utils import encode_version, string_to_JSON, version_tuple_to_string
 from draftsman.warning import DraftsmanWarning, IndexWarning, UnknownSignalWarning
 
 import pytest
@@ -87,7 +87,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 # "active_index": 0,
                 "item": "blueprint-book",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -95,7 +95,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 "active_index": 0,
                 "item": "blueprint-book",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint_book = BlueprintBook.from_dict(example)
@@ -103,7 +103,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 # "active_index": 0,
                 "item": "blueprint-book",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -195,7 +195,7 @@ class TestBlueprintBook:
     #         "label_color": {"r": 50, "g": 50, "b": 50},
     #         "active_index": 1,
     #         "blueprints": [],
-    #         "version": encode_version(*__factorio_version_info__),
+    #         "version": encode_version(*mods.versions["base"]),
     #     }
     #     blueprint_book.setup(**example)
     #     assert blueprint_book.to_dict() == {
@@ -204,7 +204,7 @@ class TestBlueprintBook:
     #             "label": "a label",
     #             "label_color": {"r": 50, "g": 50, "b": 50},
     #             "active_index": 1,
-    #             "version": encode_version(*__factorio_version_info__),
+    #             "version": encode_version(*mods.versions["base"]),
     #         }
     #     }
 
@@ -295,12 +295,12 @@ class TestBlueprintBook:
     def test_set_icons(self):
         blueprint_book = BlueprintBook()
         # Single Icon
-        blueprint_book.set_icons("signal-A")
+        blueprint_book.icons = ["signal-A"]
         assert blueprint_book.icons == [
             Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
         # Multiple Icons
-        blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
+        blueprint_book.icons = ["signal-A", "signal-B", "signal-C"]
         assert blueprint_book.icons == [
             Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
             Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
@@ -310,11 +310,15 @@ class TestBlueprintBook:
         # Raw signal dicts
         blueprint_book.icons = []
         with pytest.raises(DataFormatError):
-            blueprint_book.set_icons({"name": TypeError, "type": "some-type"})
+            blueprint_book.icons = [
+                {"signal": {"name": TypeError, "type": "some-type"}}
+            ]
         assert blueprint_book.icons == []
 
         with pytest.warns(UnknownSignalWarning):
-            blueprint_book.set_icons({"name": "some-signal", "type": "virtual"})
+            blueprint_book.icons = [
+                {"signal": {"name": "some-signal", "type": "virtual"}}
+            ]
             assert blueprint_book.icons == [
                 Icon(
                     **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 1}
@@ -322,23 +326,23 @@ class TestBlueprintBook:
             ]
 
         # None
-        # blueprint_book.icons = None
-        # assert blueprint_book.icons == []
-        # assert blueprint_book.to_dict() == {
-        #     "blueprint_book": {
-        #         "item": "blueprint-book",
-        #         # "active_index": 0, # Default
-        #         "version": encode_version(*__factorio_version_info__),
-        #     }
-        # }
+        blueprint_book.icons = None
+        assert blueprint_book.icons == []
+        assert blueprint_book.to_dict() == {
+            "blueprint_book": {
+                "item": "blueprint-book",
+                # "active_index": 0, # Default
+                "version": encode_version(*mods.versions["base"]),
+            }
+        }
 
         # Incorrect Signal Name
         with pytest.raises(IncompleteSignalError):
-            blueprint_book.set_icons("wrong!")
+            blueprint_book.icons = ["wrong!"]
 
         # Incorrect Signal Type
         with pytest.raises(DataFormatError):
-            blueprint_book.set_icons(123456, "uh-oh")
+            blueprint_book.icons = [123456, TypeError]
 
     def test_set_active_index(self):
         blueprint_book = BlueprintBook()
@@ -388,7 +392,7 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "A",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -396,7 +400,7 @@ class TestBlueprintBook:
                         "blueprint_book": {
                             "item": "blueprint-book",
                             # "active_index": 0, # Default
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -404,11 +408,11 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "B",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -424,7 +428,7 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "A",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -432,7 +436,7 @@ class TestBlueprintBook:
                         "blueprint_book": {
                             "item": "blueprint-book",
                             # "active_index": 0, # Default
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -440,11 +444,11 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "B",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -475,18 +479,18 @@ class TestBlueprintBook:
                         "index": 0,
                         "blueprint": {
                             "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
                         "index": 5,
                         "blueprint": {
                             "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -504,37 +508,39 @@ class TestBlueprintBook:
         #                 # "index": 0, # Default
         #                 "blueprint": {
         #                     "item": "blueprint",
-        #                     "version": encode_version(*__factorio_version_info__),
+        #                     "version": encode_version(*mods.versions["base"]),
         #                 },
         #             },
         #             {
         #                 "index": 5,
         #                 "blueprint": {
         #                     "item": "blueprint",
-        #                     "version": encode_version(*__factorio_version_info__),
+        #                     "version": encode_version(*mods.versions["base"]),
         #                 },
         #             },
         #             {
         #                 "index": "incorrect",
         #                 "blueprint": {
         #                     "item": "blueprint",
-        #                     "version": encode_version(*__factorio_version_info__),
+        #                     "version": encode_version(*mods.versions["base"]),
         #                 },
         #             },
         #         ],
-        #         "version": encode_version(*__factorio_version_info__),
+        #         "version": encode_version(*mods.versions["base"]),
         #     }
         # }
 
     def test_version_tuple(self):
         blueprint_book = BlueprintBook()
-        assert blueprint_book.version_tuple() == __factorio_version_info__
+        assert blueprint_book.version_tuple() == mods.versions["base"]
         blueprint_book.version = 0
         assert blueprint_book.version_tuple() == (0, 0, 0, 0)
 
     def test_version_string(self):
         blueprint_book = BlueprintBook()
-        assert blueprint_book.version_string() == __factorio_version__
+        assert blueprint_book.version_string() == version_tuple_to_string(
+            mods.versions["base"]
+        )
         blueprint_book.version = (0, 0, 0, 0)
         assert blueprint_book.version_string() == "0.0.0.0"
 

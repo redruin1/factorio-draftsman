@@ -51,8 +51,6 @@ class CircuitReadHandMixin(Exportable):
     """
 
 
-# TODO: versioning
-
 draftsman_converters.add_hook_fns(
     CircuitReadHandMixin,
     lambda fields: {

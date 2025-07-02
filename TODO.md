@@ -1,12 +1,6 @@
 # TODO
 
-### Fix what line warnings point to
-
-### Make all entities directional / request items
-This seems to be the default behavior per [https://lua-api.factorio.com/latest/concepts/BlueprintEntity.html](https://lua-api.factorio.com/latest/concepts/BlueprintEntity.html)
-
-### Remove classes:
-* `LogisticsStorageContainer`, `LogisticsPassiveContainer`, ...
+### Figure out a way to normalize all the 1-based indexes to only exist on import/export and have everything be 0-based internally
 
 ### Add `children` attribute to Blueprints/Groups, and use that to store nested Groups
 This would make `entities` and `tiles` 1-dimensional lists again, and tree traversal would be more explicit
@@ -19,18 +13,17 @@ blueprint.children["blah"].entities.append("inserter", ...)
 ```
 
 ---
-### Calling validate on a blueprint should validate all of it's child entitylikes and tiles (or should it?)
+### Calling validate on a blueprint should validate all of it's child entitylikes and tiles
 
 ---
 ### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 
 ---
 ### Validation caching
-Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent
-`validate()` function.
+Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent `validate()` function.
 
 ---
-### Integrate with `mypy`
+### Integrate with `mypy`/`ruff`
 
 ---
 ### Revamp the `add_x` data functions so that they support more features
@@ -43,10 +36,6 @@ Ideally, whether or not a entity or blueprint is considered valid can be retaine
 To help ensure that they're behaving correctly over any API changes, so they stay up-to-date
 
 ---
-### `EntityList.clear()` has some bad side effects, investigate and fix
-Might make sense to actually move all of the spatial detection code into `EntityList`
-
----
 ### Add constraints on `DeconstructionPlanner`
 General constraints on parameters and inputs; what you can deconstruct, what you can't, etc.
 
@@ -55,12 +44,7 @@ General constraints on parameters and inputs; what you can deconstruct, what you
 See issue #117
 
 ---
-### Write `__repr__` function for everything
-For most of the commonly-used things this is already the case, but would be nice if every Draftsman object had a nice, user-readable formatted output.
-
----
-### Display blueprint JSON schemas for all blueprintable types in the documentation
-- Once that's done, maybe we can finally update the Factorio wiki to be up-to-date
+### Make `__repr__` methods consistent
 
 ---
 ### Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
@@ -68,16 +52,8 @@ As of writing there are a number of classes and class types that differ due to p
 This could also fix a few things related to their inheritance...
 
 ---
-### Make it so that you can change the name of an `Entity` if the two collision boxes match
-This is very complex though, there's a reason I put this off
-
----
 ### Add warnings for placement constraints on rails, rail signals and train stops
 In tune of Factorio-correctness, we want to issue warnings when things won't work properly in Factorio. Rail entities have a lot of positional and orientation constraints that must be followed in order for them to be properly placed. Currently, Draftsman doesn't warn the user if they place a train stop the wrong way, for example, so ideally it should.
-
----
-### Reevaluate the diamond diagrams for inherited `Entity` subclass
-The way inherited methods are specified in some prototypes are a little messy, since I'm treating most inherited classes as mixins, and their interaction with each other can get quite complex; needs a big-picture analysis to see if there are any improvements to be made
 
 ---
 ### Figure out exactly what determines if an `Entity` is flip-able or not
@@ -98,7 +74,9 @@ Documentation is currently written in [reStructuredText](https://docutils.source
 ### Custom `data.raw` extraction and formatting?
 In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.
 
-Alternatively, since Draftsman depends on `data.raw` when available more and more, perhaps the best solution (if performant enough) would be to simply extract the entirety of `data.raw`
+Alternatively, since Draftsman depends on `data.raw` when available more and more, perhaps the best solution (if performant enough) would be to simply extract the entirety of `data.raw`.
+
+In a similar vein, it might be prudent to eventually strip all of the data-extraction code into it's own module. If done, it could also be rewritten in a more performant language to help keep refresh times as fast as possible.
 
 ---
 ### Perhaps add options for blueprint canonicalization

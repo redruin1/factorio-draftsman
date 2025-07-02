@@ -59,6 +59,8 @@ class AmmoTurret(
     Consumes item-based ammunition.
     """
 
+    # TODO: validate item_requests match this particular turret type
+
     @property
     def similar_entities(self) -> list[str]:
         return ammo_turrets

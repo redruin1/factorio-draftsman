@@ -7,6 +7,7 @@ from draftsman.error import (
     DataFormatError,
     DraftsmanError,
 )
+from draftsman.signatures import CircuitNetworkSelection
 from draftsman.warning import (
     PureVirtualDisallowedWarning,
     UnknownEntityWarning,
@@ -102,8 +103,12 @@ class TestDeciderCombinator:
             first_signal="signal-A", comparator=">=", second_signal="signal-B"
         )
 
+        # Test dict form of `networks`
+        c = DeciderCombinator.Input("signal-C", networks={"red": True, "green": False})
+        assert c.networks == CircuitNetworkSelection(red=True, green=False)
+
         with pytest.raises(TypeError):
-            cond = a < TypeError
+            a < TypeError
 
     def test_conditions_shorthands(self):
         a = DeciderCombinator.Input(signal="signal-A")

@@ -35,9 +35,6 @@ def main():
     """
     # Determine where the module is installed
     draftsman_install_folder = os.path.dirname(os.path.abspath(draftsman.__file__))
-    # draftsman_environment_folder = os.path.join(
-    #     draftsman_install_folder, "environment"
-    # )  # TODO
 
     default_game_path = os.path.join(draftsman_install_folder, "factorio-data")
     default_mod_path = os.path.join(draftsman_install_folder, "factorio-mods")

@@ -18,7 +18,6 @@ dense, compressed signal frame instead of many duplicate frames, and perhaps
 even multiple letters could be stored in a single 32-bit number.
 """
 
-from draftsman import __factorio_version_info__
 from draftsman.blueprintable import Blueprint
 from draftsman.entity import ConstantCombinator
 from draftsman.data import mods
@@ -27,7 +26,7 @@ import math
 
 
 def main():
-    if __factorio_version_info__ >= (1, 1):
+    if mods.versions["base"] >= (1, 1):
         return  # This script is only meant for Factorio 1.0
 
     letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"

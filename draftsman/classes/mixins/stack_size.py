@@ -25,7 +25,8 @@ class StackSizeMixin(Exportable):
     The inserter's stack size override. Will use this unless a circuit
     stack size is set and enabled.
 
-    :exception DataFormatError: TODO
+    :exception DataFormatError: If set to anything other than a ``uint8`` or 
+        ``None``.
     """
 
     # =========================================================================

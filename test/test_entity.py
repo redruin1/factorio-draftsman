@@ -1,10 +1,10 @@
 # entity.py
 
-from draftsman import __factorio_version_info__
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
 import draftsman.data.entities as data
+from draftsman.data import mods
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
@@ -704,7 +704,7 @@ class TestEntityFactory:
     def test_burner_generator(self):
         assert isinstance(new_entity("burner-generator"), BurnerGenerator)
 
-    @pytest.mark.skipif(__factorio_version_info__ >= (2, 0, 0), reason="Player ports deprecated > Factorio 2.0")
+    @pytest.mark.skipif(mods.versions["base"] >= (2, 0, 0), reason="Player ports deprecated > Factorio 2.0")
     def test_player_port(self):
         assert isinstance(new_entity("player-port"), PlayerPort)
 

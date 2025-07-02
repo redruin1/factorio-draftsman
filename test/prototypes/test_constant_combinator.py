@@ -41,14 +41,14 @@ class TestConstantCombinator:
             "constant-combinator",
             tile_position=[0, 2],
             sections=[
-                {
-                    "index": 1,
-                    "filters": [
+                ManualSection(
+                    index=1,
+                    filters=[
                         ("signal-A", 100),
                         ("signal-B", 200),
                         ("signal-C", 300),
                     ],
-                }
+                )
             ],
         )
         assert combinator.to_dict() == {
@@ -200,8 +200,6 @@ class TestConstantCombinator:
             )
         ]
 
-        print(section.filters)
-
         signal = section.get_signal(0)
         assert signal == SignalFilter(
             **{
@@ -222,19 +220,19 @@ class TestConstantCombinator:
             id="doesnt-import",
             tile_position=(0, 0),
             sections=[
-                {
-                    "index": 1,
-                    "filters": [
-                        {
-                            "index": 1,
-                            "type": "item",
-                            "name": "iron-plate",
-                            "quality": "normal",
-                            "comparator": "=",
-                            "count": 1,
-                        }
+                ManualSection(
+                    index=1,
+                    filters=[
+                        SignalFilter(
+                            index=1,
+                            name="iron-plate",
+                            type="item",
+                            quality="normal",
+                            comparator="=",
+                            count=1,
+                        )
                     ],
-                }
+                )
             ],
         )
         assert cc.to_dict() == {

@@ -75,7 +75,7 @@ class TestAsteroidCollector:
         # Test hybrid
         ac.chunk_filter = [
             "oxide-asteroid-chunk",
-            {"index": 2, "name": "metallic-asteroid-chunk"},
+            AsteroidChunkID(index=2, name="metallic-asteroid-chunk"),
         ]
         assert ac.to_dict()["chunk-filter"] == [
             {"index": 1, "name": "oxide-asteroid-chunk"},
@@ -84,7 +84,7 @@ class TestAsteroidCollector:
 
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             ac.chunk_filter = "wrong"
-            assert ac.chunk_filter == "wrong"
+        assert ac.chunk_filter == "wrong"
 
     def test_read_contents(self):
         ac = AsteroidCollector("asteroid-collector")

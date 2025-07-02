@@ -1,13 +1,14 @@
 # mod_settings.py
 
-from draftsman import __factorio_version_info__
+# from draftsman import __factorio_version_info__
+from draftsman.data import mods
 from draftsman.utils import encode_version, decode_version
 
 from enum import IntEnum
 import io
 import os
 import struct
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 
 class PropertyTreeType(IntEnum):
@@ -102,7 +103,7 @@ def decode_mod_settings(input_stream: io.BytesIO) -> ModSettings:
 def encode_mod_settings(
     destination: io.BytesIO,
     property_tree: dict,
-    factorio_version: tuple[int] = __factorio_version_info__,
+    factorio_version: Optional[tuple[int, ...]] = None,
 ) -> None:
     """
     Writes an encoded PropertyTree from a ModSettings data object to the byte
@@ -111,6 +112,8 @@ def encode_mod_settings(
     flexibility, if desired.
     """
     # TODO: check endianness
+    if factorio_version is None:
+        factorio_version = mods.versions["base"]
     # Write version number
     version_num = encode_version(*factorio_version)
     destination.write(struct.pack("<Q"), version_num)

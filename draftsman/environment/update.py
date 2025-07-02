@@ -241,8 +241,6 @@ def python_require(
     if not mod.is_archive:
         return None, "\n\tCurrent mod ({}) is not an archive".format(mod.name)
 
-    # print("\t", mod.name)
-
     # We emulate lua filepath searching
     filepaths = package_path.split(";")
     for filepath in filepaths:
@@ -292,6 +290,12 @@ def run_settings_stage(
     base_path: str,
     verbose: bool = False,
 ):
+    """
+    Runs all 3 settings stages (``settings.lua``, ``settings-updates.lua``,
+    ``settings-final-fixes.lua``). Afterward, the lua data is copied to the
+    correct location that the data stage expects, and any user-defined settings
+    are applied ontop of the default ones.
+    """
     stages = ("settings.lua", "settings-updates.lua", "settings-final-fixes.lua")
     for stage in stages:
         if verbose:
@@ -300,7 +304,6 @@ def run_settings_stage(
         for mod in load_order:
             # Reset the directory so we dont require from different mods
             # Well, unless we need to. Otherwise, avoid it
-            # TODO: fixme
             lua.globals().lua_set_path(base_path)
 
             if stage in mod.stages:
@@ -336,7 +339,8 @@ def run_data_stage(
     lua: lupa.LuaRuntime, load_order: list[Mod], base_path: str, verbose: bool = False
 ):
     """
-    TODO
+    Runs all 3 data stages (``data.lua``, ``data-updates.lua``,
+    ``data-final-fixes.lua``).
     """
     stages = ("data.lua", "data-updates.lua", "data-final-fixes.lua")
     for stage in stages:
@@ -346,7 +350,6 @@ def run_data_stage(
         for mod in load_order:
             # Reset the directory so we dont require from different mods
             # Well, unless we need to. Otherwise, avoid it
-            # TODO: fixme
             lua.globals().lua_set_path(base_path)
 
             if stage in mod.stages:
@@ -356,8 +359,6 @@ def run_data_stage(
                 run_mod_phase(lua, mod, stage)
 
                 # Reset the included modules
-                # TODO: probably better to just have this be a snippet of code
-                # so we don't pollute the global namespace
                 lua.globals().lua_unload_cache()
 
                 # Reset the MODS tree to an empty state
@@ -488,7 +489,6 @@ def run_data_lifecycle(
 
             # Replace the Dependency object with a reference to the actual
             # loaded and selected Mod
-            # TODO: would be better to not do this since it's technically destructive
             mod.dependencies[i] = mods[dependency.name]
 
     # Get load order (Sort the mods by the least to most deep dependency tree

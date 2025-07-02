@@ -71,7 +71,7 @@ class EntityCollection(metaclass=ABCMeta):
     """
 
     @entities.default
-    def _entities_default(self) -> EntityList:
+    def _(self) -> EntityList:
         return EntityList(self)
 
     # =========================================================================
@@ -89,7 +89,6 @@ class EntityCollection(metaclass=ABCMeta):
 
     schedules: ScheduleList = attrs.field(
         on_setattr=_set_schedules,
-        # TODO: validators
         kw_only=True,
     )
     """
@@ -132,8 +131,6 @@ class EntityCollection(metaclass=ABCMeta):
     integers corresponding to the given ``"entity_number"`` in the resulting
     ``"entities"`` list.
 
-    TODO: more detail
-
     :getter: Gets the wires of the Blueprint.
     :setter: Sets the wires of the Blueprint. Defaults to an empty list if
         set to ``None``.
@@ -141,7 +138,7 @@ class EntityCollection(metaclass=ABCMeta):
 
     # =========================================================================
 
-    stock_connections: list[StockConnection] = attrs.field(  # TODO: annotations
+    stock_connections: list[StockConnection] = attrs.field(
         factory=list,
         # TODO: validators
         kw_only=True,
@@ -156,6 +153,31 @@ class EntityCollection(metaclass=ABCMeta):
     which points to the locomotive or wagon in question, along with optional
     ``front`` and ``back`` Associations pointing to which stock this car is 
     connected to (if any).
+    """
+
+    # =========================================================================
+
+    groups: list["EntityCollection"] = attrs.field(  # TODO: GroupList or CollectionList
+        factory=list,
+        # TODO: validators
+        kw_only=True,
+    )
+    """
+    A list of child :py:class:`.Group`s that this collection contains.
+
+    Like :py:class:`.EntityList`, Groups added to this list with populated IDs
+    can be accessed via those IDs:
+
+    .. example::
+        
+        blueprint = Blueprint()
+        new_group = Group(id="something")
+        blueprint.groups.append(new_group)
+        assert blueprint.groups["something"] == new_group
+
+    This attribute is not exported. Instead, all entities/tiles that are 
+    contained within it are "flattened" to the root-most entity/tile lists, with
+    their positions and associations preserved.
     """
 
     # =========================================================================

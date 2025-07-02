@@ -10,6 +10,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Color
+from draftsman.utils import attrs_reuse
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import spider_vehicles
@@ -38,11 +39,9 @@ class SpiderVehicle(
 
     # =========================================================================
 
-    # TODO: just want to evolve the default
-    color: Optional[Color] = attrs.field(
+    color = attrs_reuse(
+        attrs.fields(ColorMixin).color,
         factory=lambda: Color(r=255 / 255, g=127 / 255, b=0.0, a=127 / 255),
-        converter=Color.converter,
-        validator=instance_of(Optional[Color]),
     )
 
     # =========================================================================

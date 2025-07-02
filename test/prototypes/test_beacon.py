@@ -50,6 +50,8 @@ class TestBeacon:
 
     def test_request_modules(self):
         beacon = Beacon("beacon")
+        assert beacon.module_slots_occupied == 0
+
         beacon.request_modules("speed-module-3", 0, "legendary")
         assert beacon.item_requests == [
             BlueprintInsertPlan(
@@ -64,6 +66,7 @@ class TestBeacon:
                 ),
             )
         ]
+        assert beacon.module_slots_occupied == 1
 
         # Cannot put prod modules in a (vanilla) beacon
         # with pytest.warns(ModuleNotAllowedWarning): # TODO
@@ -92,6 +95,7 @@ class TestBeacon:
                 ),
             ),
         ]
+        assert beacon.module_slots_occupied == 2
 
     # def test_set_item_request(self):
     #     beacon = Beacon()

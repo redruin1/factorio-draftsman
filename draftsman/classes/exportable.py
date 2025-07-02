@@ -86,11 +86,8 @@ class Exportable:
     themselves.
     """
 
-    # =========================================================================
-
-    # TODO
     # @property
-    # def is_valid(self) -> bool:
+    # def is_valid(self) -> bool: # TODO
     #     """
     #     Read-only attribute that indicates whether or not this object is
     #     validated. If this attribute is true, you can assume that all component
@@ -108,54 +105,6 @@ class Exportable:
     #     Read only.
     #     """
     #     return self._is_valid
-
-    # =========================================================================
-
-    # validate_assignment: ValidationMode = attrs.field(
-    #     default=ValidationMode.STRICT,
-    #     converter=ValidationMode,
-    #     validator=instance_of(ValidationMode),
-    #     repr=False,
-    #     eq=False,
-    #     kw_only=True,
-    #     metadata={"omit": True},
-    # )
-    # """
-    # Toggleable flag that indicates whether assignments to this object should
-    # be validated, and how. Can be set in the constructor of the entity or
-    # changed at any point during runtime. Note that this is on a per-entity
-    # basis, so multiple instances of otherwise identical entities can have
-    # different validation configurations.
-    # """
-
-    # @property
-    # def validate_assignment(
-    #     self,
-    # ) -> Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]]:
-    #     """
-    #     Toggleable flag that indicates whether assignments to this object should
-    #     be validated, and how. Can be set in the constructor of the entity or
-    #     changed at any point during runtime. Note that this is on a per-entity
-    #     basis, so multiple instances of otherwise identical entities can have
-    #     different validation configurations.
-
-    #     .. NOTE ::
-
-    #         Item-assignment (``entity["field"] = obj``) is *never* validated,
-    #         regardless of this parameter. This is mostly a side effect of how
-    #         things work behind the scenes, but it can be used to explicitly
-    #         indicate a "raw" modification that is guaranteed to be cheap and
-    #         will never trigger validation by itself.
-
-    #     :getter: Gets the assignment mode.
-    #     :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
-    #         if set to an invalid value.
-    #     """
-    #     return self._validate_assignment
-
-    # @validate_assignment.setter
-    # def validate_assignment(self, value):
-    #     self._validate_assignment = ValidationMode(value)
 
     # =========================================================================
 
@@ -199,6 +148,18 @@ class Exportable:
 
     # =========================================================================
 
+    @classmethod
+    def converter(cls, value: Any):
+        """
+        Try to convert the given ``value`` to an instance of this particular
+        class. By default, it assumes value is a ``dict`` whose keywords map
+        to attributes of this class.
+        """
+        try:
+            return cls(**value)
+        except TypeError:
+            return value
+
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
@@ -231,11 +192,6 @@ class Exportable:
         :returns: A :py:class:`ValidationResult` object containing the
             corresponding errors and warnings.
         """
-        # TODO: I should write my own custom __setattr__ function to every
-        # attrs class, such that errors and warnings are passed through as lists
-        # and each validator adds itself to that list
-        # This will prevent the issues that arise from reissuing warnings, as
-        # warnings in Python are just unbelievably cursed in all aspects
         mode = ValidationMode(mode)
         res = ValidationResult([], [])
         for a in attrs.fields(self.__class__):
@@ -281,10 +237,24 @@ class Exportable:
         exclude_defaults: bool = True,
     ) -> dict:
         """
-        TODO
+        Export this object to a JSON dictionary, usually directly prior to
+        encoding into the compressed blueprint string format.
+
+        :param version: Which Factorio version format this entity should be
+            exported with. The same Draftsman object can be converted to many
+            version-specific output dictionaries, each of which may have
+            different structures.
+        :param exclude_none: Whether or not ``None`` properties should be
+            omitted from the output string. For certain properties this option
+            has no effect, as they either must always be present or never
+            be present if ``None``.
+        :param exclude_defaults: Whether or not to exclude properties that are
+            equivalent to their default values. Including these values in the
+            generated output is redundant as Factorio will populate them
+            automatically, but it is useful to disable for illustation purposes.
         """
         if version is None:
-            version = mods.versions["base"]
+            version = mods.versions.get("base", (2, 0))
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter(exclude_none, exclude_defaults)
         return converter.unstructure(self)
@@ -342,7 +312,7 @@ def make_exportable_structure_factory_func(
 
         class_attrs = attrs.fields(cls)
         version_data = draftsman_converters.get_version(version_tuple)
-        structure_dict = version_data.get_structure_dict(cls)
+        structure_dict = version_data.get_structure_dict(cls, converter)
 
         def structure_hook(input_dict: dict, _: type):
             res = {}
@@ -370,6 +340,7 @@ def make_exportable_structure_factory_func(
                     else find_structure_handler(attr, attr.type, converter)
                 )
                 # import inspect
+                print(handler)
                 # print(inspect.getsource(handler))
                 try:
                     res[attr_name] = handler(value, attr.type)
@@ -380,6 +351,8 @@ def make_exportable_structure_factory_func(
 
             if input_dict:
                 res["extra_keys"] = input_dict
+
+            print(res)
 
             return cls(**res)
 

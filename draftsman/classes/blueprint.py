@@ -79,7 +79,8 @@
 """
 
 import draftsman
-from draftsman._factorio_version import __factorio_version_info__
+
+# from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.exportable import ValidationResult
@@ -521,14 +522,18 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
     ) -> ValidationResult:
         result = super().validate(mode=mode)
 
+        result += self.entities.validate(mode=mode)
+        result += self.tiles.validate(mode=mode)
+        # TODO: self.schedules.validate(mode=mode)
+
         for class_validator in type(self).__attrs_class_validators__:
-            class_validator(self, mode=mode)
+            class_validator(self, mode=mode)  # TODO: pass in error/warning list
 
         return result
 
     def to_dict(
         self,
-        version: tuple[int, ...] = __factorio_version_info__,
+        version: Optional[tuple[int, ...]] = None,
         exclude_none: bool = True,
         exclude_defaults: bool = True,
     ) -> dict:
@@ -697,6 +702,7 @@ def structure_blueprint_1_0_factory(t: type):
         # instances with all of their data intact, and then the user would call a
         # separate function `migrate(version)` which would then swap/remove/update
         # entities
+        # TODO: figure out migration
         # legacy_entity_conversions = {
         #     "curved-rail": "legacy-curved-rail",
         #     "straight-rail": "legacy-straight-rail",
@@ -705,7 +711,7 @@ def structure_blueprint_1_0_factory(t: type):
         #     "logistic-chest-storage": "storage-chest",
         #     "logistic-chest-active-provider": "active-provider-chest",
         #     "logistic-chest-passive-provider": "passive-provider-chest",
-        #     "filter-inserter": "inserter",  # TODO: LegacyFilterInserter(?)
+        #     "filter-inserter": "inserter",
         #     "stack-inserter": "bulk-inserter",
         #     "stack-filter-inserter": "bulk-inserter",
         # }
@@ -818,10 +824,10 @@ def structure_blueprint_1_0_factory(t: type):
             del blueprint_dict["wires"]
 
         # Schedules are split into "records" which holds stops and the new interrupts
-        if "schedules" in blueprint_dict:
-            for schedule in blueprint_dict["schedules"]:
-                stop_data = schedule["schedule"]
-                schedule["schedule"] = {"records": stop_data}
+        # if "schedules" in blueprint_dict:
+        #     for schedule in blueprint_dict["schedules"]:
+        #         stop_data = schedule["schedule"]
+        #         schedule["schedule"] = {"records": stop_data}
 
         # print("blueprint_dict", blueprint_dict)
         # import inspect

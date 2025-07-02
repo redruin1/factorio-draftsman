@@ -1,7 +1,7 @@
 # mod_list.py
 
 from draftsman.utils import get_suggestion
-from draftsman._factorio_version import __factorio_version_info__
+from draftsman.data import mods
 from draftsman.error import IncorrectModFormatError, MissingModError
 from draftsman.utils import version_string_to_tuple
 
@@ -151,7 +151,7 @@ class Mod:
         Grabs the data from the file as a string.
         """
         if self.is_archive:
-            return archive_to_string(self.data)  # TODO
+            return archive_to_string(self.data)
         else:
             return file_to_string(filepath=self.location + "/" + filepath)
         pass
@@ -342,7 +342,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     # (Except for in the cases of the "base" and "core" mods, which are exempt)
     if mod_name not in ("base", "core"):
         mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
-        assert mod_factorio_version <= __factorio_version_info__
+        assert mod_factorio_version <= mods.versions["base"]
 
     mod_stages = set()
     if is_archive:
@@ -424,8 +424,10 @@ def discover_mods(
     game_path: str, mods_path: str, no_mods: bool = False
 ) -> dict[str, list[Mod]]:
     """
-    Returns an (unsorted) list of all mods detected at a specific game data
-    and mod folder location, including different versions of the same mod.
+    Returns an list of all mods detected at a specific game data and mod folder
+    location, including different versions of the same mod. If there are
+    multiples of the same mod found, the mods are sorted latest version first,
+    preferring folders if there's a tie.
 
     :param game_path: Path to the directory which houses Factorio's game data.
     :param mods_path: Path the the directory which houses the desired user mods.
@@ -446,7 +448,7 @@ def discover_mods(
         # Supply default
         mod_list_json = {"mods": {}}
 
-    # List of "mods". In Factorio parlance, a Mod is a collection of files
+    # List of "mods". In Factorio parlance, a Mod is just a collection of files
     # associated with one another, meaning that base-game components like `base`
     # and `core` are also considered "mods", and as such are returned by this
     # function.
@@ -457,7 +459,7 @@ def discover_mods(
 
     # Traverse the game-data folder to find Wube "mods", like `base` and `core`
     for game_obj in os.listdir(game_path):
-        location = game_path + "/" + game_obj  # TODO: better
+        location = os.path.join(game_path, game_obj)
 
         # In the game data folder, modules must be folders
         if not os.path.isdir(location):
@@ -470,7 +472,7 @@ def discover_mods(
             mod_list_json=mod_list_json,
         )
         if mod.name in mod_list:
-            mod_list[mod.name].append(mod)  # TODO: sorted insert
+            mod_list[mod.name].append(mod)
         else:
             mod_list[mod.name] = [mod]
 
@@ -478,7 +480,7 @@ def discover_mods(
     # and the no_mods flag is false
     if not no_mods:
         for mod_obj in os.listdir(mods_path):
-            location = mods_path + "/" + mod_obj  # TODO: better
+            location = os.path.join(mods_path, mod_obj)
 
             # Only consider folders and zipfiles
             if not os.path.isdir(location) and not zipfile.is_zipfile(location):
@@ -491,7 +493,7 @@ def discover_mods(
                 mod_list_json=mod_list_json,
             )
             if mod.name in mod_list:
-                mod_list[mod.name].append(mod)  # TODO: sorted insert
+                mod_list[mod.name].append(mod)
             else:
                 mod_list[mod.name] = [mod]
 
@@ -510,8 +512,6 @@ def discover_mods(
         )
         mod_list[mod_name] = sorted_versions
 
-    # Populate mod-dependencies.
-
     return mod_list
 
 
@@ -523,6 +523,8 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
 
     def clamp(minimum, value, maximum):
         return max(minimum, min(value, maximum))
+
+    print(mods)
 
     # Determine the max length of each dynamic category
     name_width = clamp(4, max(len(mod_name) for mod_name in mods), 50)

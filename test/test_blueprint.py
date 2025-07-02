@@ -1,6 +1,5 @@
 # blueprint.py
 
-from draftsman._factorio_version import __factorio_version__, __factorio_version_info__
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
@@ -39,7 +38,7 @@ from draftsman.error import (
     InvalidTileError,
 )
 from draftsman.signatures import Color, Icon
-from draftsman.utils import encode_version, AABB
+from draftsman.utils import AABB, encode_version, version_tuple_to_string
 import draftsman.validators
 from draftsman.warning import (
     DraftsmanWarning,
@@ -67,7 +66,7 @@ class TestBlueprint:
         blueprint = Blueprint()
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Dict
@@ -156,7 +155,7 @@ class TestBlueprint:
     #         "snap-to-grid": {"x": 32, "y": 32},
     #         "position-relative-to-grid": {"x": -5, "y": -7},
     #         # "absolute-snapping": True, # Default
-    #         "version": encode_version(*__factorio_version_info__),
+    #         "version": encode_version(*mods.versions["base"]),
     #     }
     #     example_dict = {
     #         "snap-to-grid": {"x": 32, "y": 32},
@@ -169,7 +168,7 @@ class TestBlueprint:
     #         "snap-to-grid": {"x": 32, "y": 32},
     #         # "absolute-snapping": True, # Default
     #         "position-relative-to-grid": {"x": -5, "y": -7},
-    #         "version": encode_version(*__factorio_version_info__),
+    #         "version": encode_version(*mods.versions["base"]),
     #     }
 
     #     with pytest.warns(DraftsmanWarning):
@@ -195,6 +194,11 @@ class TestBlueprint:
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
         }
+
+        # Warn if label exceeds 200 bytes
+        with pytest.warns(DraftsmanWarning):
+            blueprint.label = "A" * 500
+        assert blueprint.label == "A" * 500
 
     # =========================================================================
 
@@ -290,7 +294,7 @@ class TestBlueprint:
         assert blueprint.icons == []
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Incorrect Signal Name
@@ -312,6 +316,11 @@ class TestBlueprint:
         assert blueprint.description == "An example description."
         blueprint.description = None
         assert blueprint.description == ""
+
+        # Warn if description exceeds 500 bytes
+        with pytest.warns(DraftsmanWarning):
+            blueprint.description = "A" * 1000
+        assert blueprint.description == "A" * 1000
 
     # =========================================================================
 
@@ -336,14 +345,14 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "snap-to-grid": {"x": 10, "y": 10},
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.snapping_grid_size = None
         assert blueprint.snapping_grid_size is None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         with pytest.raises(DataFormatError):
@@ -366,7 +375,7 @@ class TestBlueprint:
         assert blueprint.absolute_snapping == True
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.absolute_snapping = False
@@ -374,7 +383,7 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "absolute-snapping": False,
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         with pytest.raises(DataFormatError):
@@ -393,7 +402,7 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "position-relative-to-grid": {"x": 10.0, "y": 10.0},
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         with pytest.raises(DataFormatError):
@@ -598,7 +607,7 @@ class TestBlueprint:
                     },
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # None
@@ -746,7 +755,7 @@ class TestBlueprint:
 
     def test_version_tuple(self):
         blueprint = Blueprint()
-        assert blueprint.version_tuple() == __factorio_version_info__
+        assert blueprint.version_tuple() == mods.versions["base"]
         blueprint.version = 0
         assert blueprint.version_tuple() == (0, 0, 0, 0)
 
@@ -754,7 +763,9 @@ class TestBlueprint:
 
     def test_version_string(self):
         blueprint = Blueprint()
-        assert blueprint.version_string() == __factorio_version__
+        assert blueprint.version_string() == version_tuple_to_string(
+            mods.versions["base"]
+        )
         blueprint.version = (0, 0, 0, 0)
         assert blueprint.version_string() == "0.0.0.0"
 
@@ -793,7 +804,7 @@ class TestBlueprint:
         blueprint = Blueprint()
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
         # TODO: fix, ideally
         # assert blueprint.entities is blueprint._root["blueprint"]["entities"]
@@ -822,7 +833,7 @@ class TestBlueprint:
             ],
             "wires": [[1, 5, 2, 5]],
             "tiles": [{"name": "landfill", "position": {"x": 1, "y": 1}}],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Non-string id connection case
@@ -937,7 +948,7 @@ class TestBlueprint:
                 }
             ],
             "tiles": [{"name": "refined-concrete", "position": {"x": 0, "y": 0}}],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Incorrect to_dict return for custom EntityLike
@@ -1074,7 +1085,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 2, 2, 2], [2, 1, 3, 1], [2, 5, 3, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Create a deepcopy of blueprint
@@ -1114,7 +1125,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 2, 2, 2], [2, 1, 3, 1], [2, 5, 3, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -1308,7 +1319,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 5, 2, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_power_connection("2", "1")
@@ -1326,7 +1337,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test direct references
@@ -1350,7 +1361,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 5, 2, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
         blueprint.remove_power_connection(substationB, substationA)
         assert blueprint.to_dict()["blueprint"] == {
@@ -1367,7 +1378,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test entity not in blueprint
@@ -1455,7 +1466,7 @@ class TestBlueprint:
                     },
                 ],
                 "wires": [[2, 5, 3, 5], [4, 5, 2, 5], [4, 6, 3, 5]],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint.remove_power_connections()
@@ -1489,7 +1500,7 @@ class TestBlueprint:
                         "entity_number": 5,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -1524,7 +1535,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[3, 5, 2, 5], [1, 5, 2, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_power_connections()
@@ -1548,7 +1559,7 @@ class TestBlueprint:
                     "position": {"x": 2.5, "y": 2.5},
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -1558,7 +1569,7 @@ class TestBlueprint:
         assert blueprint.to_dict() == {
             "blueprint": {
                 "item": "blueprint",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Null case
@@ -1566,7 +1577,7 @@ class TestBlueprint:
         assert blueprint.to_dict() == {
             "blueprint": {
                 "item": "blueprint",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Normal case
@@ -1607,7 +1618,7 @@ class TestBlueprint:
                         "entity_number": 5,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint.generate_power_connections()
@@ -1653,7 +1664,7 @@ class TestBlueprint:
                     [3, 5, 4, 5],
                     [4, 5, 5, 5],
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Test only_axis
@@ -1695,7 +1706,7 @@ class TestBlueprint:
                     [2, 5, 4, 5],
                     [3, 5, 4, 5],
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Test prefer_axis
@@ -1730,7 +1741,7 @@ class TestBlueprint:
                     [1, 5, 3, 5],
                     [2, 5, 3, 5],
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             },
         }
 
@@ -1766,7 +1777,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 1, 2, 1]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_circuit_connection("red", "2", "1")
@@ -1784,7 +1795,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test direct references
@@ -1808,7 +1819,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 2, 2, 2]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
         blueprint.remove_circuit_connection("green", substationB, substationA)
         assert blueprint.to_dict()["blueprint"] == {
@@ -1825,7 +1836,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test entity not in blueprint
@@ -1898,7 +1909,7 @@ class TestBlueprint:
                     },
                 ],
                 "wires": [[2, 1, 3, 1], [2, 2, 3, 4]],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint.remove_circuit_connections()
@@ -1927,7 +1938,7 @@ class TestBlueprint:
                         "entity_number": 4,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -1960,7 +1971,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[3, 2, 2, 2], [1, 1, 2, 1]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_circuit_connections()
@@ -1984,7 +1995,7 @@ class TestBlueprint:
                     "position": {"x": 2.5, "y": 2.5},
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -2018,7 +2029,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # With schedule
@@ -2087,7 +2098,7 @@ class TestBlueprint:
                     },
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Ensure new trains with same schedule dont create duplicate schedules
@@ -2223,7 +2234,7 @@ class TestBlueprint:
                     "entity_number": 3,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # With schedule
@@ -2314,7 +2325,7 @@ class TestBlueprint:
                     },
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Ensure new trains with same schedule dont create duplicate schedules
@@ -2748,8 +2759,12 @@ class TestBlueprint:
 
         # Trains that follow a specific schedule
         schedule = Schedule()
-        schedule.append_stop("Station A", WaitCondition(WaitConditionType.FULL_CARGO))
-        schedule.append_stop("Station B", WaitCondition(WaitConditionType.EMPTY_CARGO))
+        schedule.append_stop(
+            "Station A", WaitCondition(WaitConditionType.FULL_CARGO, compare_type="or")
+        )
+        schedule.append_stop(
+            "Station B", WaitCondition(WaitConditionType.EMPTY_CARGO, compare_type="or")
+        )
         trains = bp.find_trains_filtered(schedule=schedule)
         assert schedule.stops == bp.schedules[0].stops
         assert len(trains) == 1

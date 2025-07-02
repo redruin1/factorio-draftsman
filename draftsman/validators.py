@@ -2,6 +2,7 @@
 
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
+from draftsman.warning import DraftsmanWarning
 
 import attr
 import attrs
@@ -29,7 +30,7 @@ _validation_mode = ValidationMode.STRICT
 
 def get_mode():
     """
-    TODO
+    Gets the current global :py:class:`ValidationMode` that Draftsman is using.
     """
     global _validation_mode
     return _validation_mode
@@ -60,7 +61,7 @@ def set_mode(mode: ValidationMode):
 
     .. NOTE::
 
-        This function does NOT affect calls to :py:meth:`Exportable.validate`. # TODO
+        Explicit calls to :py:meth:`Exportable.validate` obey this value.
     """
     global _validation_mode
     original_mode = _validation_mode
@@ -109,7 +110,12 @@ def conditional(severity):
 
             if warning_list is None:
                 for w in ws:
-                    warnings.warn(w.message, stacklevel=6)  # TODO: correct stacklevel
+                    warnings.warn(
+                        w.message,
+                        stacklevel=5
+                        if inspect.stack()[1].function == "__init__"
+                        else 6,
+                    )
             else:
                 warning_list.extend([w.message for w in ws])
 
@@ -134,7 +140,12 @@ def conditional(severity):
 
             if warning_list is None:
                 for w in ws:
-                    warnings.warn(w.message, stacklevel=6)  # TODO: correct stacklevel
+                    warnings.warn(
+                        w.message,
+                        stacklevel=5
+                        if inspect.stack()[2].function == "__init__"
+                        else 6,
+                    )
             else:
                 warning_list.extend([w.message for w in ws])
 
@@ -217,6 +228,24 @@ def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any):
         raise DataFormatError(msg)
 
 
+class _ByteLengthValidator:
+    def __init__(self, max_len: int):
+        self.max_len = max_len
+
+    @conditional(ValidationMode.STRICT)
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: str):
+        print(value)
+        if len(value.encode("utf-8")) > self.max_len:
+            msg = "'{}' exceeds {} bytes in length; will be truncated to this size when imported".format(
+                attr.name, self.max_len
+            )
+            warnings.warn(DraftsmanWarning(msg))
+
+
+def byte_length(max_len: int):
+    return _ByteLengthValidator(max_len)
+
+
 class _InstanceOfValidator:
     def __init__(self, cls: type):
         self.cls = cls
@@ -280,7 +309,7 @@ class _OneOfValidator:
 
 def one_of(*values):
     """
-    TODO
+    Validates whether or not a given input is one of ``values``.
     """
     if len(values) == 1 and get_origin(values[0]) is Literal:
         return _OneOfValidator(get_args(values[0]))

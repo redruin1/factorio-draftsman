@@ -2,7 +2,7 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
@@ -32,7 +32,7 @@ for rail_name in elevated_straight_rails:
 
 @fix_incorrect_pre_init
 @attrs.define
-class ElevatedStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
+class ElevatedStraightRail(DirectionalMixin, Entity):
     """
     Straight rail entities that lie on a layer above regular entities.
     """
@@ -40,6 +40,12 @@ class ElevatedStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return elevated_straight_rails
+
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
 
     # =========================================================================
 

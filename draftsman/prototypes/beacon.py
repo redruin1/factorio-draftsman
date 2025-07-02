@@ -9,6 +9,7 @@ from draftsman.constants import Inventory
 from draftsman.signatures import ModuleID, QualityID
 
 from draftsman.data.entities import beacons
+from draftsman.data import modules
 
 import attrs
 from typing import Iterable
@@ -23,6 +24,20 @@ class Beacon(ModulesMixin, EnergySourceMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return beacons
+
+    # =========================================================================
+
+    @property
+    def module_slots_occupied(self) -> int:
+        return len(
+            {
+                inv_pos.stack
+                for req in self.item_requests
+                if req.id.name in modules.raw
+                for inv_pos in req.items.in_inventory
+                if inv_pos.inventory == Inventory.beacon_modules
+            }
+        )
 
     # =========================================================================
 

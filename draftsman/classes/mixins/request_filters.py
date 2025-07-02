@@ -2,9 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    ManualSection,
-)
+from draftsman.signatures import ManualSection, SignalFilter, LuaDouble
 from draftsman.validators import instance_of
 
 import attrs
@@ -58,19 +56,10 @@ class RequestFiltersMixin(Exportable):
 
     # =========================================================================
 
-    def _sections_converter(value):
-        if isinstance(value, list):
-            res = [None] * len(value)
-            for i, elem in enumerate(value):
-                res[i] = ManualSection.converter(elem)
-            return res
-        return value
-
     sections: list[ManualSection] = attrs.field(
         factory=list,
-        converter=_sections_converter,
         validator=instance_of(list[ManualSection]),
-    )  # TODO: validator: can only have 100 of these
+    )
     """
     The list of logistics sections that this entity is configured to request.
     """
@@ -80,7 +69,7 @@ class RequestFiltersMixin(Exportable):
     def add_section(
         self,
         group: Union[str, None] = None,
-        index: Optional[int] = None,  # TODO: integer size
+        index: Optional[LuaDouble] = None,
         active: bool = True,
     ) -> ManualSection:
         """
@@ -118,9 +107,6 @@ class RequestFiltersMixin(Exportable):
         self.sections = other.sections
 
 
-# TODO: versioning
-
-
 @attrs.define
 class _ExportedRequestFiltersMixin:
     sections: list = attrs.field(factory=list)
@@ -130,13 +116,17 @@ _export_fields = attrs.fields(_ExportedRequestFiltersMixin)
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     RequestFiltersMixin,
-    lambda fields: {
+    lambda fields, converter: {
         # None: fields.trash_not_requested.name,
         "request_from_buffers": fields.request_from_buffers.name,
         # None: fields.requests_enabled.name,
         "request_filters": (
             _export_fields.sections,
-            lambda d, _: [{"index": 1, "filters": d}],
+            lambda d, _: [
+                ManualSection(
+                    index=1, filters=converter.structure(d, list[SignalFilter])
+                )
+            ],
         ),
     },
     lambda fields, converter: {
@@ -147,35 +137,10 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             _export_fields.sections,
             lambda inst: converter.unstructure(inst.sections[0].filters)
             if len(inst.sections) > 0
-            else [],  # TODO: catch error somewhere
+            else [],
         ),
     },
 )
-
-# _parent_hook = (
-#     draftsman_converters.get_version((2, 0))
-#     .get_converter()
-#     .get_structure_hook(LogisticBufferContainer)
-# )
-
-
-# def make_structure_hook(cls, converter: cattrs.Converter):
-#     def structure_hook(d: dict, type: type):
-#         if "request_filters" in d:
-#             # Populate with a single section
-#             filters = d["request_filters"]
-#             d["request_filters"] = {"sections": [{"index": 1, "filters": filters}]}
-#         # TODO: what about request_from_buffers?
-#         return _parent_hook(d, type)
-
-#     return structure_hook
-
-
-# draftsman_converters.get_version((1, 0)).register_structure_hook_factory(
-#     lambda cls: issubclass(cls, LogisticBufferContainer), make_structure_hook
-# )
-
-# TODO: unstructure hook
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     RequestFiltersMixin,

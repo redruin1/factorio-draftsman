@@ -222,7 +222,7 @@ class TestArithmeticCombinator:
         #     combinator.first_operand = "signal-each"
 
         # Test remove output signal-each when current is unset from signal-each
-        combinator.set_arithmetic_conditions()
+        combinator.set_arithmetic_condition()
         combinator.first_operand = "signal-each"
         combinator.output_signal = "signal-each"
         assert combinator.first_operand == SignalID(name="signal-each", type="virtual")
@@ -288,7 +288,7 @@ class TestArithmeticCombinator:
         # with pytest.warns(SignalConfigurationWarning): # 1.0 test
         #     combinator.second_operand = "signal-each"
 
-        combinator.set_arithmetic_conditions()
+        combinator.set_arithmetic_condition()
         combinator.second_operand = "signal-each"
         combinator.output_signal = "signal-each"
         assert combinator.second_operand == SignalID(name="signal-each", type="virtual")
@@ -355,9 +355,9 @@ class TestArithmeticCombinator:
         # with pytest.warns(SignalConfigurationWarning): # 1.0 test
         #     combinator.second_operand = "signal-each"
 
-    def test_set_arithmetic_conditions(self):
+    def test_set_arithmetic_condition(self):
         combinator = ArithmeticCombinator("arithmetic-combinator")
-        combinator.set_arithmetic_conditions(
+        combinator.set_arithmetic_condition(
             "signal-A",
             {"red", "green"},
             "+",
@@ -372,7 +372,7 @@ class TestArithmeticCombinator:
             }
         }
 
-        combinator.set_arithmetic_conditions(
+        combinator.set_arithmetic_condition(
             "signal-A",
             {"red", "green"},
             "/",
@@ -389,7 +389,7 @@ class TestArithmeticCombinator:
             }
         }
 
-        combinator.set_arithmetic_conditions(
+        combinator.set_arithmetic_condition(
             first_operand=10,
             operation="and",
             second_operand=100,
@@ -404,7 +404,7 @@ class TestArithmeticCombinator:
             }
         }
 
-        combinator.set_arithmetic_conditions(
+        combinator.set_arithmetic_condition(
             first_operand=10,
             operation="or",
             second_operand="signal-D",
@@ -419,55 +419,55 @@ class TestArithmeticCombinator:
             }
         }
 
-        combinator.set_arithmetic_conditions(
+        combinator.set_arithmetic_condition(
             first_operand=10, operation="or", second_operand=None
         )
         assert combinator.to_dict()["control_behavior"] == {
             "arithmetic_conditions": {"first_constant": 10, "operation": "OR"}
         }
 
-        combinator.set_arithmetic_conditions(
+        combinator.set_arithmetic_condition(
             first_operand=None, second_operand=None, output_signal=None
         )
         assert "control_behavior" not in combinator.to_dict()
 
-        combinator.set_arithmetic_conditions()
+        combinator.set_arithmetic_condition()
         assert "control_behavior" not in combinator.to_dict()
 
         with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(first_operand=TypeError)
+            combinator.set_arithmetic_condition(first_operand=TypeError)
         with pytest.raises(IncompleteSignalError):
-            combinator.set_arithmetic_conditions(first_operand="incorrect")
+            combinator.set_arithmetic_condition(first_operand="incorrect")
         with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(
+            combinator.set_arithmetic_condition(
                 first_operand="signal-A",
                 operation="incorrect",
                 second_operand="signal-D",
             )
         with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(
+            combinator.set_arithmetic_condition(
                 first_operand="signal-A", operation="+", second_operand=TypeError
             )
         with pytest.raises(IncompleteSignalError):
-            combinator.set_arithmetic_conditions(
+            combinator.set_arithmetic_condition(
                 first_operand="signal-A", operation="+", second_operand="incorrect"
             )
         with pytest.raises(DataFormatError):
-            combinator.set_arithmetic_conditions(
+            combinator.set_arithmetic_condition(
                 first_operand="signal-A",
                 operation="+",
                 second_operand="signal-D",
                 output_signal=TypeError,
             )
         with pytest.raises(IncompleteSignalError):
-            combinator.set_arithmetic_conditions(
+            combinator.set_arithmetic_condition(
                 first_operand="signal-A",
                 operation="+",
                 second_operand="signal-D",
                 output_signal="incorrect",
             )
 
-        combinator.set_arithmetic_conditions()
+        combinator.set_arithmetic_condition()
         assert "control_behavior" not in combinator.to_dict()
 
     def test_mergable(self):
@@ -477,7 +477,7 @@ class TestArithmeticCombinator:
         # Compatible
         assert combinatorA.mergable_with(combinatorB) == True
 
-        combinatorB.set_arithmetic_conditions(
+        combinatorB.set_arithmetic_condition(
             "signal-A", {"red"}, "+", "signal-B", {"green"}, "signal-C"
         )
         assert combinatorA.mergable_with(combinatorB) == True
@@ -500,7 +500,7 @@ class TestArithmeticCombinator:
     def test_merge(self):
         combinatorA = ArithmeticCombinator("arithmetic-combinator")
         combinatorB = ArithmeticCombinator("arithmetic-combinator")
-        combinatorB.set_arithmetic_conditions(
+        combinatorB.set_arithmetic_condition(
             "signal-A", {"red"}, "+", "signal-B", {"green"}, "signal-C"
         )
 
@@ -521,7 +521,7 @@ class TestArithmeticCombinator:
         blueprint.entities.append("arithmetic-combinator")
 
         entity_to_merge = ArithmeticCombinator("arithmetic-combinator")
-        entity_to_merge.set_arithmetic_conditions(
+        entity_to_merge.set_arithmetic_condition(
             "signal-A", {"red"}, "+", "signal-B", {"green"}, "signal-C"
         )
 
@@ -565,7 +565,7 @@ class TestArithmeticCombinator:
 
         assert combinatorA == combinatorB
 
-        combinatorA.set_arithmetic_conditions(
+        combinatorA.set_arithmetic_condition(
             1, {"red", "green"}, "*", 1, {"red", "green"}, "signal-check"
         )
 

@@ -70,7 +70,7 @@ class TestRequestContainer:
         }
 
         request_chest = LogisticRequestContainer(
-            sections=[{"index": 1, "filters": [("iron-ore", 100)]}],
+            sections=[ManualSection(index=1, filters=[("iron-ore", 100)])],
             request_from_buffers=True,
         )
         assert request_chest.to_dict() == {
@@ -96,10 +96,9 @@ class TestRequestContainer:
 
         request_chest = LogisticRequestContainer(
             sections=[
-                {
-                    "index": 1,
-                    "filters": [{"index": 1, "name": "iron-ore", "count": 100}],
-                }
+                ManualSection(
+                    index=1, filters=[SignalFilter(index=1, name="iron-ore", count=100)]
+                )
             ]
         )
         assert request_chest.to_dict() == {
@@ -215,14 +214,14 @@ class TestRequestContainer:
 
         # Longhand
         section.filters = [
-            {"index": 1, "name": "iron-ore", "count": 100, "comparator": "="},
-            {"index": 2, "name": "copper-ore", "count": 200, "comparator": "="},
-            {"index": 3, "name": "coal", "count": 300, "comparator": "="},
+            SignalFilter(index=1, name="iron-ore", count=100),
+            SignalFilter(index=2, name="copper-ore", count=200),
+            SignalFilter(index=3, name="coal", count=300),
         ]
         assert container.sections[-1].filters == [
-            SignalFilter(index=1, name="iron-ore", count=100, comparator="="),
-            SignalFilter(index=2, name="copper-ore", count=200, comparator="="),
-            SignalFilter(index=3, name="coal", count=300, comparator="="),
+            SignalFilter(index=1, name="iron-ore", count=100),
+            SignalFilter(index=2, name="copper-ore", count=200),
+            SignalFilter(index=3, name="coal", count=300),
         ]
 
         # Error
@@ -353,17 +352,16 @@ class TestRequestContainer:
             "requester-chest",
             bar=10,
             sections=[
-                {
-                    "index": 1,
-                    "filters": [
-                        {
-                            "name": "utility-science-pack",
-                            "index": 1,
-                            "count": 10,
-                            "comparator": "=",
-                        }
+                ManualSection(
+                    index=1,
+                    filters=[
+                        SignalFilter(
+                            name="utility-science-pack",
+                            index=1,
+                            count=10,
+                        )
                     ],
-                }
+                )
             ],
             tags={"some": "stuff"},
         )
@@ -382,17 +380,16 @@ class TestRequestContainer:
             "requester-chest",
             bar=10,
             sections=[
-                {
-                    "index": 1,
-                    "filters": [
-                        {
-                            "name": "utility-science-pack",
-                            "index": 1,
-                            "count": 10,
-                            "comparator": "=",
-                        }
+                ManualSection(
+                    index=1,
+                    filters=[
+                        SignalFilter(
+                            name="utility-science-pack",
+                            index=1,
+                            count=10,
+                        )
                     ],
-                }
+                )
             ],
             tags={"some": "stuff"},
         )
@@ -403,17 +400,14 @@ class TestRequestContainer:
         assert container1.bar == 10
         assert container1.sections == [
             ManualSection(
-                **{
-                    "index": 1,
-                    "filters": [
-                        {
-                            "name": "utility-science-pack",
-                            "index": 1,
-                            "count": 10,
-                            "comparator": "=",
-                        }
-                    ],
-                }
+                index=1,
+                filters=[
+                    SignalFilter(
+                        name="utility-science-pack",
+                        index=1,
+                        count=10,
+                    )
+                ],
             )
         ]
         assert container1.tags == {"some": "stuff"}

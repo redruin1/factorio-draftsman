@@ -18,7 +18,6 @@ from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, fluids, items, signals, tiles, recipes, modules
 from draftsman.error import (
-    InvalidMapperError,
     InvalidSignalError,
     IncompleteSignalError,
 )
@@ -51,7 +50,7 @@ from typing_extensions import Annotated
 
 import attrs
 from attrs import NOTHING
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Sequence
 import warnings
 import weakref
 
@@ -96,7 +95,6 @@ FluidID = Annotated[str, known_name("fluid", fluids.raw, UnknownFluidWarning)]
 TileID = Annotated[str, known_name("tile", tiles.raw, UnknownTileWarning)]
 RecipeID = Annotated[str, known_name("recipe", recipes.raw, UnknownRecipeWarning)]
 ModuleID = Annotated[str, known_name("module", modules.raw, UnknownModuleWarning)]
-# TODO: make quality dynamic based on current environment?
 QualityID = Literal[
     "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown"
 ]
@@ -116,96 +114,54 @@ ArithmeticOperation = Literal[
 
 
 @attrs.define
-class MapperID(Exportable):
-    name: str = attrs.field()  # TODO: optional? # TODO: validators
-    type: Literal["entity", "item"] = attrs.field(  # TODO: optional?
-        validator=one_of("entity", "item")
-    )
-    # TODO: has quality now
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, str):
-            try:
-                return cls(**signals.mapper_dict(value))  # FIXME
-            except InvalidMapperError as e:
-                raise InvalidMapperError(
-                    "Unknown mapping target {}; either specify the full dictionary, or update your environment".format(
-                        e
-                    )
-                ) from None
-        elif isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
-
-
-draftsman_converters.add_hook_fns(
-    MapperID,
-    lambda fields: {
-        "name": fields.name.name,
-        "type": fields.type.name,
-    },
-)
-
-
-@attrs.define
-class Mapper(Exportable):
-    index: uint64 = attrs.field(validator=instance_of(uint64))
-    from_: Optional[
-        MapperID
-    ] = attrs.field(  # TODO: this has quality + any quality + comparator
-        default=None,
-        converter=MapperID.converter,
-        validator=instance_of(Optional[MapperID]),
-    )
-    to: Optional[MapperID] = attrs.field(  # TODO: this has quality
-        default=None,
-        converter=MapperID.converter,
-        validator=instance_of(Optional[MapperID]),
-    )
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(
-                index=value["index"],
-                from_=value.get("from", None),
-                to=value.get("to", None),
-            )
-        else:
-            return value
-
-
-# TODO: versioning
-
-
-draftsman_converters.add_hook_fns(
-    Mapper,
-    lambda fields: {
-        "index": fields.index.name,
-        "from": fields.from_.name,
-        "to": fields.to.name,
-    },
-)
-
-
-@attrs.define
 class SignalID(Exportable):
     """
-    A signal ID.
+    A signal ID, composed of a name, a signal type, and an optional quality.
 
     For convenience, a SignalID object can be constructed with just the string
-    name:
+    name, *if* the current Draftsman environment recognizes the name:
 
-    TODO
+    .. example::
 
-    In this case, the signal ``type`` is equivalent to the first entry in the
-    return result of ``get_valid_types(name)``. For most applications, this
-    defaults to ``"item"``, but notable exceptions include fluids (``"fluid"``)
-    and virtual signals (``"virtual"``). In cases where signals have more than
-    one valid type and you wish to use one other than the default, the full
-    constructor must be used.
+        some_signal = SignalID("iron-ore")
+        assert some_signal.name == "iron-ore"
+        assert some_signal.type == "item"
+        assert some_signal.quality == "normal"
+
+    Because the name ``"iron-ore"`` is known, Draftsman can pick a correct ``type``
+    for it. For most applications, this defaults to ``"item"``, but notable
+    exceptions include fluids (``"fluid"``) and virtual signals (``"virtual"``):
+
+    .. example::
+
+        assert SignalID("iron-ore").type == "item"
+        assert SignalID("steam").type == "fluid"
+        assert SignalID("signal-A").type == "virtual"
+
+    In Factorio 2.0 and up, multiple SignalID's can share the same name but have
+    different types. The default signal type is the first entry in the return
+    result of :py:func:`get_valid_types(name)`, which in most circumstances is
+    usually ``"item"``. If you want a different type than the default, it must
+    be manually specified:
+
+    .. example::
+
+        SignalID("assembling-machine") # type="item"
+        SignalID("assembling-machine", type="entity")
+        SignalID("assembling-machine", type="recipe")
+
+    If the name is not recognized by the current environment, the type will be
+    unabled to be deduced, and so must be specified for signals of unknown
+    origin:
+
+    .. doctest::
+
+        >>> SignalID("who knows!")
+        Traceback: most recent call last
+        ...
+        IncompleteSignalError
+        >>> SignalID("who knows!", type="item")
+        SignalID(name="who knows!", type="item", quality="normal")
     """
 
     name: Optional[SignalIDName] = attrs.field(
@@ -247,7 +203,6 @@ class SignalID(Exportable):
         """
         if isinstance(value, str):
             try:
-                # TODO: make function to grab default signal type
                 if "item" in signals.get_signal_types(value):
                     return cls(name=value, type="item")
                 else:
@@ -337,9 +292,7 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class TargetID(Exportable):
-    index: uint32 = attrs.field(  # TODO: size, 0 or 1 based
-        validator=instance_of(uint32)
-    )
+    index: uint32 = attrs.field(validator=instance_of(uint32))
     """
     Index of the target in the GUI, 0-based.
     """
@@ -347,12 +300,6 @@ class TargetID(Exportable):
     """
     Name of the target.
     """
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        return value
 
 
 draftsman_converters.add_hook_fns(
@@ -363,14 +310,13 @@ draftsman_converters.add_hook_fns(
 @attrs.define
 class AsteroidChunkID(Exportable):
     index: uint32 = attrs.field(validator=instance_of(uint32))
+    """
+    TODO
+    """
     name: str = attrs.field(validator=instance_of(str))  # TODO: AsteroidChunkName
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
+    """
+    TODO
+    """
 
 
 draftsman_converters.add_hook_fns(
@@ -396,10 +342,13 @@ class Icon(Exportable):
     """
 
     @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
+    def converter(cls, value, index):
+        try:
+            if "index" not in value:
+                value["index"] = index
             return cls(**value)
-        return value
+        except TypeError:
+            return value
 
 
 draftsman_converters.add_hook_fns(
@@ -469,7 +418,7 @@ class Color(Exportable):
 
     @classmethod
     def converter(cls, value) -> "Color":
-        if isinstance(value, (tuple, list)):  # TODO: sequence
+        if isinstance(value, Sequence) and not isinstance(value, str):
             return cls(*value)
         elif isinstance(value, dict):
             return cls(**value)
@@ -510,25 +459,33 @@ class Condition(Exportable):
         validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
+    """
+    The signal in the leftmost slot of the condition.
+    """
     comparator: Comparator = attrs.field(
         default="<",
         converter=try_convert(normalize_comparator),
         validator=one_of(Comparator),
     )
+    """
+    The comparison operation to perform
+    """
     constant: int32 = attrs.field(default=0, validator=instance_of(int32))
+    """
+    The constant value in the rightmost slot of the condition. Occupies the same
+    spot as :py:attr:`.second_signal`. If both are specified, this value is 
+    overridden.
+    """
     second_signal: Optional[SignalID] = attrs.field(
         default=None,
         converter=SignalID.converter,
         validator=instance_of(Optional[SignalID]),
         metadata={"never_null": True},
     )
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
+    """
+    The signal in the rightmost slot of the condition. Occupies the same spot as
+    :py:attr:`.constant`. If both are specified, this value takes precedence.
+    """
 
 
 draftsman_converters.add_hook_fns(
@@ -545,7 +502,13 @@ draftsman_converters.add_hook_fns(
 @attrs.define
 class CircuitNetworkSelection(Exportable):
     red: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    Whether or not to pull values from the red circuit wire.
+    """
     green: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    Whether or not to pull values from the green circuit wire.
+    """
 
     @classmethod
     def converter(cls, value):
@@ -564,48 +527,6 @@ draftsman_converters.add_hook_fns(
         "green": fields.green.name,
     },
 )
-
-
-# class CircuitConnectionPoint(DraftsmanBaseModel):
-#     entity_id: Association.Format
-#     circuit_id: Optional[Literal[1, 2]] = None
-
-
-# class WireConnectionPoint(DraftsmanBaseModel):
-#     entity_id: Association.Format
-#     wire_id: Optional[Literal[0, 1]] = None
-
-
-# class Connections(DraftsmanBaseModel):
-#     # _alias_map: ClassVar[dict] = PrivateAttr(
-#     #     {
-#     #         "1": "Wr1",
-#     #         "2": "Wr2",
-#     #         "Cu0": "Cu0",
-#     #         "Cu1": "Cu1",
-#     #     }
-#     # )
-
-#     def export_key_values(self):
-#         return {k: getattr(self, v) for k, v in self.true_model_fields().items()}
-
-#     class CircuitConnections(DraftsmanBaseModel):
-#         red: Optional[list[CircuitConnectionPoint]] = None
-#         green: Optional[list[CircuitConnectionPoint]] = None
-
-#     Wr1: Optional[CircuitConnections] = Field(CircuitConnections(), alias="1")
-#     Wr2: Optional[CircuitConnections] = Field(CircuitConnections(), alias="2")
-#     Cu0: Optional[list[WireConnectionPoint]] = None
-#     Cu1: Optional[list[WireConnectionPoint]] = None
-
-#     # def __getitem__(self, key):
-#     #     return super().__getitem__(self._alias_map[key])
-
-#     # def __setitem__(self, key, value):
-#     #     super().__setitem__(self._alias_map[key], value)
-
-#     # def __contains__(self, item):
-#     #     return item in self._alias_map and
 
 
 @attrs.define
@@ -638,13 +559,6 @@ class ItemFilter(Exportable):
     Comparator if filtering a range of different qualities.
     """
 
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
-
 
 draftsman_converters.add_hook_fns(
     ItemFilter,
@@ -672,72 +586,14 @@ def ensure_bar_less_than_inventory_size(
         warnings.warn(BarWarning(msg))
 
 
-# class Bar(RootModel):
-#     root: uint16
-
-#     @model_validator(mode="after")
-#     @classmethod
-#     def ensure_less_than_inventory_size(cls, bar: "Bar", info: ValidationInfo):
-#         if not info.context or bar is None:
-#             return bar
-#         if info.context["mode"] == ValidationMode.MINIMUM:
-#             return bar
-
-#         warning_list: list = info.context["warning_list"]
-#         entity = info.context["entity"]
-#         if entity.inventory_size and bar.root >= entity.inventory_size:
-#             issue = IndexWarning(  # TODO: change warning type
-#                 "Bar index ({}) exceeds the container's inventory size ({})".format(
-#                     bar, entity.inventory_size
-#                 ),
-#             )
-
-#             if info.context["mode"] is ValidationMode.PEDANTIC:
-#                 raise issue
-#             else:
-#                 warning_list.append(issue)
-
-#         return bar
-
-
-# class InventoryFilters(DraftsmanBaseModel):
-#     filters: Optional[list[FilterEntry]] = Field(
-#         None,
-#         description="""
-#         Any reserved item filter slots in the container's inventory.
-#         """,
-#     )
-#     bar: Optional[uint16] = Field(
-#         None,
-#         description="""
-#         Limiting bar on this container's inventory.
-#         """,
-#     )
-
-#     @field_validator("filters", mode="before")
-#     @classmethod
-#     def normalize_filters(cls, value: Any):
-#         if isinstance(value, (list, tuple)):
-#             result = []
-#             for i, entry in enumerate(value):
-#                 if isinstance(entry, str):
-#                     result.append({"index": i + 1, "name": entry})
-#                 else:
-#                     result.append(entry)
-#             return result
-#         else:
-#             return value
-
-#     @field_validator("bar")
-#     @classmethod
-#     def ensure_less_than_inventory_size(
-#         cls, bar: Optional[uint16], info: ValidationInfo
-#     ):
-#         return ensure_bar_less_than_inventory_size(cls, bar, info)
-
-
 @attrs.define
 class SignalFilter(Exportable):
+    """
+    An object that specifies a single signal or a range of signal types. Used as
+    filters for logistics requests, as well as the signal specifications inside
+    of :py:class:`.ConstantCombinator`s.
+    """
+
     index: int64 = attrs.field(
         # TODO: handle indexes properly
         # I want to perform the + 1 step inside of the Exportable object so
@@ -755,9 +611,7 @@ class SignalFilter(Exportable):
     index of the signal in the parent 'filters' key, but this is not 
     strictly enforced. 
     """
-    name: SignalIDName = attrs.field(  # TODO: SignalName
-        validator=instance_of(SignalIDName)
-    )
+    name: SignalIDName = attrs.field(validator=instance_of(SignalIDName))
     """
     Name of the signal.
     """
@@ -864,13 +718,6 @@ class SignalFilter(Exportable):
 
     #     return value
 
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
-
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     SignalFilter,
@@ -914,144 +761,12 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
 )
 
 
-# class SignalFilter(DraftsmanBaseModel):
-#     index: int64 = Field(
-#         ...,
-#         description="""
-#         Numeric index of the signal in the combinator, 1-based. Typically the
-#         index of the signal in the parent 'filters' key, but this is not
-#         strictly enforced. Will result in an import error if this value exceeds
-#         the maximum number of slots that this constant combinator can contain.
-#         """,
-#     )
-#     name: str = Field(
-#         ...,
-#         description="""
-#         Name of the signal.
-#         """,
-#     )
-#     type: Optional[
-#         Literal[
-#             "virtual",
-#             "item",
-#             "fluid",
-#             "recipe",
-#             "entity",
-#             "space-location",
-#             "asteroid-chunk",
-#             "quality",
-#         ]
-#     ] = Field("item", description="Type of the signal.")
-#     # signal: Optional[SignalID] = Field(
-#     #     None,
-#     #     description="""
-#     #     Signal to broadcast. If this value is omitted the occupied slot will
-#     #     behave as if no signal exists within it. Cannot be a pure virtual
-#     #     (logic) signal like "signal-each", "signal-any", or
-#     #     "signal-everything"; if such signals are set they will be removed
-#     #     on import.
-#     #     """,
-#     # )
-#     # TODO: make this dynamic based on current environment?
-#     quality: Optional[
-#         Literal[
-#             "normal", "uncommon", "rare", "epic", "legendary", "quality-unknown", "any"
-#         ]
-#     ] = Field(
-#         "any",
-#         description="""
-#         Quality flag of the signal. If unspecified, this value is effectively
-#         equal to 'any' quality level.
-#         """,
-#     )
-#     # TODO: comparator should have a user default, but should always be exported
-#     comparator: Literal[">", "<", "=", "≥", "≤", "≠"] = Field(
-#         ...,
-#         description="Comparison operator when deducing the quality type.",
-#     )
-#     count: int32 = Field(
-#         ...,
-#         description="""
-#         Value of the signal to emit.
-#         """,
-#     )
-#     max_count: Optional[int32] = Field(
-#         None,
-#         description="""
-#         The maximum value of the signal to emit. Only used with logistics-type
-#         requests.
-#         """,
-#     )
-
-#     # Deprecated in 2.0
-#     # @field_validator("index")
-#     # @classmethod
-#     # def ensure_index_within_range(cls, value: int64, info: ValidationInfo):
-#     #     """
-#     #     Factorio does not permit signal values outside the range of it's item
-#     #     slot count; this method raises an error IF item slot count is known.
-#     #     """
-#     #     if not info.context:
-#     #         return value
-#     #     if info.context["mode"] <= ValidationMode.MINIMUM:
-#     #         return value
-
-#     #     entity = info.context["object"]
-
-#     #     # If Draftsman doesn't recognize entity, early exit
-#     #     if entity.item_slot_count is None:
-#     #         return value
-
-#     #     # TODO: what happens if index is 0?
-#     #     if not 0 < value <= entity.item_slot_count:
-#     #         raise ValueError(
-#     #             "Signal 'index' ({}) must be in the range [0, {})".format(
-#     #                 value, entity.item_slot_count
-#     #             )
-#     #         )
-
-#     #     return value
-
-#     @field_validator("name")
-#     @classmethod
-#     def ensure_not_pure_virtual(cls, value: Optional[str], info: ValidationInfo):
-#         """
-#         Warn if pure virtual signals (like "signal-each", "signal-any", and
-#         "signal-everything") are entered inside of a constant combinator.
-#         """
-#         if not info.context or value is None:
-#             return value
-#         if info.context["mode"] <= ValidationMode.MINIMUM:
-#             return value
-
-#         warning_list: list = info.context["warning_list"]
-
-#         if value in pure_virtual:
-#             warning_list.append(
-#                 PureVirtualDisallowedWarning(
-#                     "Cannot set pure virtual signal '{}' in a constant combinator".format(
-#                         value.name
-#                     )
-#                 )
-#             )
-
-#         return value
-
-
 @attrs.define
 class ManualSection(Exportable):
     """
     A "manually" (player) defined collection of signals, typically used for
     logistics sections as well as constant combinators signal groups.
     """
-
-    # def _index_in_range(self, attr, value, mode: Optional[ValidationMode] = None):
-    #     mode = mode if mode is not None else self.validate_assignment
-
-    #     if mode >= ValidationMode.MINIMUM:
-    #         if not (1 <= value <= 100):
-    #             msg = "Index ({}) must be in range [1, 100]".format(value)
-    #             raise IndexError(msg)
 
     index: LuaDouble = attrs.field(validator=instance_of(LuaDouble))
     """
@@ -1070,7 +785,6 @@ class ManualSection(Exportable):
             raise IndexError(msg)
 
     def _filters_converter(value: list[Any]) -> list[SignalFilter]:
-        # TODO: more robust testing
         if isinstance(value, list):
             for i, entry in enumerate(value):
                 if isinstance(entry, tuple):
@@ -1079,11 +793,7 @@ class ManualSection(Exportable):
                         name=entry[0],
                         count=entry[1],
                     )
-                else:
-                    value[i] = SignalFilter.converter(entry)
-            return value
-        else:
-            return value
+        return value
 
     filters: list[SignalFilter] = attrs.field(
         factory=list,
@@ -1128,7 +838,7 @@ class ManualSection(Exportable):
         type: Optional[str] = None,
     ) -> None:
         """
-        TODO
+        Sets the particular signal at any given point.
         """
         if name is not None:
             new_entry = SignalFilter(
@@ -1190,13 +900,6 @@ class ManualSection(Exportable):
     #                 }
 
     #     return value
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
 
 
 draftsman_converters.add_hook_fns(
@@ -1380,13 +1083,6 @@ class InventoryPosition(Exportable):
     omitted.
     """
 
-    @classmethod
-    def convert(cls, value):
-        if isinstance(value, dict):
-            return InventoryPosition(**value)
-        else:
-            return value
-
 
 draftsman_converters.add_hook_fns(
     InventoryPosition,
@@ -1404,7 +1100,7 @@ class ItemInventoryPositions(Exportable):
         if isinstance(value, list):
             res = [None] * len(value)
             for i, elem in enumerate(value):
-                res[i] = InventoryPosition.convert(elem)
+                res[i] = InventoryPosition.converter(elem)
             return res
         else:
             return value
@@ -1422,13 +1118,6 @@ class ItemInventoryPositions(Exportable):
     The total amount of this item being requested to the attached equipment grid,
     if applicable. Always zero if the entity has no equipment grid to request to.
     """
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return ItemInventoryPositions(**value)
-        else:
-            return value
 
 
 draftsman_converters.add_hook_fns(
@@ -1475,64 +1164,12 @@ class BlueprintInsertPlan(Exportable):
     The grids/locations each item is being requested to.
     """
 
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return BlueprintInsertPlan(**value)
-        else:
-            return value
-
 
 draftsman_converters.add_hook_fns(
     BlueprintInsertPlan,
     lambda fields: {
         fields.id.name: "id",
         fields.items.name: "items",
-    },
-)
-
-
-@attrs.define
-class InfinityInventoryFilter(Exportable):
-    index: uint16 = attrs.field(validator=instance_of(uint16))
-    """
-    Where in the infinity containers GUI this filter will exist,
-    1-based.
-    """
-    name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))  # TODO: ItemID
-    """
-    The name of the item to create/remove.
-    """
-    count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
-    """
-    The amount of this item to keep in the entity, as dicerned
-    by 'mode'.
-    """
-    mode: Literal["at-least", "at-most", "exactly"] = attrs.field(
-        default="at-least", validator=one_of("at-least", "at-most", "exactly")
-    )
-    """
-    What manner in which to create or remove this item from the 
-    entity. 'at-least' sets 'count' as a lower-bound, 'at-most' 
-    sets 'count' as an upper-bound, and exactly makes the 
-    quantity of this item match 'count' exactly.
-    """
-
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        else:
-            return value
-
-
-draftsman_converters.add_hook_fns(
-    InfinityInventoryFilter,
-    lambda fields: {
-        fields.index.name: "index",
-        fields.name.name: "name",
-        fields.count.name: "count",
-        fields.mode.name: "mode",
     },
 )
 
@@ -1690,12 +1327,6 @@ class EquipmentComponent(Exportable):
     0-based.
     """
 
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        return value
-
 
 draftsman_converters.add_hook_fns(
     EquipmentComponent,
@@ -1765,7 +1396,7 @@ class FilteredInventory(Exportable):
                 if isinstance(elem, str):
                     value[i] = ItemFilter(index=i, name=elem)
                 else:
-                    value[i] = ItemFilter.converter(elem)
+                    value[i] = elem
         return value
 
     filters: list[ItemFilter] = attrs.field(
@@ -1847,12 +1478,6 @@ class FilteredInventory(Exportable):
             # self.filters.append(new_entry)
             self.filters += [new_entry]
 
-    @classmethod
-    def converter(cls, value):
-        if isinstance(value, dict):
-            return cls(**value)
-        return value
-
 
 draftsman_converters.add_hook_fns(
     FilteredInventory,
@@ -1861,3 +1486,29 @@ draftsman_converters.add_hook_fns(
         "bar": fields.bar.name,
     },
 )
+
+
+@attrs.define
+class EntityFilter(Exportable):
+    name: EntityID = attrs.field(validator=instance_of(EntityID))
+    """
+    Name of the entity.
+    """
+    quality: Literal[None, QualityID] = attrs.field(
+        default=None,
+        validator=one_of(Literal[None, QualityID]),
+        metadata={"never_null": True},
+    )
+    """
+    Quality flag of the entity. Defaults to special "any" quality signal if not
+    specified.
+    """
+    comparator: Comparator = attrs.field(
+        default="=",
+        converter=try_convert(normalize_comparator),
+        validator=one_of(Comparator),
+        metadata={"omit": False},
+    )
+    """
+    Comparison operator when deducing the quality type.
+    """

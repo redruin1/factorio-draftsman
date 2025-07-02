@@ -44,7 +44,7 @@ class HeatInterface(Entity):
     """
 
     @temperature.validator
-    @conditional(ValidationMode.PEDANTIC)  # TODO: should this be pedantic?
+    @conditional(ValidationMode.PEDANTIC)
     def _validate_temperature_range(
         self,
         attr: attrs.Attribute,

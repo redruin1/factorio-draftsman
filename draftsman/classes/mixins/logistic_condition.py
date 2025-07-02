@@ -71,20 +71,11 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
             "logistic_condition", first_operand, comparator, second_operand
         )
 
-    # def remove_logistic_condition(self):
-    #     """
-    #     Removes the logistic condition of the Entity. Does nothing if the Entity
-    #     has no logistic condition to remove.
-    #     """
-    #     self.logistic_condition = None
-
     def merge(self, other: "LogisticConditionMixin"):
         super().merge(other)
         self.connect_to_logistic_network = other.connect_to_logistic_network
         self.logistic_condition = other.logistic_condition
 
-
-# TODO: versioning
 
 draftsman_converters.add_hook_fns(
     LogisticConditionMixin,

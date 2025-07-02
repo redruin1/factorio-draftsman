@@ -12,10 +12,11 @@ from draftsman.classes.mixins import (
 from draftsman.constants import Inventory, SiloReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ModuleID, QualityID, RecipeID, uint32
-from draftsman.utils import fix_incorrect_pre_init
+from draftsman.utils import attrs_reuse, fix_incorrect_pre_init
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
+from draftsman.data import modules
 
 import attrs
 from typing import Iterable, Optional
@@ -43,11 +44,21 @@ class RocketSilo(
 
     # =========================================================================
 
-    # TODO: we should just "evolve" the attribute instead of redefining it
-    # See https://github.com/python-attrs/attrs/issues/637
-    recipe: Optional[RecipeID] = attrs.field(
-        default="rocket-part", validator=instance_of(Optional[RecipeID])
-    )
+    @property
+    def module_slots_occupied(self) -> int:
+        return len(
+            {
+                inv_pos.stack
+                for req in self.item_requests
+                if req.id.name in modules.raw
+                for inv_pos in req.items.in_inventory
+                if inv_pos.inventory == Inventory.rocket_silo_modules
+            }
+        )
+
+    # =========================================================================
+
+    recipe = attrs_reuse(attrs.fields(RecipeMixin).recipe, default="rocket-part")
 
     # =========================================================================
 
@@ -133,7 +144,7 @@ class RocketSilo(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.get_version((1, 0)).add_hook_fns(  # pragma: no branch
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     RocketSilo,
     lambda fields: {
         "auto_launch": fields.auto_launch.name,

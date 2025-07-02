@@ -1,11 +1,8 @@
 # legacy_curved_rail.py
 
-# TODO: the width of the curved rail is calculated to be 5 when it's probably
-# actually 4 internally; thus we should manually overwrite it here... somehow
-
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
@@ -35,7 +32,7 @@ _rotated_collision_sets["legacy-curved-rail"] = {
 
 @fix_incorrect_pre_init
 @attrs.define
-class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
+class LegacyCurvedRail(DirectionalMixin, Entity):
     """
     An old, Factorio 1.0 curved rail entity.
     """
@@ -43,6 +40,12 @@ class LegacyCurvedRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return legacy_curved_rails
+
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
 
     # =========================================================================
 

@@ -685,7 +685,21 @@ class InserterModeOfOperation(IntEnum):
 
 class LampColorMode(IntEnum):
     """
-    TODO
+    In what manner should circuit signals sent to a Lamp be interpreted when
+    determining that Lamp's color.
+
+    * ``COLOR_MAPPING (0)``
+        The given signal type broadcasts that particular color, so giving
+        ``signal-red`` will display the color red. If multiple color signals are
+        provided, the first one according to sort order is displayed.
+        (Default)
+    * ``COMPONENTS (1)``
+        Three signals are used, where the value of each one corresponds to the
+        8-bit red, green, and blue values of the final color.
+    * ``PACKED_RGB (2)``
+        One signal is used, where each color component is pulled from a specific
+        8 bits of the input signal.
+        wire(s).
     """
 
     COLOR_MAPPING = 0
@@ -825,15 +839,31 @@ class WaitConditionType(str, Enum):
         Triggered if a player is not inside any of the stopped train's wagons.
     """
 
-    TIME_PASSED = "time"
-    INACTIVITY = "inactivity"
-    FULL_CARGO = "full"
-    EMPTY_CARGO = "empty"
-    ITEM_COUNT = "item_count"
-    FLUID_COUNT = "fluid_count"
+    ALL_REQUESTS_STATISFIED = "all_requests_satisfied"
+    ANY_PLANET_IMPORT_ZERO = "any_planet_import_zero"
+    ANY_REQUEST_NOT_SATISFIED = "any_request_not_satisfied"
+    ANY_REQUEST_ZERO = "any_request_zero"
+    AT_STATION = "at_station"
     CIRCUIT_CONDITION = "circuit"
+    DAMAGE_TAKEN = "damage_taken"
+    DESTINATION_FULL_OR_NO_PATH = "destination_full_or_no_path"
+    EMPTY_CARGO = "empty"
+    FLUID_COUNT = "fluid_count"
+    FUEL_COUNT_ALL = "fuel_item_count_all"
+    FUEL_COUNT_ANY = "fuel_item_count_any"
+    FULL_CARGO = "full"
+    FULL_FUEL = "fuel_full"
+    NOT_EMPTY = "not_empty"
+    INACTIVITY = "inactivity"
+    ITEM_COUNT = "item_count"
+    NOT_AT_STATION = "not_at_station"
     PASSENGER_PRESENT = "passenger_present"
     PASSENGER_NOT_PRESENT = "passenger_not_present"
+    REQUEST_SATISFIED = "request_satisfied"
+    REQUEST_NOT_SATISFIED = "request_not_satisfied"
+    SPECIFIC_DESTINATION_FULL = "specific_destination_full"
+    SPECIFIC_DESTINATION_NOT_FULL = "specific_destination_not_full"
+    TIME_PASSED = "time"
 
 
 class WaitConditionCompareType(str, Enum):
@@ -916,6 +946,11 @@ class ValidationMode(Enum):
 
 
 class Inventory(IntEnum):
+    """
+    Constants which define which internal inventories
+    :py:attr:`Entity.item_requests` should reside in.
+    """
+
     artillery_turret_ammo = 1
     artillery_wagon_ammo = 1
     assembling_machine_dump = 7

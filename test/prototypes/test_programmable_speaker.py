@@ -40,7 +40,7 @@ def valid_programmable_speaker():
         circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
-        global_playback=True,
+        playback_mode="global",
         allow_polyphony=True,
         show_alert=True,
         show_alert_on_map=False,
@@ -59,7 +59,7 @@ class TestProgrammableSpeakerTesting:
             "programmable-speaker",
             tile_position=[10, 10],
             volume=1.0,
-            global_playback=True,
+            playback_mode="surface",
             allow_polyphony=True,
             show_alert=True,
             show_alert_on_map=False,
@@ -74,7 +74,7 @@ class TestProgrammableSpeakerTesting:
             "position": {"x": 10.5, "y": 10.5},
             "parameters": {
                 # "playback_volume": 1.0, # Default
-                "playback_globally": True,
+                "playback_mode": "surface",
                 "allow_polyphony": True,
             },
             "alert_parameters": {
@@ -96,7 +96,7 @@ class TestProgrammableSpeakerTesting:
             "programmable-speaker",
             tile_position=[10, 10],
             volume=1.0,
-            global_playback=True,
+            playback_mode="global",
             allow_polyphony=True,
             show_alert=True,
             show_alert_on_map=False,
@@ -111,7 +111,7 @@ class TestProgrammableSpeakerTesting:
             "position": {"x": 10.5, "y": 10.5},
             "parameters": {
                 # "playback_volume": 1.0, # Default
-                "playback_globally": True,
+                "playback_mode": "global",
                 "allow_polyphony": True,
             },
             "alert_parameters": {
@@ -207,23 +207,23 @@ class TestProgrammableSpeakerTesting:
 
     def test_set_global_playback(self):
         speaker = ProgrammableSpeaker()
-        assert speaker.global_playback == False
+        assert speaker.playback_mode == "local"
 
-        speaker.global_playback = True
-        assert speaker.global_playback == True
+        speaker.playback_mode = "surface"
+        assert speaker.playback_mode == "surface"
 
         # Error
         with pytest.raises(DataFormatError):
-            speaker.global_playback = "incorrect"
+            speaker.playback_mode = "incorrect"
 
         # No error
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
-            speaker.global_playback = "incorrect"
-            assert speaker.global_playback == "incorrect"
+            speaker.playback_mode = "incorrect"
+            assert speaker.playback_mode == "incorrect"
             assert speaker.to_dict() == {
                 "name": "programmable-speaker",
                 "position": {"x": 0.5, "y": 0.5},
-                "parameters": {"playback_globally": "incorrect"},
+                "parameters": {"playback_mode": "incorrect"},
             }
 
     def test_set_show_alert(self):
@@ -521,7 +521,7 @@ class TestProgrammableSpeakerTesting:
         speaker2 = ProgrammableSpeaker(
             "programmable-speaker",
             volume=1.0,
-            global_playback=True,
+            playback_mode="global",
             allow_polyphony=True,
             show_alert=True,
             show_alert_on_map=False,
@@ -546,7 +546,7 @@ class TestProgrammableSpeakerTesting:
         speaker2 = ProgrammableSpeaker(
             "programmable-speaker",
             volume=0.5,
-            global_playback=True,
+            playback_mode="global",
             allow_polyphony=True,
             show_alert=True,
             show_alert_on_map=False,
@@ -562,7 +562,7 @@ class TestProgrammableSpeakerTesting:
         del speaker2
 
         assert speaker1.volume == 0.5
-        assert speaker1.global_playback == True
+        assert speaker1.playback_mode == "global"
         assert speaker1.allow_polyphony == True
         assert speaker1.show_alert == True
         assert speaker1.show_alert_on_map == False
@@ -578,7 +578,7 @@ class TestProgrammableSpeakerTesting:
             "position": {"x": 0.5, "y": 0.5},
             "parameters": {
                 "playback_volume": 0.5,
-                "playback_globally": True,
+                "playback_mode": "global",
                 "allow_polyphony": True,
             },
             "alert_parameters": {

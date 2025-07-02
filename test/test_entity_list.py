@@ -1,11 +1,11 @@
 # test_entity_list.py
 
-from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
 from draftsman.constants import ValidationMode, Direction
+from draftsman.data import mods
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
@@ -85,14 +85,14 @@ class TestEntityList:
                     "position": {"x": 0.5, "y": 0.5},
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.entities.recursive_remove(entity_to_remove)
 
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test recursion
@@ -117,7 +117,7 @@ class TestEntityList:
                     "position": {"x": 2.5, "y": 2.5},
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.entities.recursive_remove(entity_to_remove)
@@ -131,7 +131,7 @@ class TestEntityList:
                     "position": {"x": 2.5, "y": 2.5},
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test ValueError

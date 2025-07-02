@@ -64,7 +64,7 @@ def valid_cargo_wagon():
 class TestCargoWagon:
     def test_constructor_init(self):
         cargo_wagon = CargoWagon(
-            "cargo-wagon", tile_position=[0, 0], inventory={"bar": 0}
+            "cargo-wagon", tile_position=[0, 0], inventory=FilteredInventory(bar=0)
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -76,10 +76,9 @@ class TestCargoWagon:
             "cargo-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
-            inventory={
-                "bar": 10,
-                "filters": ["transport-belt", "transport-belt", "transport-belt"],
-            },
+            inventory=FilteredInventory(
+                bar=10, filters=["transport-belt", "transport-belt", "transport-belt"]
+            ),
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -99,14 +98,14 @@ class TestCargoWagon:
             "cargo-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
-            inventory={
-                "bar": 10,
-                "filters": [
-                    {"index": 0, "name": "transport-belt"},
-                    {"index": 1, "name": "transport-belt"},
-                    {"index": 2, "name": "transport-belt"},
+            inventory=FilteredInventory(
+                bar=10,
+                filters=[
+                    ItemFilter(index=0, name="transport-belt"),
+                    ItemFilter(index=1, name="transport-belt"),
+                    ItemFilter(index=2, name="transport-belt"),
                 ],
-            },
+            ),
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -281,19 +280,6 @@ class TestCargoWagon:
             ItemFilter(**{"index": 2, "name": "coal"}),
         ]
 
-        # Longhand
-        data = [
-            {"index": 0, "name": "iron-ore"},
-            {"index": 1, "name": "copper-ore"},
-            {"index": 2, "name": "coal"},
-        ]
-        wagon.inventory.filters = data
-        assert wagon.inventory.filters == [
-            ItemFilter(**{"index": 0, "name": "iron-ore"}),
-            ItemFilter(**{"index": 1, "name": "copper-ore"}),
-            ItemFilter(**{"index": 2, "name": "coal"}),
-        ]
-
         with pytest.raises(DataFormatError):
             wagon.inventory.filters = "incorrect"
 
@@ -336,7 +322,9 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
+            inventory=FilteredInventory(
+                bar=1, filters=[ItemFilter(index=1, name="transport-belt")]
+            ),
         )
 
         assert wagon1.mergable_with(wagon2)
@@ -354,7 +342,9 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory={"bar": 1, "filters": [{"index": 1, "name": "transport-belt"}]},
+            inventory=FilteredInventory(
+                bar=1, filters=[ItemFilter(index=1, name="transport-belt")]
+            ),
         )
 
         wagon1.merge(wagon2)

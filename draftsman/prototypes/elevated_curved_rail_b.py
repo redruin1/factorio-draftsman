@@ -1,7 +1,7 @@
 # elevated_curved_rail_b.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 
 from draftsman.data.entities import elevated_curved_rails_b
@@ -10,14 +10,20 @@ import attrs
 
 
 @attrs.define
-class ElevatedCurvedRailB(DoubleGridAlignedMixin, DirectionalMixin, Entity):
+class ElevatedCurvedRailB(DirectionalMixin, Entity):
     """
-    First set of elevated curved rail entities with 2.0 rails. (TODO)
+    Elevated curved rails which connect half-diagonal rails to diagonal rails.
     """
 
     @property
     def similar_entities(self) -> list[str]:
         return elevated_curved_rails_b
+
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
 
     # =========================================================================
 

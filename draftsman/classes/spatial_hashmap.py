@@ -252,7 +252,6 @@ class SpatialHashMap(SpatialDataStructure):
 
         :returns: ``list`` of tuples, each one a map-coordinate.
         """
-        # TODO: AABB or PrimitveAABB?
         if aabb is None:
             return []
 

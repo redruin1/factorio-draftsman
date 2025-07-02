@@ -26,15 +26,8 @@ if TYPE_CHECKING:  # pragma: no coverage
 @attrs.define
 class TileList(Exportable, MutableSequence):
     """
-    TODO
+    A list which exclusively contains Factorio tiles.
     """
-
-    # class Format(DraftsmanBaseModel):
-    #     _root: List[Tile.Format]  # TODO: TileLike?
-
-    #     root: List[Any]  # TODO: there should be a way to validate this
-
-    #     model_config = ConfigDict(revalidate_instances="always")
 
     # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
     _parent = attrs.field(
@@ -55,9 +48,6 @@ class TileList(Exportable, MutableSequence):
         parent: "TileCollection",
         initlist: Optional[list[Tile]] = None,
     ) -> None:
-        """
-        TODO
-        """
         # Init Exportable
         super().__init__()
 
@@ -85,7 +75,17 @@ class TileList(Exportable, MutableSequence):
         """
         Appends the Tile to the end of the sequence.
 
-        TODO
+        :param name: The string name of the tile, or an already existing
+            :py:class:`.Tile` instance.
+        :param copy: Whether or not to create a deepcopy of the given tile
+            instance and add that to the list. If ``name`` was a string instead,
+            then this parameter does nothing since a new tile instance is always
+            created.
+        :param merge: Whether or not tiles with the same name and position
+            should combine into one entity. If not, Draftsman will issue
+            :py:class:`.OverlappingObjectWarning`s in these cases.
+        :param kwargs: Any other keyword arguments that should be passed to the
+            newly created tile instance, if creating from a string ``name``.
         """
         self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
@@ -100,7 +100,18 @@ class TileList(Exportable, MutableSequence):
         """
         Inserts an element into the TileList.
 
-        TODO
+        :param idx: The numeric index to insert this tile into the parent list.
+        :param name: The string name of the tile, or an already existing
+            :py:class:`.Tile` instance.
+        :param copy: Whether or not to create a deepcopy of the given tile
+            instance and add that to the list. If ``name`` was a string instead,
+            then this parameter does nothing since a new tile instance is always
+            created.
+        :param merge: Whether or not tiles with the same name and position
+            should combine into one entity. If not, Draftsman will issue
+            :py:class:`.OverlappingObjectWarning`s in these cases.
+        :param kwargs: Any other keyword arguments that should be passed to the
+            newly created tile instance, if creating from a string ``name``.
         """
         # Convert to new Tile if constructed via string keyword
         new = False
@@ -157,14 +168,14 @@ class TileList(Exportable, MutableSequence):
             return output
 
         for tile in self:
-            # TODO: more sophisticated
             output += tile.validate(mode=mode)
 
         return output
 
     def union(self, other: "TileList") -> "TileList":
         """
-        TODO
+        Calculate the set union between this list and another
+        :py:class:`.TileList`.
         """
         new_tile_list = TileList(None)
 
@@ -185,7 +196,8 @@ class TileList(Exportable, MutableSequence):
 
     def intersection(self, other: "TileList") -> "TileList":
         """
-        TODO
+        Calculate the set intersection between this list and another
+        :py:class:`.TileList`.
         """
         new_tile_list = TileList(None)
 
@@ -202,7 +214,8 @@ class TileList(Exportable, MutableSequence):
 
     def difference(self, other: "TileList") -> "TileList":
         """
-        TODO
+        Calculate the set difference between this list and another
+        :py:class:`.TileList`.
         """
         new_tile_list = TileList(None)
 
@@ -289,19 +302,11 @@ class TileList(Exportable, MutableSequence):
     def __repr__(self) -> str:  # pragma: no coverage
         return "<TileList>{}".format(self._root)
 
-    # @classmethod
-    # def __get_pydantic_core_schema__(
-    #     cls, _source_type: Any, handler: GetCoreSchemaHandler
-    # ) -> CoreSchema:
-    #     return core_schema.no_info_after_validator_function(
-    #         cls, handler(list[Tile])
-    #     )  # TODO: correct annotation
-
 
 draftsman_converters.register_structure_hook(
     TileList,
     # This does work even though parent is None; this is on_setattr correctly
     # handles the cases where we pass a new entity list
     # It is inefficient since we construct 2 TileList objects, but...
-    lambda d, _type: TileList(None, d),
+    lambda d, _: TileList(None, d),
 )

@@ -8,12 +8,22 @@
 """
 
 from draftsman.classes.blueprintable import Blueprintable
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import ValidationMode
-from draftsman.data import entities, items
+from draftsman.data import entities, items, signals
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Mapper, MapperID, uint8
+from draftsman.signatures import (
+    Comparator,
+    QualityID,
+    ItemID,
+    EntityFilter,
+    normalize_comparator,
+    uint8,
+    uint16,
+    uint64,
+)
 from draftsman.utils import reissue_warnings
-from draftsman.validators import conditional, instance_of
+from draftsman.validators import conditional, instance_of, one_of, try_convert
 from draftsman.warning import (
     IndexWarning,
     NoEffectWarning,
@@ -27,8 +37,183 @@ from typing import Literal, Optional, Sequence, Union
 import warnings
 
 
+@attrs.define
+class UpgradeMapperSource(Exportable):
+    type: Literal["entity", "item"] = attrs.field(validator=one_of("entity", "item"))
+    """
+    The type of this particular mapping, either ``"entity"`` or ``"item"``.
+    """
+    name: Optional[str] = attrs.field(validator=instance_of(Optional[str]))
+    """
+    Name of the item or entity being upgraded from.
+    """
+    quality: Literal[None, QualityID] = attrs.field(
+        default=None,
+        validator=one_of(Literal[None, QualityID]),
+        metadata={"never_null": True},
+    )
+    """
+    The item/entity quality to compare against.
+    """
+    comparator: Comparator = attrs.field(
+        default="=",
+        converter=try_convert(normalize_comparator),
+        validator=one_of(Comparator),
+    )
+    """
+    The comparison operation to use when determining which items/entities to 
+    upgrade.
+    """
+    module_filter: Optional[EntityFilter] = attrs.field(
+        default=None,
+        converter=EntityFilter.converter,
+        validator=instance_of(Optional[EntityFilter]),
+    )
+    """
+    When upgrading modules, this defines the specific entities to apply the 
+    upgrade to. ``None`` applies it to all entities.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, str):
+            return cls(name=value, type=signals.get_mapper_type(value))
+        elif isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    UpgradeMapperSource,
+    lambda fields: {
+        "type": fields.type.name,
+        "name": fields.name.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    UpgradeMapperSource,
+    lambda fields: {
+        "type": fields.type.name,
+        "name": fields.name.name,
+        "quality": fields.quality.name,
+        "comparator": fields.comparator.name,
+        "module_filter": fields.module_filter.name,
+    },
+)
+
+
+@attrs.define
+class UpgradeMapperDestination(Exportable):
+    type: Literal["entity", "item"] = attrs.field(validator=one_of("entity", "item"))
+    """
+    The type of this particular mapping, either ``"entity"`` or ``"item"``.
+    """
+    name: Optional[str] = attrs.field(
+        default=None, validator=instance_of(Optional[str])
+    )
+    """
+    Name of the item or entity being upgraded to.
+    """
+    quality: Literal[None, QualityID] = attrs.field(
+        default=None,
+        validator=one_of(Literal[None, QualityID]),
+        metadata={"never_null": True},
+    )
+    """
+    The entity quality to upgrade to.
+    """
+    module_limit: Optional[uint16] = attrs.field(
+        default=None, validator=instance_of(Optional[uint16])
+    )
+    """
+    When upgrading modules, this defines the maximum number of this module to be 
+    installed in the destination entity. ``0`` or ``None`` means no limit.
+    """
+    module_slots: Optional[list[ItemID]] = attrs.field(
+        default=[], validator=instance_of(Optional[list[ItemID]])
+    )
+    """
+    When upgrading entities, this defines which modules to be installed in 
+    the destination entity.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        if isinstance(value, str):
+            return cls(name=value, type=signals.get_mapper_type(value))
+        elif isinstance(value, dict):
+            return cls(**value)
+        return value
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    UpgradeMapperDestination,
+    lambda fields: {
+        "type": fields.type.name,
+        "name": fields.name.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    UpgradeMapperDestination,
+    lambda fields: {
+        "type": fields.type.name,
+        "name": fields.name.name,
+        "quality": fields.quality.name,
+        "module_limit": fields.module_limit.name,
+        "module_slots": fields.module_slots.name,
+    },
+)
+
+
+@attrs.define
+class Mapper(Exportable):
+    index: uint64 = attrs.field(validator=instance_of(uint64))
+    """
+    Index of this mapper in the upgrade planner's GUI.
+    """
+    from_: Optional[UpgradeMapperSource] = attrs.field(
+        default=None,
+        converter=UpgradeMapperSource.converter,
+        validator=instance_of(Optional[UpgradeMapperSource]),
+    )
+    """
+    Which item/entity to upgrade from.
+    """
+    to: Optional[UpgradeMapperDestination] = attrs.field(
+        default=None,
+        converter=UpgradeMapperDestination.converter,
+        validator=instance_of(Optional[UpgradeMapperDestination]),
+    )
+    """
+    Which item/entity to upgrade to.
+    """
+
+    @classmethod
+    def converter(cls, value):
+        try:
+            return cls(
+                index=value["index"],
+                from_=value.get("from", None),
+                to=value.get("to", None),
+            )
+        except TypeError:
+            return value
+
+
+draftsman_converters.add_hook_fns(
+    Mapper,
+    lambda fields: {
+        "index": fields.index.name,
+        "from": fields.from_.name,
+        "to": fields.to.name,
+    },
+)
+
+
 def check_valid_upgrade_pair(
-    from_obj: MapperID | None, to_obj: MapperID | None
+    from_obj: UpgradeMapperSource | None, to_obj: UpgradeMapperDestination | None
 ) -> list[Warning]:
     """
     Checks two :py:data:`MAPPING_ID` objects to see if it's possible for
@@ -76,7 +261,7 @@ def check_valid_upgrade_pair(
     # If both from and to are the same, the game will allow it; but the GUI
     # prevents the user from doing it and it ends up being functionally useless,
     # so we warn the user since this is likely not intentional
-    if from_obj == to_obj:
+    if from_obj.name == to_obj.name:
         return [
             NoEffectWarning(
                 "Mapping entity/item '{}' to itself has no effect".format(from_obj.name)
@@ -210,7 +395,7 @@ class UpgradePlanner(Blueprintable):
     # TODO: this should be an evolve
     item: str = attrs.field(
         default="upgrade-planner",
-        # TODO: validators
+        validator=instance_of(str),
         metadata={
             "omit": False,
         },
@@ -326,8 +511,8 @@ class UpgradePlanner(Blueprintable):
     @reissue_warnings
     def set_mapping(
         self,
-        from_obj: Union[str, MapperID],
-        to_obj: Union[str, MapperID],
+        source: Union[str, UpgradeMapperSource],
+        destination: Union[str, UpgradeMapperDestination],
         index: int,
     ):
         """
@@ -348,7 +533,7 @@ class UpgradePlanner(Blueprintable):
             Can be set to ``None`` which will leave it blank.
         :param index: The location in the upgrade planner's mappers list.
         """
-        new_mapping = Mapper(index=index, from_=from_obj, to=to_obj)
+        new_mapping = Mapper(index=index, from_=source, to=destination)
 
         # Iterate over indexes to see where we should place the new mapping
         for i, current_mapping in enumerate(self.mappers):
@@ -363,8 +548,8 @@ class UpgradePlanner(Blueprintable):
 
     def remove_mapping(
         self,
-        from_obj: Union[str, MapperID],
-        to_obj: Union[str, MapperID],
+        source: Union[str, UpgradeMapperSource],
+        destination: Union[str, UpgradeMapperDestination],
         index: Optional[int] = None,
     ):
         """
@@ -391,23 +576,23 @@ class UpgradePlanner(Blueprintable):
         :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
         :param index: The index of the mapping in the mapper to search.
         """
-        from_obj = MapperID.converter(from_obj)
-        to_obj = MapperID.converter(to_obj)
+        source = UpgradeMapperSource.converter(source)
+        destination = UpgradeMapperDestination.converter(destination)
         index = int(index) if index is not None else None
 
         if index is None:
             # Remove the first occurence of the mapping, if there are multiple
             for i, mapping in enumerate(self.mappers):
-                if mapping.from_ == from_obj and mapping.to == to_obj:
+                if mapping.from_ == source and mapping.to == destination:
                     self.mappers.pop(i)
                     return
             # Otherwise, raise ValueError if we didn't find a match
             raise ValueError(
-                "Unable to find mapper from '{}' to '{}'".format(from_obj, to_obj)
+                "Unable to find mapper from '{}' to '{}'".format(source, destination)
             )
         else:
             # mapper = {"from": from_obj, "to": to_obj, "index": index}
-            mapper = Mapper(index=index, from_=from_obj, to=to_obj)
+            mapper = Mapper(index=index, from_=source, to=destination)
             self.mappers.remove(mapper)
 
     def pop_mapping(self, index: int) -> Mapper:
@@ -423,11 +608,6 @@ class UpgradePlanner(Blueprintable):
 
         :param index: The index of the mapping in the mapper to search.
         """
-        # TODO: maybe make index optional so that `UpgradePlaner.pop_mapping()`
-        # pops the mapper with the highest "index" value?
-        # TODO: should there be a second argument to supply a default similar
-        # to how `pop()` works generally?
-
         # Simple search and pop
         for i, mapping in enumerate(self.mappers):
             if mapping.index == index:

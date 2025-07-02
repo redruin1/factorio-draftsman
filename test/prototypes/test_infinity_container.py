@@ -5,7 +5,6 @@ from draftsman.entity import InfinityContainer, infinity_containers, Container
 from draftsman.error import (
     DataFormatError,
 )
-from draftsman.signatures import InfinityInventoryFilter
 import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -24,7 +23,7 @@ def valid_infinity_container():
         tile_position=(1, 1),
         # item_requests=[],
         bar=10,
-        filters=[InfinityInventoryFilter(index=0, name="iron-ore", count=50)],
+        filters=[InfinityContainer.Filter(index=0, name="iron-ore", count=50)],
         remove_unfiltered_items=True,
         tags={"blah": "blah"},
     )
@@ -35,7 +34,9 @@ class TestInfinityContainer:
         container = InfinityContainer(
             remove_unfiltered_items=True,
             filters=[
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                InfinityContainer.Filter(
+                    index=1, name="iron-ore", count=100, mode="at-least"
+                )
             ],
         )
         assert container.to_dict() == {
@@ -79,34 +80,34 @@ class TestInfinityContainer:
 
         container.set_infinity_filter(0, "iron-ore", "at-least", 100)
         assert container.filters == [
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
             )
         ]
 
         container.set_infinity_filter(1, "copper-ore", "exactly", 200)
         assert container.filters == [
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
             ),
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
             ),
         ]
 
         container.set_infinity_filter(0, "uranium-ore", "at-least", 1000)
         assert container.filters == [
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 1, "name": "uranium-ore", "count": 1000, "mode": "at-least"}
             ),
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
             ),
         ]
 
         container.set_infinity_filter(0, None)
         assert container.filters == [
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
             ),
         ]
@@ -114,10 +115,10 @@ class TestInfinityContainer:
         # Default count
         container.set_infinity_filter(0, "iron-ore", "at-least")
         assert container.filters == [
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 2, "name": "copper-ore", "count": 200, "mode": "exactly"}
             ),
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 **{"index": 1, "name": "iron-ore", "count": 50, "mode": "at-least"}
             ),
         ]
@@ -151,7 +152,9 @@ class TestInfinityContainer:
             # items={"copper-plate": 100},
             remove_unfiltered_items=True,
             filters=[
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                InfinityContainer.Filter(
+                    index=1, name="iron-ore", count=100, mode="at-least"
+                )
             ],
         )
 
@@ -169,7 +172,9 @@ class TestInfinityContainer:
             "infinity-chest",
             remove_unfiltered_items=True,
             filters=[
-                {"index": 1, "name": "iron-ore", "count": 100, "mode": "at-least"}
+                InfinityContainer.Filter(
+                    index=1, name="iron-ore", count=100, mode="at-least"
+                )
             ],
         )
 
@@ -178,7 +183,7 @@ class TestInfinityContainer:
 
         assert container1.remove_unfiltered_items == True
         assert container1.filters == [
-            InfinityInventoryFilter(
+            InfinityContainer.Filter(
                 index=1, name="iron-ore", count=100, mode="at-least"
             )
         ]

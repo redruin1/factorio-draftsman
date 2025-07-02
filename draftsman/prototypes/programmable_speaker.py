@@ -14,7 +14,7 @@ from draftsman.signatures import (
     SignalID,
     uint32,
 )
-from draftsman.validators import conditional, instance_of
+from draftsman.validators import conditional, instance_of, one_of
 from draftsman.warning import (
     UnknownInstrumentWarning,
     UnknownNoteWarning,
@@ -25,11 +25,8 @@ from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
 
 import attrs
-from typing import Optional
+from typing import Literal, Optional
 import warnings
-
-
-# TODO: patch for 2.0!
 
 
 @attrs.define
@@ -70,6 +67,50 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
+    signal_value_is_pitch: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    Whether or not the value of the signal should indicate the particular note
+    of the instrument to play. If this attribute is ``True``, then the signal
+    that the speaker will read from is specified as the 
+    :py:attr:`~Condition.first_signal` of 
+    :py:attr:`~ProgrammableSpeaker.circuit_condition`.
+    """
+
+    # =========================================================================
+
+    stop_playing_sounds: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    Whether or not any change in the input playback signal will automatically
+    cease the currently playing sound.
+    """
+
+    # =========================================================================
+
+    volume_controlled_by_signal: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    Whether or not the volume of this speaker should be dynamically controlled
+    via circuit signal, or if it should always remain the constant value 
+    specified by :py:attr:`.volume`.
+    """
+
+    # =========================================================================
+
+    volume_signal: Optional[SignalID] = attrs.field(
+        default=None,
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+    )
+    """
+    What volume signal to use when dynamically setting this speakers volume. Has
+    no effect if :py:attr:`.volume_controlled_by_signal` is ``False``.
+    """
+
+    # =========================================================================
+
     volume: float = attrs.field(default=1.0, validator=instance_of(float))
     """
     The volume of the programmable speaker, in the range ``[0.0, 1.0]``.
@@ -95,12 +136,23 @@ class ProgrammableSpeaker(
 
     # =========================================================================
 
-    global_playback: bool = attrs.field(default=False, validator=instance_of(bool))
+    playback_mode: Literal["local", "surface", "global"] = attrs.field(
+        default="local", validator=one_of("local", "surface", "global")
+    )
     """
-    Whether or not to play this sound at a constant volume regardless of
-    distance.
+    In what manner to broadcast the audio from this programmable speaker:
 
-    :exception DataFormatError: If set to anything other than a ``bool``.
+    * ``"local"`` only plays the audio when physically near the speaker, 
+        attenuating volume based on distance.
+    * ``"surface"`` plays the audio at a constant volume if the player is on the 
+        same surface as the speaker.
+    * ``"global"`` plays the audio at a constant volume across all surfaces.
+
+    .. NOTE::
+
+        In Factorio 1.0, only modes ``"local"`` and ``"surface"`` are permitted.
+
+    :exception DataFormatError: If set to anything other than the values above.
     """
 
     # =========================================================================
@@ -300,8 +352,6 @@ class ProgrammableSpeaker(
         Name of the note. Derived from :py:attr:`.note_id`, but can be set via
         this attribute as well.
 
-        TODO: warnings
-
         :exception DataFormatError: If set to anything other than a ``str`` or
             ``None``.
         """
@@ -335,12 +385,15 @@ class ProgrammableSpeaker(
 
         # Control behavior
         self.signal_value_is_pitch = other.signal_value_is_pitch
+        self.stop_playing_sounds = other.stop_playing_sounds
         self.instrument_id = other.instrument_id
         self.note_id = other.note_id
         # Parameters
         self.volume = other.volume
-        self.global_playback = other.global_playback
+        self.playback_mode = other.playback_mode
         self.allow_polyphony = other.allow_polyphony
+        self.volume_controlled_by_signal = other.volume_controlled_by_signal
+        self.volume_signal = other.volume_signal
         # Alert Parameters
         self.show_alert = other.show_alert
         self.show_alert_on_map = other.show_alert_on_map
@@ -352,7 +405,15 @@ class ProgrammableSpeaker(
     __hash__ = Entity.__hash__
 
 
-draftsman_converters.add_hook_fns(
+@attrs.define
+class _Export:
+    playback_globally: bool = False
+
+
+_export_fields = attrs.fields(_Export)
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
     ProgrammableSpeaker,
     lambda fields: {
         (
@@ -367,8 +428,68 @@ draftsman_converters.add_hook_fns(
         ): fields.instrument_id.name,
         ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
         ("parameters", "playback_volume"): fields.volume.name,
-        ("parameters", "playback_globally"): fields.global_playback.name,
+        ("parameters", "playback_globally"): (
+            fields.playback_mode.name,
+            lambda v, _: "surface" if v else "local",
+        ),
         ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        ("alert_parameters", "show_alert"): fields.show_alert.name,
+        ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
+        ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,
+        ("alert_parameters", "alert_message"): fields.alert_message.name,
+    },
+    lambda fields, _: {
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "signal_value_is_pitch",
+        ): fields.signal_value_is_pitch.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "instrument_id",
+        ): fields.instrument_id.name,
+        ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
+        ("parameters", "playback_volume"): fields.volume.name,
+        ("parameters", "playback_globally"): (
+            _export_fields.playback_globally,
+            lambda inst: True if inst.playback_mode == "surface" else False,
+        ),
+        ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        ("alert_parameters", "show_alert"): fields.show_alert.name,
+        ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
+        ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,
+        ("alert_parameters", "alert_message"): fields.alert_message.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    ProgrammableSpeaker,
+    lambda fields: {
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "signal_value_is_pitch",
+        ): fields.signal_value_is_pitch.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "stop_playing_sounds",
+        ): fields.stop_playing_sounds.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "instrument_id",
+        ): fields.instrument_id.name,
+        ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
+        ("parameters", "playback_volume"): fields.volume.name,
+        ("parameters", "playback_mode"): fields.playback_mode.name,
+        ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        (
+            "parameters",
+            "volume_controlled_by_signal",
+        ): fields.volume_controlled_by_signal.name,
+        ("parameters", "volume_signal_id"): fields.volume_signal.name,
         ("alert_parameters", "show_alert"): fields.show_alert.name,
         ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
         ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,

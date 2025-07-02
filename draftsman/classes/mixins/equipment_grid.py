@@ -98,14 +98,8 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
 
     # =========================================================================
 
-    def _equipment_converter(value):
-        if isinstance(value, list):
-            return [EquipmentComponent.converter(elem) for elem in value]
-        return value
-
     equipment: list[EquipmentComponent] = attrs.field(
         factory=list,
-        converter=_equipment_converter,
         validator=instance_of(list[EquipmentComponent]),
     )
     """
@@ -126,7 +120,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
     @equipment.validator
     @conditional(ValidationMode.STRICT)
     def _equipment_validator(
-        self, attr, value, mode=None, warning_list: Optional[list] = None
+        self, attr: attrs.Attribute, value: list[EquipmentComponent]
     ):
         """
         Ensure this entity actually has an equipment grid to request equipment
@@ -185,7 +179,6 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         # at an invalid position, or such that it overlaps other items in the grid.
 
         # Add the item to the equipment
-        # TODO: does this revalidate?
         self.equipment = self.equipment + [
             EquipmentComponent(
                 equipment=EquipmentID(

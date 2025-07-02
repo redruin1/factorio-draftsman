@@ -17,8 +17,6 @@ def add_fluid(name: str, order: str = None, **kwargs):
     Add a new fluid, or modify the properties of an existing fluid. Useful for
     simulating a modded environment without having to fully supply an entire
     mod configuration for simple scripts.
-
-    TODO
     """
     existing_data = raw.get(name, {})
     default_temperature = existing_data.get(

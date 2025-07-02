@@ -151,6 +151,30 @@ class TestLab:
     #     assert lab.items == {"unknown": 100}
     #     assert lab.module_slots_occupied == 0
 
+    def test_request_modules(self):
+        lab = Lab("lab")
+        assert lab.module_slots_occupied == 0
+
+        lab.request_modules("productivity-module-3", (0, 1), quality="legendary")
+        assert lab.module_slots_occupied == 2
+        assert lab.item_requests == [
+            BlueprintInsertPlan(
+                id={"name": "productivity-module-3", "quality": "legendary"},
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=Inventory.lab_modules,
+                            stack=0,
+                        ),
+                        InventoryPosition(
+                            inventory=Inventory.lab_modules,
+                            stack=1,
+                        ),
+                    ]
+                ),
+            )
+        ]
+
     def test_mergable_with(self):
         lab1 = Lab("lab")
         lab2 = Lab("lab", tags={"some": "stuff"})

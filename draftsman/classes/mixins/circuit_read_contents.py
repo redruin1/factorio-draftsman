@@ -47,9 +47,25 @@ class CircuitReadContentsMixin(Exportable):  # (ControlBehaviorMixin)
         self.read_mode = other.read_mode
 
 
-# TODO: only permit belt read mode to PULSE and HOLD on Factorio 1.0
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    CircuitReadContentsMixin,
+    lambda fields: {
+        ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,
+        ("control_behavior", "circuit_contents_read_mode"): fields.read_mode.name,
+    },
+    lambda fields, _: {
+        ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,
+        ("control_behavior", "circuit_contents_read_mode"): (
+            fields.read_mode,
+            # Prevent outputting mode HOLD_ALL_BELTS on Factorio 1.0
+            lambda inst: BeltReadMode.PULSE
+            if inst.read_mode is BeltReadMode.HOLD_ALL_BELTS
+            else inst.read_mode,
+        ),
+    },
+)
 
-draftsman_converters.add_hook_fns(
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     CircuitReadContentsMixin,
     lambda fields: {
         ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,

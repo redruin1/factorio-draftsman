@@ -107,11 +107,8 @@ class TestAmmoTurret:
         }
 
         turret.priority_list = [
-            {
-                "index": 0,
-                "name": "small-biter",
-            },
-            {"index": 1, "name": "medium-biter"},
+            TargetID(index=0, name="small-biter"),
+            TargetID(index=1, name="medium-biter"),
         ]
         assert turret.priority_list == [
             TargetID(index=0, name="small-biter"),

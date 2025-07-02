@@ -12,15 +12,12 @@ from draftsman.classes.mixins.color import ColorMixin
 from draftsman.classes.mixins.control_behavior import ControlBehaviorMixin
 from draftsman.classes.mixins.crafting_machine import CraftingMachineMixin
 from draftsman.classes.mixins.directional import DirectionalMixin
-from draftsman.classes.mixins.double_grid_aligned import DoubleGridAlignedMixin
 from draftsman.classes.mixins.energy_source import EnergySourceMixin
 from draftsman.classes.mixins.equipment_grid import EquipmentGridMixin
 from draftsman.classes.mixins.filters import FiltersMixin
 from draftsman.classes.mixins.input_ingredients import InputIngredientsMixin
 from draftsman.classes.mixins.inventory import InventoryMixin
 from draftsman.classes.mixins.io_type import IOTypeMixin
-
-# from draftsman.classes.mixins.item_requests import ItemRequestMixin
 from draftsman.classes.mixins.logistic_condition import LogisticConditionMixin
 from draftsman.classes.mixins.mode_of_operation import InserterModeOfOperationMixin
 from draftsman.classes.mixins.mode_of_operation import LogisticModeOfOperationMixin
@@ -50,7 +47,6 @@ __all__ = [
     "ControlBehaviorMixin",
     "CraftingMachineMixin",
     "DirectionalMixin",
-    "DoubleGridAlignedMixin",
     "EnergySourceMixin",
     "EquipmentGridMixin",
     "FiltersMixin",

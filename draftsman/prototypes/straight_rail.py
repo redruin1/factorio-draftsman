@@ -2,7 +2,7 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
@@ -32,7 +32,7 @@ for rail_name in straight_rails:
 
 @fix_incorrect_pre_init
 @attrs.define
-class StraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
+class StraightRail(DirectionalMixin, Entity):
     """
     A piece of rail track that moves in the 8 cardinal directions.
     """
@@ -40,6 +40,12 @@ class StraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return straight_rails
+
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
 
     # =========================================================================
 

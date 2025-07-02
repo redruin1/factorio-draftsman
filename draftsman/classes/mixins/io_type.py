@@ -1,7 +1,5 @@
 # io_type.py
 
-# TODO: make this an enum?
-
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
 from draftsman.validators import one_of
@@ -35,7 +33,6 @@ class IOTypeMixin(Exportable):
 
 
 draftsman_converters.add_hook_fns(
-    # {"$id": "factorio:io_type_mixin"},
     IOTypeMixin,
     lambda fields: {"type": fields.io_type.name},
 )

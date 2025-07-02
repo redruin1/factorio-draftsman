@@ -1,10 +1,11 @@
 # infinity_container.py
 
 from draftsman.classes.entity import Entity
+from draftsman.classes.exportable import Exportable
 from draftsman.classes.mixins import InventoryMixin
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import InfinityInventoryFilter, uint16, uint32
-from draftsman.validators import instance_of
+from draftsman.signatures import ItemIDName, QualityID, uint16, uint32
+from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import infinity_containers
 from draftsman.data import items
@@ -20,24 +21,47 @@ class InfinityContainer(InventoryMixin, Entity):
     An entity used to create an infinite amount of any item.
     """
 
+    @attrs.define
+    class Filter(Exportable):
+        index: uint16 = attrs.field(validator=instance_of(uint16))
+        """
+        Where in the infinity containers GUI this filter will exist,
+        1-based.
+        """
+        name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))
+        """
+        The name of the item to create/remove.
+        """
+        quality: QualityID = attrs.field(default="normal", validator=one_of(QualityID))
+        """
+        The quality of the item to create/remove.
+        """
+        count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
+        """
+        The amount of this item to keep in the entity, as discerned
+        by 'mode'.
+        """
+        mode: Literal["at-least", "at-most", "exactly"] = attrs.field(
+            default="at-least", validator=one_of("at-least", "at-most", "exactly")
+        )
+        """
+        What manner in which to create or remove this item from the 
+        entity. 'at-least' sets 'count' as a lower-bound, 'at-most' 
+        sets 'count' as an upper-bound, and exactly makes the 
+        quantity of this item match 'count' exactly.
+        """
+
+    # =========================================================================
+
     @property
     def similar_entities(self) -> list[str]:
         return infinity_containers
 
     # =========================================================================
 
-    def _filters_converter(value):
-        if isinstance(value, list):
-            for i, elem in enumerate(value):
-                value[i] = InfinityInventoryFilter.converter(elem)
-            return value
-        else:
-            return value
-
-    filters: list[InfinityInventoryFilter] = attrs.field(
+    filters: list[Filter] = attrs.field(
         factory=list,
-        converter=_filters_converter,
-        validator=instance_of(list[InfinityInventoryFilter]),
+        validator=instance_of(list[Filter]),
     )
     """
     The list of items to infinitely create or remove from this 
@@ -95,7 +119,7 @@ class InfinityContainer(InventoryMixin, Entity):
                     existing_index = i
                 break
 
-        new_filter = InfinityInventoryFilter(
+        new_filter = InfinityContainer.Filter(
             index=index + 1,
             name=item,
             count=count,
@@ -117,6 +141,27 @@ class InfinityContainer(InventoryMixin, Entity):
 
     __hash__ = Entity.__hash__
 
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    InfinityContainer.Filter,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "count": fields.count.name,
+        "mode": fields.mode.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    InfinityContainer.Filter,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "quality": fields.quality.name,
+        "count": fields.count.name,
+        "mode": fields.mode.name,
+    },
+)
 
 draftsman_converters.add_hook_fns(
     InfinityContainer,

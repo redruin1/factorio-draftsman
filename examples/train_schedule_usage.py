@@ -77,9 +77,7 @@ def main() -> None:
     # is made:
     signal_condition = WaitCondition(
         WaitConditionType.CIRCUIT_CONDITION,
-        condition=Condition(
-            first_signal="signal-check", comparator=">", constant=0
-        ),
+        condition=Condition(first_signal="signal-check", comparator=">", constant=0),
     )
     dropoff_conditions_extra = dropoff_conditions | signal_condition
 

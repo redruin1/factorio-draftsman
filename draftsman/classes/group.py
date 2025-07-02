@@ -385,7 +385,7 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
         # Validate regular attributes
-        output = ValidationResult([], [])
+        output = super().validate(mode=mode)
 
         # Validate recursive attributes
         output += self.entities.validate(mode=mode)

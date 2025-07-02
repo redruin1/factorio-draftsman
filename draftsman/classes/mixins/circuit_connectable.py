@@ -46,7 +46,7 @@ class CircuitConnectableMixin(Exportable):
         factory=dict,
         repr=False,
         alias="connections",
-        validator=instance_of(dict),  # TODO: better validator?
+        validator=instance_of(dict),
     )
 
     @property
@@ -77,17 +77,12 @@ class CircuitConnectableMixin(Exportable):
         # to be an association to `self` in `other.wires`
         # If there are any duplicate wires, they (currently) get omitted during
         # dictionary resolution (to_dict())
-
         if other.parent is not None:
             for wire in other.parent.wires:
                 if wire[0]() is other:
                     wire[0] = Association(self)
                 if wire[2]() is other:
                     wire[2] = Association(self)
-
-        # TODO: ideally this would happen further up the stack, but thank god I
-        # included this parent attribute cause holy shit this is gonna be aids
-        # to rewrite
 
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(

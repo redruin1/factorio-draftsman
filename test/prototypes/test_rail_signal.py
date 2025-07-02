@@ -28,7 +28,7 @@ def valid_rail_signal():
         red_output_signal="signal-A",
         yellow_output_signal="signal-B",
         green_output_signal="signal-C",
-        enable_disable=True,
+        circuit_enabled=True,
         circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
@@ -116,19 +116,19 @@ class TestRailSignal:
             assert signal.circuit_connectable == True
             assert signal.dual_circuit_connectable == False
 
-    def test_enable_disable(self):
+    def test_circuit_enabled(self):
         rail_signal = RailSignal("rail-signal")
-        rail_signal.enable_disable == False
+        rail_signal.circuit_enabled == False
 
-        rail_signal.enable_disable = True
-        assert rail_signal.enable_disable == True
+        rail_signal.circuit_enabled = True
+        assert rail_signal.circuit_enabled == True
 
         with pytest.raises(DataFormatError):
-            rail_signal.enable_disable = "incorrect"
+            rail_signal.circuit_enabled = "incorrect"
 
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
-            rail_signal.enable_disable = "incorrect"
-            assert rail_signal.enable_disable == "incorrect"
+            rail_signal.circuit_enabled = "incorrect"
+            assert rail_signal.circuit_enabled == "incorrect"
             assert rail_signal.to_dict() == {
                 "name": "rail-signal",
                 "position": {"x": 0.5, "y": 0.5},

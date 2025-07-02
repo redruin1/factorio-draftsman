@@ -52,7 +52,6 @@ class Shape(metaclass=ABCMeta):
         pass
 
 
-# TODO: remove position attribute (less memory needed)
 class AABB(Shape):
     """
     Axis-Aligned Bounding-Box abstraction class. Contains a :py:attr:`top_left`
@@ -460,21 +459,23 @@ def decode_version(version_number: int) -> tuple[int, int, int, int]:
     return major, minor, patch, dev_ver
 
 
-def version_string_to_tuple(version_string: str) -> tuple[int, ...]:
+def version_string_to_tuple(version_string: str) -> tuple[int, int, int, int]:
     """
     Converts a version string to a tuple.
 
     Used extensively when parsing mod versions when updating the package's data,
     provided to the user for convinience. Splits a string by the dot character
-    and converts each component to an ``int``.
+    and converts each component to an ``int``. Pads the string with trailing
+    zeros in order to match the 4-component version format Factorio uses.
 
     For the inverse operation, see :py:func:`version_tuple_to_string`.
 
     :param version_string: The version string to separate.
 
-    :returns: A n-length tuple of the format ``(a, b, c)`` from ``"a.b.c"``
+    :returns: A 4-length tuple of the format ``(a, b, c, 0)`` from ``"a.b.c"``
     """
-    return tuple([int(elem) for elem in version_string.split(".")])
+    output = [int(elem) for elem in version_string.split(".")]
+    return tuple(output + [0] * (4 - len(output)))
 
 
 def version_tuple_to_string(version_tuple: tuple[int, ...]) -> str:
@@ -1001,6 +1002,7 @@ def fix_incorrect_pre_init(cls):  # pragma: no coverage
     """
     original_init = cls.__init__
 
+    @reissue_warnings
     @wraps(original_init)
     def new_init(self, *args, **kwargs):
         self.__attrs_pre_init__(*args, first_call=True, **kwargs)

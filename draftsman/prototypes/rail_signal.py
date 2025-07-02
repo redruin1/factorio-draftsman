@@ -60,8 +60,7 @@ class RailSignal(
 
     # =========================================================================
 
-    # TODO: could maybe inherit this from CircuitEnableMixin
-    enable_disable: bool = attrs.field(
+    circuit_enabled: bool = attrs.field(
         default=False,
         validator=instance_of(bool),
     )
@@ -89,7 +88,7 @@ class RailSignal(
 draftsman_converters.add_hook_fns(
     RailSignal,
     lambda fields: {
-        ("control_behavior", "circuit_close_signal"): fields.enable_disable.name,
+        ("control_behavior", "circuit_close_signal"): fields.circuit_enabled.name,
         ("control_behavior", "circuit_read_signal"): fields.read_signal.name,
     },
 )

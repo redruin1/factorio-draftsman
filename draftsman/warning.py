@@ -37,16 +37,6 @@ class DirectionWarning(DraftsmanWarning):
     pass
 
 
-class FlippingWarning(DraftsmanWarning):
-    """
-    Raised when attempting to flip an entity that may or not be able to be
-    flipped. This is only raised when flipping an :py:class:`.EntityCollection`
-    with modded entities.
-    """
-
-    pass  # TODO: remove
-
-
 class IndexWarning(DraftsmanWarning):
     """
     Raised when the index of some element is out of expected range, though not

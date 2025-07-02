@@ -156,6 +156,8 @@ class Entity(EntityLike, Exportable):
         if self.position is not None:
             self.position = self.position
         else:
+            # FIXME: technically, this line causes GridAlignment warnings to
+            # be issued twice, once during init and once here
             self.tile_position = self.tile_position
 
         # Cursed, but we make do
@@ -582,16 +584,19 @@ class Entity(EntityLike, Exportable):
         res = _TileVector(value.x, value.y, self)
 
         object.__setattr__(self, "tile_position", res)
-        object.__setattr__(
-            self,
-            "position",
-            _PosVector(
-                value.x + self.tile_width / 2, value.y + self.tile_height / 2, self
-            ),
+        self.position = _PosVector(
+            value.x + self.tile_width / 2, value.y + self.tile_height / 2, self
         )
+        # object.__setattr__(
+        #     self,
+        #     "position",
+        #     _PosVector(
+        #         value.x + self.tile_width / 2, value.y + self.tile_height / 2, self
+        #     ),
+        # )
 
         # Check of grid-alignment warnings after the positions have been updated
-        attr.validator(self, attr, value)
+        # attr.validator(self, attr, value)
 
         return res
 
@@ -626,33 +631,11 @@ class Entity(EntityLike, Exportable):
         Populate the internal _TileVector with a reference to the instantiated
         entity.
         """
-        # return None
         return _TileVector(
-            # round(self.position.x - self.tile_width / 2),
-            # round(self.position.y - self.tile_height / 2),
             0,
             0,
             self,
         )
-
-    @tile_position.validator
-    @conditional(ValidationMode.MINIMUM)
-    def _tile_position_validator(self, attr: attrs.Attribute, value: Vector):
-        """
-        Ensure that the tile lives on a double grid if double grid aligned.
-        """
-        if self.double_grid_aligned:
-            if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
-                cast_position = Vector(
-                    math.floor(self.tile_position.x / 2) * 2,
-                    math.floor(self.tile_position.y / 2) * 2,
-                )
-                msg = (
-                    "Double-grid aligned entity is not placed along chunk grid; "
-                    "entity's tile position will be cast from {} to {} when "
-                    "imported".format(self.tile_position, cast_position)
-                )
-                warnings.warn(GridAlignmentWarning(msg))
 
     # =========================================================================
 

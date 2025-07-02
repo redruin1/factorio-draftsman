@@ -16,9 +16,7 @@ class CircuitEnableMixin(Exportable):
     its operation.
     """
 
-    circuit_enabled: bool = attrs.field(  # TODO: should this be `enable_disable`?
-        default=False, validator=instance_of(bool)
-    )
+    circuit_enabled: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not the machine enables its operation based on a circuit
     condition. Only used on entities that have multiple operation states,

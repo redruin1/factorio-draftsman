@@ -67,34 +67,11 @@ class DirectionalMixin(Exportable):
             _rotated_collision_sets[name] = {}
             for i in self.valid_directions:
                 if self.collision_set_rotated and static_collision_set is not None:
-                    # closest_direction = i.to_closest_valid_direction(
-                    #     self.valid_directions
-                    # )
                     rotated_collision_set = static_collision_set.rotate(i)
                 else:
                     rotated_collision_set = static_collision_set
 
                 _rotated_collision_sets[name][i] = rotated_collision_set
-
-            # if self.collision_set_rotated:
-            #     # Automatically generate a set of rotated collision sets for every
-            #     # orientation
-            #     # TODO: would probably be better to do this in env.py, but how?
-            #     static_collision_set = entities.collision_sets.get(name, None)
-            #     if static_collision_set:
-            #         _rotated_collision_sets[name] = {}
-            #         for i in self.valid_directions:
-            #             _rotated_collision_sets[name][i] = static_collision_set.rotate(i)
-            #     else:
-            #         _rotated_collision_sets[name] = {}
-            #         for i in self.valid_directions:
-            #             _rotated_collision_sets[name][i] = None
-            # else:
-            #     # populate the `_rotated_collision_sets` dict, put have all entries
-            #     # point to the same item so we don't use too much memory
-            #     _rotated_collision_sets[name] = static_collision_set
-            #     # for i in self.valid_directions:
-            #     #     _rotated_collision_sets[name][i] = known_collision_set
 
         # The default position function uses `tile_width`/`tile_height`, which
         # use `collision_set`, which for rotatable entities is derived from the
@@ -245,7 +222,7 @@ class DirectionalMixin(Exportable):
         Ensure the given direction matches one of :py:attr:`.valid_directions`.
         """
         if value not in self.valid_directions:
-            # TODO: should we convert it for the user, or let it be wrong?
+            # We only issue the warning, the game can correct it when importing
             msg = "Direction '{}' is disallowed for '{}' entities; only the following directions are permitted:\n\t{}".format(
                 value.name, type(self).__name__, self.valid_directions
             )

@@ -4,9 +4,9 @@ import pickle
 
 import importlib.resources as pkg_resources
 
-from draftsman import __factorio_version_info__
+# from draftsman import __factorio_version_info__
 from draftsman import data
-from draftsman.data import recipes
+from draftsman.data import recipes, mods
 
 from typing import Optional
 
@@ -19,7 +19,8 @@ with pkg_resources.open_binary(data, "modules.pkl") as inp:
 
 def add_module_category(name: str, order: str = ""):
     """
-    TODO
+    Creates a new category of modules in Draftsman's environment, which persists
+    until the session ends.
     """
     # TODO: insert sorted
     categories[name] = []
@@ -27,7 +28,8 @@ def add_module_category(name: str, order: str = ""):
 
 def add_module(module_name: str, category_name: str, **kwargs):
     """
-    TODO
+    Creates a module in Draftsman's environment, which persists until the
+    session ends.
     """
     if category_name not in categories:
         raise TypeError(
@@ -72,7 +74,8 @@ def get_modules_from_effects(
         if recipe_name is not None:
             # Skip adding this module if the recipe provided does not fit within
             # this module's limitations
-            if __factorio_version_info__ < (2, 0):  # pragma: no coverage
+            factorio_version = mods.versions.get("base", (2, 0))
+            if factorio_version < (2, 0):  # pragma: no coverage
                 if "limitation" in module and recipe_name not in module["limitation"]:
                     continue
                 elif (

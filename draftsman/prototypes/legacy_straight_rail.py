@@ -2,7 +2,7 @@
 
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, DirectionalMixin
+from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
@@ -32,16 +32,20 @@ _rotated_collision_sets["legacy-straight-rail"] = {
 
 @fix_incorrect_pre_init
 @attrs.define
-class LegacyStraightRail(DoubleGridAlignedMixin, DirectionalMixin, Entity):
+class LegacyStraightRail(DirectionalMixin, Entity):
     """
     An old, Factorio 1.0 straight rail entity.
     """
 
-    # =========================================================================
-
     @property
     def similar_entities(self) -> list[str]:
         return legacy_straight_rails
+
+    # =========================================================================
+
+    @property
+    def double_grid_aligned(self) -> bool:
+        return True
 
     # =========================================================================
 

@@ -34,15 +34,22 @@ def valid_rocket_silo():
 class TestRocketSilo:
     def test_constructor_init(self):
         silo = RocketSilo(
+            auto_launch=True,
             transitional_request_index=12,
             read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS,
         )
-        assert silo.to_dict() == {
+        assert silo.to_dict(version=(2, 0)) == {
             "name": "rocket-silo",
             "position": {"x": 4.5, "y": 4.5},
             "control_behavior": {"read_items_mode": 2},
             # "recipe": "rocket-part", # TODO: is this important?
             "transitional_request_index": 12,
+        }
+        assert silo.to_dict(version=(1, 0)) == {
+            "name": "rocket-silo",
+            "position": {"x": 4.5, "y": 4.5},
+            # "recipe": "rocket-part", # TODO: is this important?
+            "auto_launch": True,
         }
 
         # Warnings
@@ -63,6 +70,8 @@ class TestRocketSilo:
 
     def test_request_modules(self):
         silo = RocketSilo("rocket-silo")
+        assert silo.module_slots_occupied == 0
+
         silo.request_modules("productivity-module-3", (0, 1), "legendary")
         assert silo.item_requests == [
             BlueprintInsertPlan(
@@ -81,6 +90,7 @@ class TestRocketSilo:
                 ),
             )
         ]
+        assert silo.module_slots_occupied == 2
 
         # TODO: warn if too many modules
 

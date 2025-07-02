@@ -63,29 +63,6 @@ def main():
 
     blueprint.entities.append(dc)
 
-    # Decider parameters can also be specified by their raw form, if you happen
-    # to have such information on hand:
-    dc.conditions = [
-        {
-            "first_signal": {"name": "signal-A", "type": "virtual"},
-            "comparator": "<",
-            "second_signal": {"name": "signal-B", "type": "virtual"},
-            "second_signal_networks": {"green": False},
-        }
-    ]
-    dc.outputs = [
-        {
-            "signal": {"name": "signal-B", "type": "virtual"},
-            "copy_count_from_input": False,
-            "constant": 123,
-        }
-    ]
-    # These raw forms are also converted into their internal object representation:
-    assert isinstance(dc.conditions[0], DeciderCombinator.Condition)
-    assert isinstance(dc.outputs[0], DeciderCombinator.Output)
-
-    blueprint.entities.append(dc, tile_position=(3, 0))
-
     print(blueprint.to_string())
 
 

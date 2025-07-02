@@ -270,18 +270,19 @@ class TestMiningDrill:
                 {
                     "id": {"name": "productivity-module"},
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 0, "count": 1}]
                     },
                 },
                 {
                     "id": {"name": "productivity-module-2"},
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 1, "count": 1}]
                     },
                 },
             ],
             tags={"some": "stuff"},
         )
+        assert drill2.module_slots_occupied == 2
 
         drill1.merge(drill2)
         del drill2
@@ -291,7 +292,7 @@ class TestMiningDrill:
                 **{
                     "id": "productivity-module",
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 0, "count": 1}]
                     },
                 }
             ),
@@ -299,7 +300,7 @@ class TestMiningDrill:
                 **{
                     "id": "productivity-module-2",
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 1, "count": 1}]
                     },
                 }
             ),

@@ -24,7 +24,8 @@ def add_instrument(
     entity_name: str = "programmable-speaker",
 ):
     """
-    TODO
+    Adds a new instrument to Draftsman's environment, which persists until the
+    end of the session.
     """
     if entity_name not in of_type["programmable-speaker"]:
         raise TypeError(

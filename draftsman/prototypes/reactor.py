@@ -67,7 +67,7 @@ class Reactor(
     __hash__ = Entity.__hash__
 
 
-# TODO: might need to add hooks for 1.0 with a custom MRO
+# TODO: need to figure out a way to make 1.0 hook not be circuit connectable
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     Reactor,

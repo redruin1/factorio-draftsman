@@ -8,10 +8,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import (
-    ManualSection,
-    uint32,
-)
+from draftsman.signatures import ManualSection, uint32, LuaDouble
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 from draftsman.data import mods
@@ -69,16 +66,9 @@ class ConstantCombinator(
 
     # =========================================================================
 
-    def _sections_converter(value):
-        if isinstance(value, list):
-            for i, elem in enumerate(value):
-                value[i] = ManualSection.converter(elem)
-        return value
-
     sections: list[ManualSection] = attrs.field(
         factory=list,
-        converter=_sections_converter,
-        validator=instance_of(list[ManualSection]),  # TODO: max 100
+        validator=instance_of(list[ManualSection]),
     )
     """
     List of "manually" (player) defined signal section.
@@ -112,8 +102,8 @@ class ConstantCombinator(
 
     def add_section(
         self,
-        group: Union[str, None] = None,
-        index: Optional[int] = None,  # TODO: integer size
+        group: Optional[str] = None,
+        index: Optional[LuaDouble] = None,
         active: bool = True,
     ) -> ManualSection:
         """

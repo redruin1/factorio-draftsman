@@ -139,10 +139,21 @@ class Tile(SpatialLike, Exportable):
         return "<Tile>{}".format(self.to_dict())
 
 
+@attrs.define
+class _Export:
+    global_position: Vector = attrs.field(metadata={"omit": False})
+
+
+_export_fields = attrs.fields(_Export)
+
 draftsman_converters.add_hook_fns(
     Tile,
     lambda fields: {
         "name": fields.name.name,
-        "position": fields.position.name,  # TODO: global_position
+        "position": fields.position.name,
+    },
+    lambda fields, converter: {
+        "name": fields.name.name,
+        "position": _export_fields.global_position,
     },
 )

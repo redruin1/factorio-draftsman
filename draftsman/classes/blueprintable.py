@@ -20,7 +20,7 @@ from draftsman.utils import (
     string_to_JSON,
     version_tuple_to_string,
 )
-from draftsman.validators import instance_of, try_convert
+from draftsman.validators import and_, byte_length, instance_of, try_convert
 
 from draftsman.data import mods
 
@@ -30,6 +30,7 @@ from abc import ABCMeta, abstractmethod
 
 import json
 from typing import Optional, Sequence
+import warnings
 
 
 @attrs.define
@@ -146,7 +147,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     label: str = attrs.field(
         default="",
         converter=lambda v: "" if v is None else v,
-        validator=instance_of(str),
+        validator=and_(instance_of(str), byte_length(200)),
     )
     """
     The user given name (title) of the blueprintable.
@@ -197,7 +198,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     description: str = attrs.field(
         default="",
         converter=lambda v: "" if v is None else v,
-        validator=instance_of(str),
+        validator=and_(instance_of(str), byte_length(500)),
     )
     """
     The description of the blueprintable. Visible when hovering over it when
@@ -221,7 +222,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
                         signal=elem,
                     )
                 else:
-                    res[i] = Icon.converter(elem)
+                    res[i] = Icon.converter(elem, index=i + 1)
             return res
         else:
             return value
@@ -229,7 +230,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     icons: list[Icon] = attrs.field(
         factory=list,
         converter=_icons_converter,
-        validator=instance_of(list[Icon]),  # TODO: validators
+        validator=instance_of(list[Icon]),
     )
     """
     The visible icons of the blueprintable, as shown in the icon in
@@ -262,15 +263,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         [{'index': 1, 'signal': {'name': 'transport-belt', 'type': 'item'}}]
     """
 
-    def set_icons(self, *icon_names):
-        """
-        TODO
-        """
-        new_icons = [None] * len(icon_names)
-        for i, icon in enumerate(icon_names):
-            new_icons[i] = Icon(index=i + 1, signal=icon)
-        self.icons = new_icons
-
     # =========================================================================
 
     version: uint64 = attrs.field(
@@ -293,7 +285,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     decoding it with :py:func:`draftsman.utils.decode_version`, or you can
     use the functions :py:func:`version_tuple` or :py:func:`version_string`
     which will give you a more readable output. This version number defaults
-    to the version of Factorio that Draftsman is currently initialized with.
+    to the version of Factorio of Draftsman's environment.
 
     The version can be set either as said 64-bit int, or a sequence of
     ints, usually a list or tuple, which is then encoded into the combined
@@ -452,8 +444,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             type(self).__name__, repr(self.to_dict()[self.root_item])
         )
 
-
-# TODO: versioning
 
 draftsman_converters.add_hook_fns(
     Blueprintable,

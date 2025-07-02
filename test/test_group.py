@@ -1,6 +1,6 @@
 # test_group.py
 
-from draftsman import __factorio_version_info__
+# from draftsman import mods.versions["base"]
 from draftsman.classes.association import Association
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.collision_set import CollisionSet
@@ -10,6 +10,7 @@ from draftsman.classes.group import Group
 from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
 from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.vector import Vector
+from draftsman.data import mods
 from draftsman.constants import ValidationMode
 from draftsman.entity import *
 from draftsman.error import (
@@ -339,7 +340,7 @@ class TestGroup:
         assert isinstance(group.schedules, ScheduleList)
         assert group.schedules[0].locomotives[0]() is group.entities[0]
         assert group.schedules[0].stops == [
-            Schedule.Specification.Stop(
+            Schedule.Stop(
                 **{
                     "station": "station_name",
                     "wait_conditions": WaitConditions(
@@ -776,7 +777,7 @@ class TestGroup:
                     "position": {"x": 1.0, "y": 1.0},
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.entities.append(group, merge=True)
@@ -802,7 +803,7 @@ class TestGroup:
                     "position": {"x": 1.0, "y": 1.0},
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     def test_get(self):
@@ -939,7 +940,7 @@ class TestGroup:
                     },
                 ],
                 "wires": [[1, 1, 2, 1]],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 

@@ -80,8 +80,7 @@ def main():
     input_signals = ["signal-" + str(i) for i in range(10)]
     # We also need to generate the mapping of `letter icon -> utf-8 value`
     display_icons = {
-        "signal-" + letter: ord(letter)
-        for letter in list(string.ascii_uppercase)
+        "signal-" + letter: ord(letter) for letter in list(string.ascii_uppercase)
     }
 
     # Make a row of len(text_to_display) display panels

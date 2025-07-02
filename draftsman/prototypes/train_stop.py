@@ -8,12 +8,11 @@ from draftsman.classes.mixins import (
     LogisticConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    DoubleGridAlignedMixin,
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Color, SignalID, LuaDouble, uint32
-from draftsman.utils import fix_incorrect_pre_init
+from draftsman.utils import fix_incorrect_pre_init, attrs_reuse
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import train_stops
@@ -31,7 +30,6 @@ class TrainStop(
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
-    DoubleGridAlignedMixin,
     DirectionalMixin,
     Entity,
 ):
@@ -51,11 +49,9 @@ class TrainStop(
 
     # =========================================================================
 
-    # TODO: should be evolved
-    color: Optional[Color] = attrs.field(
-        default=Color(r=242 / 255, g=0, b=0, a=127 / 255),
-        converter=Color.converter,
-        validator=instance_of(Optional[Color]),
+    color = attrs_reuse(
+        attrs.fields(ColorMixin).color,
+        factory=lambda: Color(r=242 / 255, g=0, b=0, a=127 / 255),
     )
 
     # =========================================================================
