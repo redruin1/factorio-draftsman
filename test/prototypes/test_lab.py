@@ -1,6 +1,6 @@
 # test_lab.py
 
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.entity import Lab, labs, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -34,7 +34,7 @@ def valid_lab():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.lab_modules,
+                            inventory=InventoryType.lab_modules,
                             stack=0,
                         )
                     ]
@@ -94,11 +94,11 @@ class TestLab:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.lab_modules,
+                            inventory=InventoryType.lab_modules,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.lab_modules,
+                            inventory=InventoryType.lab_modules,
                             stack=1,
                         ),
                     ]
@@ -163,11 +163,11 @@ class TestLab:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.lab_modules,
+                            inventory=InventoryType.lab_modules,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.lab_modules,
+                            inventory=InventoryType.lab_modules,
                             stack=1,
                         ),
                     ]

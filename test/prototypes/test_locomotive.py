@@ -1,6 +1,6 @@
 # test_locomotive.py
 
-from draftsman.constants import Orientation, Inventory, ValidationMode
+from draftsman.constants import Orientation, InventoryType, ValidationMode
 from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -35,7 +35,7 @@ def valid_locomotive():
                     items=ItemInventoryPositions(
                         in_inventory=[
                             InventoryPosition(
-                                inventory=Inventory.fuel, stack=0, count=50
+                                inventory=InventoryType.fuel, stack=0, count=50
                             )
                         ]
                     ),

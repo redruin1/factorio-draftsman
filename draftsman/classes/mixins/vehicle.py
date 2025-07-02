@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import FilteredInventory, uint16, uint32
+from draftsman.signatures import Inventory, uint16, uint32
 from draftsman.validators import and_, instance_of
 
 from draftsman.data import entities, qualities
@@ -41,11 +41,10 @@ class VehicleMixin(Exportable):
     A number of common properties that all vehicles have.
     """
 
-    trunk_inventory: Optional[FilteredInventory] = attrs.field(
-        # factory=FilteredInventory,
-        converter=FilteredInventory.converter,
+    trunk_inventory: Optional[Inventory] = attrs.field(
+        # converter=Inventory.converter,
         validator=and_(
-            instance_of(Optional[FilteredInventory]),
+            instance_of(Optional[Inventory]),
             lambda self, _, value: value._set_parent(
                 self, self.ammo_inventory, _trunk_inventory_size
             ),
@@ -58,15 +57,15 @@ class VehicleMixin(Exportable):
 
     @trunk_inventory.default
     def _(self):
-        return FilteredInventory()._set_parent(self, None, _trunk_inventory_size)
+        return Inventory()._set_parent(self, None, _trunk_inventory_size)
 
     # =========================================================================
 
-    ammo_inventory: Optional[FilteredInventory] = attrs.field(
+    ammo_inventory: Optional[Inventory] = attrs.field(
         # factory=FilteredInventory,
-        converter=FilteredInventory.converter,
+        # converter=FilteredInventory.converter,
         validator=and_(
-            instance_of(Optional[FilteredInventory]),
+            instance_of(Optional[Inventory]),
             lambda self, _, value: value._set_parent(
                 self, self.ammo_inventory, _ammo_inventory_size
             ),
@@ -74,13 +73,13 @@ class VehicleMixin(Exportable):
     )
     """
     Inventory object which encodes slot filters for the ammunition slots of the
-    vehicle. Setting the :py:attr:`~.FilteredInventory.bar` of this inventory 
+    vehicle. Setting the :py:attr:`~.Inventory.bar` of this inventory 
     has no effect.
     """
 
     @ammo_inventory.default
     def _(self):
-        return FilteredInventory()._set_parent(self, None, _ammo_inventory_size)
+        return Inventory()._set_parent(self, None, _ammo_inventory_size)
 
     # =========================================================================
 

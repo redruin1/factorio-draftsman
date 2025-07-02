@@ -4,7 +4,7 @@ from draftsman.constants import (
     Direction,
     MiningDrillReadMode,
     ValidationMode,
-    Inventory,
+    InventoryType,
 )
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
@@ -51,7 +51,7 @@ def valid_mining_drill():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=1,
                         )
                     ]
@@ -88,7 +88,7 @@ class TestMiningDrill:
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
         mining_drill.set_item_request(
-            "speed-module-3", 3, inventory=Inventory.mining_drill_modules
+            "speed-module-3", 3, inventory=InventoryType.mining_drill_modules
         )
         assert mining_drill.to_dict() == {
             "name": "electric-mining-drill",
@@ -140,7 +140,7 @@ class TestMiningDrill:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=0,
                             count=1,
                         ),
@@ -156,17 +156,17 @@ class TestMiningDrill:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=0,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=1,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=2,
                             count=1,
                         ),
@@ -182,17 +182,17 @@ class TestMiningDrill:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=0,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=1,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.mining_drill_modules,
+                            inventory=InventoryType.mining_drill_modules,
                             stack=2,
                             count=1,
                         ),

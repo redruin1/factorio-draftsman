@@ -1,6 +1,6 @@
 # test_logistic_active_container.py
 
-from draftsman.constants import LogisticModeOfOperation, Inventory
+from draftsman.constants import LogisticModeOfOperation, InventoryType
 from draftsman.entity import (
     LogisticActiveContainer,
     logistic_active_containers,
@@ -115,7 +115,7 @@ class TestActiveContainer:
         container = LogisticActiveContainer("active-provider-chest")
 
         container.set_item_request(
-            "iron-ore", 50, quality="normal", inventory=Inventory.chest
+            "iron-ore", 50, quality="normal", inventory=InventoryType.chest
         )
 
         # (For now we'll ignore the fact that "active-provider-chest" should be
@@ -175,7 +175,7 @@ class TestActiveContainer:
                     "items": {
                         "in_inventory": [
                             {
-                                "inventory": Inventory.chest,
+                                "inventory": InventoryType.chest,
                                 "stack": 0,
                                 "count": 50,
                             }
@@ -205,7 +205,7 @@ class TestActiveContainer:
                     "items": {
                         "in_inventory": [
                             {
-                                "inventory": Inventory.chest,
+                                "inventory": InventoryType.chest,
                                 "stack": 0,
                                 "count": 50,
                             }

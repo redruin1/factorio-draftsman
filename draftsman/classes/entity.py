@@ -8,6 +8,7 @@ from draftsman.classes.exportable import (
 from draftsman.classes.vector import Vector
 from draftsman.constants import (
     Direction,
+    InventoryType,
     ValidationMode,
     FOUR_WAY_DIRECTIONS,
     EIGHT_WAY_DIRECTIONS,
@@ -746,7 +747,7 @@ class Entity(EntityLike, Exportable):
         item: str,
         count: Optional[uint32] = None,
         quality: QualityID = "normal",
-        inventory: uint32 = 0,
+        inventory: InventoryType = 1,
         slot: Optional[uint32] = None,
     ):
         """
@@ -757,8 +758,10 @@ class Entity(EntityLike, Exportable):
         :param quality: The quality of the requested item.
         :param count: The desired amount of that item. If omitted a count of
             ``0`` will be assumed.
-        :param inventory: The particular inventory to request this item to. If
-            omitted it will default to the first (typically only) inventory.
+        :param inventory: The particular inventory to request this item to, 
+            since entities can have more than one distinct inventories to 
+            request items to. If omitted, it will default to ``1``, which is 
+            usally the "primary" inventory.
         :param slot: The particular slot in the inventory to place the item. The
             next open slot will be chosen automatically if omitted.
 

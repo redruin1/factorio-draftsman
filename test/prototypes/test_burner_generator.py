@@ -1,6 +1,6 @@
 # test_burner_generator.py
 
-from draftsman.constants import Direction, Inventory
+from draftsman.constants import Direction, InventoryType
 from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import (
@@ -29,7 +29,7 @@ def valid_burner_generator():
                 "id": {"name": "coal"},
                 "items": {
                     "in_inventory": [
-                        {"inventory": Inventory.fuel, "stack": 0, "count": 50}
+                        {"inventory": InventoryType.fuel, "stack": 0, "count": 50}
                     ]
                 },
             }

@@ -12,7 +12,7 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.signatures import ModuleID, QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
@@ -61,7 +61,7 @@ class MiningDrill(
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == Inventory.mining_drill_modules
+                if inv_pos.inventory == InventoryType.mining_drill_modules
             }
         )
 
@@ -74,7 +74,7 @@ class MiningDrill(
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            Inventory.mining_drill_modules, module_name, slots, quality
+            InventoryType.mining_drill_modules, module_name, slots, quality
         )
 
     # =========================================================================

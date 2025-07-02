@@ -1,6 +1,6 @@
 # test_rocket_silo.py
 
-from draftsman.constants import Inventory, SiloReadMode
+from draftsman.constants import InventoryType, SiloReadMode
 from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -79,11 +79,11 @@ class TestRocketSilo:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.rocket_silo_modules,
+                            inventory=InventoryType.rocket_silo_modules,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.rocket_silo_modules,
+                            inventory=InventoryType.rocket_silo_modules,
                             stack=1,
                         ),
                     ]

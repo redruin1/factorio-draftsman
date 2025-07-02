@@ -1,6 +1,6 @@
 # test_artillery_wagon.py
 
-from draftsman.constants import Inventory, Orientation, ValidationMode
+from draftsman.constants import InventoryType, Orientation, ValidationMode
 from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -33,7 +33,7 @@ def valid_artillery_wagon():
                     items=ItemInventoryPositions(
                         in_inventory=[
                             InventoryPosition(
-                                inventory=Inventory.artillery_wagon_ammo,
+                                inventory=InventoryType.artillery_wagon_ammo,
                                 stack=0,
                                 count=1,
                             )

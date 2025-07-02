@@ -23,7 +23,8 @@ blueprint.children["blah"].entities.append("inserter", ...)
 Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent `validate()` function.
 
 ---
-### Integrate with `mypy`/`ruff`
+### Integrate with `ruff`
+Add rules to ease up strictness
 
 ---
 ### Revamp the `add_x` data functions so that they support more features

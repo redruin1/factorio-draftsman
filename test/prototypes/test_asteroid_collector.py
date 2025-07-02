@@ -4,7 +4,7 @@ from draftsman.prototypes.asteroid_collector import AsteroidCollector
 from draftsman.prototypes.container import Container
 from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DataFormatError
-from draftsman.signatures import AsteroidChunkID, Condition, FilteredInventory
+from draftsman.signatures import AsteroidChunkID, Condition, Inventory
 import draftsman.validators
 
 from draftsman.data.entities import asteroid_collectors
@@ -27,7 +27,7 @@ def valid_asteroid_collector():
         circuit_condition=Condition(
             first_signal="signal-A", comparator="<", second_signal="signal-B"
         ),
-        result_inventory=FilteredInventory(
+        result_inventory=Inventory(
             bar=10,
         ),
         chunk_filter=["oxide-asteroid-chunk"],

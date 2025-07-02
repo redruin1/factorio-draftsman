@@ -1,10 +1,10 @@
 # test_cargo_wagon.py
 
-from draftsman.constants import Inventory, Orientation, ValidationMode
+from draftsman.constants import InventoryType, Orientation, ValidationMode
 from draftsman.entity import CargoWagon, cargo_wagons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
-    FilteredInventory,
+    Inventory,
     ItemFilter,
     BlueprintInsertPlan,
     ItemInventoryPositions,
@@ -34,7 +34,7 @@ def valid_cargo_wagon():
             quality="uncommon",
             tile_position=(1, 1),
             orientation=Orientation.EAST,
-            inventory=FilteredInventory(
+            inventory=Inventory(
                 bar=10,
                 filters=[ItemFilter(index=0, name="iron-ore")],
             ),
@@ -44,7 +44,7 @@ def valid_cargo_wagon():
                     items=ItemInventoryPositions(
                         in_inventory=[
                             InventoryPosition(
-                                inventory=Inventory.cargo_wagon, stack=0, count=50
+                                inventory=InventoryType.cargo_wagon, stack=0, count=50
                             )
                         ]
                     ),
@@ -64,7 +64,7 @@ def valid_cargo_wagon():
 class TestCargoWagon:
     def test_constructor_init(self):
         cargo_wagon = CargoWagon(
-            "cargo-wagon", tile_position=[0, 0], inventory=FilteredInventory(bar=0)
+            "cargo-wagon", tile_position=[0, 0], inventory=Inventory(bar=0)
         )
         assert cargo_wagon.to_dict() == {
             "name": "cargo-wagon",
@@ -76,7 +76,7 @@ class TestCargoWagon:
             "cargo-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
-            inventory=FilteredInventory(
+            inventory=Inventory(
                 bar=10, filters=["transport-belt", "transport-belt", "transport-belt"]
             ),
         )
@@ -98,7 +98,7 @@ class TestCargoWagon:
             "cargo-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
-            inventory=FilteredInventory(
+            inventory=Inventory(
                 bar=10,
                 filters=[
                     ItemFilter(index=0, name="transport-belt"),
@@ -322,7 +322,7 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory=FilteredInventory(
+            inventory=Inventory(
                 bar=1, filters=[ItemFilter(index=1, name="transport-belt")]
             ),
         )
@@ -342,7 +342,7 @@ class TestCargoWagon:
         wagon2 = CargoWagon(
             "cargo-wagon",
             tags={"some": "stuff"},
-            inventory=FilteredInventory(
+            inventory=Inventory(
                 bar=1, filters=[ItemFilter(index=1, name="transport-belt")]
             ),
         )

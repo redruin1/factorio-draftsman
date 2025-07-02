@@ -2,7 +2,7 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ModulesMixin, EnergySourceMixin
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.signatures import ModuleID, QualityID
 
 from draftsman.data.entities import labs
@@ -43,7 +43,7 @@ class Lab(ModulesMixin, EnergySourceMixin, Entity):
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == Inventory.lab_modules
+                if inv_pos.inventory == InventoryType.lab_modules
             }
         )
 
@@ -82,7 +82,7 @@ class Lab(ModulesMixin, EnergySourceMixin, Entity):
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            Inventory.lab_modules, module_name, slots, quality
+            InventoryType.lab_modules, module_name, slots, quality
         )
 
     # =========================================================================

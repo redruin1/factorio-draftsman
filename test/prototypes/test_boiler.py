@@ -1,6 +1,6 @@
 # test_boiler.py
 
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.entity import Boiler, boilers, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -23,7 +23,7 @@ def valid_boiler():
                 "id": {"name": "coal"},
                 "items": {
                     "in_inventory": [
-                        {"inventory": Inventory.fuel, "stack": 0, "count": 50}
+                        {"inventory": InventoryType.fuel, "stack": 0, "count": 50}
                     ]
                 },
             }

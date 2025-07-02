@@ -945,7 +945,7 @@ class ValidationMode(Enum):
         return NotImplemented
 
 
-class Inventory(IntEnum):
+class InventoryType(IntEnum):
     """
     Constants which define which internal inventories
     :py:attr:`Entity.item_requests` should reside in.

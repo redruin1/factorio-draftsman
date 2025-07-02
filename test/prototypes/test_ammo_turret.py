@@ -1,6 +1,6 @@
 # test_ammo_turret.py
 
-from draftsman.constants import Direction, Inventory
+from draftsman.constants import Direction, InventoryType
 from draftsman.entity import AmmoTurret, ammo_turrets, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -48,7 +48,7 @@ def valid_ammo_turret():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.turret_ammo, stack=0, count=200
+                            inventory=InventoryType.turret_ammo, stack=0, count=200
                         )
                     ]
                 ),

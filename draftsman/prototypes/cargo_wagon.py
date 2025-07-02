@@ -6,7 +6,7 @@ from draftsman.classes.mixins import (
     OrientationMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import FilteredInventory, uint16
+from draftsman.signatures import Inventory, uint16
 from draftsman.validators import and_, instance_of
 
 from draftsman.data.entities import cargo_wagons
@@ -50,9 +50,9 @@ class CargoWagon(
 
     # =========================================================================
 
-    inventory: Optional[FilteredInventory] = attrs.field(
+    inventory: Optional[Inventory] = attrs.field(
         validator=and_(
-            instance_of(Optional[FilteredInventory]),
+            instance_of(Optional[Inventory]),
             lambda self, _, value, **kwargs: value._set_parent(
                 self, self.inventory, _cargo_wagon_inventory_size
             ),
@@ -65,8 +65,8 @@ class CargoWagon(
     """
 
     @inventory.default
-    def _(self) -> FilteredInventory:
-        return FilteredInventory()._set_parent(self, None, _cargo_wagon_inventory_size)
+    def _(self) -> Inventory:
+        return Inventory()._set_parent(self, None, _cargo_wagon_inventory_size)
 
     # =========================================================================
 

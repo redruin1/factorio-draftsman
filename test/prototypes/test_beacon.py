@@ -1,6 +1,6 @@
 # test_beacon.py
 
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.entity import Beacon, beacons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -59,7 +59,7 @@ class TestBeacon:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.beacon_modules,
+                            inventory=InventoryType.beacon_modules,
                             stack=0,
                         ),
                     ]
@@ -77,7 +77,7 @@ class TestBeacon:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.beacon_modules,
+                            inventory=InventoryType.beacon_modules,
                             stack=0,
                         ),
                     ]
@@ -88,7 +88,7 @@ class TestBeacon:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.beacon_modules,
+                            inventory=InventoryType.beacon_modules,
                             stack=1,
                         ),
                     ]

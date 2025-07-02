@@ -1,6 +1,6 @@
 # assembling_machine.py
 
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     InputIngredientsMixin,
@@ -78,7 +78,7 @@ class AssemblingMachine(
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == Inventory.assembling_machine_modules
+                if inv_pos.inventory == InventoryType.assembling_machine_modules
             }
         )
 
@@ -91,7 +91,7 @@ class AssemblingMachine(
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            Inventory.assembling_machine_modules, module_name, slots, quality
+            InventoryType.assembling_machine_modules, module_name, slots, quality
         )
 
     # =========================================================================

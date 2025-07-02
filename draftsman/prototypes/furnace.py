@@ -13,7 +13,7 @@ from draftsman.classes.mixins import (
     ControlBehaviorMixin,
     DirectionalMixin,
 )
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.signatures import ModuleID, QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
@@ -82,7 +82,7 @@ class Furnace(
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == Inventory.furnace_modules
+                if inv_pos.inventory == InventoryType.furnace_modules
             }
         )
 
@@ -95,7 +95,7 @@ class Furnace(
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            Inventory.furnace_modules, module_name, slots, quality
+            InventoryType.furnace_modules, module_name, slots, quality
         )
 
     # =========================================================================

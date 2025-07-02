@@ -573,7 +573,7 @@ draftsman_converters.add_hook_fns(
 
 @conditional(ValidationMode.PEDANTIC)
 def ensure_bar_less_than_inventory_size(
-    self: "FilteredInventory",
+    self: "Inventory",
     _: attrs.Attribute,
     value: Optional[uint16],
 ):
@@ -1359,7 +1359,7 @@ draftsman_converters.add_hook_fns(  # pragma: no branch
 
 
 @attrs.define
-class FilteredInventory(Exportable):
+class Inventory(Exportable):
     _parent: Optional[weakref.ref] = attrs.field(
         default=None,
         init=False,
@@ -1370,7 +1370,7 @@ class FilteredInventory(Exportable):
     _size_func = attrs.field(init=False, repr=False, eq=False)
 
     def _set_parent(
-        self, entity: Any, old_inventory: "FilteredInventory", size_func=None
+        self, entity: Any, old_inventory: "Inventory", size_func=None
     ):
         if old_inventory is not None:
             old_inventory._parent = None
@@ -1480,7 +1480,7 @@ class FilteredInventory(Exportable):
 
 
 draftsman_converters.add_hook_fns(
-    FilteredInventory,
+    Inventory,
     lambda fields: {
         "filters": fields.filters.name,
         "bar": fields.bar.name,

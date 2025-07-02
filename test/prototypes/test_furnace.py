@@ -1,6 +1,6 @@
 # test_furnace.py
 
-from draftsman.constants import Direction, Inventory
+from draftsman.constants import Direction, InventoryType
 from draftsman.entity import Furnace, furnaces, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -41,10 +41,10 @@ def valid_furnace():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.furnace_modules, stack=0, count=1
+                            inventory=InventoryType.furnace_modules, stack=0, count=1
                         ),
                         InventoryPosition(
-                            inventory=Inventory.furnace_modules, stack=1, count=1
+                            inventory=InventoryType.furnace_modules, stack=1, count=1
                         ),
                     ]
                 ),
@@ -149,23 +149,23 @@ class TestFurnace:
         furnace = Furnace("electric-furnace")
 
         # Test setting to None removes
-        furnace.set_item_request("coal", 50, inventory=Inventory.fuel)
+        furnace.set_item_request("coal", 50, inventory=InventoryType.fuel)
         furnace.set_item_request("coal", None)
         assert furnace.item_requests == []
 
         # Test resetting count of existing request
         furnace.set_item_request(
-            "coal", 25, inventory=Inventory.fuel, quality="legendary"
+            "coal", 25, inventory=InventoryType.fuel, quality="legendary"
         )
         furnace.set_item_request(
-            "coal", 50, inventory=Inventory.fuel, quality="legendary"
+            "coal", 50, inventory=InventoryType.fuel, quality="legendary"
         )
         assert furnace.item_requests == [
             BlueprintInsertPlan(
                 id=ItemID(name="coal", quality="legendary"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(inventory=Inventory.fuel, stack=0, count=50)
+                        InventoryPosition(inventory=InventoryType.fuel, stack=0, count=50)
                     ]
                 ),
             )
@@ -186,11 +186,11 @@ class TestFurnace:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.furnace_modules,
+                            inventory=InventoryType.furnace_modules,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=Inventory.furnace_modules,
+                            inventory=InventoryType.furnace_modules,
                             stack=1,
                         ),
                     ]

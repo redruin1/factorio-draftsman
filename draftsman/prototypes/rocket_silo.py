@@ -9,7 +9,7 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.constants import Inventory, SiloReadMode
+from draftsman.constants import InventoryType, SiloReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ModuleID, QualityID, uint32
 from draftsman.utils import attrs_reuse, fix_incorrect_pre_init
@@ -52,7 +52,7 @@ class RocketSilo(
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == Inventory.rocket_silo_modules
+                if inv_pos.inventory == InventoryType.rocket_silo_modules
             }
         )
 
@@ -127,7 +127,7 @@ class RocketSilo(
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            Inventory.rocket_silo_modules, module_name, slots, quality
+            InventoryType.rocket_silo_modules, module_name, slots, quality
         )
 
     # =========================================================================

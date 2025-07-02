@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.data import entities, mods, qualities
-from draftsman.constants import Inventory, ValidationMode
+from draftsman.constants import InventoryType, ValidationMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     ensure_bar_less_than_inventory_size,
@@ -94,7 +94,7 @@ class InventoryMixin(Exportable):
         entity. Useful for quickly determining the capacity of the chest after
         the item requests have been delivered. Not exported; read only.
         """
-        return calculate_occupied_slots(self.item_requests, Inventory.chest)
+        return calculate_occupied_slots(self.item_requests, InventoryType.chest)
 
     # =========================================================================
 

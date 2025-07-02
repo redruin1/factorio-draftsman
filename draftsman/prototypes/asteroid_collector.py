@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import AsteroidChunkID, FilteredInventory
+from draftsman.signatures import AsteroidChunkID, Inventory
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
@@ -43,14 +43,14 @@ class AsteroidCollector(
 
     # =========================================================================
 
-    result_inventory: Optional[FilteredInventory] = attrs.field(
-        factory=FilteredInventory,
-        converter=FilteredInventory.converter,
-        validator=instance_of(Optional[FilteredInventory]),
+    result_inventory: Optional[Inventory] = attrs.field(
+        factory=Inventory,
+        converter=Inventory.converter,
+        validator=instance_of(Optional[Inventory]),
     )
     """
     Internal inventory of this asteroid collector. Attempting to set the 
-    :py:attr:`~.FilteredInventory.filters` of this object has no effect.
+    :py:attr:`~.Inventory.filters` of this object has no effect.
     """
 
     # =========================================================================

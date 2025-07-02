@@ -1,6 +1,6 @@
 # test_reactor.py
 
-from draftsman.constants import Inventory
+from draftsman.constants import InventoryType
 from draftsman.entity import Reactor, reactors, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -35,7 +35,7 @@ def valid_reactor():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.fuel,
+                            inventory=InventoryType.fuel,
                             stack=1,
                             count=50,
                         )
@@ -67,7 +67,7 @@ class TestReactor:
         assert reactor.allowed_fuel_items == {"uranium-fuel-cell"}
         assert reactor.fuel_input_size == 1
 
-        reactor.set_item_request("uranium-fuel-cell", 50, inventory=Inventory.fuel)
+        reactor.set_item_request("uranium-fuel-cell", 50, inventory=InventoryType.fuel)
         assert reactor.item_requests == [
             BlueprintInsertPlan(
                 **{

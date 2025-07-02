@@ -1,6 +1,6 @@
 # test_artillery_turret.py
 
-from draftsman.constants import Direction, Inventory
+from draftsman.constants import Direction, InventoryType
 from draftsman.prototypes.artillery_turret import (
     ArtilleryTurret,
     artillery_turrets,
@@ -41,7 +41,7 @@ def valid_artillery_turret():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=Inventory.artillery_turret_ammo, stack=0, count=1
+                            inventory=InventoryType.artillery_turret_ammo, stack=0, count=1
                         )
                     ]
                 ),
