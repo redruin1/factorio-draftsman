@@ -250,11 +250,7 @@ def python_require(
         filepath = filepath.replace("\\", "/")
         # Make it local to the archive, replacing the global path to the local
         # internal path
-        # print("\tbefore filepath", filepath)
-        # print("mod_folder + mod.name", mod_folder + "/" + mod.name)
-        # print("mod.location", mod.location)
         filepath = filepath.replace(mod.location, mod.internal_folder)
-        # print("\tafter filepath:", filepath)
         try:
             string_contents = archive_to_string(mod.files, filepath)
             fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
@@ -779,13 +775,6 @@ def extract_mods(
     """
     Extract all the mod versions to ``mods.pkl`` in :py:mod:`draftsman.data`.
     """
-    # out_mods = {}
-    # for mod in mods:
-    #     if mod.name == "core":
-    #         continue
-    #     out_mods[mod] = version_string_to_tuple(mod.version)
-
-    # print(out_mods)
     out_mods = {
         key: version_string_to_tuple(value)
         for key, value in convert_table_to_dict(lua.globals().mods).items()
@@ -1365,18 +1354,7 @@ def extract_signals(
         for signal_name in signal_category:
             signal_obj = signal_category[signal_name]
 
-            # if signal_name == "tank-flamethrower":
-            #     print("found: ", signal_category_name)
-            #     print(signal_category[signal_name])
-
-            # if "hidden" in signal_obj:
-            #     continue
-
             unsorted_raw_signals[signal_name] = signal_obj
-
-            # if "flags" in signal_obj and "hidden" in signal_obj["flags"]:
-            #     hidden_signals.append(signal_category[signal_name])
-            #     continue
 
             if signal_name not in type_of_signals:
                 type_of_signals[signal_name] = [signal_type]

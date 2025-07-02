@@ -16,7 +16,6 @@ from examples.decider_bit_checker import determine_bit_conditions
 
 import pyperclip
 
-import math
 import string
 
 
@@ -382,10 +381,9 @@ def main():
     for connection in connections:
         RAM_sector.add_circuit_connection(*connection)
 
-
     # Now actually add the architected sector to the actual blueprint, adding
     # multiple copies as needed to store the entire contents of `compiled_data`
-    num_sectors = 2 # math.ceil(len(compiled_data) / len(index_signals))
+    num_sectors = 2  # math.ceil(len(compiled_data) / len(index_signals))
     for sector_i in range(num_sectors):
         # Display Panel icon
         RAM_sector.entities["display_panel"].icon = SECTOR_LABELS[sector_i]

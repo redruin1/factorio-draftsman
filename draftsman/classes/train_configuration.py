@@ -1,6 +1,7 @@
 # train_configuration.py
 
 from draftsman.entity import new_entity
+from draftsman.types import RollingStock
 
 from math import ceil
 from typing import Literal

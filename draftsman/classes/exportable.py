@@ -339,20 +339,13 @@ def make_exportable_structure_factory_func(
                     if custom_handler
                     else find_structure_handler(attr, attr.type, converter)
                 )
-                # import inspect
-                print(handler)
-                # print(inspect.getsource(handler))
                 try:
                     res[attr_name] = handler(value, attr.type)
                 except Exception as e:
-                    # res[attr_name] = value
-                    # raise e
                     raise DataFormatError(e)
 
             if input_dict:
                 res["extra_keys"] = input_dict
-
-            print(res)
 
             return cls(**res)
 
@@ -367,8 +360,6 @@ def make_exportable_unstructure_factory_func(
     def factory(cls, converter):
         version_data = draftsman_converters.get_version(version_tuple)
         unstructure_dict = version_data.get_unstructure_dict(cls, converter)
-        # print(cls.__name__)
-        # print("unstructure_dict", unstructure_dict)
         parent_hook = make_unstructure_function_from_schema(
             cls,
             converter,
@@ -377,11 +368,8 @@ def make_exportable_unstructure_factory_func(
             exclude_defaults,
             version=version_tuple,
         )
-        # excluded_keys = version_data.get_excluded_keys(cls)
 
         def unstructure_hook(inst):
-            # import inspect
-            # print(inspect.getsource(parent_hook))
             # TODO: should be wrapped in a try block with a better error message
             res = parent_hook(inst)
             # We want to preserve round-trip consistency, even with keys we

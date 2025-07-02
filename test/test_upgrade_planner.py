@@ -1,7 +1,12 @@
 # test_upgrade_planner.py
 
 # from draftsman import mods.versions["base"]
-from draftsman.classes.upgrade_planner import UpgradePlanner, Mapper, UpgradeMapperSource, UpgradeMapperDestination
+from draftsman.classes.upgrade_planner import (
+    UpgradePlanner,
+    Mapper,
+    UpgradeMapperSource,
+    UpgradeMapperDestination,
+)
 from draftsman.classes.exportable import ValidationResult
 from draftsman.constants import ValidationMode
 from draftsman.data import entities, items, mods
@@ -100,12 +105,10 @@ class TestUpgradePlanner:
                 type="entity",
                 name="transport-belt",
                 comparator="<",
-                quality="legendary"
+                quality="legendary",
             ),
             UpgradeMapperDestination(
-                type="entity",
-                name="fast-transport-belt",
-                quality="legendary"
+                type="entity", name="fast-transport-belt", quality="legendary"
             ),
             index=0,
         )
@@ -130,15 +133,15 @@ class TestUpgradePlanner:
                     {
                         "index": 0,
                         "from": {
-                            "name": "transport-belt", 
+                            "name": "transport-belt",
                             "type": "entity",
                             "comparator": "<",
-                            "quality": "legendary"
+                            "quality": "legendary",
                         },
                         "to": {
-                            "name": "fast-transport-belt", 
+                            "name": "fast-transport-belt",
                             "type": "entity",
-                            "quality": "legendary"
+                            "quality": "legendary",
                         },
                     }
                 ]

@@ -735,16 +735,6 @@ def structure_blueprint_1_0_factory(t: type):
                 # if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
                 #     entity["name"] = legacy_entity_conversions[entity["name"]]
 
-                # print("entity", entity)
-
-                # Swap from old 8-direction to modern 16-direction
-                # if "direction" in entity:  # pragma: no coverage
-                #     print(entity["direction"])
-                #     entity["direction"] = LegacyDirection(
-                #         entity["direction"]
-                #     ).to_modern()
-                #     print(entity["direction"])
-
                 # Move connections
                 if "connections" in entity:
                     connections = entity["connections"]
@@ -752,17 +742,12 @@ def structure_blueprint_1_0_factory(t: type):
                         if side not in connections:
                             continue
 
-                        # print(connections)
-                        # print(connections[side])
                         for color in connections[side]:
                             connection_points = connections[side][color]
 
                             for point in connection_points:
-                                # print("point", point)
-                                # print(wires)
                                 entity_id = point["entity_id"]
                                 circuit_id = str(point.get("circuit_id", 1))
-                                # print(entity_id, circuit_id)
                                 # Make sure we don't add the reverse as a duplicate
                                 if [
                                     entity_id,
@@ -829,9 +814,6 @@ def structure_blueprint_1_0_factory(t: type):
         #         stop_data = schedule["schedule"]
         #         schedule["schedule"] = {"records": stop_data}
 
-        # print("blueprint_dict", blueprint_dict)
-        # import inspect
-        # print(inspect.getsource(_default_blueprint_hook))
         return default_blueprint_hook(d, _)
 
     return structure_blueprint_1_0

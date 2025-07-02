@@ -561,8 +561,6 @@ class EntityCollection(metaclass=ABCMeta):
         # power connections
         # NOTE: only relevant in 1.0
         # if len(entity_1.neighbours) >= 5:
-        #     print(entity_1)
-        #     print(len(entity_1.neighbours))
         #     warnings.warn(
         #         "'entity_1' ({}) has more than 5 connections".format(entity_1.name),
         #         TooManyConnectionsWarning,
@@ -1472,8 +1470,6 @@ class EntityCollection(metaclass=ABCMeta):
             """
             nonlocal all_locos_backwards
 
-            # print(wagon.type)
-            # print(backwards)
             if wagon.type == "locomotive" and not backwards:
                 all_locos_backwards = False
 
@@ -1482,7 +1478,6 @@ class EntityCollection(metaclass=ABCMeta):
                 radius=7.5,  # Average distance is less than 7 tiles
                 type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"},
             )
-            # print(len(neighbours))
             for neighbour in neighbours:
                 # Check to make sure we haven't already added this wagon to a
                 # train
@@ -1553,8 +1548,6 @@ class EntityCollection(metaclass=ABCMeta):
         # right is back
         if all_locos_backwards:
             train.reverse()
-
-        # print("Final train:", train)
 
         return train
 
@@ -1652,9 +1645,6 @@ class EntityCollection(metaclass=ABCMeta):
                 used_wagons.add(train_car)
 
             trains.append(train)
-
-        # for train in trains:
-        #     print("\t", train)
 
         def normalize_range(value: int | Sequence) -> tuple[int, int]:
             """

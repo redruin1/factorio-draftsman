@@ -17,7 +17,7 @@ from draftsman.data.entities import constant_combinators
 from draftsman.data import entities
 
 import attrs
-from typing import Optional, Union
+from typing import Optional
 
 
 @fix_incorrect_pre_init

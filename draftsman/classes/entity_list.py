@@ -253,7 +253,6 @@ class EntityList(Exportable, MutableSequence):
             assert inserter is blueprint.entities[0]
             assert blueprint.entities[0].stack_size_override == 1
         """
-        # print(name)
         # Convert to new Entity if constructed via string keyword
         new = False
         if isinstance(name, str):
@@ -288,8 +287,6 @@ class EntityList(Exportable, MutableSequence):
         # Of course, this feature is optional, so if you're going to validate
         # the final blueprintable at the end anyway you can disable this feature
         # and save some overhead
-        # print(get_enabled())
-        # print(self.validate_assignment)
         if get_mode():
             # Validate the object itself
             # entitylike.validate(mode=self.validate_assignment).reissue_all()

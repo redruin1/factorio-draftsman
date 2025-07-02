@@ -18,109 +18,6 @@ MASTER_CONVERTER_OMIT_DEFAULTS = cattrs.Converter(omit_if_default=True)
 MASTER_CONVERTER_OMIT_NONE_DEFAULTS = cattrs.Converter(omit_if_default=True)
 
 
-# @MASTER_CONVERTER.register_structure_hook_factory(attrs.has)
-# def regular_structure_factory(cls, converter):
-#     def resolve_location(sd, location):
-#         """
-#         Try and grab a nested key from a `location` tuple, and return the value
-#         if found.
-#         """
-#         while len(location) > 1:
-#             sd = sd[location[0]]
-#             location = location[1:]
-#         return sd[location[0]]
-
-#     def structure_hook(d, _):
-#         res = {}
-#         for attr in attrs.fields(cls):
-#             attr: attrs.Attribute
-#             # print(attr)
-#             if not attr.init:
-#                 continue
-#             location = attr.metadata.get("location", (attr.name,))
-#             if location is None:
-#                 continue
-#             # sd = d
-#             # while len(location) > 1:
-#             #     sd = sd[location[0]]
-#             #     location = location[1:]
-#             # print(sd)
-#             # Try getting the attribute from the input dict; If it fails, it's
-#             # either a default or an error which will be caught later
-#             try:
-#                 value = resolve_location(d, location)
-#             except (KeyError, TypeError):
-#                 continue
-#             # If the input object has its own special structuring hook, use that
-#             handler = find_structure_handler(attr, attr.type, converter)
-#             if handler is not None:
-#                 res[attr.name] = handler(value, attr.type)
-#             else:
-#                 res[attr.name] = value
-#         return cls(**res)
-
-#     return structure_hook
-
-
-# MASTER_CONVERTER.register_structure_hook_factory(attrs.has, regular_structure_factory)
-
-
-# @MASTER_CONVERTER.register_unstructure_hook_factory(attrs.has)
-# def regular_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
-#     def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
-#         res = {}
-#         for attr in attrs.fields(type(inst)):
-#             attr: attrs.Attribute
-#             cattrs_hook = converter.get_unstructure_hook(attr.type)
-#             value = getattr(inst, attr.name)
-#             unstructured_value = cattrs_hook(value)
-#             if not attr.metadata.get("omit", False):
-#                 location = attr.metadata.get("location", (attr.name,))
-#                 r = res
-#                 for i, loc in enumerate(location):
-#                     # print(i, loc)
-#                     # print(res)
-#                     if i < len(location) - 1:
-#                         if loc not in r:
-#                             r[loc] = {}
-#                         r = r[loc]
-#                     else:
-#                         r[loc] = unstructured_value
-#                         break
-#                 # res[attr.name] = unstructured_value
-#         return res
-
-#     return unstructure_hook
-
-
-# @MASTER_CONVERTER_OMIT_NONE.register_unstructure_hook_factory(attrs.has)
-# def omit_none_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
-#     def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
-#         res = {}
-#         for attr in attrs.fields(type(inst)):
-#             attr: attrs.Attribute
-#             cattrs_hook = converter.get_unstructure_hook(attr.type)
-#             value = getattr(inst, attr.name)
-#             unstructured_value = cattrs_hook(value)
-#             if unstructured_value is not None and not attr.metadata.get("omit", False):
-#                 location = attr.metadata.get("location", (attr.name,))
-#                 r = res
-#                 for i, loc in enumerate(location):
-#                     # print(i, loc)
-#                     # print(res)
-#                     if i < len(location) - 1:
-#                         if loc not in r:
-#                             r[loc] = {}
-#                         r = r[loc]
-#                     else:
-#                         r[loc] = unstructured_value
-#                         break
-#                 # res[attr.name] = unstructured_value
-#         return res
-
-#     return unstructure_hook
-
-
 def is_default(self: attrs.AttrsInstance, attribute: attrs.Attribute, value: Any):
     if isinstance(attribute.default, attrs.Factory):  # pragma: no coverage
         if attribute.default.takes_self:
@@ -129,37 +26,6 @@ def is_default(self: attrs.AttrsInstance, attribute: attrs.Attribute, value: Any
             return value == attribute.default.factory()
     else:
         return attribute.default == value
-
-
-# @MASTER_CONVERTER_OMIT_DEFAULTS.register_unstructure_hook_factory(attrs.has)
-# def omit_default_unstructure_factory(cls: Any, converter: cattrs.Converter) -> Callable:
-#     def unstructure_hook(inst: attrs.AttrsInstance) -> dict:
-#         res = {}
-#         for attr in attrs.fields(type(inst)):
-#             attr: attrs.Attribute
-#             cattrs_hook = converter.get_unstructure_hook(attr.type)
-#             value = getattr(inst, attr.name)
-#             unstructured_value = cattrs_hook(value)
-#             if not (
-#                 is_default(inst, attr, value)
-#                 and not attr.metadata.get("omit", None) is False
-#             ):
-#                 location = attr.metadata.get("location", (attr.name,))
-#                 r = res
-#                 for i, loc in enumerate(location):
-#                     # print(i, loc)
-#                     # print(res)
-#                     if i < len(location) - 1:
-#                         if loc not in r:
-#                             r[loc] = {}
-#                         r = r[loc]
-#                     else:
-#                         r[loc] = unstructured_value
-#                         break
-#                 # res[attr.name] = unstructured_value
-#         return res
-
-#     return unstructure_hook
 
 
 @MASTER_CONVERTER_OMIT_NONE_DEFAULTS.register_unstructure_hook_factory(attrs.has)
@@ -179,8 +45,6 @@ def omit_none_default_unstructure_factory(
                 location = attr.metadata.get("location", (attr.name,))
                 r = res
                 for i, loc in enumerate(location):  # pragma: no branch
-                    # print(i, loc)
-                    # print(res)
                     if i < len(location) - 1:  # pragma: no coverage
                         if loc not in r:
                             r[loc] = {}
@@ -362,66 +226,6 @@ draftsman_converters.add_version((1, 0))
 draftsman_converters.add_version((2, 0))
 
 
-# def finalize_fields(cls, fields: list[attrs.Attribute]) -> list[attrs.Attribute]:
-#     """
-#     Iterate over the "locations" in each field metadata and resolve any lambdas
-#     to fixed values.
-#     """
-#     # print([field.name for field in fields])
-#     for index, field in enumerate(fields):
-#         # print(field)
-#         if (
-#             not field.validator and not field.converter and not field.metadata
-#         ):  # FIXME: scuffed
-#             origin = get_origin(field.type)
-#             t = origin if origin else field.type
-#             # print(t)
-#             converter = None
-#             validators = []
-#             if isinstance(t, Enum):
-#                 converter = t
-#                 validators.append(instance_of(t))
-#             elif t is Union:
-#                 union_validators = []
-#                 # print("union")
-#                 args = get_args(field.type)
-#                 for arg in args:
-#                     if get_origin(arg) is Annotated:
-#                         # print("annotated")
-#                         ano_args = get_args(arg)
-#                         # print(ano_args)
-#                         union_validators.append(ano_args[1])
-#                     else:
-#                         union_validators.append(instance_of(arg))
-#                 validators = or_(*union_validators)
-#             else:
-#                 validators.append(instance_of(t))
-#             if converter is None:
-#                 fields[index] = field.evolve(validator=validators)
-#             else:
-#                 fields[index] = field.evolve(converter=converter, validators=validators)
-
-#         # Shouldn't need this anymore
-#         # if field.metadata is not None and "location" in field.metadata:
-#         #     if field.metadata["location"] is None:
-#         #         continue
-#         #     new_metadata = dict(field.metadata)
-#         #     # print(new_metadata)
-#         #     l = list(new_metadata["location"])
-#         #     for i, item in enumerate(l):
-#         #         if callable(item):
-#         #             l[i] = item(cls)
-#         #     new_metadata["location"] = tuple(l)
-#         #     # print(new_metadata)
-#         #     fields[index] = field.evolve(metadata=new_metadata)
-#         # if issubclass(field.type, Enum):
-#         #     print(field.name)
-
-#     # fields.sort(key=lambda attr: attr.name)
-#     # print([field.name for field in fields])
-#     return fields
-
-
 def make_unstructure_function_from_schema(
     cls: type,
     converter: cattrs.Converter,
@@ -456,7 +260,6 @@ def make_unstructure_function_from_schema(
         return "".join([f"['{item}']" for item in loc])
 
     for dict_loc, inst_loc in schema.items():
-        # print(dict_loc, inst_loc)
         if dict_loc is None or inst_loc is None:
             continue
         handler = None
@@ -604,8 +407,6 @@ def make_unstructure_function_from_schema(
         + ["  return res"]
     )
     script = "\n".join(total_lines)
-    # print(cls.__name__)
-    # print(script)
     fname = generate_unique_filename(
         cls, "unstructure {}".format(version), lines=total_lines
     )

@@ -125,11 +125,8 @@ class Group(Transformable, TileCollection, EntityCollection, EntityLike, Exporta
         else:
             version = mods.versions["base"]
 
-        # print(version)
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter()
-        # import inspect
-        # print(inspect.getsource(converter.get_structure_hook(cls)))
         return converter.structure(json_dict, cls)
 
     def __attrs_post_init__(self):

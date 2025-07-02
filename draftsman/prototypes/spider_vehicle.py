@@ -16,7 +16,6 @@ from draftsman.validators import instance_of
 from draftsman.data.entities import spider_vehicles
 
 import attrs
-from typing import Optional
 
 
 @attrs.define

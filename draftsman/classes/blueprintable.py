@@ -30,7 +30,6 @@ from abc import ABCMeta, abstractmethod
 
 import json
 from typing import Optional, Sequence
-import warnings
 
 
 @attrs.define
@@ -48,9 +47,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     def from_string(
         cls,
         string: str,
-        # validate: Union[
-        #     ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        # ] = ValidationMode.NONE,
     ):
         """
         Creates a :py:class:`.Blueprintable` with the contents of ``string``.
@@ -58,7 +54,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         Raises :py:class:`.UnknownKeywordWarning` if there are any unrecognized
         keywords in the blueprint string for this particular blueprintable.
 
-        :param string: Factorio-encoded blueprint string.
+        :param string: The Factorio-encoded blueprint string to decode.
 
         :exception MalformedBlueprintStringError: If the input string is not
             decodable to a JSON object.
@@ -89,8 +85,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter()
-        # import inspect
-        # print(inspect.getsource(converter.get_structure_hook(cls)))
         return converter.structure(json_dict, cls)
 
     # =========================================================================

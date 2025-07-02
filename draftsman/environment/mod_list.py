@@ -524,8 +524,6 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
     def clamp(minimum, value, maximum):
         return max(minimum, min(value, maximum))
 
-    print(mods)
-
     # Determine the max length of each dynamic category
     name_width = clamp(4, max(len(mod_name) for mod_name in mods), 50)
     version_width = clamp(

@@ -220,7 +220,6 @@ class SpatialHashMap(SpatialDataStructure):
         for cell_coord in cell_coords:
             if cell_coord in self.map:
                 for item in self.map[cell_coord]:
-                    # print(item)
                     if aabb_overlaps_aabb(item.get_world_bounding_box(), aabb):
                         if limit is not None and len(items) >= limit:
                             break

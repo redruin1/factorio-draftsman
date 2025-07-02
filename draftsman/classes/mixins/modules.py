@@ -1,6 +1,5 @@
 # modules.py
 
-from draftsman.constants import Inventory
 from draftsman.data import entities, modules
 from draftsman.signatures import (
     BlueprintInsertPlan,

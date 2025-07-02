@@ -234,7 +234,6 @@ class _ByteLengthValidator:
 
     @conditional(ValidationMode.STRICT)
     def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: str):
-        print(value)
         if len(value.encode("utf-8")) > self.max_len:
             msg = "'{}' exceeds {} bytes in length; will be truncated to this size when imported".format(
                 attr.name, self.max_len

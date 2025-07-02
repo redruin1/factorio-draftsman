@@ -82,7 +82,6 @@ class ScheduleList(MutableSequence):
 
 def _schedule_list_structure_factory(cls, converter: cattrs.Converter):
     def structure_hook(input_list: list, t: type):
-        print(input_list)
         return ScheduleList(
             [converter.structure(elem, Schedule) for elem in input_list]
         )

@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.constants import Inventory, SiloReadMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ModuleID, QualityID, RecipeID, uint32
+from draftsman.signatures import ModuleID, QualityID, uint32
 from draftsman.utils import attrs_reuse, fix_incorrect_pre_init
 from draftsman.validators import instance_of, try_convert
 

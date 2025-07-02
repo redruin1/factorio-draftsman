@@ -392,9 +392,7 @@
 #         }
 #         rail_pos = last_rail_added.position
 #         rail_dir = last_rail_added.direction.to_legacy()
-#         print(rail_dir)
 #         if last_rail_added.name == self.straight_rail:
-#             print(rail_dir in diagonals)
 #             if rail_dir in diagonals:
 #                 # Diagonal Straight Rail
 #                 # `front` has no effect, since there's only two valid spots
