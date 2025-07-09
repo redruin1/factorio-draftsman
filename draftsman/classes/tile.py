@@ -28,7 +28,7 @@ import attrs
 from typing import Any, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.collection import TileCollection
+    from draftsman.classes.collection import Collection
 
 _TILE_COLLISION_SET = CollisionSet([AABB(0, 0, 1, 1)])
 
@@ -41,13 +41,16 @@ class Tile(SpatialLike, Exportable):
 
     # =========================================================================
 
-    # FIXME: I would like to annotate this, but cattrs cannot find the location of `TileCollection`
     _parent = attrs.field(
-        default=None, init=False, repr=False, eq=False, metadata={"omit": True}
+        default=None,
+        init=False,
+        repr=False,
+        eq=False,
+        metadata={"omit": True, "deepcopy_func": lambda value, memo: None},
     )
 
     @property
-    def parent(self) -> Optional["TileCollection"]:
+    def parent(self) -> Optional["Collection"]:
         return self._parent
 
     # =========================================================================
@@ -89,10 +92,10 @@ class Tile(SpatialLike, Exportable):
 
     @property
     def global_position(self) -> Vector:
-        # This is redundant in this case because tiles cannot be placed inside
-        # of Groups (yet)
-        # However, it's still necessary.
-        return self.position
+        if self.parent and hasattr(self.parent, "global_position"):
+            return self.parent.global_position + self.position
+        else:
+            return self.position
 
     # =========================================================================
 
@@ -121,7 +124,7 @@ class Tile(SpatialLike, Exportable):
         return (
             isinstance(other, Tile)
             and self.name == other.name
-            and self.position == other.position
+            and self.global_position == other.global_position
         )
 
     def merge(self, other: "Tile"):
@@ -135,11 +138,8 @@ class Tile(SpatialLike, Exportable):
         """
         pass
 
-    def __repr__(self) -> str:  # pragma: no coverage
-        return "<Tile>{}".format(self.to_dict())
 
-
-@attrs.define
+@attrs.define  # pragma: no coverage
 class _Export:
     global_position: Vector = attrs.field(metadata={"omit": False})
 

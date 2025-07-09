@@ -219,10 +219,10 @@ class TestGroup:
 
     def test_set_collision_mask(self):
         group = Group("test")
-        group.collision_mask = {"entities", "something-else"}
-        assert group.collision_mask == {"entities", "something-else"}
+        group.collision_mask = {"layers": {"entities", "something-else"}}
+        assert group.collision_mask == {"layers": {"entities", "something-else"}}
         group.collision_mask = None
-        assert group.collision_mask == set()
+        assert group.collision_mask == {"layers": set()}
 
         with pytest.raises(DataFormatError):
             group.collision_mask = TypeError
@@ -239,12 +239,12 @@ class TestGroup:
         # None case
         group.entities = None
         assert isinstance(group.entities, EntityList)
-        assert group.entities._root == []
+        assert group.entities.data == []
         # EntityList case
         group2 = Group("test2")
         group2.entities = group.entities
         assert isinstance(group2.entities, EntityList)
-        assert group2.entities._root == []
+        assert group2.entities.data == []
 
         group.entities = [
             Furnace("stone-furnace"),
@@ -687,18 +687,18 @@ class TestGroup:
         blueprint.entities.append("transport-belt")
 
         with pytest.warns(OverlappingObjectsWarning):
-            blueprint.entities.append(group)
-        blueprint.entities.pop()
+            blueprint.groups.append(group)
+        blueprint.groups.pop()
 
         # Group in Group
         group2 = Group("test2")
         group2.entities.append("transport-belt")
         with pytest.warns(OverlappingObjectsWarning):
-            group.entities.append(group2)
+            group.groups.append(group2)
 
         # Group in Group in Blueprint
         with pytest.warns(OverlappingObjectsWarning):
-            blueprint.entities.append(group)
+            blueprint.groups.append(group)
 
     def test_disable_entity_overlapping_warning(self):
         group = Group("test")
@@ -762,12 +762,12 @@ class TestGroup:
         blueprint = Blueprint()
         group = Group()
         group.entities.append("accumulator")
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
 
         assert len(group.entities) == 1
-        assert group.entities._root == [group.entities[0]]
-        assert len(blueprint.entities) == 1
-        assert blueprint.entities._root == [blueprint.entities[0]]
+        assert group.entities.data == [group.entities[0]]
+        assert len(blueprint.groups) == 1
+        assert blueprint.groups.data == [blueprint.groups[0]]
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
@@ -780,19 +780,19 @@ class TestGroup:
             "version": encode_version(*mods.versions["base"]),
         }
 
-        blueprint.entities.append(group, merge=True)
-        assert len(blueprint.entities) == 2
+        blueprint.groups.append(group, merge=True)
+        assert len(blueprint.groups) == 2
         assert blueprint.get_world_bounding_box() == AABB(
             0.09999999999999998, 0.09999999999999998, 1.9, 1.9
         )
-        assert isinstance(blueprint.entities[0], Group)
-        assert len(blueprint.entities[0].entities) == 1
-        assert blueprint.entities[0].get_world_bounding_box() == AABB(
+        assert isinstance(blueprint.groups[0], Group)
+        assert len(blueprint.groups[0].entities) == 1
+        assert blueprint.groups[0].get_world_bounding_box() == AABB(
             0.09999999999999998, 0.09999999999999998, 1.9, 1.9
         )  # bruh moment
-        assert isinstance(blueprint.entities[1], Group)
-        assert len(blueprint.entities[1].entities) == 0
-        assert blueprint.entities[1].get_world_bounding_box() == None
+        assert isinstance(blueprint.groups[1], Group)
+        assert len(blueprint.groups[1].entities) == 0
+        assert blueprint.groups[1].get_world_bounding_box() == None
 
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
@@ -851,7 +851,7 @@ class TestGroup:
         group.schedules = [schedule]
 
         blueprint = Blueprint()
-        blueprint.entities.append(group, copy=False)
+        blueprint.groups.append(group, copy=False)
 
         # Make sure entities' parents are correct
         assert group.entities[0].parent is group
@@ -907,7 +907,7 @@ class TestGroup:
 
         # Test invalid association
         blueprint.entities.append("steel-chest", tile_position=(5, 5))
-        blueprint.add_circuit_connection("red", (0, 1), 1)
+        blueprint.add_circuit_connection("red", (0, 1), 0)
         with pytest.raises(InvalidAssociationError):
             del group.entities[1]
             blueprint.to_dict()
@@ -919,11 +919,10 @@ class TestGroup:
         group = Group("test")
         group.entities.append("inserter", tile_position=(1, 1))
         group2 = Group("test2")
-        group2.entities.append(group)
-        blueprint.entities.append(group2)
+        group2.groups.append(group)
+        blueprint.groups.append(group2)
 
         blueprint.add_circuit_connection("red", 0, ("test2", "test", 0))
-        self.maxDiff = None
         assert blueprint.to_dict() == {
             "blueprint": {
                 "item": "blueprint",

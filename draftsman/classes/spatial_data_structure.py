@@ -31,40 +31,11 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def recursive_add(
-        self, item: SpatialLike, merge: bool = False
-    ) -> Optional[SpatialLike]:  # pragma: no coverage
-        """
-        Add the leaf-most entities to the hashmap.
-
-        This is used for Groups and other EntityCollections, where you need to
-        add the Group's children to the hashmap instead of the Group itself.
-        Works with as many nested Groups as desired.
-
-        :param item: The object to add, or its children (if it has any).
-        :param merge: Whether or not to attempt to merge the added item(s) with
-            any existing item(s), if possible.
-
-        :returns: The input SpatialLike if properly added, or ``None`` if the
-            input object was merged.
-        """
-        pass
-
-    @abc.abstractmethod
     def remove(self, item: SpatialLike) -> None:  # pragma: no coverage
         """
         Remove the ``SpatialLike`` instance from the ``SpatialHashMap``.
 
         :param item: The object to remove.
-        """
-        pass
-
-    @abc.abstractmethod
-    def recursive_remove(self, item: SpatialLike) -> None:  # pragma: no coverage
-        """
-        Inverse of :py:meth:`recursive_add`.
-
-        :param item: The object to remove, or its children (if it has any).
         """
         pass
 

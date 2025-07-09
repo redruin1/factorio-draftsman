@@ -1,6 +1,7 @@
 # blueprint.py
 
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
+from draftsman.classes.collection import CollectionList
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
@@ -33,17 +34,14 @@ from draftsman.error import (
     DataFormatError,
     InvalidAssociationError,
     IncompleteSignalError,
-    InvalidSignalError,
-    InvalidEntityError,
-    InvalidTileError,
+    DuplicateIDError,
 )
-from draftsman.signatures import Color, Icon
+from draftsman.signatures import Color, Icon, StockConnection
 from draftsman.utils import AABB, encode_version, version_tuple_to_string
 import draftsman.validators
 from draftsman.warning import (
     DraftsmanWarning,
     GridAlignmentWarning,
-    TooManyConnectionsWarning,
     UnknownEntityWarning,
     UnknownSignalWarning,
     UnknownTileWarning,
@@ -441,7 +439,7 @@ class TestBlueprint:
 
         blueprint.entities = None
         assert isinstance(blueprint.entities, EntityList)
-        assert blueprint.entities._root == []
+        assert blueprint.entities.data == []
 
         # Set by EntityList
         blueprint.entities.append("wooden-chest")
@@ -501,7 +499,7 @@ class TestBlueprint:
 
         blueprint.tiles = None
         assert isinstance(blueprint.tiles, TileList)
-        assert blueprint.tiles._root == []
+        assert blueprint.tiles.data == []
 
         # Set by TileList
         blueprint.tiles.append("landfill")
@@ -618,6 +616,54 @@ class TestBlueprint:
 
         with pytest.raises(DataFormatError):
             blueprint.schedules = ["incorrect", "format"]
+
+    def test_stock_connections(self):
+        blueprint = Blueprint()
+
+        blueprint.entities.append(
+            "locomotive", id="loco", orientation=0.75, tile_position=(0, 4)
+        )
+        blueprint.entities.append(
+            "cargo-wagon", id="wagon", orientation=0.75, tile_position=(7, 4)
+        )
+        blueprint.stock_connections = [
+            StockConnection(stock=blueprint.entities["loco"]),
+            StockConnection(
+                stock=blueprint.entities["wagon"],
+                front=blueprint.entities["loco"],
+                # Malformed, but just for testing code coverage
+                back=blueprint.entities["loco"], 
+            ),
+        ]
+
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "entity_number": 1,
+                    "name": "locomotive",
+                    "position": {"x": 0.0, "y": 4.0},
+                    "orientation": 0.75
+                },
+                {
+                    "entity_number": 2,
+                    "name": "cargo-wagon",
+                    "position": {"x": 7, "y": 4},
+                    "orientation": 0.75
+                },
+            ],
+            "stock_connections": [
+                {
+                    "stock": 1
+                },
+                {
+                    "stock": 2,
+                    "front": 1,
+                    "back": 1
+                }
+            ],
+            "version": encode_version(*mods.versions["base"])
+        }
 
     # =========================================================================
 
@@ -750,6 +796,123 @@ class TestBlueprint:
 
     # =========================================================================
 
+    def test_add_group(self):
+        blueprint = Blueprint()
+        assert blueprint.groups == CollectionList(parent=blueprint)
+
+        # Can't add a non-group to `groups`
+        with pytest.raises(TypeError):
+            blueprint.groups.append(TypeError)
+        assert blueprint.groups.data == []
+        with pytest.raises(TypeError):
+            blueprint.groups.append(new_entity("decider-combinator"))
+        assert blueprint.groups.data == []
+        
+        group = Group()
+        group.entities.append("decider-combinator")
+        for y in range(2):
+            for x in range(2):
+                group.tiles.append("concrete", position=(x, y))
+
+        # Correct spacing
+        blueprint.groups.append(group, id="group_1")
+        blueprint.groups.append(group, id="group_2", position=(2, 0))
+        assert group.parent is None
+
+        # Test __setitem__
+        blueprint.groups["group_1"] = group # Aha. This doesn't copy. Thus:
+        assert group.parent is blueprint
+
+        assert len(blueprint.groups) == 2
+        assert blueprint.groups[0].id == None
+        assert blueprint.groups[1].id == "group_2"
+
+        new_group = Group(id="new_group")
+        blueprint.groups[0] = new_group
+
+        # New group should have blueprint as parent
+        assert new_group.parent is blueprint
+        # And old group should have its parent removed
+        assert group.parent is None
+        
+        assert len(blueprint.groups) == 2
+        assert blueprint.groups[0].id == "new_group"
+        assert blueprint.groups[1].id == "group_2"
+
+        # TODO: handle slices
+
+        # Test __delitem__
+        del blueprint.groups["new_group"]
+        assert len(blueprint.groups) == 1
+        assert blueprint.groups[0].id == "group_2"
+
+        # TODO: handle slices
+
+        # Overlapping spacing
+        blueprint = Blueprint()
+        blueprint.groups.append(group)
+        with pytest.warns(OverlappingObjectsWarning):
+            blueprint.groups.append(group, position=(1, 0))
+        assert len(blueprint.groups) == 2
+
+        # Overlapping spacing, but with validation disabled
+        del blueprint.groups[-1]
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            blueprint.groups.append(group, position=(1, 0))
+        assert len(blueprint.groups) == 2
+
+        # Test DuplicateID
+        blueprint.groups = []
+        assert len(blueprint.groups) == 0
+        group.id = "something"
+
+        blueprint.groups.append(group)
+        with pytest.raises(DuplicateIDError):
+            blueprint.groups.append(group, position=(2, 0))
+        assert len(blueprint.groups) == 1
+
+        blueprint.groups.append(new_group, position=(10, 10))
+        with pytest.raises(DuplicateIDError):
+            group.position = (10, 10)
+            blueprint.groups[-1] = group
+        assert len(blueprint.groups) == 2
+        assert blueprint.groups[0].id == "something"
+        assert blueprint.groups[1].id == "new_group"
+
+        # Test tile merging and double nested groups
+        blueprint = Blueprint()
+
+        tile_square = Group()
+        for y in range(2):
+            for x in range(2):
+                tile_square.tiles.append("concrete", position=(x, y))
+
+        parent_group = Group()
+        parent_group.groups.append(tile_square)
+        assert parent_group.groups[-1].tiles.spatial_map
+        parent_group.groups.append(tile_square, position=(1, 0), merge=True)
+        assert parent_group.groups[-1].tiles.spatial_map
+
+        assert len(parent_group.groups[0].tiles) == 4
+        assert len(parent_group.groups[1].tiles) == 2
+
+        blueprint.groups.append(parent_group)
+        assert len(blueprint.groups) == 1
+        assert len(blueprint.groups[0].groups) == 2
+
+        # Test set via another CollectionList
+        blueprint2 = Blueprint()
+        blueprint2.groups = blueprint.groups
+        assert blueprint.groups == blueprint2.groups
+        assert blueprint.groups is not blueprint2.groups
+
+        # Test set to None
+        blueprint.groups = None
+        assert isinstance(blueprint.groups, CollectionList)
+        assert blueprint.groups.data == []
+
+    # =========================================================================
+
     def test_version_tuple(self):
         blueprint = Blueprint()
         assert blueprint.version_tuple() == mods.versions["base"]
@@ -804,9 +967,9 @@ class TestBlueprint:
             "version": encode_version(*mods.versions["base"]),
         }
         # TODO: fix, ideally
-        # assert blueprint.entities is blueprint._root["blueprint"]["entities"]
-        # assert blueprint.tiles is blueprint._root["blueprint"]["tiles"]
-        # assert blueprint.schedules is blueprint._root["blueprint"]["schedules"]
+        # assert blueprint.entities is blueprint.data["blueprint"]["entities"]
+        # assert blueprint.tiles is blueprint.data["blueprint"]["tiles"]
+        # assert blueprint.schedules is blueprint.data["blueprint"]["schedules"]
 
         # Copper wire connection case
         blueprint.entities.append("power-switch", id="a")
@@ -1019,14 +1182,14 @@ class TestBlueprint:
     # def test_getitem(self):
     #     blueprint = Blueprint()
     #     blueprint.label = "testing"
-    #     assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
+    #     assert blueprint["blueprint"]["label"] is blueprint.data["blueprint"]["label"]
 
     # =========================================================================
 
     # def test_setitem(self):
     #     blueprint = Blueprint()
     #     blueprint["blueprint"]["label"] = "testing"
-    #     assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
+    #     assert blueprint["blueprint"]["label"] is blueprint.data["blueprint"]["label"]
 
     # =========================================================================
 
@@ -1047,20 +1210,20 @@ class TestBlueprint:
         group.add_power_connection(0, 1)
         group.position = (0, 1)
 
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         blueprint.add_circuit_connection("green", "test container", ("powerlines", 0))
 
         # Entities
-        assert blueprint.entities[0].parent is blueprint
+        assert blueprint.groups[0].parent is blueprint
         assert (
-            blueprint.entities[("powerlines", 0)].parent
-            is blueprint.entities["powerlines"]
+            blueprint.groups["powerlines"].entities[0].parent
+            is blueprint.groups["powerlines"]
         )
         assert (
-            blueprint.entities[("powerlines", 1)].parent
-            is blueprint.entities["powerlines"]
+            blueprint.groups["powerlines"].entities[1].parent
+            is blueprint.groups["powerlines"]
         )
-        assert blueprint.entities["powerlines"].parent is blueprint
+        assert blueprint.groups["powerlines"].parent is blueprint
         # Outcome
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
@@ -1092,14 +1255,14 @@ class TestBlueprint:
         # Entities
         assert blueprint_copy.entities[0].parent is blueprint_copy
         assert (
-            blueprint_copy.entities[("powerlines", 0)].parent
-            is blueprint_copy.entities["powerlines"]
+            blueprint_copy.groups["powerlines"].entities[0].parent
+            is blueprint_copy.groups["powerlines"]
         )
         assert (
-            blueprint_copy.entities[("powerlines", 1)].parent
-            is blueprint_copy.entities["powerlines"]
+            blueprint_copy.groups["powerlines"].entities[1].parent
+            is blueprint_copy.groups["powerlines"]
         )
-        assert blueprint_copy.entities["powerlines"].parent is blueprint_copy
+        assert blueprint_copy.groups["powerlines"].parent is blueprint_copy
 
         # Outcome
         assert blueprint_copy.to_dict()["blueprint"] == {
@@ -1145,13 +1308,13 @@ class TestBlueprint:
         # Group search case
         group = Group("test", position=(-5, -5))
         group.entities.append("wooden-chest", tile_position=(-5, -5))
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         # Incorrect
         found_entity = blueprint.find_entity("wooden-chest", (-4.5, -4.5))
         assert found_entity is None
         # Correct
         found_entity = blueprint.find_entity("wooden-chest", (-9.5, -9.5))
-        assert found_entity is blueprint.entities[("test", 0)]
+        assert found_entity is blueprint.groups["test"].entities[0]
 
     # =========================================================================
 
@@ -1168,13 +1331,13 @@ class TestBlueprint:
         # Group search case
         group = Group("test", position=(-5, -5))
         group.entities.append("wooden-chest", tile_position=(-5, -5))
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         # Incorrect
         found_entity = blueprint.find_entity_at_position((-4.5, -4.5))
         assert found_entity is None
         # Correct
         found_entity = blueprint.find_entity_at_position((-9.5, -9.5))
-        assert found_entity is blueprint.entities[("test", 0)]
+        assert found_entity is blueprint.groups["test"].entities[0]
 
     def test_find_entities(self):
         blueprint = Blueprint()
@@ -1183,7 +1346,7 @@ class TestBlueprint:
         blueprint.entities.append("steel-chest", tile_position=(10, 10))
 
         found_entities = blueprint.find_entities()
-        assert found_entities == blueprint.entities._root
+        assert found_entities == blueprint.entities.data
 
         # Explicit AABB
         found_entities = blueprint.find_entities(AABB(0, 0, 6, 6))
@@ -1195,16 +1358,16 @@ class TestBlueprint:
         # Group search case
         group = Group("test", position=(-5, -5))
         group.entities.append("wooden-chest", tile_position=(-5, -5))
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         # Unchanged
         found_entities = blueprint.find_entities()
-        assert found_entities == blueprint.entities._root
+        assert found_entities == blueprint.entities.data
         # Unchanged
         found_entities = blueprint.find_entities([0, 0, 6, 6])
         assert found_entities == [blueprint.entities[0], blueprint.entities[1]]
         # Entity group
         found_entities = blueprint.find_entities([-10, -10, 0, 0])
-        assert found_entities == [blueprint.entities[("test", 0)]]
+        assert found_entities == [blueprint.groups["test"].entities[0]]
 
     # =========================================================================
 
@@ -1221,7 +1384,7 @@ class TestBlueprint:
 
         # Return all
         found = blueprint.find_entities_filtered()
-        assert found == blueprint.entities._root
+        assert found == blueprint.entities.data
 
         # Limit
         found = blueprint.find_entities_filtered(limit=2)
@@ -1265,7 +1428,7 @@ class TestBlueprint:
         found = blueprint.find_entities_filtered(
             type={"container", "decider-combinator", "arithmetic-combinator"}
         )
-        assert found == blueprint.entities._root
+        assert found == blueprint.entities.data
 
         # Direction
         found = blueprint.find_entities_filtered(direction=Direction.NORTH)
@@ -1507,7 +1670,7 @@ class TestBlueprint:
         group.entities.append("small-electric-pole")
         group.entities.append("small-electric-pole", tile_position=(1, 1))
         group.add_power_connection(0, 1)
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         blueprint.entities.append(
             "small-electric-pole", tile_position=(2, 2), id="root"
         )
@@ -1518,20 +1681,20 @@ class TestBlueprint:
                 {
                     "entity_number": 1,
                     "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
+                    "position": {"x": 2.5, "y": 2.5},
                 },
                 {
                     "entity_number": 2,
                     "name": "small-electric-pole",
-                    "position": {"x": 1.5, "y": 1.5},
+                    "position": {"x": 0.5, "y": 0.5},
                 },
                 {
                     "entity_number": 3,
                     "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 2.5},
+                    "position": {"x": 1.5, "y": 1.5},
                 },
             ],
-            "wires": [[3, 5, 2, 5], [1, 5, 2, 5]],
+            "wires": [[1, 5, 3, 5], [2, 5, 3, 5]],
             "version": encode_version(*mods.versions["base"]),
         }
 
@@ -1543,17 +1706,17 @@ class TestBlueprint:
                 {
                     "entity_number": 1,
                     "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
+                    "position": {"x": 2.5, "y": 2.5},
                 },
                 {
                     "entity_number": 2,
                     "name": "small-electric-pole",
-                    "position": {"x": 1.5, "y": 1.5},
+                    "position": {"x": 0.5, "y": 0.5},
                 },
                 {
                     "entity_number": 3,
                     "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 2.5},
+                    "position": {"x": 1.5, "y": 1.5},
                 },
             ],
             "version": encode_version(*mods.versions["base"]),
@@ -1945,29 +2108,31 @@ class TestBlueprint:
         group.entities.append("transport-belt")
         group.entities.append("transport-belt", tile_position=(1, 1))
         group.add_circuit_connection("red", 0, 1)
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         blueprint.entities.append("transport-belt", tile_position=(2, 2), id="root")
         blueprint.add_circuit_connection("green", "root", ("group", 1))
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
-                {
+                # Flat entities are traversed first (in order)
+                { 
                     "entity_number": 1,
+                    "name": "transport-belt",
+                    "position": {"x": 2.5, "y": 2.5},
+                },
+                # Followed by groups (in order)
+                {
+                    "entity_number": 2,
                     "name": "transport-belt",
                     "position": {"x": 0.5, "y": 0.5},
                 },
                 {
-                    "entity_number": 2,
+                    "entity_number": 3,
                     "name": "transport-belt",
                     "position": {"x": 1.5, "y": 1.5},
                 },
-                {
-                    "entity_number": 3,
-                    "name": "transport-belt",
-                    "position": {"x": 2.5, "y": 2.5},
-                },
             ],
-            "wires": [[3, 2, 2, 2], [1, 1, 2, 1]],
+            "wires": [[1, 2, 3, 2], [2, 1, 3, 1]],
             "version": encode_version(*mods.versions["base"]),
         }
 
@@ -1976,20 +2141,20 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
-                {
+                { 
                     "entity_number": 1,
                     "name": "transport-belt",
-                    "position": {"x": 0.5, "y": 0.5},
+                    "position": {"x": 2.5, "y": 2.5},
                 },
                 {
                     "entity_number": 2,
                     "name": "transport-belt",
-                    "position": {"x": 1.5, "y": 1.5},
+                    "position": {"x": 0.5, "y": 0.5},
                 },
                 {
                     "entity_number": 3,
                     "name": "transport-belt",
-                    "position": {"x": 2.5, "y": 2.5},
+                    "position": {"x": 1.5, "y": 1.5},
                 },
             ],
             "version": encode_version(*mods.versions["base"]),
@@ -2794,7 +2959,7 @@ class TestBlueprint:
 
         # No criteria
         result = blueprint.find_tiles_filtered()
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         # Position and radius
         result = blueprint.find_tiles_filtered(position=(0, 0), radius=5)
@@ -2802,11 +2967,11 @@ class TestBlueprint:
 
         # Area (long)
         result = blueprint.find_tiles_filtered(area=AABB(0, 0, 11, 11))
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         # Area (short)
         result = blueprint.find_tiles_filtered(area=[0, 0, 11, 11])
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         # Name
         result = blueprint.find_tiles_filtered(name="refined-concrete")
@@ -2814,7 +2979,7 @@ class TestBlueprint:
 
         # Names
         result = blueprint.find_tiles_filtered(name={"refined-concrete", "landfill"})
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         result = blueprint.find_tiles_filtered(name="refined-concrete", invert=True)
         assert result == [blueprint.tiles[1]]

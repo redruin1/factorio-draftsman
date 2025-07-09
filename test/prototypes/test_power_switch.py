@@ -106,14 +106,14 @@ class TestPowerSwitch:
         print("right wires:", group_right.wires)
 
         blueprint = Blueprint()
-        blueprint.entities.append(group_left)
-        print("added left wires:", blueprint.entities[0].wires)
-        blueprint.entities.append(group_right, merge=True)
-        print("added right wires:", blueprint.entities[1].wires)
+        blueprint.groups.append(group_left)
+        print("added left wires:", blueprint.groups[0].wires)
+        blueprint.groups.append(group_right, merge=True)
+        print("added right wires:", blueprint.groups[1].wires)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 1
+        assert len(blueprint.groups) == 2
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[1].entities) == 1
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
@@ -140,12 +140,12 @@ class TestPowerSwitch:
         group.add_power_connection(0, 1, side_2="input")
 
         blueprint = Blueprint()
-        blueprint.entities.append(group)
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 0
+        assert len(blueprint.groups) == 2
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[1].entities) == 0
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,

@@ -546,10 +546,10 @@ class TestArithmeticCombinator:
 
         blueprint = Blueprint()
         blueprint.entities.append("arithmetic-combinator")
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[1].entities) == 0
+        assert len(blueprint.entities) == 1
+        assert len(blueprint.groups[0].entities) == 0
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,

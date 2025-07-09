@@ -112,17 +112,17 @@ class TestElectricPole:
         group.add_circuit_connection("green", 0, 1)
 
         blueprint = Blueprint()
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         group.position = (2, 0)
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group, merge=True)
         blueprint.add_power_connection((0, 0), (1, 0))
 
-        assert len(blueprint.entities) == 2
+        assert len(blueprint.groups) == 2
         assert len(blueprint.wires) == 1
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[0].wires) == 3
-        assert len(blueprint.entities[1].entities) == 1
-        assert len(blueprint.entities[1].wires) == 3
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[0].wires) == 3
+        assert len(blueprint.groups[1].entities) == 1
+        assert len(blueprint.groups[1].wires) == 3
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
@@ -159,12 +159,12 @@ class TestElectricPole:
         group.add_circuit_connection("red", 0, 1)
 
         blueprint = Blueprint()
-        blueprint.entities.append(group)
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 0
+        assert len(blueprint.entities) == 0
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[1].entities) == 0
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
@@ -187,10 +187,10 @@ class TestElectricPole:
 
         blueprint = Blueprint()
         blueprint.entities.append("small-electric-pole")
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[1].entities) == 1
+        assert len(blueprint.entities) == 1
+        assert len(blueprint.groups[0].entities) == 1
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,

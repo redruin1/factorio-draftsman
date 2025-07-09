@@ -140,12 +140,15 @@ class ConverterVersion:
                 )
             elif subcls in self.structure_funcs:
                 # use the reverse of the structure fuction
+                # TODO: fixme
+                # if len(inspect.signature(self.structure_funcs[subcls]).parameters) == 1:
+                args = (attrs.fields(subcls),)
+                # else:
+                #     args = (attrs.fields(subcls), converter)
                 res.update(
                     {
                         (k,) if isinstance(k, str) else k: v
-                        for k, v in self.structure_funcs[subcls](
-                            attrs.fields(subcls)
-                        ).items()
+                        for k, v in self.structure_funcs[subcls](*args).items()
                     }
                 )
         return res

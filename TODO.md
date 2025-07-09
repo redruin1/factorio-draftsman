@@ -1,18 +1,5 @@
 # TODO
 
-### Add `children` attribute to Blueprints/Groups, and use that to store nested Groups
-This would make `entities` and `tiles` 1-dimensional lists again, and tree traversal would be more explicit
-```py
-blueprint = Blueprint()
-
-blueprint.children.append(Group(id="blah"))
-
-blueprint.children["blah"].entities.append("inserter", ...)
-```
-
----
-### Calling validate on a blueprint should validate all of it's child entitylikes and tiles
-
 ---
 ### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 
@@ -22,7 +9,7 @@ Ideally, whether or not a entity or blueprint is considered valid can be retaine
 
 ---
 ### Integrate with `ruff`
-Add rules to ease up strictness
+Add rules to add more strictness
 
 ---
 ### Revamp the `add_x` data functions so that they support more features
@@ -80,7 +67,7 @@ In a similar vein, it might be prudent to eventually strip all of the data-extra
 ---
 ### Perhaps add options for blueprint canonicalization
 Ordering objects inside blueprints in regular ways for best compression, minimal git diff, etc.
-- could probably integrate FATUL ()
+- could probably integrate FATUL (https://github.com/nyurik/fatul)
 
 ---
 ### Add more examples

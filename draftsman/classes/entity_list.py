@@ -11,7 +11,6 @@ from draftsman.error import (
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import reissue_warnings
 from draftsman.validators import get_mode
-from draftsman import utils
 
 import cattrs
 from collections.abc import MutableSequence
@@ -21,7 +20,7 @@ from typing import Callable, Iterator, Optional, Union
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.collection import EntityCollection
+    from draftsman.classes.collection import Collection
 
 
 class EntityList(Exportable, MutableSequence):
@@ -33,32 +32,10 @@ class EntityList(Exportable, MutableSequence):
     :py:class:`.EntityCollection` classes.
     """
 
-    # class Format(DraftsmanBaseModel):
-    #     _root: List[EntityLike]
-
-    #     root: List[Any]  # should be a better way to validate this
-
-    #     @model_validator(mode="after")
-    #     def ensure_no_duplicate_ids(self, info):  # TODO
-    #         known_ids = set()
-    #         for entitylike in self.root:
-    #             if entitylike.id in known_ids:  # pragma: no coverage
-    #                 raise AssertionError(
-    #                     "Cannot have two entities with the same id"
-    #                 )  # TODO better
-    #             if entitylike.id is not None:
-    #                 known_ids.add(entitylike.id)
-    #         return self
-
-    #     # TODO: issue OverlappingObjectsWarnings
-
-    #     # TODO: determine a way to check if entities can be placed in a blueprint
-    #     # ("hidden" flag, "not-blueprintable" flag, etc.)
-
     @reissue_warnings
     def __init__(
         self,
-        parent: "EntityCollection" = None,
+        parent: "Collection" = None,
         initlist: Optional[list[EntityLike]] = [],
         copy: bool = True,
     ):
@@ -75,21 +52,20 @@ class EntityList(Exportable, MutableSequence):
         # Init Exportable
         super().__init__()
 
-        self._root: list[EntityLike] = []
+        self.data: list[EntityLike] = []
         self.key_map = {}
         self.key_to_idx = {}
         self.idx_to_key = {}
 
         self.spatial_map: SpatialDataStructure = SpatialHashMap()
 
-        self._parent = parent
+        self._parent: "Collection" = parent
 
         for elem in initlist:
             if isinstance(elem, EntityLike):
                 self.append(elem, copy=copy)
             elif isinstance(elem, dict):
                 name = elem.pop("name")
-                # self.append(new_entity(name, **elem))
                 self.append(name, **elem)
             else:
                 raise TypeError("Constructor either takes EntityLike or dict entries")
@@ -159,7 +135,7 @@ class EntityList(Exportable, MutableSequence):
         """
         return self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
-    @utils.reissue_warnings
+    @reissue_warnings
     def extend(
         self,
         entities: list[Union[str, EntityLike]],
@@ -280,14 +256,7 @@ class EntityList(Exportable, MutableSequence):
         # Do a set of idiot checks on the entity to make sure everything's okay
         self.check_entitylike(entitylike)
 
-        # Sometimes, you want to validate the object while adding (to check for
-        # typing mistakes, commonly) as opposed to a complete digest at the end.
-        # This way also allows for issueing `OverlappingEntityWarnings` at the
-        # place where the entities are added, improving readability.
-        # Of course, this feature is optional, so if you're going to validate
-        # the final blueprintable at the end anyway you can disable this feature
-        # and save some overhead
-        if get_mode():
+        if get_mode() and self._parent is not None:
             # Validate the object itself
             # entitylike.validate(mode=self.validate_assignment).reissue_all()
             # Check for issues regarding placing this entity in the parent object
@@ -297,13 +266,14 @@ class EntityList(Exportable, MutableSequence):
 
         # If no errors, add this to hashmap (as well as any of it's children),
         # merging as necessary
-        entitylike = self.spatial_map.recursive_add(entitylike, merge)
+        if self._parent is not None:
+            entitylike = self.spatial_map.add(entitylike, merge=merge)
 
         if entitylike is None:  # input entitylike was entirely merged
             return  # exit without adding to list
 
         # Once the parent has itself in order, we can update our data
-        self._root.insert(idx, entitylike)
+        self.data.insert(idx, entitylike)
         self._shift_key_indices(idx, 1)
         if entitylike.id:
             self._set_key(entitylike.id, entitylike)
@@ -331,7 +301,7 @@ class EntityList(Exportable, MutableSequence):
             pass
 
         # Then, try to delete the item from any sublists
-        for existing_item in self._root:
+        for existing_item in self.data:
             # if isinstance(existing_item, EntityCollection): # better, but impossible
             if hasattr(existing_item, "entities"):  # FIXME: somewhat unsafe
                 try:
@@ -449,11 +419,11 @@ class EntityList(Exportable, MutableSequence):
         return new_entity_list
 
     def clear(self):
-        del self._root[:]
+        del self.data[:]
         self.key_map.clear()
         self.key_to_idx.clear()
         self.idx_to_key.clear()
-        self.spatial_map.clear()
+        self._parent.entities.spatial_map.clear()
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT
@@ -484,7 +454,7 @@ class EntityList(Exportable, MutableSequence):
                 item = item[0]
             return new_base.entities[item]  # Raises AttributeError or KeyError
         elif isinstance(item, (int, slice)):
-            return self._root[item]  # Raises IndexError
+            return self.data[item]  # Raises IndexError
         else:
             return self.key_map[item]  # Raises KeyError
 
@@ -512,8 +482,8 @@ class EntityList(Exportable, MutableSequence):
         # do this, so it's can-kicking time
         self.check_entitylike(value)
 
-        # Remove the entity and its children
-        self.spatial_map.recursive_remove(self._root[idx])
+        # Remove the entity from the spatial map
+        self.spatial_map.remove(self.data[idx])
 
         # Check for overlapping entities
         # validate = self._parent.validate_assignment
@@ -522,10 +492,10 @@ class EntityList(Exportable, MutableSequence):
             self.spatial_map.validate_insert(value, False)
 
         # Add the new entity and its children
-        self.spatial_map.recursive_add(value, False)
+        self.spatial_map.add(value, False)
 
         # Set the new data association in the list side
-        self._root[idx] = value
+        self.data[idx] = value
 
         # If the element has a new id, set it to that
         if key:
@@ -546,7 +516,7 @@ class EntityList(Exportable, MutableSequence):
                 idx, key = self.get_pair(i)
 
                 # Remove the entity and its children
-                self.spatial_map.recursive_remove(self._root[idx])
+                self.spatial_map.remove(self.data[idx])
 
                 # Remove key pair
                 self._remove_key(key)
@@ -556,18 +526,18 @@ class EntityList(Exportable, MutableSequence):
                 self._shift_key_indices(i, -step)
 
             # Delete all entries in the main list
-            del self._root[item]
+            del self.data[item]
         else:
             # Get pair
             if isinstance(item, int):
-                item %= len(self._root)
+                item %= len(self.data)
             idx, key = self.get_pair(item)
 
             # Remove the entity and its children
-            self.spatial_map.recursive_remove(self._root[idx])
+            self.spatial_map.remove(self.data[idx])
 
             # Delete from list
-            del self._root[idx]
+            del self.data[idx]
 
             # Remove key pair
             self._remove_key(key)
@@ -576,20 +546,12 @@ class EntityList(Exportable, MutableSequence):
             self._shift_key_indices(idx, -1)
 
     def __len__(self) -> int:
-        return len(self._root)
+        return len(self.data)
 
     __iter__: Callable[..., Iterator[EntityLike]]
 
     def __contains__(self, item: EntityLike) -> bool:
-        if item in self._root:
-            return True
-        else:  # Check every entity for sublists
-            for entity in self._root:
-                if hasattr(entity, "entities"):
-                    if item in entity.entities:  # recurse
-                        return True
-        # Nothing was found
-        return False
+        return item in self.data
 
     def __or__(self, other: "EntityList") -> "EntityList":
         return self.union(other)
@@ -613,11 +575,11 @@ class EntityList(Exportable, MutableSequence):
         if not isinstance(other, EntityList):
             return False
 
-        if len(self._root) != len(other._root):
+        if len(self.data) != len(other.data):
             return False
 
-        for i in range(len(self._root)):
-            if self._root[i] != other._root[i]:
+        for i in range(len(self.data)):
+            if self.data[i] != other.data[i]:
                 return False
 
         return True
@@ -634,10 +596,6 @@ class EntityList(Exportable, MutableSequence):
         the new EntityList will automatically be created with that object as
         it's parent. This is bootleg as *fuck*, but it works for now.
         """
-        # If we've already deepcopied this list, no sense doing it twice
-        # if id(self) in memo:
-        #     return memo[id(self)]
-
         # We create a new list with no parent; this is important because we
         # don't want two EntityLists pointing at the same parent, as this often
         # leads to overlapping entity warnings
@@ -649,7 +607,7 @@ class EntityList(Exportable, MutableSequence):
         # First, we make a copy of all entities in self.data and assign them to
         # a new entity list while keeping track of which new entity corresponds
         # to which old entity
-        for entity in self._root:
+        for entity in self.data:
             entity_copy = memo.get(id(entity), deepcopy(entity, memo))
             new.append(entity_copy, copy=False)
             memo[id(entity)] = entity_copy
@@ -699,7 +657,7 @@ class EntityList(Exportable, MutableSequence):
         return new
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<EntityList>{}".format(self._root)
+        return "<EntityList>{}".format(self.data)
 
     # =========================================================================
     # Internal functions
@@ -736,7 +694,7 @@ class EntityList(Exportable, MutableSequence):
         """
         if key in self.key_map:
             raise DuplicateIDError("'{}'".format(key))
-        idx = self._root.index(value)
+        idx = self.data.index(value)
         self.key_map[key] = value
         self.key_to_idx[key] = idx
         self.idx_to_key[idx] = key
@@ -758,33 +716,18 @@ class EntityList(Exportable, MutableSequence):
         self.idx_to_key = {value: key for key, value in self.key_to_idx.items()}
 
 
-# draftsman_converters.register_structure_hook(
-#     EntityList,
-#     # This does work even though parent is None; this is on_setattr correctly
-#     # handles the cases where we pass a new entity list
-#     # It is inefficient since we construct 2 EntityList objects, but...
-#     lambda d, _type: EntityList(None, d)
-# )
-# draftsman_converters.get((1, 0)).register_structure_hook(
-#     EntityList,
-#     lambda l, _type: EntityList(None, [draftsman_converters.get((1, 0)).structure(elem) for elem in l])
-# )
-# draftsman_converters.get((2, 0)).register_structure_hook(
-#     EntityList,
-#     lambda l, _type: EntityList(None, [new_entity(**elem) for elem in l])
-# )
-
-
 def _entity_list_structure_factory(cls, converter: cattrs.Converter):
     def structure_hook(input_list: list, t: type):
-        return EntityList(
-            None,
-            [
-                converter.structure(elem, get_entity_class(elem.get("name", None)))
-                for elem in input_list
-            ],
-            copy=False,
-        )
+        # We return a regular list, which is coerced via attrs converter to an
+        # instance of `EntityList` (which handles the `_parent` reference)
+        # Alternatively, I could pass an extra argument to this function which
+        # would contain reference to the class instantiated with `__new__`,
+        # which might be slightly more efficient
+        # TODO
+        return [
+            converter.structure(elem, get_entity_class(elem.get("name", None)))
+            for elem in input_list
+        ]
 
     return structure_hook
 
@@ -796,7 +739,7 @@ draftsman_converters.register_structure_hook_factory(
 
 def _entity_list_unstructure_factory(cls, converter: cattrs.Converter):
     def unstructure_hook(inst):
-        return [converter.unstructure(entity) for entity in inst._root]
+        return [converter.unstructure(entity) for entity in inst.data]
 
     return unstructure_hook
 
@@ -804,8 +747,3 @@ def _entity_list_unstructure_factory(cls, converter: cattrs.Converter):
 draftsman_converters.register_unstructure_hook_factory(
     lambda cls: issubclass(cls, EntityList), _entity_list_unstructure_factory
 )
-
-# draftsman_converters.register_unstructure_hook(
-#     EntityList,
-#     lambda inst: [elem.to_dict(entity_number=i) for i, elem in enumerate(inst)] # TODO: versions
-# )

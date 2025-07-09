@@ -86,6 +86,9 @@ class Exportable:
     themselves.
     """
 
+    # def __new__(cls, *args, **kwargs):
+    #     return super().__new__(cls)
+
     # @property
     # def is_valid(self) -> bool: # TODO
     #     """
@@ -315,7 +318,9 @@ def make_exportable_structure_factory_func(
         structure_dict = version_data.get_structure_dict(cls, converter)
 
         def structure_hook(input_dict: dict, _: type):
-            res = {}
+            inst = cls.__new__(cls)
+
+            init_args = {}
             for dict_loc, attr_name in structure_dict.items():
                 if attr_name is None:
                     try_pop_location(input_dict, dict_loc)
@@ -340,14 +345,18 @@ def make_exportable_structure_factory_func(
                     else find_structure_handler(attr, attr.type, converter)
                 )
                 try:
-                    res[attr_name] = handler(value, attr.type)
+                    if custom_handler:
+                        init_args[attr_name] = handler(value, attr.type, inst)
+                    else:
+                        init_args[attr_name] = handler(value, attr.type)
                 except Exception as e:
                     raise DataFormatError(e)
 
             if input_dict:
-                res["extra_keys"] = input_dict
+                init_args["extra_keys"] = input_dict
 
-            return cls(**res)
+            inst.__init__(**init_args)
+            return inst
 
         return structure_hook
 

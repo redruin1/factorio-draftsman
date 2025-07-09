@@ -20,7 +20,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.collection import TileCollection
+    from draftsman.classes.collection import Collection
 
 
 @attrs.define
@@ -29,29 +29,35 @@ class TileList(Exportable, MutableSequence):
     A list which exclusively contains Factorio tiles.
     """
 
-    # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
+    # FIXME: I would like to annotate this, but cattrs cannot find the location of `Collection`
     _parent = attrs.field(
         default=None,
         init=False,
         repr=False,
         eq=False,
-        metadata={"deepcopy_func": lambda value, memo: None},
+        # metadata={"deepcopy_func": lambda value, memo: None},
     )
 
-    _root: list[Tile] = attrs.field(  # TODO: rename to data (perhaps use UserList?)
+    data: list[Tile] = attrs.field(
         factory=list,
         init=False,
     )
 
+    # spatial_map: SpatialDataStructure = attrs.field(
+    #     factory=SpatialHashMap,
+    #     init=False,
+    #     repr=False
+    # )
+
     def __init__(  # TODO: rely on attrs generated one
         self,
-        parent: "TileCollection",
+        parent: "Collection",
         initlist: Optional[list[Tile]] = None,
     ) -> None:
         # Init Exportable
         super().__init__()
 
-        self._root = []
+        self.data = []
 
         self.spatial_map: SpatialDataStructure = SpatialHashMap()
 
@@ -153,7 +159,7 @@ class TileList(Exportable, MutableSequence):
             return  # Don't add this tile to the list
 
         # Manage TileList
-        self._root.insert(idx, tile)
+        self.data.insert(idx, tile)
 
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
@@ -179,13 +185,13 @@ class TileList(Exportable, MutableSequence):
         """
         new_tile_list = TileList(None)
 
-        for tile in self._root:
+        for tile in self.data:
             new_tile_list.append(tile)
             new_tile_list[-1]._parent = None
 
-        for other_tile in other._root:
+        for other_tile in other.data:
             already_in = False
-            for tile in self._root:
+            for tile in self.data:
                 if tile == other_tile:
                     already_in = True
                     break
@@ -201,9 +207,9 @@ class TileList(Exportable, MutableSequence):
         """
         new_tile_list = TileList(None)
 
-        for tile in self._root:
+        for tile in self.data:
             in_both = False
-            for other_tile in other._root:
+            for other_tile in other.data:
                 if other_tile == tile:
                     in_both = True
                     break
@@ -219,9 +225,9 @@ class TileList(Exportable, MutableSequence):
         """
         new_tile_list = TileList(None)
 
-        for tile in self._root:
+        for tile in self.data:
             different = True
-            for other_tile in other._root:
+            for other_tile in other.data:
                 if other_tile == tile:
                     different = False
                     break
@@ -231,7 +237,7 @@ class TileList(Exportable, MutableSequence):
         return new_tile_list
 
     def __getitem__(self, idx: Union[int, slice]) -> Union[Tile, list[Tile]]:
-        return self._root[idx]
+        return self.data[idx]
 
     def __setitem__(self, idx: int, value: Tile) -> None:
         # TODO: handle slices
@@ -241,7 +247,7 @@ class TileList(Exportable, MutableSequence):
             if not isinstance(value, Tile):
                 raise TypeError("Entry in TileList must be a Tile")
 
-        self.spatial_map.remove(self._root[idx])
+        self.spatial_map.remove(self.data[idx])
 
         if get_mode():
             # value.validate(mode=self.validate_assignment).reissue_all()
@@ -250,7 +256,7 @@ class TileList(Exportable, MutableSequence):
         self.spatial_map.add(value, merge=False)
 
         # Manage the TileList
-        self._root[idx] = value
+        self.data[idx] = value
 
         # Add a reference to the container in the object
         value._parent = self._parent
@@ -261,15 +267,15 @@ class TileList(Exportable, MutableSequence):
             start, stop, step = idx.indices(len(self))
             for i in range(start, stop, step):
                 # Remove from parent
-                self.spatial_map.remove(self._root[i])
+                self.spatial_map.remove(self.data[i])
         else:
-            self.spatial_map.remove(self._root[idx])
+            self.spatial_map.remove(self.data[idx])
 
         # Remove from self
-        del self._root[idx]
+        del self.data[idx]
 
     def __len__(self) -> int:
-        return len(self._root)
+        return len(self.data)
 
     __iter__: Callable[..., Iterator[Tile]]
 
@@ -297,10 +303,22 @@ class TileList(Exportable, MutableSequence):
     def __eq__(self, other: "TileList") -> bool:
         if not isinstance(other, TileList):
             return NotImplemented
-        return self._root == other._root
+        return self.data == other.data
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<TileList>{}".format(self._root)
+        return "<TileList>{}".format(self.data)
+
+    def __deepcopy__(self, memo: dict) -> "TileList":
+        # TODO: I think we want to delete this function
+        parent = memo.get("new_parent", self._parent)
+        new = TileList(parent)
+
+        for tile in self.data:
+            new.append(memo.get(id(tile), deepcopy(tile, memo)))
+
+        # TODO: could maybe copy `spatial_map` verbatim
+
+        return new
 
 
 draftsman_converters.register_structure_hook(
@@ -308,5 +326,6 @@ draftsman_converters.register_structure_hook(
     # This does work even though parent is None; this is on_setattr correctly
     # handles the cases where we pass a new entity list
     # It is inefficient since we construct 2 TileList objects, but...
+    # TODO replace
     lambda d, _: TileList(None, d),
 )

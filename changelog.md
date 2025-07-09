@@ -38,7 +38,22 @@
 * Removed `RequestItemsMixin` and implemented it directly in `Entity` (since all entities can request construction items)
 * Removed `__factorio_version__` and `__factorio_version_info__`
     * Users should instead use `draftsman.data.mods.versions["base"]` if you want to query the current Factorio version; this allows you to change the Factorio version midway through scripts (if desired)
+* Added `tiles` to `Groups` (#118)
+    * `Blueprint.entities` is now 1-dimensional
+    * A new attribute `Blueprint.groups` now holds children associated with that blueprint
+        ```py
+        blueprint = Blueprint()
 
+        group = Group()
+        group.entities.append("blah", position=...)
+
+        blueprint.groups.append(group)
+        ```
+    * `blueprint.entities[("a", "b", "c")]` is now `blueprint.groups["a"].groups["b"].entities["c"]`, which is more explicit and allows for accessing the newly added `tiles` attribute
+    * However, ID-sequences are still permitted in function calls, a la:
+        ```py
+        blueprint.add_circuit_connection("red", ("a", "b", "c"), ("x", "y", "z"))
+        ```
 
 ## 2.0.3
 * Updated `factorio-data` to version `2.0.48` (latest)

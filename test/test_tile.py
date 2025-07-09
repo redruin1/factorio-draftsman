@@ -1,5 +1,6 @@
 # tile.py
 
+from draftsman.classes.group import Group
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
@@ -73,20 +74,6 @@ class TestTile:
         with pytest.warns(UnknownTileWarning):
             tile.name = "weeeeee"
 
-        # TODO: test closure
-        # with self.assertRaises(InvalidTileError):
-        #     tile.name = "incorrect"
-        #     with tile.validate() as issues:
-        #         for error in issues:
-        #             raise error
-
-        # TODO: test closure
-        # with self.assertRaises(InvalidTileError):
-        #     tile.name = "incorrect"
-        #     with tile.validate() as issues:
-        #         for error in issues:
-        #             raise error
-
     def test_set_position(self):
         tile = Tile("landfill", (0, 0))
         tile.position = (-123, 123)
@@ -95,6 +82,15 @@ class TestTile:
 
         with pytest.raises(DataFormatError):
             tile.position = "incorrect"
+
+    def test_global_position(self):
+        tile = Tile("landfill")
+        group = Group(position=(100, 100))
+        group.tiles.append(tile, copy=False)
+        assert tile.position.x == 0
+        assert tile.position.y == 0
+        assert tile.global_position.x == 100
+        assert tile.global_position.y == 100
 
     def test_to_dict(self):
         tile = Tile("landfill", position=(123, 123))

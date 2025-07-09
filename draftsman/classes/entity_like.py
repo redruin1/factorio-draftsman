@@ -10,7 +10,7 @@ import attrs
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.collection import EntityCollection
+    from draftsman.classes.collection import Collection
     from draftsman.classes.entity import Entity
 
 
@@ -42,7 +42,6 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     # Properties
     # =========================================================================
 
-    # FIXME: I would like to annotate this, but cattrs cannot find the location of `EntityCollection`
     _parent = attrs.field(
         default=None,
         init=False,
@@ -52,7 +51,7 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     )
 
     @property
-    def parent(self) -> "EntityCollection":
+    def parent(self) -> Optional["Collection"]:
         """
         The parent :py:class:`.EntityCollection` object that contains the entity,
         or ``None`` if the entity does not currently exist within an

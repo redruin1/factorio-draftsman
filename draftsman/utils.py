@@ -22,8 +22,11 @@ import warnings
 import zlib
 
 if TYPE_CHECKING:  # pragma: no coverage
+    from draftsman.classes.collection import Collection
     from draftsman.classes.entity_like import EntityLike
     from draftsman.entity import Entity
+    from draftsman.tile import Tile
+    from draftsman.signatures import StockConnection
 
 # =============================================================================
 # Abstract Shape Classes
@@ -825,22 +828,64 @@ def get_first(entity_names: list[str]):
         return None
 
 
-def flatten_entities(entities: "list[EntityLike | list[EntityLike]]") -> "list[Entity]":
+def flatten_entities(collection: "Collection") -> list["Entity"]:
     """
-    Iterates over a list of entities with nested structures and returns a 1D,
-    "flattened" list of those entities.
+    Iterates over a :py:class:`.Collection` with nested structures and returns a
+    1D, "flattened" list of those entities.
 
-    :param entities: The list of entities to flatten.
+    :param collection: The :py:class:`.Collection` instance to grab the entities
+        from.
 
-    :returns: A ``list`` containing all the entities in depth-first sequence.
+    :returns: A ``list`` containing all the entities in breadth-first sequence.
     """
     out = []
-    for entity in entities:
+
+    for entity in collection.entities:
         result = entity.get()
         if isinstance(result, list):
-            out.extend(flatten_entities(result))
+            out.extend(result)
         else:
             out.append(result)
+    for group in collection.groups:
+        out.extend(flatten_entities(group))
+
+    return out
+
+
+def flatten_tiles(collection: "Collection") -> list["Tile"]:
+    """
+    Iterates over a :py:class:`.Collection` with nested structures and returns a
+    1D, "flattened" list of those tiles.
+
+    :param collection: The :py:class:`.Collection` instance to grab the tiles
+        from.
+
+    :returns: A ``list`` containing all the tiles in breadth-first sequence.
+    """
+
+    out = [tile for tile in collection.tiles]
+
+    for group in collection.groups:
+        out.extend(flatten_tiles(group))
+
+    return out
+
+
+def flatten_stock_connections(collection: "Collection") -> list["StockConnection"]:
+    """
+    Iterates over a :py:class:`.Collection` with nested structures and returns a
+    1D, "flattened" list of those stock connections.
+
+    :param collection: The :py:class:`.Collection` instance to grab the entities
+        from.
+
+    :returns: A ``list`` containing all the entities in breadth-first sequence.
+    """
+    out = [connection for connection in collection.stock_connections]
+
+    for group in collection.groups:
+        out.extend(flatten_stock_connections(group))
+
     return out
 
 

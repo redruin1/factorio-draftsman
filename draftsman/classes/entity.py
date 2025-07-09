@@ -899,7 +899,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         # None: fields.quality.name,
         "items": (
             _export_fields.item_requests,
-            lambda d, _: [
+            lambda input_dict, _, inst: [
                 {
                     "id": {"name": k, "quality": "normal"},
                     "items": {
@@ -919,7 +919,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
                         ]
                     },
                 }
-                for k, v in d.items()
+                for k, v in input_dict.items()
             ],
         ),
         "tags": fields.tags.name,

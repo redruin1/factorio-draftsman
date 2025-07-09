@@ -83,10 +83,12 @@ import draftsman
 # from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.transformable import Transformable
-from draftsman.classes.collection import EntityCollection, TileCollection
+from draftsman.classes.collection import Collection
 from draftsman.classes.schedule_list import ScheduleList
+from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.error import (
@@ -96,279 +98,38 @@ from draftsman.error import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import StockConnection
-from draftsman.entity import Entity
+from draftsman.entity import Entity, get_entity_class
 from draftsman.classes.schedule import Schedule
 from draftsman.utils import (
     AABB,
     aabb_to_dimensions,
     extend_aabb,
     flatten_entities,
+    flatten_tiles,
+    flatten_stock_connections,
 )
 from draftsman.validators import classvalidator, conditional, instance_of, try_convert
 
 import attrs
 from builtins import int
-import copy
 from typing import Literal, Optional
 
 
-def _convert_wires_to_associations(wires: list[list[int]], entities):
-    for wire in wires:
-        entity1 = entities[wire[0] - 1]
-        wire[0] = Association(entity1)
-        entity2 = entities[wire[2] - 1]
-        wire[2] = Association(entity2)
-
-
-def _convert_schedules_to_associations(schedules: ScheduleList, entities):
-    for schedule in schedules:
-        for i, locomotive in enumerate(schedule.locomotives):
-            entity: Entity = entities[locomotive - 1]
-            schedule.locomotives[i] = Association(entity)
-
-
-def _convert_stock_connections_to_associations(
-    stock_connections: list[StockConnection], entities
-):
-    for connection in stock_connections:
-        connection.stock = Association(entities[connection.stock - 1])
-        if isinstance(connection.front, int):
-            connection.front = Association(entities[connection.front - 1])
-        if isinstance(connection.back, int):
-            connection.back = Association(entities[connection.back - 1])
-
-
-def _normalize_internal_structure(
-    input_root,
-    entities_in,
-    tiles_in,
-    schedules_in,
-    wires_in,
-    stock_connections_in,
-    *,
-    version,
-    exclude_defaults,
-    exclude_none,
-):
-    # TODO make this a member of blueprint?
-    def _throw_invalid_association(entity):
-        raise InvalidAssociationError(  # pragma: no coverage
-            "'{}' at {} is connected to an entity that no longer exists".format(
-                entity["name"], entity["position"]
-            )
+def _throw_invalid_association(entity):
+    raise InvalidAssociationError(  # pragma: no coverage
+        "'{}' at {} is connected to an entity that no longer exists".format(
+            entity["name"], entity["position"]
         )
-
-    # Entities
-    flattened_entities = flatten_entities(entities_in)
-    entities_out = []
-    for i, entity in enumerate(flattened_entities):
-        # Get a copy of the dict representation of the Entity
-        # (At this point, Associations are not copied and still point to original)
-        result = entity.to_dict(
-            version=version,
-            exclude_none=exclude_none,
-            exclude_defaults=exclude_defaults,
-            entity_number=i + 1,
-        )
-        if not isinstance(result, dict):
-            raise DraftsmanError(
-                "{}.to_dict() must return a dict".format(type(entity).__name__)
-            )
-        # Add this to the output's entities and set it's entity_number
-        entities_out.append(result)
-        # entities_out[i]["entity_number"] = i + 1
-
-    # for entity in entities_out:
-    #     if "connections" in entity:  # Wire connections
-    #         connections = entity["connections"]
-    #         for side in connections:
-    #             if side in {"1", "2"}:
-    #                 for color in connections[side]:
-    #                     connection_points = connections[side][color]
-    #                     for point in connection_points:
-    #                         old = point["entity_id"]
-    #                         # if isinstance(old, int):
-    #                         #     continue
-    #                         if old() is None:  # pragma: no coverage
-    #                             _throw_invalid_association(entity)
-    #                         else:  # Association
-    #                             point["entity_id"] = flattened_entities.index(old()) + 1
-
-    #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-    #                 connection_points = connections[side]
-    #                 for point in connection_points:
-    #                     old = point["entity_id"]
-    #                     # if isinstance(old, int):
-    #                     #     continue
-    #                     if old() is None:  # pragma: no coverage
-    #                         _throw_invalid_association(entity)
-    #                     else:  # Association
-    #                         point["entity_id"] = flattened_entities.index(old()) + 1
-
-    #     if "neighbours" in entity:  # Power pole connections
-    #         neighbours = entity["neighbours"]
-    #         for i, neighbour in enumerate(neighbours):
-    #             if neighbour() is None:  # pragma: no coverage
-    #                 _throw_invalid_association(entity)
-    #             else:  # Association
-    #                 neighbours[i] = flattened_entities.index(neighbour()) + 1
-
-    input_root["entities"] = entities_out
-
-    # Tiles (TODO: should also be flattened)
-
-    tiles_out = []
-    for tile in tiles_in:
-        tiles_out.append(tile.to_dict())
-
-    input_root["tiles"] = tiles_out
-
-    # Schedules (TODO: should also be flattened)
-
-    # We also need to process any schedules that any subgroup might have, so
-    # we recursively traverse the nested entitylike tree and append each
-    # schedule to the output list
-    # TODO: re-add the following
-    # def recurse_schedules(entitylike_list):
-    #     for entitylike in entitylike_list:
-    #         if hasattr(entitylike, "schedules"):  # if a group
-    #             # Add the schedules of this group
-    #             out_dict["schedules"] += copy.deepcopy(entitylike.schedules)
-    #             # Check through this groups entities to see if they have
-    #             # schedules:
-    #             recurse_schedules(entitylike.entities)
-
-    schedules_out = []
-    for schedule in schedules_in:
-        schedules_out.append(schedule.to_dict())
-
-    # Change all locomotive associations to use number
-    for schedule in schedules_out:
-        # Technically a schedule can have no locomotives:
-        if "locomotives" in schedule:  # pragma: no branch
-            for i, locomotive in enumerate(schedule["locomotives"]):
-                if locomotive() is None:  # pragma: no coverage
-                    _throw_invalid_association(locomotive)
-                else:  # Association
-                    schedule["locomotives"][i] = (
-                        flattened_entities.index(locomotive()) + 1
-                    )
-
-    input_root["schedules"] = schedules_out
-
-    # Wires
-    def flatten_wires(entities_in):
-        wires_out = []
-        for entity in entities_in:
-            if isinstance(entity, EntityCollection):
-                wires_out.extend(entity.wires)
-                wires_out.extend(flatten_wires(entity.entities))
-            else:
-                pass
-        return wires_out
-
-    flattened_wires = []
-    flattened_wires.extend(wires_in)
-    flattened_wires.extend(flatten_wires(entities_in))
-
-    def get_index(assoc):
-        if not isinstance(assoc, int):  # pragma: no branch
-            # We would normally use index, but index uses `==` for comparisons,
-            # wheras we want to use `is` for strict checking:
-            try:
-                return (
-                    next(
-                        i
-                        for i, entity in enumerate(flattened_entities)
-                        if entity is assoc()
-                    )
-                    + 1
-                )
-            except StopIteration:
-                msg = "Association points to entity {} which does not exist in this blueprint".format(
-                    assoc()
-                )
-                raise InvalidAssociationError(msg)
-        return assoc  # pragma: no coverage
-
-    wires_out = []
-    for wire in flattened_wires:
-        new_wire = [
-            get_index(wire[0]),
-            wire[1],
-            get_index(wire[2]),
-            wire[3],
-        ]
-
-        # Check to see if this wire already exists in the output, and neglect
-        # adding it if so
-        # TODO: this should happen earlier... somewhere...
-        if new_wire not in wires_out:
-            wires_out.append(new_wire)
-
-    input_root["wires"] = wires_out
-
-    # TODO: needs to be recursive, since theoretically groups could have stock
-    # connections
-    if "stock_connections" in input_root:  # pragma: no coverage
-        for stock_connection in input_root["stock_connections"]:
-            stock_connection["stock"] = get_index(stock_connection["stock"])
-            if "front" in stock_connection:
-                stock_connection["front"] = get_index(stock_connection["front"])
-            if "back" in stock_connection:
-                stock_connection["back"] = get_index(stock_connection["back"])
+    )
 
 
 @draftsman.define
-class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
+class Blueprint(Transformable, Collection, Blueprintable):
     """
     Factorio Blueprint class. Contains and maintains a list of ``EntityLikes``
     and ``Tiles`` and a selection of other metadata. Inherits all the functions
     and attributes you would expect, as well as some extra functionality.
     """
-
-    def __attrs_post_init__(self):
-        # 1.0 code
-        # Convert circuit and power connections to Associations
-        # for entity in self.entities:
-        #     if hasattr(entity, "connections"):  # Wire connections
-        #         connections: Connections = entity.connections
-        #         for side in connections.true_model_fields():
-        #             if connections[side] is None:
-        #                 continue
-
-        #             if side in {"1", "2"}:
-        #                 for color, _ in connections[side]:  # TODO fix
-        #                     connection_points = connections[side][color]
-        #                     if connection_points is None:
-        #                         continue
-        #                     for point in connection_points:
-        #                         old = point["entity_id"] - 1
-        #                         point["entity_id"] = Association(self.entities[old])
-
-        #             elif side in {"Cu0", "Cu1"}:  # pragma: no branch
-        #                 connection_points = connections[side]
-        #                 if connection_points is None:
-        #                     continue  # pragma: no coverage
-        #                 for point in connection_points:
-        #                     old = point["entity_id"] - 1
-        #                     point["entity_id"] = Association(self.entities[old])
-
-        #     if hasattr(entity, "neighbours"):  # Power pole connections
-        #         neighbours = entity.neighbours
-        #         for i, neighbour in enumerate(neighbours):
-        #             neighbours[i] = Association(self.entities[neighbour - 1])
-
-        _convert_wires_to_associations(self.wires, self.entities)
-        _convert_schedules_to_associations(self.schedules, self.entities)
-        _convert_stock_connections_to_associations(
-            self.stock_connections, self.entities
-        )
-
-        # if self.validation:
-        #     self.validate(mode=self.validation).reissue_all()
-
-    # =========================================================================
 
     @property
     def root_item(self) -> Literal["blueprint"]:
@@ -385,10 +146,6 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         },
     )
     # TODO: description
-
-    # =========================================================================
-
-    # children: list[EntityCollection]
 
     # =========================================================================
 
@@ -504,6 +261,9 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         for tile in self.tiles:
             area = extend_aabb(area, tile.get_world_bounding_box())
 
+        for group in self.groups:
+            area = extend_aabb(area, group.get_world_bounding_box())
+
         return area
 
     def get_dimensions(self) -> tuple[int, int]:
@@ -546,17 +306,113 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
         # We then convert all the entities, tiles, and schedules to
         # 1-dimensional lists, flattening any Groups that this blueprint
         # contains, and swapping their Associations into integer indexes
-        _normalize_internal_structure(
-            result[self.root_item],
-            self.entities,
-            self.tiles,
-            self.schedules,
-            self.wires,
-            self.stock_connections,
-            version=version,
-            exclude_none=exclude_none,
-            exclude_defaults=exclude_defaults,
-        )
+
+        def flatten_collection(inst: Blueprint):
+            schedules = [schedule for schedule in inst.schedules]
+            wires = [wire for wire in inst.wires]
+            for group in inst.groups:
+                s, w = flatten_collection(group)
+                schedules += s
+                wires += w
+            return schedules, wires
+
+        flattened_entities = flatten_entities(self)
+        flattened_tiles = flatten_tiles(self)
+        (flattened_schedules, flattened_wires) = flatten_collection(self)
+
+        entities_out = []
+        for i, entity in enumerate(flattened_entities):
+            # Get a copy of the dict representation of the Entity
+            # (At this point, Associations are not copied and still point to original)
+            serialized_entity = entity.to_dict(
+                version=version,
+                exclude_none=exclude_none,
+                exclude_defaults=exclude_defaults,
+                entity_number=i + 1,
+            )
+            if not isinstance(serialized_entity, dict):
+                raise DraftsmanError(
+                    "{}.to_dict() must return a dict".format(type(entity).__name__)
+                )
+            # Add this to the output's entities and set it's entity_number
+            entities_out.append(serialized_entity)
+
+        result[self.root_item]["entities"] = entities_out
+
+        tiles_out = []
+        for i, tile in enumerate(flattened_tiles):
+            serialized_tile = tile.to_dict(
+                version=version,
+                exclude_none=exclude_none,
+                exclude_defaults=exclude_defaults,
+            )
+            tiles_out.append(serialized_tile)
+
+        result[self.root_item]["tiles"] = tiles_out
+
+        schedules_out = []
+        for schedule in flattened_schedules:
+            schedules_out.append(schedule.to_dict())
+
+        # Change all locomotive associations to use number
+        for schedule in schedules_out:
+            # Technically a schedule can have no locomotives:
+            if "locomotives" in schedule:  # pragma: no branch
+                for i, locomotive in enumerate(schedule["locomotives"]):
+                    if locomotive() is None:  # pragma: no coverage
+                        _throw_invalid_association(locomotive)
+                    else:  # Association
+                        schedule["locomotives"][i] = (
+                            flattened_entities.index(locomotive()) + 1
+                        )
+
+        result[self.root_item]["schedules"] = schedules_out
+
+        def get_index(assoc):
+            if not isinstance(assoc, int):  # pragma: no branch
+                # We would normally use index, but index uses `==` for comparisons,
+                # wheras we want to use `is` for strict checking:
+                try:
+                    return (
+                        next(
+                            i
+                            for i, entity in enumerate(flattened_entities)
+                            if entity is assoc()
+                        )
+                        + 1
+                    )
+                except StopIteration:
+                    msg = "Association points to entity {} which does not exist in this blueprint".format(
+                        assoc()
+                    )
+                    raise InvalidAssociationError(msg)
+            return assoc  # pragma: no coverage
+
+        # Wires
+        wires_out = []
+        for wire in flattened_wires:
+            new_wire = [
+                get_index(wire[0]),
+                wire[1],
+                get_index(wire[2]),
+                wire[3],
+            ]
+
+            # Check to see if this wire already exists in the output, and neglect
+            # adding it if so
+            # TODO: this should happen earlier... somewhere...
+            if new_wire not in wires_out:
+                wires_out.append(new_wire)
+
+        result[self.root_item]["wires"] = wires_out
+
+        if "stock_connections" in result[self.root_item]:
+            for stock_connection in result[self.root_item]["stock_connections"]:
+                stock_connection["stock"] = get_index(stock_connection["stock"])
+                if "front" in stock_connection:
+                    stock_connection["front"] = get_index(stock_connection["front"])
+                if "back" in stock_connection:
+                    stock_connection["back"] = get_index(stock_connection["back"])
 
         # Make sure that snapping_grid_position is respected
         # if self.snapping_grid_position is not None:
@@ -604,65 +460,38 @@ class Blueprint(Transformable, TileCollection, EntityCollection, Blueprintable):
             )
             raise UnreasonablySizedBlueprintError(msg)
 
-    # =========================================================================
-
-    def __deepcopy__(self, memo: dict) -> "Blueprint":
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-
-        def swap_association(original_association):
-            """
-            Take an association which points to some entity in `self` and return
-            a new association which points to the equivalent entity in `result`.
-            """
-            original_entity = original_association()
-            copied_entity = memo[id(original_entity)]
-            return Association(copied_entity)
-
-        memo[
-            "new_parent"
-        ] = result  # TODO: this should really be fixed, because then we can use "deepcopy_func"
-        for attr in attrs.fields(cls):
-            if attr.name == "wires":  # special
-                new_wires = copy.deepcopy(getattr(self, attr.name), memo)
-                for wire in new_wires:
-                    wire[0] = swap_association(wire[0])
-                    wire[2] = swap_association(wire[2])
-
-                object.__setattr__(result, attr.name, new_wires)
-            elif attr.name == "schedules":
-                new_schedules = copy.deepcopy(getattr(self, attr.name), memo)
-                for schedule in new_schedules:  # pragma: no coverage
-                    schedule: Schedule
-                    schedule.locomotives = [
-                        swap_association(loco) for loco in schedule.locomotives
-                    ]
-
-                object.__setattr__(result, attr.name, new_schedules)
-            elif attr.name == "stock_connections":  # special
-                new_connections: list[StockConnection] = copy.deepcopy(
-                    getattr(self, attr.name), memo
-                )
-                for connection in new_connections:  # pragma: no coverage
-                    connection.stock = swap_association(connection.stock)
-                    if connection.front is not None:
-                        connection.front = swap_association(connection.front)
-                    if connection.back is not None:
-                        connection.back = swap_association(connection.back)
-
-                object.__setattr__(result, attr.name, new_connections)
-            else:
-                object.__setattr__(
-                    result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
-                )
-
-        return result
-
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     Blueprint,
-    lambda fields: {
+    lambda fields, converter: {
+        ("blueprint", "item"): fields.item.name,
+        ("blueprint", "label"): fields.label.name,
+        ("blueprint", "label_color"): fields.label_color.name,
+        ("blueprint", "description"): fields.description.name,
+        ("blueprint", "icons"): fields.icons.name,
+        ("blueprint", "version"): fields.version.name,
+        ("blueprint", "snap-to-grid"): fields.snapping_grid_size.name,
+        ("blueprint", "absolute-snapping"): fields.absolute_snapping.name,
+        (
+            "blueprint",
+            "position-relative-to-grid",
+        ): fields.position_relative_to_grid.name,
+        ("blueprint", "entities"): (  # Custom structure function
+            fields.entities,
+            lambda value, _, inst: EntityList(
+                inst,
+                [
+                    converter.structure(elem, get_entity_class(elem.get("name", None)))
+                    for elem in value
+                ],
+            ),
+        ),
+        ("blueprint", "tiles"): fields.tiles.name,
+        # None: fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        # None: fields.stock_connections.name,
+    },
+    lambda fields, converter: {
         ("blueprint", "item"): fields.item.name,
         ("blueprint", "label"): fields.label.name,
         ("blueprint", "label_color"): fields.label_color.name,
@@ -724,18 +553,18 @@ def structure_blueprint_1_0_factory(t: type):
             "Cu0": 5,
             "Cu1": 6,
         }
-        # TODO: modifying in-place might be a bad idea; investigate
+
         blueprint_dict = d["blueprint"]
-        # "Backport" the wires list to Factorio 1.0
+
         wires = blueprint_dict["wires"] = []
-        # Iterate over every entity with connections
         if "entities" in blueprint_dict:
             for entity in blueprint_dict["entities"]:
                 # Convert entities to their modern equivalents
                 # if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
                 #     entity["name"] = legacy_entity_conversions[entity["name"]]
 
-                # Move connections
+                # Iterate over the "connections" property in each entity and
+                # convert it to the better "wires" list in Factorio 2.0
                 if "connections" in entity:
                     connections = entity["connections"]
                     for side in {"1", "2"}:
@@ -785,6 +614,8 @@ def structure_blueprint_1_0_factory(t: type):
 
                     del entity["connections"]
 
+                # Do a similar conversion with neighbours, which also get lumped
+                # into "wires"
                 if "neighbours" in entity:
                     for neighbour in entity["neighbours"]:
                         # Make sure we don't add the reverse as a duplicate
@@ -808,12 +639,6 @@ def structure_blueprint_1_0_factory(t: type):
         if wires == []:
             del blueprint_dict["wires"]
 
-        # Schedules are split into "records" which holds stops and the new interrupts
-        # if "schedules" in blueprint_dict:
-        #     for schedule in blueprint_dict["schedules"]:
-        #         stop_data = schedule["schedule"]
-        #         schedule["schedule"] = {"records": stop_data}
-
         return default_blueprint_hook(d, _)
 
     return structure_blueprint_1_0
@@ -825,7 +650,35 @@ draftsman_converters.get_version((1, 0)).register_structure_hook(
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     Blueprint,
-    lambda fields: {
+    lambda fields, converter: {
+        ("blueprint", "item"): fields.item.name,
+        ("blueprint", "label"): fields.label.name,
+        ("blueprint", "label_color"): fields.label_color.name,
+        ("blueprint", "description"): fields.description.name,
+        ("blueprint", "icons"): fields.icons.name,
+        ("blueprint", "version"): fields.version.name,
+        ("blueprint", "snap-to-grid"): fields.snapping_grid_size.name,
+        ("blueprint", "absolute-snapping"): fields.absolute_snapping.name,
+        (
+            "blueprint",
+            "position-relative-to-grid",
+        ): fields.position_relative_to_grid.name,
+        ("blueprint", "entities"): (  # Custom structure function
+            fields.entities,
+            lambda value, _, inst: EntityList(
+                inst,
+                [
+                    converter.structure(elem, get_entity_class(elem.get("name", None)))
+                    for elem in value
+                ],
+            ),
+        ),
+        ("blueprint", "tiles"): fields.tiles.name,
+        ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        ("blueprint", "stock_connections"): fields.stock_connections.name,
+    },
+    lambda fields, converter: {
         ("blueprint", "item"): fields.item.name,
         ("blueprint", "label"): fields.label.name,
         ("blueprint", "label_color"): fields.label_color.name,
@@ -842,6 +695,11 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ("blueprint", "tiles"): fields.tiles.name,
         ("blueprint", "wires"): fields.wires.name,
         ("blueprint", "schedules"): fields.schedules.name,
-        ("blueprint", "stock_connections"): fields.stock_connections.name,
+        ("blueprint", "stock_connections"): (
+            fields.stock_connections,
+            lambda inst: [
+                converter.unstructure(elem) for elem in flatten_stock_connections(inst)
+            ],
+        ),
     },
 )

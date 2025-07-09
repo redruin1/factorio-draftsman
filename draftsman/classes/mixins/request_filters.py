@@ -122,9 +122,9 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         # None: fields.requests_enabled.name,
         "request_filters": (
             _export_fields.sections,
-            lambda d, _: [
+            lambda input_dict, _, inst: [
                 ManualSection(
-                    index=0, filters=converter.structure(d, list[SignalFilter])
+                    index=0, filters=converter.structure(input_dict, list[SignalFilter])
                 )
             ],
         ),

@@ -322,11 +322,11 @@ draftsman_converters.add_hook_fns(
 class AsteroidChunkID(Exportable):
     index: uint32 = attrs.field(validator=instance_of(uint32))
     """
-    TODO
+    Index of the asteroid chunk in the filter UI.
     """
     name: str = attrs.field(validator=instance_of(str))  # TODO: AsteroidChunkName
     """
-    TODO
+    Name of the asteroid chunk to filter.
     """
 
 
@@ -791,7 +791,7 @@ class ManualSection(Exportable):
         """
         if name is not None:
             new_entry = SignalFilter(
-                index=index + 1,  # TODO: perform this transformation on export
+                index=index,
                 name=name,
                 type=type if type is not None else NOTHING,
                 quality=quality,
@@ -893,9 +893,7 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class InventoryPosition(Exportable):
-    inventory: uint32 = attrs.field(
-        validator=instance_of(uint32)
-    )
+    inventory: uint32 = attrs.field(validator=instance_of(uint32))
     """
     Which inventory this item sits in.
     """
@@ -1004,13 +1002,15 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class EquipmentID(Exportable):
-    name: str = attrs.field()  # TODO: validators, EquipmentName
+    name: str = attrs.field( # TODO: EquipmentName
+        validator=instance_of(str)
+    )
     """
     The name of the equipment.
     """
     quality: QualityID = attrs.field(
         default="normal", validator=one_of(QualityID)
-    )  # TODO: validators
+    )
     """
     The quality of the quipment
     """
@@ -1062,16 +1062,27 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class StockConnection(Exportable):
-    # TODO: all of these should probably have converters which take EntityLikes and wrap them with Association
     stock: Association = attrs.field(
+        converter=lambda v: v if isinstance(v, (Association, int)) else Association(v),
         # TODO: validators
     )
-    front: Optional[Association] = attrs.field(default=None)
-    back: Optional[Association] = attrs.field(default=None)
+    front: Optional[Association] = attrs.field(
+        converter=lambda v: v
+        if v is None or isinstance(v, (Association, int))
+        else Association(v),
+        default=None,
+        # TODO: validators
+    )
+    back: Optional[Association] = attrs.field(
+        converter=lambda v: v
+        if v is None or isinstance(v, (Association, int))
+        else Association(v),
+        default=None,
+        # TODO: validators
+    )
 
 
-# TODO: test
-draftsman_converters.add_hook_fns(  # pragma: no branch
+draftsman_converters.add_hook_fns(
     StockConnection,
     lambda fields: {
         "stock": fields.stock.name,
