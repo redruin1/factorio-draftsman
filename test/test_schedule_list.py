@@ -69,4 +69,4 @@ class TestScheduleList:
 
     def test_repr(self):
         sl = ScheduleList()
-        assert repr(sl) == "<ScheduleList>[]"
+        assert repr(sl) == "ScheduleList([])"

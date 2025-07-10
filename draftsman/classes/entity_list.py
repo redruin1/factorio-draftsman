@@ -716,27 +716,6 @@ class EntityList(Exportable, MutableSequence):
         self.idx_to_key = {value: key for key, value in self.key_to_idx.items()}
 
 
-def _entity_list_structure_factory(cls, converter: cattrs.Converter):
-    def structure_hook(input_list: list, t: type):
-        # We return a regular list, which is coerced via attrs converter to an
-        # instance of `EntityList` (which handles the `_parent` reference)
-        # Alternatively, I could pass an extra argument to this function which
-        # would contain reference to the class instantiated with `__new__`,
-        # which might be slightly more efficient
-        # TODO
-        return [
-            converter.structure(elem, get_entity_class(elem.get("name", None)))
-            for elem in input_list
-        ]
-
-    return structure_hook
-
-
-draftsman_converters.register_structure_hook_factory(
-    lambda cls: issubclass(cls, EntityList), _entity_list_structure_factory
-)
-
-
 def _entity_list_unstructure_factory(cls, converter: cattrs.Converter):
     def unstructure_hook(inst):
         return [converter.unstructure(entity) for entity in inst.data]

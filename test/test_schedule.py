@@ -344,7 +344,7 @@ class TestWaitConditions:
 
     def test_repr(self):
         w = WaitConditions()
-        assert repr(w) == "<WaitConditions>[]"
+        assert repr(w) == "WaitConditions([])"
 
 
 class TestSchedule:
@@ -609,4 +609,4 @@ class TestSchedule:
 
     def test_repr(self):
         s = Schedule()
-        assert repr(s) == "<Schedule>{}"
+        assert repr(s) == "Schedule(**{})"

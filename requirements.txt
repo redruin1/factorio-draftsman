@@ -4,13 +4,9 @@ lupa >= 2.0
 gitpython >= 3.4.0
 # Compatibility
 typing; python_version < '3.8'
-importlib-resources; python_version < '3.7'
-enum34; python_version < '3.4'
-future; python_version < '3.0'
+typing-extensions
 # Development libraries
 pytest
 coverage
 tox
 black
-build
-guppy

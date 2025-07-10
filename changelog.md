@@ -1,8 +1,8 @@
 # Changelog
 
 ## 3.0.0
-* Updated `factorio-data` to version `2.0.58` (latest)
-* Updated `compatibility/defines.lua` to `2.0.49` (latest)
+* Updated `factorio-data` to version `2.0.55` (latest stable)
+* Updated `compatibility/defines.lua` to `2.0.49` (latest stable)
 * Switched from `pydantic` to `attrs`; 
     * A much better fit for Draftsman's scope, much more flexible, and much less boilerplate to maintain
     * Clearer distinction between loading steps:

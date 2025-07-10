@@ -116,6 +116,7 @@ The first (and usually simplest) way is to use the console script ``draftsman`` 
 
 This command runs the data lifecycle once and then overwrites the pickle files with newly extracted data. 
 This is convenient if you expect to write one or multiple scripts under the same environment, and only need to update or change your environment infrequently, such as when Factorio updates or when you add or remove a mod from a modlist.
+Both ``mod-info.json`` and ``mod-settings.dat`` are recognized by ``update``, so you can change the settings in either of those and the loading process will adjust as well.
 
 For example, if a new minor version of Factorio releases, then you can use the following commands to update your factorio-data submodule, and then update your current environment to match the new release:
 

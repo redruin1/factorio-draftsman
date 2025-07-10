@@ -7,11 +7,13 @@ from draftsman.classes.blueprint import (
 from draftsman.classes.collection import Collection
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import Exportable, ValidationMode, ValidationResult
 from draftsman.classes.schedule import Schedule
 from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.vector import Vector
+from draftsman.entity import get_entity_class
 from draftsman.error import (
     IncorrectBlueprintTypeError,
 )
@@ -328,16 +330,6 @@ class Group(
 
     # =========================================================================
 
-    # children: list["Group"] = attrs.field(
-    #     factory=[],
-    #     validator=instance_of(list)
-    # )
-    # """
-    # Children of this entity-like.
-    # """
-
-    # =========================================================================
-
     def get(self) -> list[EntityLike]:
         """
         Gets all the child-most ``Entity`` instances in this ``Group`` and
@@ -381,12 +373,6 @@ class Group(
         output += self.entities.validate(mode=mode)
         output += self.tiles.validate(mode=mode)
 
-        # if len(output.error_list) == 0:
-        #     # Set the `is_valid` attribute
-        #     # This means that if mode="pedantic", an entity that issues only
-        #     # warnings will still not be considered valid
-        #     super().validate()
-
         return output
 
     # def __str__(self) -> str:  # pragma: no coverage
@@ -396,7 +382,32 @@ class Group(
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     Group,
-    lambda fields: {
+    lambda fields, converter: {
+        ("blueprint", "item"): None,
+        ("blueprint", "label"): None,
+        ("blueprint", "label_color"): None,
+        ("blueprint", "description"): None,
+        ("blueprint", "icons"): None,
+        ("blueprint", "version"): None,
+        ("blueprint", "snap-to-grid"): None,
+        ("blueprint", "absolute-snapping"): None,
+        ("blueprint", "position-relative-to-grid"): None,
+        ("blueprint", "entities"): (  # Custom structure function
+            fields.entities,
+            lambda value, _, inst: EntityList(
+                inst,
+                [
+                    converter.structure(elem, get_entity_class(elem.get("name", None)))
+                    for elem in value
+                ],
+            ),
+        ),
+        ("blueprint", "tiles"): fields.tiles.name,
+        ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        ("blueprint", "stock_connections"): fields.stock_connections.name,
+    },
+    lambda fields, converter: {
         ("blueprint", "item"): None,
         ("blueprint", "label"): None,
         ("blueprint", "label_color"): None,
@@ -420,7 +431,32 @@ draftsman_converters.get_version((1, 0)).register_structure_hook(
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     Group,
-    lambda fields: {
+    lambda fields, converter: {
+        ("blueprint", "item"): None,
+        ("blueprint", "label"): None,
+        ("blueprint", "label_color"): None,
+        ("blueprint", "description"): None,
+        ("blueprint", "icons"): None,
+        ("blueprint", "version"): None,
+        ("blueprint", "snap-to-grid"): None,
+        ("blueprint", "absolute-snapping"): None,
+        ("blueprint", "position-relative-to-grid"): None,
+        ("blueprint", "entities"): (  # Custom structure function
+            fields.entities,
+            lambda value, _, inst: EntityList(
+                inst,
+                [
+                    converter.structure(elem, get_entity_class(elem.get("name", None)))
+                    for elem in value
+                ],
+            ),
+        ),
+        ("blueprint", "tiles"): fields.tiles.name,
+        ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "schedules"): fields.schedules.name,
+        ("blueprint", "stock_connections"): fields.stock_connections.name,
+    },
+    lambda fields, converter: {
         ("blueprint", "item"): None,
         ("blueprint", "label"): None,
         ("blueprint", "label_color"): None,
