@@ -50,7 +50,7 @@ from typing_extensions import Annotated
 
 import attrs
 from attrs import NOTHING
-from typing import Any, Literal, Optional, Sequence, TypeVar, get_args
+from typing import Any, Callable, Literal, Optional, Sequence, TypeVar, get_args
 import warnings
 import weakref
 
@@ -1101,7 +1101,9 @@ class Inventory(Exportable):
         eq=False,
     )
 
-    _size_func = attrs.field(init=False, repr=False, eq=False)
+    _size_func: Callable = attrs.field(
+        default=lambda _: None, init=False, repr=True, eq=False
+    )
 
     def _set_parent(self, entity: Any, old_inventory: "Inventory", size_func=None):
         if old_inventory is not None:
@@ -1118,7 +1120,9 @@ class Inventory(Exportable):
         this entity's name is not recognized by Draftsman. Not exported; read
         only.
         """
-        return self._size_func(self._parent())
+        return self._size_func(
+            self._parent if self._parent is None else self._parent()
+        )
 
     # =========================================================================
 

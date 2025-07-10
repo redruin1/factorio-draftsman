@@ -8,11 +8,13 @@ from draftsman.signatures import (
     QualityID,
     RecipeID,
     BlueprintInsertPlan,
+    get_suggestion
 )
 from draftsman.validators import instance_of, is_none, one_of, or_, conditional
 from draftsman.warning import (
     ItemLimitationWarning,
     RecipeLimitationWarning,
+    UnknownRecipeWarning,
 )
 
 import attrs
@@ -53,7 +55,7 @@ class RecipeMixin(Exportable):
 
     recipe: Optional[RecipeID] = attrs.field(
         default=None,
-        validator=instance_of(Optional[RecipeID]),
+        validator=instance_of(Optional[str]),
         metadata={
             "never_null": True
             # If this value is ever None, always delete it from the output, even
@@ -92,7 +94,12 @@ class RecipeMixin(Exportable):
         if self.allowed_recipes is None:  # This entity is not currently known
             return
 
-        if value not in self.allowed_recipes:
+        if value not in recipes.raw:
+            msg = "Unknown entity '{}'{}".format(
+                value, get_suggestion(value, recipes.raw.keys(), n=1)
+            )
+            warnings.warn(UnknownRecipeWarning(msg))
+        elif value not in self.allowed_recipes:
             msg = "'{}' is not a valid recipe for '{}'; allowed recipes are: {}".format(
                 value, self.name, self.allowed_recipes
             )
