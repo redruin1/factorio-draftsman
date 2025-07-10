@@ -168,29 +168,46 @@ For more information on how to use this tool, you can run `draftsman -h` or see 
 
 ## Installation (For Developers)
 
-Clone the repository using your preferred method:
+Clone the repository using your preferred method (making sure submodules are populated) and navigate to the newly cloned repository:
 
 ```
-git clone https://github.com/wube/factorio-data.git
+git clone --recurse-submodules https://github.com/wube/factorio-data.git
+cd factorio-draftsman
 ```
 
-Install the package in editable mode:
+Create a virtual environment of your personal flavor - though it's recommended to use `uv` if you're going to be running the full `tox` test suite:
 
 ```
-pip install . -e
+pip install uv
+uv venv
 ```
 
-You 
+Install the package with the `dev` extra in editable mode:
+
+```
+uv pip install -e .[dev]
+```
+
+Now make sure the virtualenv is activated:
+
+```
+.venv/Scripts/activate
+```
+
+You should now be able to run the test suite with `pytest`:
+
 ```
 python -m pytest test -Werror -vv
 ```
 
-Note that testing currently is only *guaranteed* to work with a vanilla install.
+Or more succinctly using `coverage`:
 
-### Coverage with [coverage](https://coverage.readthedocs.io/en/latest/):
 ```
 coverage run
 ```
+
+which will additionally generate a code coverage report. 
+Note that testing currently is only *guaranteed* to work with a vanilla install.
 
 Code style/formatting is kept in check with `black` and `ruff`.
 

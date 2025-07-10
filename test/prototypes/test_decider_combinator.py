@@ -17,7 +17,6 @@ from draftsman.warning import (
 from draftsman.data import signals
 
 from collections.abc import Hashable
-from pydantic import ValidationError
 import pytest
 
 
