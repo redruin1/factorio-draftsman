@@ -27,7 +27,6 @@ from draftsman.warning import (
     UpgradeProhibitedWarning,
 )
 
-from pydantic import ValidationError
 import pytest
 import warnings
 
