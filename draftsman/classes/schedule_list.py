@@ -77,7 +77,7 @@ class ScheduleList(MutableSequence):
         return True
 
     def __repr__(self) -> str:
-        return "<ScheduleList>{}".format(repr(self.data))
+        return "ScheduleList({})".format(repr(self.data))
 
 
 def _schedule_list_structure_factory(cls, converter: cattrs.Converter):

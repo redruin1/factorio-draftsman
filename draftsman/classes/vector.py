@@ -201,7 +201,7 @@ class Vector:
         return "({}, {})".format(self._data[0], self._data[1])
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<Vector>({}, {})".format(self._data[0], self._data[1])
+        return "Vector({}, {})".format(self._data[0], self._data[1])
 
 
 draftsman_converters.register_structure_hook(Vector, lambda d, _: Vector.from_other(d))

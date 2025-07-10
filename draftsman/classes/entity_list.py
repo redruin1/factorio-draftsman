@@ -657,7 +657,7 @@ class EntityList(Exportable, MutableSequence):
         return new
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<EntityList>{}".format(self.data)
+        return "EntityList({})".format(self.data)
 
     # =========================================================================
     # Internal functions

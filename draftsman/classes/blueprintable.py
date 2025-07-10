@@ -431,7 +431,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         )
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<{}>{}".format(
+        return "{}(**{})".format(
             type(self).__name__, repr(self.to_dict()[self.root_item])
         )
 

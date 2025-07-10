@@ -113,7 +113,7 @@ class BlueprintableList(MutableSequence):
         return len(self.data)
 
     def __repr__(self) -> str:
-        return "<BlueprintableList>{}".format(repr(self.data))
+        return "BlueprintableList({})".format(repr(self.data))
 
     def check_blueprintable(self, blueprintable):
         if not isinstance(

@@ -137,27 +137,27 @@ class TestConstantCombinator:
         section = combinator.add_section()
         section.set_signal(0, "signal-A", 100)
         assert section.filters == [
-            SignalFilter(index=1, name="signal-A", count=100, quality="normal")
+            SignalFilter(index=0, name="signal-A", count=100, quality="normal")
         ]
 
         section.set_signal(1, "signal-B", 200)
         assert section.filters == [
-            SignalFilter(index=1, name="signal-A", count=100, quality="normal"),
-            SignalFilter(index=2, name="signal-B", count=200, quality="normal"),
+            SignalFilter(index=0, name="signal-A", count=100, quality="normal"),
+            SignalFilter(index=1, name="signal-B", count=200, quality="normal"),
         ]
 
         section.set_signal(0, "signal-C", 300)
         assert section.filters == [
-            SignalFilter(index=1, name="signal-C", count=300, quality="normal"),
-            SignalFilter(index=2, name="signal-B", count=200, quality="normal"),
+            SignalFilter(index=0, name="signal-C", count=300, quality="normal"),
+            SignalFilter(index=1, name="signal-B", count=200, quality="normal"),
         ]
 
         section.set_signal(1, None)
         assert section.filters == [
-            SignalFilter(index=1, name="signal-C", count=300, quality="normal")
+            SignalFilter(index=0, name="signal-C", count=300, quality="normal")
         ]
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             section.set_signal(TypeError, "something")
         with pytest.raises(DataFormatError):
             section.set_signal(1, TypeError)
@@ -190,7 +190,7 @@ class TestConstantCombinator:
         section.filters = [
             SignalFilter(
                 **{
-                    "index": 1,
+                    "index": 0,
                     "name": "signal-A",
                     "type": "virtual",
                     "comparator": "=",
@@ -203,7 +203,7 @@ class TestConstantCombinator:
         signal = section.get_signal(0)
         assert signal == SignalFilter(
             **{
-                "index": 1,
+                "index": 0,
                 "name": "signal-A",
                 "type": "virtual",
                 "comparator": "=",

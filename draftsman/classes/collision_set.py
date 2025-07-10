@@ -88,4 +88,4 @@ class CollisionSet:
         return isinstance(other, CollisionSet) and self.shapes == other.shapes
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<CollisionSet>{}".format(self.shapes)  # TODO: better
+        return "CollisionSet({})".format(self.shapes)  # TODO: better

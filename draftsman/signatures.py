@@ -802,7 +802,7 @@ class ManualSection(Exportable):
         # Check to see if filters already contains an entry with the same index
         existing_index = None
         for i, signal_filter in enumerate(self.filters):
-            if index + 1 == signal_filter.index:  # Index already exists in the list
+            if index == signal_filter.index:  # Index already exists in the list
                 if name is None:  # Delete the entry
                     del self.filters[i]
                 else:
@@ -824,7 +824,7 @@ class ManualSection(Exportable):
             ``None`` if nothing was found at that index.
         """
         return next(
-            (item for item in self.filters if item.index == index + 1),
+            (item for item in self.filters if item.index == index),
             None,
         )
 

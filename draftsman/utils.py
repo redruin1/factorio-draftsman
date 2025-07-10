@@ -242,7 +242,7 @@ class AABB(Shape):
         return AABB(*self.top_left, *self.bot_right, self.position + other)
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<AABB>({}, {}, {}, {}) at {}".format(
+        return "AABB({}, {}, {}, {}) at {}".format(
             self.top_left[0],
             self.top_left[1],
             self.bot_right[0],
@@ -370,7 +370,7 @@ class Rectangle(Shape):
         )
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<Rectangle>({}, {}, {}, {})".format(
+        return "Rectangle({}, {}, {}, {})".format(
             self.position, self.width, self.height, self.angle
         )
 

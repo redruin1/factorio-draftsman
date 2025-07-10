@@ -306,7 +306,7 @@ class TileList(Exportable, MutableSequence):
         return self.data == other.data
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<TileList>{}".format(self.data)
+        return "TileList({})".format(self.data)
 
     def __deepcopy__(self, memo: dict) -> "TileList":
         # TODO: I think we want to delete this function

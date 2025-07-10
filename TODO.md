@@ -30,9 +30,6 @@ General constraints on parameters and inputs; what you can deconstruct, what you
 See issue #117
 
 ---
-### Make `__repr__` methods consistent
-
----
 ### Make draftsman's prototypes match Factorio's prototypes exactly (for consistency's sake)
 As of writing there are a number of classes and class types that differ due to python functionality; it might make sense to unify the two so that class `AssemblingMachine` inherits the same classes in Factorio as it does in Draftsman.
 This could also fix a few things related to their inheritance...
@@ -75,13 +72,13 @@ Should also probably subdivide the examples folder into subfolders like `rail`, 
 And give each folder their own README.md that describes what each one does
 
 ---
-### Investigate a Cython/Rust rewrite in efforts to make the library as performant as possible
-Likely the last-most step, once all other feature requests and optimization passes are complete, to help squeeze as much out of the code-base as possible
-
----
 ### Extract constants from `defines.lua`
 This should be very possible, its just that generating `defines.lua` requires a copy of the game installed, and it changes frequently between versions which might lead to breakage on different environment configurations
 
 ---
 ### Automatic migration between blueprint versions
 Migration files are included in `factorio-data`, meaning that theoretically it might be possible to use their specification to convert old entity types into modern ones or vise-versa. 
+
+---
+### Investigate a Cython/C/C++/Rust rewrite in efforts to make the library as performant as possible
+Likely the last-most step, once all other feature requests and optimization passes are complete, to help squeeze as much out of the code-base as possible

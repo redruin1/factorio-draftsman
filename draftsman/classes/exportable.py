@@ -73,7 +73,7 @@ class ValidationResult:
         )
 
     def __repr__(self):  # pragma: no coverage
-        return "ValidationResult{{errors={}, warnings={}}}".format(
+        return "ValidationResult(errors={}, warnings={})".format(
             repr(self.error_list), repr(self.warning_list)
         )
 

@@ -268,7 +268,7 @@ class WaitConditions:
         return self._conditions[index]
 
     def __repr__(self) -> str:
-        return "<WaitConditions>{}".format(repr(self._conditions))
+        return "WaitConditions({})".format(repr(self._conditions))
 
 
 draftsman_converters.register_structure_hook(
@@ -561,7 +561,7 @@ class Schedule(Exportable):
         raise ValueError(msg)
 
     def __repr__(self) -> str:
-        return "<Schedule>{}".format(self.to_dict())
+        return "Schedule(**{})".format(self.to_dict())
 
 
 draftsman_converters.get_version((1, 0)).add_hook_fns(
