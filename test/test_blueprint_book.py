@@ -317,7 +317,9 @@ class TestBlueprintBook:
 
         with pytest.warns(UnknownSignalWarning):
             blueprint_book.icons = [
-                Icon(**{"signal": {"name": "some-signal", "type": "virtual"}, "index": 0})
+                Icon(
+                    **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 0}
+                )
             ]
             assert blueprint_book.icons == [
                 Icon(

@@ -3,23 +3,23 @@
 """
 Converts an image into a map-viewable blueprint. Uses partial Floyd-Steinberg
 dithering to reduce banding. Much improvement could be made here:
-    * Adding all possible colors, either statically or dynamically (dont think I 
+    * Adding all possible colors, either statically or dynamically (dont think I
         have all of them)
     * Add the dithering to all of the entities, not just the tiles
-    * Improve the error metric tracking so that multi-tile entities error is 
+    * Improve the error metric tracking so that multi-tile entities error is
         averaged across all tiles it covers, not just the top-left one
-    * Handle different orientations of each entity and account for that in the 
+    * Handle different orientations of each entity and account for that in the
         error metric
-    * Handle rails: they offer a unique color, but they have a double-grid 
+    * Handle rails: they offer a unique color, but they have a double-grid
         placement restriction
 
-Unfortunately, it doesn't seem like the `map_color`s for most entities are 
-available, (possibly hardcoded?) which means that dynamically updating the 
+Unfortunately, it doesn't seem like the `map_color`s for most entities are
+available, (possibly hardcoded?) which means that dynamically updating the
 palette with mods seems out of the question. :(
 
 Let me know if I've missed them somewhere though.
 
-Actually, I might have found it: 
+Actually, I might have found it:
 https://github.com/wube/factorio-data/blob/master/core/prototypes/utility-constants.lua
 
 Requirements:

@@ -4,7 +4,7 @@ from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.constants import ValidationMode
-from draftsman.entity import get_entity_class, new_entity
+from draftsman.entity import new_entity
 from draftsman.error import (
     DuplicateIDError,
 )
@@ -76,7 +76,7 @@ class EntityList(Exportable, MutableSequence):
         name: Union[str, "EntityLike"],
         copy: bool = True,
         merge: bool = False,
-        **kwargs
+        **kwargs,
     ) -> EntityLike:
         """
         Appends the ``EntityLike`` to the end of the sequence. Returns a
@@ -172,7 +172,7 @@ class EntityList(Exportable, MutableSequence):
         name: Union[str, "EntityLike"],
         copy: bool = True,
         merge: bool = False,
-        **kwargs
+        **kwargs,
     ) -> EntityLike:
         """
         Inserts an ``EntityLike`` into the sequence.

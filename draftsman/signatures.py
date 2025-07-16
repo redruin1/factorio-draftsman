@@ -1,13 +1,13 @@
 # signatures.py
 
 """
-Module of data formats, implemented as pydantic ``BaseModel`` instances. Used 
-to validate and normalize data. Each one raises a ``ValidationError`` if the 
-passed in data does not  match the data format specified, which is usually 
+Module of data formats, implemented as pydantic ``BaseModel`` instances. Used
+to validate and normalize data. Each one raises a ``ValidationError`` if the
+passed in data does not  match the data format specified, which is usually
 wrapped with a ``DataFormatError`` of some kind.
 
-Alongside errors, all functions are set up to use a ``context`` to store 
-warnings to be reissued later, since Pydantic does not support this out of the 
+Alongside errors, all functions are set up to use a ``context`` to store
+warnings to be reissued later, since Pydantic does not support this out of the
 box.
 """
 
@@ -1002,15 +1002,11 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class EquipmentID(Exportable):
-    name: str = attrs.field( # TODO: EquipmentName
-        validator=instance_of(str)
-    )
+    name: str = attrs.field(validator=instance_of(str))  # TODO: EquipmentName
     """
     The name of the equipment.
     """
-    quality: QualityID = attrs.field(
-        default="normal", validator=one_of(QualityID)
-    )
+    quality: QualityID = attrs.field(default="normal", validator=one_of(QualityID))
     """
     The quality of the quipment
     """
@@ -1067,16 +1063,16 @@ class StockConnection(Exportable):
         # TODO: validators
     )
     front: Optional[Association] = attrs.field(
-        converter=lambda v: v
-        if v is None or isinstance(v, (Association, int))
-        else Association(v),
+        converter=lambda v: (
+            v if v is None or isinstance(v, (Association, int)) else Association(v)
+        ),
         default=None,
         # TODO: validators
     )
     back: Optional[Association] = attrs.field(
-        converter=lambda v: v
-        if v is None or isinstance(v, (Association, int))
-        else Association(v),
+        converter=lambda v: (
+            v if v is None or isinstance(v, (Association, int)) else Association(v)
+        ),
         default=None,
         # TODO: validators
     )
@@ -1120,9 +1116,7 @@ class Inventory(Exportable):
         this entity's name is not recognized by Draftsman. Not exported; read
         only.
         """
-        return self._size_func(
-            self._parent if self._parent is None else self._parent()
-        )
+        return self._size_func(self._parent if self._parent is None else self._parent())
 
     # =========================================================================
 

@@ -2,9 +2,9 @@
 
 """
 Every entity recognized by draftsman has a `prototype` attribute, which contains
-a reference to the associated prototype data of that entity directly from 
-Factorio's `data.raw`. With this, you're able to extract basically any 
-information you want from the entity in question and access it via Draftsman 
+a reference to the associated prototype data of that entity directly from
+Factorio's `data.raw`. With this, you're able to extract basically any
+information you want from the entity in question and access it via Draftsman
 script.
 """
 

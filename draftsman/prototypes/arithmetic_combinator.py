@@ -338,17 +338,27 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.output_signal.name,
     },
     lambda fields, converter: {
-        ("control_behavior", "arithmetic_conditions", "first_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_constant",
+        ): (
             _export_fields.first_constant,
-            lambda inst: inst.first_operand
-            if isinstance(inst.first_operand, int)
-            else None,
+            lambda inst: (
+                inst.first_operand if isinstance(inst.first_operand, int) else None
+            ),
         ),
-        ("control_behavior", "arithmetic_conditions", "first_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal",
+        ): (
             _export_fields.first_signal,
-            lambda inst: converter.unstructure(inst.first_operand)
-            if not isinstance(inst.first_operand, int)
-            else None,
+            lambda inst: (
+                converter.unstructure(inst.first_operand)
+                if not isinstance(inst.first_operand, int)
+                else None
+            ),
         ),
         # None: fields.first_operand_wires.name,
         (
@@ -356,17 +366,27 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "arithmetic_conditions",
             "operation",
         ): fields.operation.name,
-        ("control_behavior", "arithmetic_conditions", "second_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_constant",
+        ): (
             _export_fields.second_constant,
-            lambda inst: inst.second_operand
-            if isinstance(inst.second_operand, int)
-            else None,
+            lambda inst: (
+                inst.second_operand if isinstance(inst.second_operand, int) else None
+            ),
         ),
-        ("control_behavior", "arithmetic_conditions", "second_signal_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal_signal",
+        ): (
             _export_fields.second_signal,
-            lambda inst: converter.unstructure(inst.second_operand)
-            if not isinstance(inst.second_operand, int)
-            else None,
+            lambda inst: (
+                converter.unstructure(inst.second_operand)
+                if not isinstance(inst.second_operand, int)
+                else None
+            ),
         ),
         # None: fields.second_operand_wires.name,
         (
@@ -423,17 +443,29 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ): fields.output_signal.name,
     },
     lambda fields, converter: {
-        ("control_behavior", "arithmetic_conditions", "first_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_constant",
+        ): (
             _export_fields.first_constant,
-            lambda inst: converter.unstructure(inst.first_operand)
-            if isinstance(inst.first_operand, int)
-            else None,
+            lambda inst: (
+                converter.unstructure(inst.first_operand)
+                if isinstance(inst.first_operand, int)
+                else None
+            ),
         ),
-        ("control_behavior", "arithmetic_conditions", "first_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal",
+        ): (
             _export_fields.first_signal,
-            lambda inst: converter.unstructure(inst.first_operand)
-            if not isinstance(inst.first_operand, int)
-            else None,
+            lambda inst: (
+                converter.unstructure(inst.first_operand)
+                if not isinstance(inst.first_operand, int)
+                else None
+            ),
         ),
         (
             "control_behavior",
@@ -445,17 +477,29 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
             "arithmetic_conditions",
             "operation",
         ): fields.operation.name,
-        ("control_behavior", "arithmetic_conditions", "second_constant",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_constant",
+        ): (
             _export_fields.second_constant,
-            lambda inst: converter.unstructure(inst.second_operand)
-            if isinstance(inst.second_operand, int)
-            else None,
+            lambda inst: (
+                converter.unstructure(inst.second_operand)
+                if isinstance(inst.second_operand, int)
+                else None
+            ),
         ),
-        ("control_behavior", "arithmetic_conditions", "second_signal",): (
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal",
+        ): (
             _export_fields.second_signal,
-            lambda inst: converter.unstructure(inst.second_operand)
-            if not isinstance(inst.second_operand, int)
-            else None,
+            lambda inst: (
+                converter.unstructure(inst.second_operand)
+                if not isinstance(inst.second_operand, int)
+                else None
+            ),
         ),
         (
             "control_behavior",

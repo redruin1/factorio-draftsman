@@ -145,14 +145,14 @@ def main():
             "<": {"name": "locomotive-mk3"},  # Forward loco
             ">": {  # Reverse loco
                 "name": "locomotive-mk3",
-                "orientation": 0.5  # 180 degrees offset from whatever is set
+                "orientation": 0.5,  # 180 degrees offset from whatever is set
                 # Could even make it perpendicular if you're bonkers
             },
             "C": {  # Note the capitalization
                 "name": "cargo-wagon-mk3",
             },
             "F": {"name": "fluid-wagon-mk3"},
-            "A": {"name": "artillery-wagon"}  # No boosted artillery wagon :(
+            "A": {"name": "artillery-wagon"},  # No boosted artillery wagon :(
             # There's also nothing stopping you from adding other symbols that
             # point to different wagons of any type. Any symbol should work
             # provided that they're:

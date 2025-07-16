@@ -8,7 +8,7 @@ from draftsman.signatures import (
     QualityID,
     RecipeID,
     BlueprintInsertPlan,
-    get_suggestion
+    get_suggestion,
 )
 from draftsman.validators import instance_of, is_none, one_of, or_, conditional
 from draftsman.warning import (

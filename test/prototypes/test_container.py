@@ -38,7 +38,9 @@ def valid_container():
                 id="iron-ore",
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(inventory=InventoryType.chest, stack=0, count=50)
+                        InventoryPosition(
+                            inventory=InventoryType.chest, stack=0, count=50
+                        )
                     ]
                 ),
             )
@@ -135,15 +137,23 @@ class TestContainer:
     def test_set_item_request(self):
         container = Container("wooden-chest")
 
-        container.set_item_request("iron-plate", 50, inventory=InventoryType.chest, slot=0)
-        container.set_item_request("iron-plate", 50, inventory=InventoryType.chest, slot=3)
+        container.set_item_request(
+            "iron-plate", 50, inventory=InventoryType.chest, slot=0
+        )
+        container.set_item_request(
+            "iron-plate", 50, inventory=InventoryType.chest, slot=3
+        )
         assert container.item_requests == [
             BlueprintInsertPlan(
                 id=ItemID(name="iron-plate"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(inventory=InventoryType.chest, stack=0, count=50),
-                        InventoryPosition(inventory=InventoryType.chest, stack=3, count=50),
+                        InventoryPosition(
+                            inventory=InventoryType.chest, stack=0, count=50
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.chest, stack=3, count=50
+                        ),
                     ]
                 ),
             )
@@ -151,14 +161,20 @@ class TestContainer:
         assert container.slots_occupied == 2
 
         # TODO: emit warning that two different items occupy the same slot
-        container.set_item_request("iron-ore", 50, inventory=InventoryType.chest, slot=0)
+        container.set_item_request(
+            "iron-ore", 50, inventory=InventoryType.chest, slot=0
+        )
         assert container.item_requests == [
             BlueprintInsertPlan(
                 id=ItemID(name="iron-plate"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(inventory=InventoryType.chest, stack=0, count=50),
-                        InventoryPosition(inventory=InventoryType.chest, stack=3, count=50),
+                        InventoryPosition(
+                            inventory=InventoryType.chest, stack=0, count=50
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.chest, stack=3, count=50
+                        ),
                     ]
                 ),
             ),
@@ -166,7 +182,9 @@ class TestContainer:
                 id=ItemID(name="iron-ore"),
                 items=ItemInventoryPositions(
                     in_inventory=[
-                        InventoryPosition(inventory=InventoryType.chest, stack=0, count=50)
+                        InventoryPosition(
+                            inventory=InventoryType.chest, stack=0, count=50
+                        )
                     ]
                 ),
             ),

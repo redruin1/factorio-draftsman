@@ -101,7 +101,7 @@ class TileList(Exportable, MutableSequence):
         name: Union[str, Tile],
         copy: bool = True,
         merge: bool = False,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Inserts an element into the TileList.

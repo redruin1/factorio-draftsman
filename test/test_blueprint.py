@@ -632,7 +632,7 @@ class TestBlueprint:
                 stock=blueprint.entities["wagon"],
                 front=blueprint.entities["loco"],
                 # Malformed, but just for testing code coverage
-                back=blueprint.entities["loco"], 
+                back=blueprint.entities["loco"],
             ),
         ]
 
@@ -643,26 +643,17 @@ class TestBlueprint:
                     "entity_number": 1,
                     "name": "locomotive",
                     "position": {"x": 0.0, "y": 4.0},
-                    "orientation": 0.75
+                    "orientation": 0.75,
                 },
                 {
                     "entity_number": 2,
                     "name": "cargo-wagon",
                     "position": {"x": 7, "y": 4},
-                    "orientation": 0.75
+                    "orientation": 0.75,
                 },
             ],
-            "stock_connections": [
-                {
-                    "stock": 1
-                },
-                {
-                    "stock": 2,
-                    "front": 1,
-                    "back": 1
-                }
-            ],
-            "version": encode_version(*mods.versions["base"])
+            "stock_connections": [{"stock": 1}, {"stock": 2, "front": 1, "back": 1}],
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -807,7 +798,7 @@ class TestBlueprint:
         with pytest.raises(TypeError):
             blueprint.groups.append(new_entity("decider-combinator"))
         assert blueprint.groups.data == []
-        
+
         group = Group()
         group.entities.append("decider-combinator")
         for y in range(2):
@@ -820,7 +811,7 @@ class TestBlueprint:
         assert group.parent is None
 
         # Test __setitem__
-        blueprint.groups["group_1"] = group # Aha. This doesn't copy. Thus:
+        blueprint.groups["group_1"] = group  # Aha. This doesn't copy. Thus:
         assert group.parent is blueprint
 
         assert len(blueprint.groups) == 2
@@ -834,7 +825,7 @@ class TestBlueprint:
         assert new_group.parent is blueprint
         # And old group should have its parent removed
         assert group.parent is None
-        
+
         assert len(blueprint.groups) == 2
         assert blueprint.groups[0].id == "new_group"
         assert blueprint.groups[1].id == "group_2"
@@ -1160,7 +1151,7 @@ class TestBlueprint:
             def merge(self, other):  # pragma: no coverage
                 return self
 
-            def validate(self, mode):
+            def validate(self, mode):  # pragma: no coverage
                 return ValidationResult([], [])
 
             def to_dict(
@@ -2115,7 +2106,7 @@ class TestBlueprint:
             "item": "blueprint",
             "entities": [
                 # Flat entities are traversed first (in order)
-                { 
+                {
                     "entity_number": 1,
                     "name": "transport-belt",
                     "position": {"x": 2.5, "y": 2.5},
@@ -2141,7 +2132,7 @@ class TestBlueprint:
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
-                { 
+                {
                     "entity_number": 1,
                     "name": "transport-belt",
                     "position": {"x": 2.5, "y": 2.5},
@@ -3034,6 +3025,7 @@ class TestBlueprint:
         blueprint.entities.append("wooden-chest")
         blueprint.entities.append("wooden-chest", tile_position=(4, 4))
         blueprint.entities.append("boiler", tile_position=(1, 1))  # looking North
+        blueprint.entities.append("steam-engine", tile_position=(5, 5), direction=Direction.EAST)
 
         blueprint.tiles.append("refined-concrete", position=(0, 4))
         blueprint.tiles.append("refined-concrete", position=(4, 0))
@@ -3044,6 +3036,8 @@ class TestBlueprint:
         assert blueprint.entities[1].tile_position == Vector(-5, 4)
         assert blueprint.entities[2].tile_position == Vector(-4, 1)
         assert blueprint.entities[2].direction == 0
+        assert blueprint.entities[3].tile_position == Vector(-8, 5)
+        assert blueprint.entities[3].direction == 
         assert blueprint.tiles[0].position == Vector(-1, 4)
         assert blueprint.tiles[1].position == Vector(-5, 0)
 

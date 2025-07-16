@@ -2,7 +2,7 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 # from draftsman import data
 from .. import data
@@ -11,11 +11,18 @@ from draftsman.data.planets import get_surface_properties
 from draftsman.utils import passes_surface_conditions
 
 
-with pkg_resources.open_binary(data, "recipes.pkl") as inp:
-    _data = pickle.load(inp)
-    raw: dict[str, dict] = _data[0]
-    categories: dict[str, list[str]] = _data[1]
-    for_machine: dict[str, list[str]] = _data[2]
+try:
+    source = files(data) / "recipes.pkl"
+    with source.open("rb") as inp:
+        _data = pickle.load(inp)
+        raw: dict[str, dict] = _data[0]
+        categories: dict[str, list[str]] = _data[1]
+        for_machine: dict[str, list[str]] = _data[2]
+
+except FileNotFoundError:
+    raw = {}
+    categories = {}
+    for_machine = {}
 
 
 def add_recipe(name: str, ingredients: list[str], result: str, **kwargs):

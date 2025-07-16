@@ -176,12 +176,8 @@ class TestUpgradePlanner:
         upgrade_planner = UpgradePlanner()
 
         # Explicit format
-        upgrade_planner.icons = [
-            Icon(index=0, signal="signal-A")
-        ]
-        assert upgrade_planner.icons == [
-            Icon(index=0, signal="signal-A")
-        ]
+        upgrade_planner.icons = [Icon(index=0, signal="signal-A")]
+        assert upgrade_planner.icons == [Icon(index=0, signal="signal-A")]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*mods.versions["base"]),
@@ -210,9 +206,7 @@ class TestUpgradePlanner:
         # Single known
         # upgrade_planner.set_icons("signal-A")
         upgrade_planner.icons = ["signal-A"]
-        assert upgrade_planner.icons == [
-            Icon(index=0, signal="signal-A")
-        ]
+        assert upgrade_planner.icons == [Icon(index=0, signal="signal-A")]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",
             "version": encode_version(*mods.versions["base"]),
@@ -228,7 +222,7 @@ class TestUpgradePlanner:
         assert upgrade_planner.icons == [
             Icon(index=0, signal="signal-A"),
             Icon(index=1, signal="signal-B"),
-            Icon(index=2, signal="signal-C")
+            Icon(index=2, signal="signal-C"),
         ]
         assert upgrade_planner.to_dict()["upgrade_planner"] == {
             "item": "upgrade-planner",

@@ -2,10 +2,7 @@
 
 [run]
 omit = 
-    test/**
     examples/**
-    draftsman/env.py 
-    draftsman/environment/*
 branch = True
 command_line = -m pytest test -Werror -vv
 

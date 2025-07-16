@@ -132,7 +132,7 @@ For more information on what exactly Draftsman is and does, as well as its inten
 For more examples on what exactly you can do with Draftsman, take a look at the [examples folder](https://github.com/redruin1/factorio-draftsman/tree/main/examples), which is organized into different categories for ease of navigation.
 
 ## Features
-* Compatible with all versions of Python >= 3.7
+* Compatible with Python >= 3.10
 * Compatible with the latest versions of Factorio (1.0.0+)
 * Compatible with Factorio mods(!)
 * Well documented
@@ -144,8 +144,6 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
     * Group entities together and manipulate them all as one unit
 * Verbose Errors and Warnings (["Factorio-safety" and "Factorio-correctness"](TODO))
 * Expansive and rigorous test suite
-
---------------------------------------------------------------------------------
 
 # Usage
 
@@ -171,14 +169,15 @@ For more information on how to use this tool, you can run `draftsman -h` or see 
 Clone the repository using your preferred method (making sure submodules are populated) and navigate to the newly cloned repository:
 
 ```
-git clone --recurse-submodules https://github.com/wube/factorio-data.git
+git clone --recurse-submodules https://github.com/redruin1/factorio-draftsman.git
 cd factorio-draftsman
 ```
 
-Create a virtual environment of your personal flavor - though it's recommended to use `uv` if you're going to be running the full `tox` test suite:
+Create a virtual environment of your personal flavor and enter inside of it. If you are looking to contribute to Draftsman however, it's recommended that you use `uv` if you're going to be running the full `tox` test suite:
 
-```
-pip install uv
+```perl
+pip install uv # or via pipx or standalone script, see uv docs
+uv python install 3.8 3.9 3.10 3.11 3.12 3.13
 uv venv
 ```
 
@@ -186,12 +185,6 @@ Install the package with the `dev` extra in editable mode:
 
 ```
 uv pip install -e .[dev]
-```
-
-Now make sure the virtualenv is activated:
-
-```
-.venv/Scripts/activate
 ```
 
 You should now be able to run the test suite with `pytest`:
@@ -206,10 +199,20 @@ Or more succinctly using `coverage`:
 coverage run
 ```
 
-which will additionally generate a code coverage report. 
-Note that testing currently is only *guaranteed* to work with a vanilla install.
+To run a mock CI against all Python versions, run tox:
 
-Code style/formatting is kept in check with `black` and `ruff`.
+```
+tox
+```
+
+And to run a CI pass with every possible permutation of Python version > 3.7 and Factorio version > 1.0, run:
+
+```
+tox -e giga-check
+```
+
+Note that testing currently is only *guaranteed* to work with a vanilla install.
+If you intend to make changes to be submitted as a PR, see [CONTRIBUTING.md](CONTRIBUTING.md) for additional information.
 
 --------------------------------------------------------------------------------
 

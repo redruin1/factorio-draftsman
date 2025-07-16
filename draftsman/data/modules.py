@@ -2,19 +2,24 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
-# from draftsman import __factorio_version_info__
 from draftsman import data
 from draftsman.data import recipes, mods
 
 from typing import Optional
 
 
-with pkg_resources.open_binary(data, "modules.pkl") as inp:
-    _data = pickle.load(inp)
-    raw: dict[str, dict] = _data[0]
-    categories: dict[str, list[str]] = _data[1]
+try:
+    source = files(data) / "modules.pkl"
+    with source.open("rb") as inp:
+        _data = pickle.load(inp)
+        raw: dict[str, dict] = _data[0]
+        categories: dict[str, list[str]] = _data[1]
+
+except FileNotFoundError:  # pragma: no coverage
+    raw = {}
+    categories = {}
 
 
 def add_module_category(name: str, order: str = ""):

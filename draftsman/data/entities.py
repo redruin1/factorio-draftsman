@@ -2,7 +2,7 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 from draftsman.classes.collision_set import CollisionSet
@@ -12,7 +12,8 @@ from typing import Optional
 
 
 try:
-    with pkg_resources.open_binary(data, "entities.pkl") as inp:
+    source = files(data) / "entities.pkl"
+    with source.open("rb") as inp:
         _data: dict = pickle.load(inp)
 
         # Aggregation of all the the entity dicts from data.raw collected in one
@@ -167,7 +168,7 @@ def add_entity(
     collision_mask: set[str] = None,
     hidden: bool = False,
     target: tuple[dict[str, dict], dict[str, list]] = (raw, of_type),
-    **kwargs
+    **kwargs,
 ):
     """
     Adds an entity to :py:mod:`draftsman.data.entities`.

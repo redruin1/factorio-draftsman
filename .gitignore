@@ -6,6 +6,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Tooling caches
+.*_cache
+
 # C extensions
 *.so
 
@@ -53,7 +56,6 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-.pytest_cache/
 
 # Performace outputs
 mprofile_*
@@ -121,7 +123,6 @@ Include/
 /site
 
 # mypy
-.mypy_cache/
 .dmypy.json
 dmypy.json
 
@@ -130,3 +131,6 @@ dmypy.json
 
 # VSCode bs
 .vscode
+
+# UV
+uv.lock

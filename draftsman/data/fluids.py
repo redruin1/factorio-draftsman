@@ -2,14 +2,19 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 from draftsman.error import InvalidFluidError
 
-with pkg_resources.open_binary(data, "fluids.pkl") as inp:
-    _data = pickle.load(inp)
-    raw: dict[str, dict] = _data[0]
+try:
+    source = files(data) / "fluids.pkl"
+    with source.open("rb") as inp:
+        _data = pickle.load(inp)
+        raw: dict[str, dict] = _data[0]
+
+except FileNotFoundError:  # pragma: no coverage
+    grids: dict[str, dict] = {}
 
 
 def add_fluid(name: str, order: str = None, **kwargs):

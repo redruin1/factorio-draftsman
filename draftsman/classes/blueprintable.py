@@ -259,9 +259,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     version: uint64 = attrs.field(
         factory=lambda: encode_version(*mods.versions["base"]),
         converter=try_convert(
-            lambda value: encode_version(*value)
-            if isinstance(value, Sequence)
-            else value
+            lambda value: (
+                encode_version(*value) if isinstance(value, Sequence) else value
+            )
         ),
         validator=instance_of(uint64),
         metadata={

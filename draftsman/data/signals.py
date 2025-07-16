@@ -7,28 +7,44 @@ from draftsman.error import InvalidSignalError, InvalidMapperError
 import pickle
 from typing import Literal
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 
-with pkg_resources.open_binary(data, "signals.pkl") as inp:
-    _data = pickle.load(inp)
+try:
+    source = files(data) / "signals.pkl"
+    with source.open("rb") as inp:
+        _data = pickle.load(inp)
 
-    raw: dict[str, dict] = _data["raw"]
+        raw: dict[str, dict] = _data["raw"]
 
-    # Look up table for a particular signal's type
-    type_of: dict[str, list[str]] = _data["type_of"]
+        # Look up table for a particular signal's type
+        type_of: dict[str, list[str]] = _data["type_of"]
 
-    # Lists of signal names organized by their type for easy iteration
-    virtual: list[str] = _data["virtual"]
-    item: list[str] = _data["item"]
-    fluid: list[str] = _data["fluid"]
-    recipe: list[str] = _data["recipe"]
-    entity: list[str] = _data["entity"]
-    space_location: list[str] = _data["space-location"]
-    asteroid_chunk: list[str] = _data["asteroid-chunk"]
-    quality: list[str] = _data["quality"]
-    # hidden: list[str] = _data["hidden"]
-    pure_virtual: list[str] = ["signal-everything", "signal-anything", "signal-each"]
+        # Lists of signal names organized by their type for easy iteration
+        virtual: list[str] = _data["virtual"]
+        item: list[str] = _data["item"]
+        fluid: list[str] = _data["fluid"]
+        recipe: list[str] = _data["recipe"]
+        entity: list[str] = _data["entity"]
+        space_location: list[str] = _data["space-location"]
+        asteroid_chunk: list[str] = _data["asteroid-chunk"]
+        quality: list[str] = _data["quality"]
+        # hidden: list[str] = _data["hidden"]
+
+except FileNotFoundError:
+    raw = {}
+    type_of = {}
+
+    virtual = []
+    item = []
+    fluid = []
+    recipe = []
+    entity = []
+    space_location = []
+    asteroid_chunk = []
+    quality = []
+
+pure_virtual: list[str] = ["signal-everything", "signal-anything", "signal-each"]
 
 
 def add_signal(name: str, type: str):

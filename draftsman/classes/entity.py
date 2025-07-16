@@ -121,7 +121,7 @@ class Entity(EntityLike, Exportable):
         *,
         entity_number: Optional[uint64] = None,
         extra_keys: Optional[dict[Any, Any]] = None,
-        **kwargs
+        **kwargs,
     ):
         self.__attrs_init__(
             name,

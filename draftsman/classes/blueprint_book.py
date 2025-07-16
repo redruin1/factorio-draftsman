@@ -21,7 +21,7 @@
                 ... # Up to 4 icons total
             ],
             "description": str, # A user given description for this blueprint book
-            "version": int, # The encoded version of Factorio this planner was created 
+            "version": int, # The encoded version of Factorio this planner was created
                             # with/designed for (64 bits)
             "active_index": int, # The currently selected blueprint in "blueprints"
             "blueprints": [ # A list of all Blueprintable objects this book contains
@@ -36,7 +36,7 @@
                     {
                         "item": "deconstruction-planner",
                         ... # Any associated DeconstructionPlanner key/values
-                    }, 
+                    },
                     "index": int # Index in the Blueprint Book
                 }, # or
                 {

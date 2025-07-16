@@ -355,7 +355,7 @@ class TestEntityList:
         entityA = ElectricPole("small-electric-pole")
         entityB = ElectricPole("small-electric-pole", tile_position=(1, 0))
         entityC = Container("wooden-chest", tile_position=(2, 0))
-        entityD = Container("steel-chest", tile_position=(3, 0)) # Not contained
+        entityD = Container("steel-chest", tile_position=(3, 0))  # Not contained
 
         group = Group()
         group.entities.append(entityA, copy=False)

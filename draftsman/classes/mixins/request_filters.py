@@ -135,9 +135,11 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         # None: fields.requests_enabled.name,
         "request_filters": (
             _export_fields.sections,
-            lambda inst: converter.unstructure(inst.sections[0].filters)
-            if len(inst.sections) > 0
-            else [],
+            lambda inst: (
+                converter.unstructure(inst.sections[0].filters)
+                if len(inst.sections) > 0
+                else []
+            ),
         ),
     },
 )

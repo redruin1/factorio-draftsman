@@ -228,9 +228,11 @@ def main():
                     print(
                         "\t{}: {}".format(
                             setting,
-                            "'" + value_dict["value"] + "'"
-                            if type(value_dict["value"]) is str
-                            else value_dict["value"],
+                            (
+                                "'" + value_dict["value"] + "'"
+                                if type(value_dict["value"]) is str
+                                else value_dict["value"]
+                            ),
                         )
                     )
         except FileNotFoundError:

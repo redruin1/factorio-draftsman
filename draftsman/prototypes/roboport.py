@@ -195,9 +195,9 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # version 1.0
     lambda fields: {
         ("control_behavior", "read_logistics"): (
             _export_fields.read_logistics,
-            lambda v, _: Roboport.ReadItemsMode.LOGISTICS
-            if v
-            else Roboport.ReadItemsMode.NONE,
+            lambda v, _: (
+                Roboport.ReadItemsMode.LOGISTICS if v else Roboport.ReadItemsMode.NONE
+            ),
         ),
         ("control_behavior", "read_robot_stats"): fields.read_robot_stats.name,
         (
@@ -220,9 +220,11 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(  # version 1.0
     lambda fields, converter: {
         ("control_behavior", "read_logistics"): (
             _export_fields.read_logistics,
-            lambda inst: True
-            if inst.read_items_mode is Roboport.ReadItemsMode.LOGISTICS
-            else False,
+            lambda inst: (
+                True
+                if inst.read_items_mode is Roboport.ReadItemsMode.LOGISTICS
+                else False
+            ),
         ),
         ("control_behavior", "read_robot_stats"): fields.read_robot_stats.name,
         (

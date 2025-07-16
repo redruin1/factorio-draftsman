@@ -2,7 +2,7 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 from draftsman.data import recipes
@@ -11,15 +11,20 @@ from math import floor
 from typing import Optional
 
 
-with pkg_resources.open_binary(data, "items.pkl") as inp:
-    _data = pickle.load(inp)
-    raw: dict[str, dict] = _data[0]
-    subgroups: dict[str, dict] = _data[1]
-    groups: dict[str, dict] = _data[2]
-    fuels: dict[str, set[str]] = _data[3]
-    all_fuel_items: set[str] = set(
-        item for category in fuels for item in fuels[category]
-    )
+try:
+    source = files(data) / "items.pkl"
+    with source.open("rb") as inp:
+        _data = pickle.load(inp)
+        raw: dict[str, dict] = _data[0]
+        subgroups: dict[str, dict] = _data[1]
+        groups: dict[str, dict] = _data[2]
+        fuels: dict[str, set[str]] = _data[3]
+        all_fuel_items: set[str] = set(
+            item for category in fuels for item in fuels[category]
+        )
+
+except FileNotFoundError:  # pragma: no coverage
+    pass
 
 
 def add_group(name: str, order: str = "", subgroups=[], **kwargs):

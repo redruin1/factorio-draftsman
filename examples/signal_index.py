@@ -1,16 +1,16 @@
 # signal_index.py
 
 """
-Creates a blueprint with a constant combinator that gives every single unique 
+Creates a blueprint with a constant combinator that gives every single unique
 signal in the game a sequential numeric value. This allows you to easily convert
-a numeric value directly into a unique signal type. This is particularly 
+a numeric value directly into a unique signal type. This is particularly
 useful when creating data-dense memory cells, as this allows you to write, read,
 and store many thousands of signals on a single wire.
 
-The combinator is populated with all user-selectable signals as well as many 
+The combinator is populated with all user-selectable signals as well as many
 hidden signals. Certain signals can have different types: `transport-belt` can
-have a  type of `item`, `entity`, or `recipe`, and each one of these is 
-considered a  different signal by the circuit network. Each one of those signal 
+have a  type of `item`, `entity`, or `recipe`, and each one of these is
+considered a  different signal by the circuit network. Each one of those signal
 types is also multiplexed by the number of quality levels available, which is 6
 if you include the special quality `quality-unknown` (which this script uses).
 

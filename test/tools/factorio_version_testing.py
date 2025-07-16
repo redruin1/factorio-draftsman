@@ -2,13 +2,13 @@
 
 """
 Script that iterates over all the tagged versions of Factorio data and runs the
-test suite to test exactly how far back Draftsman is compatable. Shows the 
+test suite to test exactly how far back Draftsman is compatable. Shows the
 errors that occured when the commands were run.
 
-This tells us that Draftsman works well with any version of Factorio greater 
-than 1.0.0; prior to this there are some structural changes that probably 
-require a separate version. Since the likelyhood the people will be using 
-versions of Factorio prior to 1.0.0 is quite slim, I feel comfortable kicking 
+This tells us that Draftsman works well with any version of Factorio greater
+than 1.0.0; prior to this there are some structural changes that probably
+require a separate version. Since the likelyhood the people will be using
+versions of Factorio prior to 1.0.0 is quite slim, I feel comfortable kicking
 this can down the road.
 """
 

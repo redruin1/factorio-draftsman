@@ -2,7 +2,7 @@
 
 """
 Draftsman warnings. Used to enforce "Factorio-correctness", or the belief that
-operations in Draftsman that are unorthodox or ignored on import to Factorio 
+operations in Draftsman that are unorthodox or ignored on import to Factorio
 should be mentioned to the user.
 """
 

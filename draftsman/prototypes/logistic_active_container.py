@@ -90,9 +90,11 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
     lambda fields, converter: {
         ("control_behavior", "circuit_mode_of_operation"): (
             _export_fields.circuit_mode_of_operation,
-            lambda inst: LogisticModeOfOperation.SEND_CONTENTS
-            if inst.read_contents
-            else LogisticModeOfOperation.NONE,
+            lambda inst: (
+                LogisticModeOfOperation.SEND_CONTENTS
+                if inst.read_contents
+                else LogisticModeOfOperation.NONE
+            ),
         )
     },
 )

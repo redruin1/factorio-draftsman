@@ -58,9 +58,11 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("control_behavior", "circuit_contents_read_mode"): (
             fields.read_mode,
             # Prevent outputting mode HOLD_ALL_BELTS on Factorio 1.0
-            lambda inst: BeltReadMode.PULSE
-            if inst.read_mode is BeltReadMode.HOLD_ALL_BELTS
-            else inst.read_mode,
+            lambda inst: (
+                BeltReadMode.PULSE
+                if inst.read_mode is BeltReadMode.HOLD_ALL_BELTS
+                else inst.read_mode
+            ),
         ),
     },
 )

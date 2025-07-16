@@ -1,8 +1,8 @@
 # utils.py
 
 """
-Provides a number of common utility functions. These are primarily used 
-internally by Draftsman, but can be useful outside of that scope and are 
+Provides a number of common utility functions. These are primarily used
+internally by Draftsman, but can be useful outside of that scope and are
 provided to the user as-is.
 """
 
@@ -23,7 +23,6 @@ import zlib
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import Collection
-    from draftsman.classes.entity_like import EntityLike
     from draftsman.entity import Entity
     from draftsman.tile import Tile
     from draftsman.signatures import StockConnection

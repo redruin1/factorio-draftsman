@@ -112,9 +112,9 @@ def conditional(severity):
                 for w in ws:
                     warnings.warn(
                         w.message,
-                        stacklevel=5
-                        if inspect.stack()[1].function == "__init__"
-                        else 6,
+                        stacklevel=(
+                            5 if inspect.stack()[1].function == "__init__" else 6
+                        ),
                     )
             else:
                 warning_list.extend([w.message for w in ws])
@@ -142,9 +142,9 @@ def conditional(severity):
                 for w in ws:
                     warnings.warn(
                         w.message,
-                        stacklevel=5
-                        if inspect.stack()[2].function == "__init__"
-                        else 6,
+                        stacklevel=(
+                            5 if inspect.stack()[2].function == "__init__" else 6
+                        ),
                     )
             else:
                 warning_list.extend([w.message for w in ws])

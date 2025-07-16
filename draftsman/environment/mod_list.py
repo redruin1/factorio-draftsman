@@ -72,7 +72,7 @@ class Mod:
         # files: dict[str, str],
         # data: zipfile.ZipFile,
         # All other keys are free for users to write, so we collect them here
-        **kwargs
+        **kwargs,
     ):
         self.location = location
         self.stages = stages
@@ -342,7 +342,9 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     # (Except for in the cases of the "base" and "core" mods, which are exempt)
     if mod_name not in ("base", "core"):
         mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
-        assert mod_factorio_version <= mods.versions["base"]
+        # TODO: this check cannot happen here, has to happen after all mods are
+        # registered
+        # assert mod_factorio_version <= mods.versions["base"]
 
     mod_stages = set()
     if is_archive:
@@ -579,9 +581,11 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
                         " ✓ " if mod.enabled and i == 0 else "   ",
                         "(zip)" if mod.is_archive else "(dir)",
                         printed_name,
-                        "-"
-                        if mod.version == ""
-                        else truncate_str(mod.version, version_width),
+                        (
+                            "-"
+                            if mod.version == ""
+                            else truncate_str(mod.version, version_width)
+                        ),
                         truncate_str(mod.location, location_width),
                         name_width=name_width,
                         version_width=version_width,
@@ -602,9 +606,11 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
                         "✓" if mod.enabled and i == 0 else " ",
                         "(zip)" if mod.is_archive else "(dir)",
                         printed_name,
-                        "-"
-                        if mod.version == ""
-                        else truncate_str(mod.version, version_width),
+                        (
+                            "-"
+                            if mod.version == ""
+                            else truncate_str(mod.version, version_width)
+                        ),
                         name_width=name_width,
                         version_width=version_width,
                     )

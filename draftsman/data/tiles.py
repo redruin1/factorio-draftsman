@@ -2,13 +2,18 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 
 
-with pkg_resources.open_binary(data, "tiles.pkl") as inp:
-    raw: dict[str, dict] = pickle.load(inp)
+try:
+    source = files(data) / "tiles.pkl"
+    with source.open("rb") as inp:
+        raw: dict[str, dict] = pickle.load(inp)
+
+except FileNotFoundError:
+    raw = {}
 
 
 def add_tile(name: str, collision_mask: set[str] = set()):

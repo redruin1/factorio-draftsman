@@ -41,7 +41,9 @@ def valid_artillery_turret():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.artillery_turret_ammo, stack=0, count=1
+                            inventory=InventoryType.artillery_turret_ammo,
+                            stack=0,
+                            count=1,
                         )
                     ]
                 ),

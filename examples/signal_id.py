@@ -1,9 +1,9 @@
 # signal_id.py
 
 """
-SignalID's are frequently used throughout Draftsman, as they are used for 
+SignalID's are frequently used throughout Draftsman, as they are used for
 configuration. Because these objects are used so often, they allow themselves
-to be specified via string name. This script goes over the nuances of this 
+to be specified via string name. This script goes over the nuances of this
 behavior.
 """
 

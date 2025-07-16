@@ -84,10 +84,7 @@ class TestDeconstructionPlannerTesting:
         decon_planner = DeconstructionPlanner()
         assert decon_planner.icons == []
 
-        decon_planner.icons = [
-            "signal-A",
-            Icon(signal="signal-B", index=1)
-        ]
+        decon_planner.icons = ["signal-A", Icon(signal="signal-B", index=1)]
         assert decon_planner.icons == [
             Icon(signal="signal-A", index=0),
             Icon(signal="signal-B", index=1),

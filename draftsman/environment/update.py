@@ -362,8 +362,8 @@ def run_data_stage(
 
 
 def run_data_lifecycle(
-    game_path: str,
-    mods_path: str,
+    game_path: str | None = None,
+    mods_path: str | None = None,
     show_logs: bool = False,
     no_mods: bool = False,
     verbose: bool = False,
@@ -394,6 +394,14 @@ def run_data_lifecycle(
         can be parsed.
     """
     draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
+    
+    default_game_path = os.path.join(draftsman_path, "factorio-data")
+    if game_path is None:
+        game_path = default_game_path
+
+    default_mods_path = os.path.join(draftsman_path, "factorio-mods")
+    if mods_path is None:
+        mods_path = default_mods_path
 
     if verbose:
         print("Discovering mods...\n")
@@ -505,9 +513,15 @@ def run_data_lifecycle(
     # point in any of the subsequent steps.
     # This is not included in `factorio-data` and has to be manually extracted
     # (See compatibility/defines.lua for more info).
-    lua.execute(
-        file_to_string(os.path.join(draftsman_path, "compatibility", "defines.lua"))
-    )
+    print(mods["base"].version)
+    try:
+        lua.execute(
+            file_to_string(os.path.join(draftsman_path, "compatibility", "defines", mods["base"].version + ".lua"))
+        )
+    except FileNotFoundError:
+        lua.execute(
+            file_to_string(os.path.join(draftsman_path, "compatibility", "defines.lua"))
+        )
 
     # "interface.lua" houses a number of patching functions used to emulate
     # Factorio's internal load process.

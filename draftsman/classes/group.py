@@ -1,6 +1,5 @@
 # group.py
 
-from draftsman.classes.association import Association
 from draftsman.classes.blueprint import (
     structure_blueprint_1_0_factory,
 )
@@ -9,15 +8,12 @@ from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import Exportable, ValidationMode, ValidationResult
-from draftsman.classes.schedule import Schedule
-from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.vector import Vector
 from draftsman.entity import get_entity_class
 from draftsman.error import (
     IncorrectBlueprintTypeError,
 )
-from draftsman.signatures import StockConnection
 from draftsman.serialization import draftsman_converters
 from draftsman.utils import (
     AABB,

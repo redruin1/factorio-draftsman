@@ -1,7 +1,7 @@
 # train_schedule_usage.py
 
 """
-Illustrates how to use WaitCondition, WaitConditions, Schedule, and how to 
+Illustrates how to use WaitCondition, WaitConditions, Schedule, and how to
 assign that schedule to a train, new or otherwise.
 """
 

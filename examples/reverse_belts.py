@@ -1,7 +1,7 @@
 # reverse_belts.py
 """
 An example of how to use `reverse_belts` on a passed in blueprint or blueprint book.
-`reverse_belts` reverses the direction of belt entities in-place such that they 
+`reverse_belts` reverses the direction of belt entities in-place such that they
 preserve their continuity, such as around corners. The script prompts the user
 for a blueprint string input from stdin.
 
@@ -10,10 +10,10 @@ corresponds to every belt entity reversed, including undergrounds and splitters.
 
 If a blueprint book is passed in, the script recurses through all sub-blueprint
 books and sub-blueprints and flips the belts inside all of them. Any upgrade/
-deconstruction planner inside any of the nested blueprint books are ignored. 
+deconstruction planner inside any of the nested blueprint books are ignored.
 The resultant blueprint book with all belts reversed is printed back to stdout.
 
-If a upgrade/deconstruction planner is passed in, the script prints "Unexpected 
+If a upgrade/deconstruction planner is passed in, the script prints "Unexpected
 blueprintable type" and exits.
 """
 

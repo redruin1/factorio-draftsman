@@ -5,13 +5,13 @@ Creates two sets of constant combinators. The first one is a conversion of nixie
 tube signals to UTF-8 codes, where the signal ID is the symbol it represents and
 the value is it's UTF-8 value.
 
-The second one is a set of ordered unique signals where the value of each 
+The second one is a set of ordered unique signals where the value of each
 corresponds to the letter of some text phrase. Here the types of the signals are
-arbitrary, and could be any signal as long as they're different from one another; 
-their values are the only important factor in determining which letter they 
+arbitrary, and could be any signal as long as they're different from one another;
+their values are the only important factor in determining which letter they
 represent.
 
-The purpose of these combinators would be to convert the values of a set of 
+The purpose of these combinators would be to convert the values of a set of
 arbitrary signals into a set of ordered signals which could then be fed
 to a Nixie-Tube array to display text. This way text could be stored in a very
 dense, compressed signal frame instead of many duplicate frames, and perhaps

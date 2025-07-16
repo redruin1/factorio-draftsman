@@ -2,13 +2,14 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 
 
 try:
-    with pkg_resources.open_binary(data, "planets.pkl") as inp:
+    source = files(data) / "planets.pkl"
+    with source.open("rb") as inp:
         _data: dict = pickle.load(inp)
 
         raw: dict[str, dict] = _data[0]

@@ -2,8 +2,8 @@
 
 """
 Creates a set of combinators that check if a particular bit is flipped on or off
-without the need for an additional arithmetic combinator. Only the uppermost 
-bits can be checked using this technique before the total condition count 
+without the need for an additional arithmetic combinator. Only the uppermost
+bits can be checked using this technique before the total condition count
 becomes prohibitively large.
 """
 
@@ -32,9 +32,7 @@ def determine_bit_conditions(
                 ) & DeciderCombinator.Condition(
                     first_signal=signal,
                     comparator=">=" if current_depth == 0 else "<",
-                    constant=minimum
-                    if current_depth == 0
-                    else min(2**31 - 1, maximum),
+                    constant=minimum if current_depth == 0 else min(2**31 - 1, maximum),
                 )
                 if additional_condition:
                     res &= additional_condition
@@ -47,9 +45,9 @@ def determine_bit_conditions(
                 ) & DeciderCombinator.Condition(
                     first_signal=signal,
                     comparator="<=" if current_depth == 0 else "<",
-                    constant=min(2**31 - 1, maximum)
-                    if current_depth == 0
-                    else midpoint,
+                    constant=(
+                        min(2**31 - 1, maximum) if current_depth == 0 else midpoint
+                    ),
                 )
                 if additional_condition:
                     res &= additional_condition

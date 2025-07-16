@@ -21,13 +21,13 @@
                 ... # Up to 4 icons total
             ],
             "description": str, # A user given description for this blueprint
-            "version": int, # The encoded version of Factorio this planner was created 
+            "version": int, # The encoded version of Factorio this planner was created
                             # with/designed for (64 bits)
             "snap-to-grid": { # The size of the grid to snap this blueprint to
                 "x": int, # X dimension in units
                 "y": int, # Y dimension in units
             }
-            "absolute-snapping": bool, # Whether or not to use absolute placement 
+            "absolute-snapping": bool, # Whether or not to use absolute placement
                                        # (defaults to True)
             "position-relative-to-grid": { # The offset of the grid if using absolute
                                            # placement
@@ -37,7 +37,7 @@
             "entities": [ # A list of entities in this blueprint
                 {
                     "name": str, # Name of the entity,
-                    "entity_number": int, # Unique number associated with this entity 
+                    "entity_number": int, # Unique number associated with this entity
                     "position": {"x": float, "y": float}, # Position of the entity
                     ... # Any associated Entity key/value
                 },
@@ -61,7 +61,7 @@
                                     "type": str, # Name of the type of condition
                                     "compare_type": "and" or "or",
                                     "ticks": int, # If using "time" or "inactivity"
-                                    "condition": CONDITION, # If a circuit condition is 
+                                    "condition": CONDITION, # If a circuit condition is
                                                             # needed
                                 }
                             ],
@@ -73,7 +73,7 @@
                 },
                 ...
             ]
-            
+
         }
     }
 """
@@ -81,14 +81,11 @@
 import draftsman
 
 # from draftsman._factorio_version import __factorio_version_info__
-from draftsman.classes.association import Association
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import Collection
-from draftsman.classes.schedule_list import ScheduleList
-from draftsman.classes.spatial_hashmap import SpatialHashMap
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.error import (
@@ -97,9 +94,7 @@ from draftsman.error import (
     InvalidAssociationError,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import StockConnection
-from draftsman.entity import Entity, get_entity_class
-from draftsman.classes.schedule import Schedule
+from draftsman.entity import get_entity_class
 from draftsman.utils import (
     AABB,
     aabb_to_dimensions,

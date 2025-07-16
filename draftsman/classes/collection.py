@@ -6,7 +6,6 @@ from draftsman.classes.entity_list import EntityList
 from draftsman.classes.train_configuration import TrainConfiguration
 from draftsman.classes.schedule import Schedule
 from draftsman.classes.schedule_list import ScheduleList
-from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
 from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.vector import Vector, PrimitiveVector
@@ -67,18 +66,18 @@ class CollectionList(MutableSequence):
 
         self._parent: "Collection" = parent
 
-    # @reissue_warnings # TODO
+    @reissue_warnings
     def append(self, group, copy=True, merge=False, **kwargs):
         return self.insert(idx=len(self), group=group, copy=copy, merge=merge, **kwargs)
 
-    # @reissue_warnings # TODO
+    @reissue_warnings
     def insert(
         self,
         idx: int,
         group: Collection,
         copy: bool = True,
         merge: bool = False,
-        **kwargs
+        **kwargs,
     ) -> Collection:
         # First, make sure that group is actually a Collection
         if not issubclass(type(group), Collection):
