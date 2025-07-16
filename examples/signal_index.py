@@ -7,6 +7,7 @@ a numeric value directly into a unique signal type. This is particularly
 useful when creating data-dense memory cells, as this allows you to write, read,
 and store many thousands of signals on a single wire.
 
+
 The combinator is populated with all user-selectable signals as well as many
 hidden signals. Certain signals can have different types: `transport-belt` can
 have a  type of `item`, `entity`, or `recipe`, and each one of these is

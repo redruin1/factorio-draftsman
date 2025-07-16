@@ -166,8 +166,8 @@ class Transformable:
         if direction not in {"horizontal", "vertical"}:
             raise ValueError("'direction' must be either 'horizontal' or 'vertical'")
 
-        matrices = {"horizontal": [-1, +1], "vertical": [+1, -1]}
-        matrix = matrices[direction]
+        pos_matrices = {"horizontal": [-1, +1], "vertical": [+1, -1]}
+        pos_matrix = pos_matrices[direction]
 
         # Entities
         for entity in self.entities:
@@ -180,13 +180,14 @@ class Transformable:
             pos = Vector(entity.position.x, entity.position.y)
             # Alter the direction
             if entity.rotatable:
-                if direction == "horizontal":
-                    entity.direction += ((-2 * (entity.direction - 8)) % 16) % 16
-                else:  # direction == "vertical":
-                    entity.direction += (((-2 * entity.direction) % 16) - 8) % 16
+                entity.direction = entity.direction.flip(direction)
+                # if direction == "horizontal":
+                #     entity.direction += ((-2 * (entity.direction - 8)) % 16) % 16
+                # else:  # direction == "vertical":
+                #     entity.direction += (((-2 * entity.direction) % 16) - 8) % 16
 
             # Alter (both) the position(s)
-            entity.position = (pos.x * matrix[0], pos.y * matrix[1])
+            entity.position = (pos.x * pos_matrix[0], pos.y * pos_matrix[1])
 
             entity._parent = self
 
@@ -205,7 +206,10 @@ class Transformable:
                 # With tiles we flip from their center
                 pos = Vector(tile.position.x + 0.5, tile.position.y + 0.5)
                 # Alter the position
-                tile.position = (pos.x * matrix[0] - 0.5, pos.y * matrix[1] - 0.5)
+                tile.position = (
+                    pos.x * pos_matrix[0] - 0.5,
+                    pos.y * pos_matrix[1] - 0.5,
+                )
 
                 tile._parent = self
 

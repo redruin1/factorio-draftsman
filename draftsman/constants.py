@@ -11,6 +11,7 @@ from datetime import timedelta
 from enum import IntEnum, Enum
 from functools import total_ordering
 import math
+from typing import Literal
 
 
 class Direction(IntEnum):
@@ -113,6 +114,47 @@ class Direction(IntEnum):
             return Direction((math.floor(self.value / 2) * 2) % 16)
         else:  # valid_directions is SIXTEEN_WAY_DIRECTIONS:
             return self
+
+    def flip(self, direction: Literal["horizontal", "vertical"] = "horizontal"):
+        matrix = {
+            "horizontal": {
+                Direction.NORTH: Direction.NORTH,
+                Direction.NORTHNORTHEAST: Direction.NORTHNORTHWEST,
+                Direction.NORTHEAST: Direction.NORTHWEST,
+                Direction.EASTNORTHEAST: Direction.WESTNORTHWEST,
+                Direction.EAST: Direction.WEST,
+                Direction.EASTSOUTHEAST: Direction.WESTSOUTHWEST,
+                Direction.SOUTHEAST: Direction.SOUTHWEST,
+                Direction.SOUTHSOUTHEAST: Direction.SOUTHSOUTHWEST,
+                Direction.SOUTH: Direction.SOUTH,
+                Direction.SOUTHSOUTHWEST: Direction.SOUTHSOUTHEAST,
+                Direction.SOUTHWEST: Direction.SOUTHEAST,
+                Direction.WESTSOUTHWEST: Direction.EASTSOUTHEAST,
+                Direction.WEST: Direction.EAST,
+                Direction.WESTNORTHWEST: Direction.EASTNORTHEAST,
+                Direction.NORTHWEST: Direction.NORTHEAST,
+                Direction.NORTHNORTHWEST: Direction.NORTHNORTHEAST,
+            },
+            "vertical": {
+                Direction.NORTH: Direction.SOUTH,
+                Direction.NORTHNORTHEAST: Direction.SOUTHSOUTHEAST,
+                Direction.NORTHEAST: Direction.SOUTHEAST,
+                Direction.EASTNORTHEAST: Direction.EASTSOUTHEAST,
+                Direction.EAST: Direction.EAST,
+                Direction.EASTSOUTHEAST: Direction.EASTNORTHEAST,
+                Direction.SOUTHEAST: Direction.NORTHEAST,
+                Direction.SOUTHSOUTHEAST: Direction.NORTHNORTHEAST,
+                Direction.SOUTH: Direction.NORTH,
+                Direction.SOUTHSOUTHWEST: Direction.NORTHNORTHWEST,
+                Direction.SOUTHWEST: Direction.NORTHWEST,
+                Direction.WESTSOUTHWEST: Direction.WESTNORTHWEST,
+                Direction.WEST: Direction.WEST,
+                Direction.WESTNORTHWEST: Direction.WESTSOUTHWEST,
+                Direction.NORTHWEST: Direction.SOUTHWEST,
+                Direction.NORTHNORTHWEST: Direction.SOUTHSOUTHWEST,
+            },
+        }
+        return matrix[direction][self.value]
 
     def to_orientation(self) -> "Orientation":
         """
