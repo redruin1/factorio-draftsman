@@ -1,8 +1,8 @@
 # utils.py
 
 """
-Provides a number of common utility functions. These are primarily used 
-internally by Draftsman, but can be useful outside of that scope and are 
+Provides a number of common utility functions. These are primarily used
+internally by Draftsman, but can be useful outside of that scope and are
 provided to the user as-is.
 """
 

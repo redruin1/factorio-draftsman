@@ -1,15 +1,15 @@
 # __init__.py
 """
-Allows the user to import, create, manipulate, and export Factorio blueprint 
+Allows the user to import, create, manipulate, and export Factorio blueprint
 strings.
 
 `draftsman` attempts to provide a convinient, 'one-stop-shop' solution to the
-problem of programmatically creating blueprint strings, used for automation of 
+problem of programmatically creating blueprint strings, used for automation of
 designing structures that would be too tedius to build otherwise.
 
-In addition to providing the bare functionality of importing and exporting, 
-`draftsman` is designed with the developer in mind, and has a wide array of 
-methods and classes designed to write clean, self-documenting scripts. 
+In addition to providing the bare functionality of importing and exporting,
+`draftsman` is designed with the developer in mind, and has a wide array of
+methods and classes designed to write clean, self-documenting scripts.
 `draftsman` is also well-documented, well-tested, and easy to install.
 """
 

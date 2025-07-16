@@ -1,11 +1,11 @@
 # item_stack_signals.py
 
 """
-Iterates over every item in the game and adds it to an (N x 5) cell of constant 
-combinators with each value being that item's stack size. Commonly used when 
+Iterates over every item in the game and adds it to an (N x 5) cell of constant
+combinators with each value being that item's stack size. Commonly used when
 trying to figure out exactly how many slots need to be allocated in order to
-transport x number of items. A tedious process normally is made exceptionally 
-simple via script, and because of the dynamic nature of draftsman, this works 
+transport x number of items. A tedious process normally is made exceptionally
+simple via script, and because of the dynamic nature of draftsman, this works
 with any set of mods as well as vanilla.
 """
 

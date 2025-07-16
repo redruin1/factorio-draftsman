@@ -2,18 +2,18 @@
 
 """
 Creates a 1-N train that filters its cargo inventories based on a set of inputs.
-Input is provided by dict `contents`, where each key is an item to filter and 
-its value is a positive integer indicating the number of inventory slots to 
+Input is provided by dict `contents`, where each key is an item to filter and
+its value is a positive integer indicating the number of inventory slots to
 filter with that item.
 
 Slots are filled sequentially starting in the top left and working across. If
 the total number of slots cannot fit in the current cargo wagon(s), new wagons
 are added as necessary in order to satisfy `contents`.
 
-Can be used to dynamically create specifically designed supply trains for 
+Can be used to dynamically create specifically designed supply trains for
 specific purposes, such as building, defense repair, ammo supply, and so on.
-Care should be taken across train boundaries however as this script makes no 
-attempt to organize the entries by train, and as a result item slots can be 
+Care should be taken across train boundaries however as this script makes no
+attempt to organize the entries by train, and as a result item slots can be
 split across multiple trains which is probably undesirable for this purpose.
 """
 

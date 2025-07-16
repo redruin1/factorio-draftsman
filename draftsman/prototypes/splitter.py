@@ -26,14 +26,14 @@ class Splitter(DirectionalMixin, Entity):
     """
 
     class Format(DirectionalMixin.Format, Entity.Format):
-        input_priority: Optional[
-            Literal["left", "none", "right"]
-        ] = Field(  # TODO: make this priority side or similar
-            "none",
-            description="""
+        input_priority: Optional[Literal["left", "none", "right"]] = (
+            Field(  # TODO: make this priority side or similar
+                "none",
+                description="""
             The side to prioritize pulling items into the splitter. 'none' means 
             no preference.
             """,
+            )
         )
         output_priority: Optional[Literal["left", "none", "right"]] = Field(
             "none",

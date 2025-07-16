@@ -26,13 +26,13 @@ class HeatInterface(Entity):
             to the range [0, 1000] on import into Factorio.
             """,
         )
-        mode: Optional[
-            Literal["at-least", "at-most", "exactly", "add", "remove"]
-        ] = Field(
-            "at-least",
-            description="""
+        mode: Optional[Literal["at-least", "at-most", "exactly", "add", "remove"]] = (
+            Field(
+                "at-least",
+                description="""
             How the interface should affect its connected heat network.
             """,
+            )
         )
 
         @field_validator("temperature")

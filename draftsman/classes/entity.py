@@ -111,15 +111,15 @@ class Entity(Exportable, EntityLike):
             The internal ID of the entity.
             """,
         )
-        quality: Literal[
-            "normal", "uncommon", "rare", "epic", "legendary"
-        ] = Field(  # TODO: determine these automatically
-            "normal",
-            description="""
+        quality: Literal["normal", "uncommon", "rare", "epic", "legendary"] = (
+            Field(  # TODO: determine these automatically
+                "normal",
+                description="""
             The quality of the entity. Defaults to 'normal' when not specified,
             or when quality is not present in the save being imported to /
             exported from.
             """,
+            )
         )
         position: FloatPosition = Field(
             ...,

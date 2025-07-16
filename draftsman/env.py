@@ -2,7 +2,7 @@
 
 """
 Manages the Factorio environment. Primarily holds :py:func:`draftsman.env.update()`,
-which runs through the Factorio data lifecycle and updates the data in 
+which runs through the Factorio data lifecycle and updates the data in
 :py:mod:`draftsman.data`.
 
 

@@ -27,7 +27,14 @@ from draftsman.data import signals
 from draftsman.signatures import int32
 from draftsman.utils import reissue_warnings
 
-from pydantic import ConfigDict, Field, BaseModel, ValidationInfo, model_validator, validate_call
+from pydantic import (
+    ConfigDict,
+    Field,
+    BaseModel,
+    ValidationInfo,
+    model_validator,
+    validate_call,
+)
 from typing import Any, Literal, Optional, Type, Union
 
 
@@ -282,8 +289,6 @@ class DeciderCombinator(
     #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
 
     #     model_config = ConfigDict(title="DeciderCombinator")
-
-    
 
     class Format(
         PlayerDescriptionMixin.Format,

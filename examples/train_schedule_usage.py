@@ -1,7 +1,7 @@
 # train_schedule_usage.py
 
 """
-Illustrates how to use WaitCondition, WaitConditions, Schedule, and how to 
+Illustrates how to use WaitCondition, WaitConditions, Schedule, and how to
 assign that schedule to a train, new or otherwise.
 """
 
@@ -49,7 +49,7 @@ def main() -> None:
             ),
         ]
     )
-    # Using the Enums is rather verbose, so if you want to be more terse you can 
+    # Using the Enums is rather verbose, so if you want to be more terse you can
     # use the equivalent strings:
     dropoff_conditions = WaitConditions(
         [

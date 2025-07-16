@@ -1,13 +1,13 @@
 # signatures.py
 
 """
-Module of data formats, implemented as pydantic ``BaseModel`` instances. Used 
-to validate and normalize data. Each one raises a ``ValidationError`` if the 
-passed in data does not  match the data format specified, which is usually 
+Module of data formats, implemented as pydantic ``BaseModel`` instances. Used
+to validate and normalize data. Each one raises a ``ValidationError`` if the
+passed in data does not  match the data format specified, which is usually
 wrapped with a ``DataFormatError`` of some kind.
 
-Alongside errors, all functions are set up to use a ``context`` to store 
-warnings to be reissued later, since Pydantic does not support this out of the 
+Alongside errors, all functions are set up to use a ``context`` to store
+warnings to be reissued later, since Pydantic does not support this out of the
 box.
 """
 

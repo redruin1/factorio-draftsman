@@ -130,3 +130,6 @@ dmypy.json
 
 # VSCode bs
 .vscode
+
+# UV
+uv.lock

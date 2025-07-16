@@ -2884,6 +2884,12 @@ class TestBlueprint:
         blueprint.entities.append("wooden-chest")
         blueprint.entities.append("wooden-chest", tile_position=(4, 4))
         blueprint.entities.append("boiler", tile_position=(1, 1))  # looking North
+        blueprint.entities.append(
+            "steam-engine", tile_position=(5, 5), direction=Direction.EAST
+        )
+        blueprint.entities.append(
+            "straight-rail", position=(6, -2), direction=Direction.NORTHEAST
+        )
 
         blueprint.tiles.append("refined-concrete", position=(0, 4))
         blueprint.tiles.append("refined-concrete", position=(4, 0))
@@ -2893,7 +2899,11 @@ class TestBlueprint:
         assert blueprint.entities[0].tile_position == Vector(-1, 0)
         assert blueprint.entities[1].tile_position == Vector(-5, 4)
         assert blueprint.entities[2].tile_position == Vector(-4, 1)
-        assert blueprint.entities[2].direction == 0
+        assert blueprint.entities[2].direction == Direction.NORTH
+        assert blueprint.entities[3].tile_position == Vector(-10, 5)
+        assert blueprint.entities[3].direction == Direction.WEST
+        assert blueprint.entities[4].position == Vector(-6, -2)
+        assert blueprint.entities[4].direction == Direction.NORTHWEST
         assert blueprint.tiles[0].position == Vector(-1, 4)
         assert blueprint.tiles[1].position == Vector(-5, 0)
 
@@ -2902,7 +2912,11 @@ class TestBlueprint:
         assert blueprint.entities[0].tile_position == Vector(-1, -1)
         assert blueprint.entities[1].tile_position == Vector(-5, -5)
         assert blueprint.entities[2].tile_position == Vector(-4, -3)
-        assert blueprint.entities[2].direction == 8
+        assert blueprint.entities[2].direction == Direction.SOUTH
+        assert blueprint.entities[3].tile_position == Vector(-10, -8)
+        assert blueprint.entities[3].direction == Direction.WEST
+        assert blueprint.entities[4].position == Vector(-6, 2)
+        assert blueprint.entities[4].direction == Direction.SOUTHWEST
         assert blueprint.tiles[0].position == Vector(-1, -5)
         assert blueprint.tiles[1].position == Vector(-5, -1)
 

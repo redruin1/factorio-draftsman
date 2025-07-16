@@ -22,9 +22,9 @@ class Association(weakref.ref):
         int,
         Field(ge=0, lt=2**64),
         WrapValidator(
-            lambda value, handler: value
-            if isinstance(value, Association)
-            else handler(value)
+            lambda value, handler: (
+                value if isinstance(value, Association) else handler(value)
+            )
         ),
     ]
 

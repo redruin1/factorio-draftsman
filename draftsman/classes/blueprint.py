@@ -21,13 +21,13 @@
                 ... # Up to 4 icons total
             ],
             "description": str, # A user given description for this blueprint
-            "version": int, # The encoded version of Factorio this planner was created 
+            "version": int, # The encoded version of Factorio this planner was created
                             # with/designed for (64 bits)
             "snap-to-grid": { # The size of the grid to snap this blueprint to
                 "x": int, # X dimension in units
                 "y": int, # Y dimension in units
             }
-            "absolute-snapping": bool, # Whether or not to use absolute placement 
+            "absolute-snapping": bool, # Whether or not to use absolute placement
                                        # (defaults to True)
             "position-relative-to-grid": { # The offset of the grid if using absolute
                                            # placement
@@ -37,7 +37,7 @@
             "entities": [ # A list of entities in this blueprint
                 {
                     "name": str, # Name of the entity,
-                    "entity_number": int, # Unique number associated with this entity 
+                    "entity_number": int, # Unique number associated with this entity
                     "position": {"x": float, "y": float}, # Position of the entity
                     ... # Any associated Entity key/value
                 },
@@ -61,7 +61,7 @@
                                     "type": str, # Name of the type of condition
                                     "compare_type": "and" or "or",
                                     "ticks": int, # If using "time" or "inactivity"
-                                    "condition": CONDITION, # If a circuit condition is 
+                                    "condition": CONDITION, # If a circuit condition is
                                                             # needed
                                 }
                             ],
@@ -73,7 +73,7 @@
                 },
                 ...
             ]
-            
+
         }
     }
 """

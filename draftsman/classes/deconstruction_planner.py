@@ -7,7 +7,7 @@
         "deconstruction_planner": {
             "item": "deconstruction-planner", # The associated item with this structure
             "label": str, # A user given name for this deconstruction planner
-            "version": int, # The encoded version of Factorio this planner was created 
+            "version": int, # The encoded version of Factorio this planner was created
                             # with/designed for (64 bits)
             "settings": {
                 "entity_filter_mode": int, # 0 = Whitelist, 1 = Blacklist
@@ -18,7 +18,7 @@
                     },
                     ... # Up to 30 filters total
                 ]
-                "trees_and_rocks_only": bool, # Self explanatory, disables everything 
+                "trees_and_rocks_only": bool, # Self explanatory, disables everything
                                               # else
                 "tile_filter_mode": int, # 0 = Whitelist, 1 = Blacklist
                 "tile_filters": [ # A list of tiles to deconstruct
@@ -28,9 +28,9 @@
                     },
                     ... # Up to 30 filters total
                 ]
-                "tile_selection_mode": int, # 0 = Normal, 1 = Always, 2 = Never, 
+                "tile_selection_mode": int, # 0 = Normal, 1 = Always, 2 = Never,
                                             # 3 = Only
-                "description": str, # A user given description for this deconstruction 
+                "description": str, # A user given description for this deconstruction
                                     # planner
                 "icons": [ # A set of signals to act as visual identification
                     {

@@ -579,9 +579,11 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
                         " ✓ " if mod.enabled and i == 0 else "   ",
                         "(zip)" if mod.is_archive else "(dir)",
                         printed_name,
-                        "-"
-                        if mod.version == ""
-                        else truncate_str(mod.version, version_width),
+                        (
+                            "-"
+                            if mod.version == ""
+                            else truncate_str(mod.version, version_width)
+                        ),
                         truncate_str(mod.location, location_width),
                         name_width=name_width,
                         version_width=version_width,
@@ -602,9 +604,11 @@ def display_mods(mods: dict[str, list[Mod]], verbose=False) -> None:
                         "✓" if mod.enabled and i == 0 else " ",
                         "(zip)" if mod.is_archive else "(dir)",
                         printed_name,
-                        "-"
-                        if mod.version == ""
-                        else truncate_str(mod.version, version_width),
+                        (
+                            "-"
+                            if mod.version == ""
+                            else truncate_str(mod.version, version_width)
+                        ),
                         name_width=name_width,
                         version_width=version_width,
                     )

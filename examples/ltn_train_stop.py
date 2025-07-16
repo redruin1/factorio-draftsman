@@ -7,15 +7,15 @@ input lamp, and an ouput combinator. These entities are added and removed as a
 group, so it makes sense to treat them all as a single entity.
 
 In game, this process is simple, as you can just place the stop itself and the
-sub-entities will automatically be placed and removed for you, even from 
-blueprints. A problem arises, however, if you want to connect the input and/or 
+sub-entities will automatically be placed and removed for you, even from
+blueprints. A problem arises, however, if you want to connect the input and/or
 output to something entirely from script, as those entities do not exist before
 the blueprint is placed. In this case, you would want to handle the placement of
-these sub-entities yourself, which would either require importing from an 
-existing blueprint string (janky) or placing the input and output entities by 
+these sub-entities yourself, which would either require importing from an
+existing blueprint string (janky) or placing the input and output entities by
 hand (tedius).
 
-Alternatively, you can use this class instead, which moves and orients the 
+Alternatively, you can use this class instead, which moves and orients the
 input and output entities based on the position and direction of the parent
 train stop every time they are modified. The sub-entities are accessable as
 `ltn_stop.input` and `ltn_stop.output`.

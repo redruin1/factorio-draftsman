@@ -55,11 +55,11 @@ class SelectorCombinator(
                 True,
                 description="""Whether or not to sort max to min when "mode" is "select".""",
             )
-            index_constant: Optional[
-                uint32
-            ] = Field(  # TODO: which of these superceeds the other?
-                0,
-                description="""The constant input index to return when "mode" is "select".""",
+            index_constant: Optional[uint32] = (
+                Field(  # TODO: which of these superceeds the other?
+                    0,
+                    description="""The constant input index to return when "mode" is "select".""",
+                )
             )
             index_signal: Optional[SignalID] = Field(
                 None,

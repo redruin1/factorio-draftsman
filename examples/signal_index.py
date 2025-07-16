@@ -1,16 +1,16 @@
 # signal_index.py
 
 """
-Creates a blueprint with a constant combinator that gives every single unique 
+Creates a blueprint with a constant combinator that gives every single unique
 signal in the game a sequential numeric value. This allows you to easily convert
-a numeric value directly into a unique signal type. This is particularly 
+a numeric value directly into a unique signal type. This is particularly
 useful when creating data-dense memory cells, as this allows you to write, read,
 and store many thousands of signals on a single wire.
 
-The combinator is populated with all user-selectable signals as well as many 
+The combinator is populated with all user-selectable signals as well as many
 hidden signals. Certain signals can have different types: `transport-belt` can
-have a  type of `item`, `entity`, or `recipe`, and each one of these is 
-considred a  different signal by the circuit network. Each one of those signal 
+have a  type of `item`, `entity`, or `recipe`, and each one of these is
+considred a  different signal by the circuit network. Each one of those signal
 types is also multiplexed by the number of quality levels available, which is 6
 if you include the special quality `quality-unknown` (which this script uses).
 
@@ -35,9 +35,10 @@ try:
 except ImportError:
     pyperclip = None
 
+
 def main():
 
-    # If we have any signals that we want to exclude (because we want those 
+    # If we have any signals that we want to exclude (because we want those
     # signals to be reserved for other circuitry), we add them here in the form
     # of `(name, type, quality)`
     blacklisted_signals = [
@@ -45,10 +46,18 @@ def main():
         ("signal-dot", "virtual", "uncommon"),
         ("shape-circle", "virtual", "normal"),
         ("signal-check", "virtual", "normal"),
-        ("signal-deny", "virtual", "normal")
+        ("signal-deny", "virtual", "normal"),
     ]
 
-    all_signals = signals.item + signals.recipe + signals.fluid + signals.virtual + signals.space_location + signals.entity + signals.quality
+    all_signals = (
+        signals.item
+        + signals.recipe
+        + signals.fluid
+        + signals.virtual
+        + signals.space_location
+        + signals.entity
+        + signals.quality
+    )
 
     # Idiot check: ensure that the signals that we've blacklisted are real signals
     for blacklisted_signal in blacklisted_signals:
@@ -57,11 +66,15 @@ def main():
     output_signals = []
     used_signals = set()
     for signal_name in all_signals:
-        if signal_name in signals.pure_virtual: # wildcards cannot exist in constant combinators
+        if (
+            signal_name in signals.pure_virtual
+        ):  # wildcards cannot exist in constant combinators
             continue
-        if "parameter" in signal_name: # parameters are not discernable signals
+        if "parameter" in signal_name:  # parameters are not discernable signals
             continue
-        if signal_name == "signal-unknown": # cannot be discerned (all other unknowns are fine though)
+        if (
+            signal_name == "signal-unknown"
+        ):  # cannot be discerned (all other unknowns are fine though)
             continue
         for signal_type in signals.type_of[signal_name]:
             for signal_quality in signals.quality:
@@ -72,7 +85,7 @@ def main():
 
                 output_signals.append(signal)
                 used_signals.add(signal)
-    
+
     print("Total number of (non-blacklisted) signals: {}".format(len(output_signals)))
 
     # Now actually make the blueprint
@@ -91,19 +104,25 @@ def main():
     signal_count = 0
     for signal_name, signal_type, signal_quality in output_signals:
         if signal_index == 0:
-            combinator.add_section() # "Index ({})".format(section_index)
+            combinator.add_section()  # "Index ({})".format(section_index)
             current_section = combinator.sections[-1]
 
-        current_section.set_signal(index=signal_index, name=signal_name, count=signal_count+1, type=signal_type, quality=signal_quality)
+        current_section.set_signal(
+            index=signal_index,
+            name=signal_name,
+            count=signal_count + 1,
+            type=signal_type,
+            quality=signal_quality,
+        )
         signal_index += 1
         signal_count += 1
-        
+
         if signal_index == 1000:
             signal_index = 0
             section_index += 1
-    
+
     blueprint.entities.append(combinator)
-    
+
     if pyperclip is not None:
         pyperclip.copy(blueprint.to_string())
         print("Copied to clipboard.")

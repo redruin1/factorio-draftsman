@@ -211,9 +211,9 @@ class ArithmeticCombinator(
 
                     return self
 
-            arithmetic_conditions: Optional[
-                ArithmeticConditions
-            ] = ArithmeticConditions()
+            arithmetic_conditions: Optional[ArithmeticConditions] = (
+                ArithmeticConditions()
+            )
 
         control_behavior: Optional[ControlBehavior] = ControlBehavior()
 

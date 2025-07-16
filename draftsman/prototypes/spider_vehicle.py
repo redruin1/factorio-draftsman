@@ -48,9 +48,9 @@ class SpiderVehicle(
                 False, description="Auto targets when gunner is present."
             )
 
-        automatic_targeting_parameters: Optional[
-            AutoTargetParameters
-        ] = AutoTargetParameters()
+        automatic_targeting_parameters: Optional[AutoTargetParameters] = (
+            AutoTargetParameters()
+        )
 
         class RequestFilters(DraftsmanBaseModel):
             sections: Optional[list[Section]] = Field(

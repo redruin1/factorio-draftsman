@@ -5,6 +5,7 @@
 * Fixed #164 (Decider combinator example doesn't work)
 * Merged vjanell's pull request:
   * Fix reversed operators in DeciderCombinator `__ge__` and `__le__` methods
+* Fixed #178 (Entity flipping logic has multiple bugs and crashes)
 
 ## 2.0.2
 * Updated `factorio-data` to version `2.0.45` (latest)
