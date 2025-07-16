@@ -22,26 +22,26 @@ import os
 #     yield connection
 #     print(f"\nTearing down {db_type} connection for session.")
 
-@pytest.hookimpl()
-def pytest_sessionstart(session):
-    # Grab and populate the repo, making sure its a git repo we expect
-    draftsman_path = os.path.dirname(os.path.abspath(draftsman.__file__))
-    repo = git.Repo(draftsman_path + "/factorio-data")
-    repo.git.fetch()
-    assert (
-        repo.remotes.origin.url == "https://github.com/wube/factorio-data"
-    ), "Targeted repo is not `wube/factorio-data`"
+# @pytest.hookimpl()
+# def pytest_sessionstart(session):
+#     # Grab and populate the repo, making sure its a git repo we expect
+#     draftsman_path = os.path.dirname(os.path.abspath(draftsman.__file__))
+#     repo = git.Repo(draftsman_path + "/factorio-data")
+#     repo.git.fetch()
+#     assert (
+#         repo.remotes.origin.url == "https://github.com/wube/factorio-data"
+#     ), "Targeted repo is not `wube/factorio-data`"
 
-    tag_list = sorted([version_string_to_tuple(tag.name) for tag in repo.tags])
-    # Only select versions >= 1.0
-    tag_list = tag_list[tag_list.index((1, 0, 0, 0)):]
+#     tag_list = sorted([version_string_to_tuple(tag.name) for tag in repo.tags])
+#     # Only select versions >= 1.0
+#     tag_list = tag_list[tag_list.index((1, 0, 0, 0)):]
     
-    # Checkout version
-    repo.git.checkout(version_tuple_to_string(tag_list[0][:3]))
+#     # Checkout version
+#     repo.git.checkout(version_tuple_to_string(tag_list[0][:3]))
 
-    print(tag_list)
+#     print(tag_list)
 
-    # Update my data
-    run_data_lifecycle()
+#     # Update my data
+#     run_data_lifecycle()
 
-    # Now run tests
+#     # Now run tests

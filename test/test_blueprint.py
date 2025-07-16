@@ -3029,7 +3029,7 @@ class TestBlueprint:
             "steam-engine", tile_position=(5, 5), direction=Direction.EAST
         )
         blueprint.entities.append(
-            "straight-rail", position=(6, -2), direction=Direction.NORTHEAST
+            "straight-rail", position=(5, -1), direction=Direction.NORTHEAST
         )
 
         blueprint.tiles.append("refined-concrete", position=(0, 4))
@@ -3043,7 +3043,7 @@ class TestBlueprint:
         assert blueprint.entities[2].direction == Direction.NORTH
         assert blueprint.entities[3].tile_position == Vector(-10, 5)
         assert blueprint.entities[3].direction == Direction.WEST
-        assert blueprint.entities[4].position == Vector(-6, -2)
+        assert blueprint.entities[4].position == Vector(-5, -1)
         assert blueprint.entities[4].direction == Direction.NORTHWEST
         assert blueprint.tiles[0].position == Vector(-1, 4)
         assert blueprint.tiles[1].position == Vector(-5, 0)
@@ -3056,7 +3056,7 @@ class TestBlueprint:
         assert blueprint.entities[2].direction == Direction.SOUTH
         assert blueprint.entities[3].tile_position == Vector(-10, -8)
         assert blueprint.entities[3].direction == Direction.WEST
-        assert blueprint.entities[4].position == Vector(-6, 2)
+        assert blueprint.entities[4].position == Vector(-5, 1)
         assert blueprint.entities[4].direction == Direction.SOUTHWEST
         assert blueprint.tiles[0].position == Vector(-1, -5)
         assert blueprint.tiles[1].position == Vector(-5, -1)
