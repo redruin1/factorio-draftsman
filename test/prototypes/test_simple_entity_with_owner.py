@@ -1,6 +1,6 @@
 # test_simple_entity_with_owner.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, LegacyDirection
 from draftsman.entity import SimpleEntityWithOwner, simple_entities_with_owner
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -9,8 +9,6 @@ import pytest
 
 @pytest.fixture
 def valid_simple_entity_with_owner():
-    if len(simple_entities_with_owner) == 0:
-        return None
     return SimpleEntityWithOwner(
         "simple-entity-with-owner",
         id="test",
@@ -38,7 +36,15 @@ class TestSimpleEntityWithOwner:
             "name": "simple-entity-with-owner",
             "position": {"x": 0.5, "y": 0.5},
         }
-        assert entity.to_dict(exclude_defaults=False) == {
+        assert entity.to_dict(version=(1, 0), exclude_defaults=False) == {
+            "name": "simple-entity-with-owner",
+            "position": {"x": 0.5, "y": 0.5},
+            "direction": LegacyDirection.NORTH,  # Default
+            "items": {},  # Default
+            "variation": 1,  # Default
+            "tags": {},  # Default
+        }
+        assert entity.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "simple-entity-with-owner",
             "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},

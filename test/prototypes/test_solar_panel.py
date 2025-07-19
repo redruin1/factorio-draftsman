@@ -9,8 +9,6 @@ import pytest
 
 @pytest.fixture
 def valid_solar_panel():
-    if len(solar_panels) == 0:
-        return None
     return SolarPanel(
         "solar-panel",
         id="test",

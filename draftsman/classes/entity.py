@@ -1,5 +1,6 @@
 # entity.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.exportable import (
@@ -285,7 +286,12 @@ class Entity(EntityLike, Exportable):
         # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
         # on it's type
-        return self.prototype.get("collision_mask", None)
+        # For simplicity later (and due to the fact we don't need any extra keys)
+        # the set we return is only the collision layers
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            return self.prototype.get("collision_mask", None)
+        else:
+            return self.prototype.get("collision_mask", {}).get("layers", None)
 
     # =========================================================================
 
@@ -838,7 +844,7 @@ class Entity(EntityLike, Exportable):
         entity_number: Optional[int] = None,
     ):
         if version is None:
-            version = mods.versions["base"]
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
         res = {}
         if entity_number is not None:
             res["entity_number"] = entity_number
@@ -880,6 +886,76 @@ class Entity(EntityLike, Exportable):
         )
 
 
+def migrate_name(
+    original_name: str, source_version: tuple[int, ...], dest_version: tuple[int, ...]
+) -> str:
+    # TODO: figure out migration
+    # legacy_entity_conversions = {
+    #     "curved-rail": "legacy-curved-rail",
+    #     "straight-rail": "legacy-straight-rail",
+    #     "logistic-chest-requester": "requester-chest",
+    #     "logistic-chest-buffer": "buffer-chest",
+    #     "logistic-chest-storage": "storage-chest",
+    #     "logistic-chest-active-provider": "active-provider-chest",
+    #     "logistic-chest-passive-provider": "passive-provider-chest",
+    #     "filter-inserter": "inserter",
+    #     "stack-inserter": "bulk-inserter",
+    #     "stack-filter-inserter": "bulk-inserter",
+    # }
+    matrix = {
+        (1, 0): {
+            (2, 0): {
+                "curved-rail": "legacy-curved-rail",
+                "straight-rail": "legacy-straight-rail",
+                "logistic-chest-active-provider": "active-provider-chest",
+                "logistic-chest-buffer": "buffer-chest",
+                "logistic-chest-passive-provider": "passive-provider-chest",
+                "logistic-chest-requester": "requester-chest",
+                "logistic-chest-storage": "storage-chest",
+            }
+        },
+        (1, 1): {
+            (2, 0): {
+                "curved-rail": "legacy-curved-rail",
+                "straight-rail": "legacy-straight-rail",
+                "logistic-chest-active-provider": "active-provider-chest",
+                "logistic-chest-buffer": "buffer-chest",
+                "logistic-chest-passive-provider": "passive-provider-chest",
+                "logistic-chest-requester": "requester-chest",
+                "logistic-chest-storage": "storage-chest",
+            }
+        },
+        (2, 0): {
+            (1, 0): {
+                "legacy-curved-rail": "curved-rail",
+                "legacy-straight-rail": "straight-rail",
+                "active-provider-chest": "logistic-chest-active-provider",
+                "buffer-chest": "logistic-chest-buffer",
+                "passive-provider-chest": "logistic-chest-passive-provider",
+                "requester-chest": "logistic-chest-requester",
+                "storage-chest": "logistic-chest-storage",
+            },
+            (1, 1): {
+                "legacy-curved-rail": "curved-rail",
+                "legacy-straight-rail": "straight-rail",
+                "active-provider-chest": "logistic-chest-active-provider",
+                "buffer-chest": "logistic-chest-buffer",
+                "passive-provider-chest": "logistic-chest-passive-provider",
+                "requester-chest": "logistic-chest-requester",
+                "storage-chest": "logistic-chest-storage",
+            },
+        },
+    }
+    # Get the specific version -> version conversion table
+    converter_table = matrix.get(source_version[:2], {}).get(dest_version[:2], None)
+    # If we turn up None, early exit
+    if converter_table is None:
+        return original_name
+    # If there's no entry for this name, assume it's unchanged
+    result = converter_table.get(original_name, original_name)
+    return result
+
+
 @attrs.define
 class _ExportEntity:
     global_position: Vector = attrs.field(metadata={"omit": False})
@@ -893,7 +969,14 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     Entity,
     lambda fields: {
         "entity_number": fields._entity_number.name,
-        "name": fields.name.name,
+        "name": (
+            fields.name,
+            lambda input, _, inst: migrate_name(
+                input,
+                source_version=(1, 0),
+                dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),
+            ),
+        ),
         "position": fields.position.name,
         # None: fields.mirror.name,
         # None: fields.quality.name,
@@ -925,7 +1008,14 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "tags": fields.tags.name,
     },
     lambda fields, converter: {
-        "name": fields.name.name,
+        "name": (
+            fields.name,
+            lambda inst: migrate_name(
+                inst.name,
+                source_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),
+                dest_version=(1, 0),
+            ),
+        ),
         "position": _export_fields.global_position,
         "mirror": None,
         "quality": None,
@@ -948,7 +1038,14 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
     Entity,
     lambda fields: {
         "entity_number": fields._entity_number.name,
-        "name": fields.name.name,
+        "name": (
+            fields.name,
+            lambda input, _, inst: migrate_name(
+                input,
+                source_version=(2, 0),
+                dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),
+            ),
+        ),
         "position": fields.position.name,
         "mirror": fields.mirror.name,
         "quality": fields.quality.name,
@@ -956,7 +1053,14 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         "tags": fields.tags.name,
     },
     lambda fields, converter: {
-        "name": fields.name.name,
+        "name": (
+            fields.name,
+            lambda inst: migrate_name(
+                inst.name,
+                source_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),
+                dest_version=(2, 0),
+            ),
+        ),
         "position": _export_fields.global_position,
         "mirror": fields.mirror.name,
         "quality": fields.quality.name,
@@ -964,3 +1068,30 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         "tags": fields.tags.name,
     },
 )
+
+# def entity_structure_factory_factory(version: tuple[int, ...]):
+#     def entity_structure_factory(cl: type, converter: cattrs.Converter):
+#         print(cl)
+#         # default_structure_func = draftsman_converters.get_version(version).get_converter().get_structure_hook(Entity)
+#         default_hook = draftsman_converters.get_version(version).get_converter().get_structure_hook(cl)
+
+#         def structure_entity_pre_hook(d: dict, _: type):
+#             print("pre hook")
+#             d["name"] = migrate_name(
+#                 d["name"],
+#                 source_version=version,
+#                 dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
+#             )
+
+#             return default_hook(d, _)
+
+#         return structure_entity_pre_hook
+
+#     return entity_structure_factory
+
+# draftsman_converters.get_version((1, 0)).register_structure_hook_factory(
+#     lambda cl: issubclass(cl, Entity), entity_structure_factory_factory((1, 0))
+# )
+# draftsman_converters.get_version((2, 0)).register_structure_hook_factory(
+#     lambda cl: issubclass(cl, Entity), entity_structure_factory_factory((2, 0))
+# )

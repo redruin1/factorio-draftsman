@@ -1,6 +1,6 @@
 # test_car.py
 
-from draftsman.constants import Orientation
+from draftsman.constants import Orientation, ValidationMode
 from draftsman.prototypes.car import (
     Car,
     cars,
@@ -10,6 +10,7 @@ from draftsman.signatures import (
     ItemInventoryPositions,
     EquipmentComponent,
 )
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
@@ -17,27 +18,26 @@ import pytest
 
 @pytest.fixture
 def valid_car():
-    if len(cars) == 0:
-        return None
-    return Car(
-        "tank",
-        id="test",
-        quality="uncommon",
-        tile_position=(1, 1),
-        orientation=Orientation.EAST,
-        item_requests=[
-            BlueprintInsertPlan(
-                id="energy-shield-equipment",
-                items=ItemInventoryPositions(grid_count=1),
-            )
-        ],
-        equipment=[
-            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-        ],
-        enable_logistics_while_moving=False,
-        driver_is_main_gunner=True,
-        selected_gun_index=2,
-    )
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return Car(
+            "tank",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                )
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            enable_logistics_while_moving=False,
+            driver_is_main_gunner=True,
+            selected_gun_index=2,
+        )
 
 
 def test_constructor():

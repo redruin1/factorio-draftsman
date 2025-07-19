@@ -1,5 +1,6 @@
 # group.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.blueprint import (
     structure_blueprint_1_0_factory,
 )
@@ -114,7 +115,7 @@ class Group(
         if "version" in json_dict["blueprint"]:
             version = decode_version(json_dict["blueprint"]["version"])
         else:
-            version = mods.versions["base"]
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
 
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter()

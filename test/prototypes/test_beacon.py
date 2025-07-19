@@ -24,8 +24,6 @@ import pytest
 
 @pytest.fixture
 def valid_beacon():
-    if len(beacons) == 0:
-        return None
     return Beacon(
         "beacon",
         id="test",

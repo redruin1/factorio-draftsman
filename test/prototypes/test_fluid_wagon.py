@@ -17,8 +17,6 @@ import pytest
 
 @pytest.fixture
 def valid_fluid_wagon():
-    if len(fluid_wagons) == 0:
-        return None
     with draftsman.validators.set_mode(ValidationMode.MINIMUM):
         return FluidWagon(
             "fluid-wagon",

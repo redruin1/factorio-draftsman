@@ -13,8 +13,6 @@ import pytest
 
 @pytest.fixture
 def valid_electric_turret():
-    if len(electric_turrets) == 0:
-        return None
     return ElectricTurret(
         "laser-turret",
         id="test",

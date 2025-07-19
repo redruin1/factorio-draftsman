@@ -24,17 +24,18 @@ def valid_curved_rail_a():
     )
 
 
-def test_constructor():
-    curved_rail = CurvedRailA("curved-rail-a")
+@pytest.mark.skipif(len(curved_rails_a) == 0, reason="No CurvedRailAs to test")
+class TestCurvedRailA:
+    def test_constructor(self):
+        curved_rail = CurvedRailA("curved-rail-a")
 
-    with pytest.warns(UnknownEntityWarning):
-        CurvedRailA("unknown curved rail")
+        with pytest.warns(UnknownEntityWarning):
+            CurvedRailA("unknown curved rail")
 
-
-def test_flags():
-    for rail_name in curved_rails_a:
-        curved_rail = CurvedRailA(rail_name)
-        assert curved_rail.power_connectable == False
-        assert curved_rail.dual_power_connectable == False
-        assert curved_rail.circuit_connectable == False
-        assert curved_rail.dual_circuit_connectable == False
+    def test_flags(self):
+        for rail_name in curved_rails_a:
+            curved_rail = CurvedRailA(rail_name)
+            assert curved_rail.power_connectable == False
+            assert curved_rail.dual_power_connectable == False
+            assert curved_rail.circuit_connectable == False
+            assert curved_rail.dual_circuit_connectable == False

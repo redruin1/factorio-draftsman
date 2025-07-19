@@ -1,7 +1,6 @@
 # mod_list.py
 
 from draftsman.utils import get_suggestion
-from draftsman.data import mods
 from draftsman.error import IncorrectModFormatError, MissingModError
 from draftsman.utils import version_string_to_tuple
 
@@ -341,7 +340,9 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     # Ensure that the mod's factorio version is correct
     # (Except for in the cases of the "base" and "core" mods, which are exempt)
     if mod_name not in ("base", "core"):
-        mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
+        mod_factorio_version = version_string_to_tuple(  # noqa: F841
+            mod_info["factorio_version"]
+        )
         # TODO: this check cannot happen here, has to happen after all mods are
         # registered
         # assert mod_factorio_version <= mods.versions["base"]

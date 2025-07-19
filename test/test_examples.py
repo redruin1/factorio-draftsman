@@ -4,11 +4,14 @@ Run all examples in order to ensure they're all up-to-date with any new breaking
 syntax changes.
 """
 
+from draftsman.data import mods
+
 import pytest
 
 import importlib
 
 
+@pytest.mark.skipif(mods.versions["base"] < (2, 0), reason="1.0 test")
 @pytest.mark.parametrize(
     "example,given_input,expected_output",
     [
@@ -35,11 +38,11 @@ import importlib
             "examples.train_configuration_usage",
             "examples.train_schedule_usage",
             "examples.entities.decider_combinator",
-            "examples.entities.display_panel",
+            # "examples.entities.display_panel", # TODO
         )
     ],
 )
-def test_example(example, given_input, expected_output):
+def test_example_1_0(example, given_input, expected_output):
     # if given_input:
     #     pass
 

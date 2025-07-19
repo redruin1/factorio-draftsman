@@ -12,8 +12,6 @@ import pytest
 
 @pytest.fixture
 def valid_lamp():
-    if len(lamps) == 0:
-        return None
     return Lamp(
         "small-lamp",
         id="test",

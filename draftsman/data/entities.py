@@ -164,7 +164,7 @@ def get_allowed_effects(entity_name: str, default: set[str]) -> Optional[set[str
 def add_entity(
     name: str,
     type: str,
-    collision_box: PrimitiveAABB,
+    collision_box: PrimitiveAABB = ((0, 0), (0, 0)),
     collision_mask: set[str] = None,
     hidden: bool = False,
     target: tuple[dict[str, dict], dict[str, list]] = (raw, of_type),
@@ -258,7 +258,7 @@ def add_entity(
 
     if collision_mask is not None:
         raw[name]["collision_mask"] = collision_mask
-        raw[name]["collision_mask"]["layers"] = set(collision_mask["layers"])
+        # raw[name]["collision_mask"]["layers"] = set(collision_mask["layers"])
     # else:
     #     raw[name]["collision_mask"] = get_default_collision_mask(type)
 

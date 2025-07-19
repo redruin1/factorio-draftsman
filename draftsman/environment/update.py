@@ -5,7 +5,7 @@
 # requires information on item groups when modifying things like entities, which
 # is annoying.
 
-from draftsman import __file__ as draftsman_root_file
+from draftsman import DEFAULT_FACTORIO_VERSION, __file__ as draftsman_root_file
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.data.entities import add_entity
 from draftsman.environment.mod_list import (
@@ -394,7 +394,7 @@ def run_data_lifecycle(
         can be parsed.
     """
     draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
-    
+
     default_game_path = os.path.join(draftsman_path, "factorio-data")
     if game_path is None:
         game_path = default_game_path
@@ -513,12 +513,14 @@ def run_data_lifecycle(
     # point in any of the subsequent steps.
     # This is not included in `factorio-data` and has to be manually extracted
     # (See compatibility/defines.lua for more info).
-    print(mods["base"].version)
-    try:
+    if version_string_to_tuple(mods["base"].version) < (2, 0):
         lua.execute(
-            file_to_string(os.path.join(draftsman_path, "compatibility", "defines", mods["base"].version + ".lua"))
+            file_to_string(
+                os.path.join(draftsman_path, "compatibility", "defines", "1.0.0.lua")
+            )
         )
-    except FileNotFoundError:
+    else:
+        # except FileNotFoundError:
         lua.execute(
             file_to_string(os.path.join(draftsman_path, "compatibility", "defines.lua"))
         )
@@ -803,7 +805,11 @@ def extract_mods(
 
 
 def extract_entities(
-    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+    lua: lupa.LuaRuntime,
+    draftsman_path: str,
+    game_version,
+    sort_tuple,
+    verbose: bool = False,
 ) -> None:
     """
     Extracts the entities to ``entities.pkl`` in :py:mod:`draftsman.data`.
@@ -811,10 +817,72 @@ def extract_entities(
 
     data = lua.globals().data
 
-    # Default collision masks are defined by the game
-    default_collision_masks = convert_table_to_dict(
-        data.raw["utility-constants"]["default"]["default_collision_masks"]
-    )
+    try:
+        # In modern Factorio, default collision masks are defined by the game
+        default_collision_masks = convert_table_to_dict(
+            data.raw["utility-constants"]["default"]["default_collision_masks"]
+        )
+    except TypeError:
+        # If not, we have to manually define their defaults ourselves
+        default_collision_masks = {
+            "gate": {
+                "item-layer",
+                "object-layer",
+                "player-layer",
+                "water-tile",
+                "train-layer",
+            },
+            "heat-pipe": {"object-layer", "floor-layer", "water-tile"},
+            "land-mine": {"object-layer", "water-tile"},
+            "linked-belt": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "loader": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "straight-rail": {
+                "item-layer",
+                "object-layer",
+                "rail-layer",
+                "floor-layer",
+                "water-tile",
+            },
+            "curved-rail": {
+                "item-layer",
+                "object-layer",
+                "rail-layer",
+                "floor-layer",
+                "water-tile",
+            },
+            "locomotive": {"train-layer"},
+            "cargo-wagon": {"train-layer"},
+            "fluid-wagon": {"train-layer"},
+            "artillery-wagon": {"train-layer"},
+            "splitter": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "transport-belt": {
+                "object-layer",
+                "floor-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "underground-belt": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+        }
 
     entities = {}
     unordered_entities_raw = {}
@@ -901,10 +969,23 @@ def extract_entities(
 
         collision_mask = entity.get("collision_mask", None)
         if not collision_mask:
-            default_collision_mask = default_collision_masks.get(entity["type"])
+            default_collision_mask = default_collision_masks.get(
+                entity["type"],
+                {  # true default
+                    "item-layer",
+                    "object-layer",
+                    "player-layer",
+                    "water-tile",
+                },
+            )
             entity["collision_mask"] = default_collision_mask
 
-        entity["collision_mask"]["layers"] = set(entity["collision_mask"]["layers"])
+        # 2.0 Factorio has more keys than just the layers
+        if "layers" in entity["collision_mask"]:
+            entity["collision_mask"]["layers"] = set(entity["collision_mask"]["layers"])
+        # 1.0 Factorio is just a simple set
+        else:
+            entity["collision_mask"] = set(entity["collision_mask"])
 
         # Check if an entity is flippable or not
         is_flippable[entity_name] = is_entity_flippable(entity)
@@ -922,15 +1003,18 @@ def extract_entities(
     # unordered_entities_raw = {}
     entities["of_type"] = {}
 
-    def add_entities(prototype_name: str):
-        if prototype_name not in data.raw:
+    def add_entities(prototype_name: str, source_name: str | None = None):
+        if source_name is None:
+            source_name = prototype_name
+        if source_name not in data.raw:
             # If not present, then typically it means its not present in this version
             # of the game; thus return an empty list
             entities["of_type"][prototype_name] = []
             return
-        for name, contents in convert_table_to_dict(data.raw[prototype_name]).items():
+        for name, contents in convert_table_to_dict(data.raw[source_name]).items():
             if not categorize_entity(name, contents):
                 continue
+            contents["type"] = prototype_name
             add_entity(**contents, target=(unordered_entities_raw, entities["of_type"]))
 
         sort(entities["of_type"][prototype_name])
@@ -979,8 +1063,14 @@ def extract_entities(
     add_entities("lab")
     add_entities("lamp")
     add_entities("land-mine")
-    add_entities("legacy-straight-rail")
-    add_entities("legacy-curved-rail")
+    if game_version < (2, 0):
+        # Treat "curved-rails" as "legacy-curved-rails"
+        add_entities("legacy-curved-rail", "curved-rail")
+        # Treat "straight-rails" as "legacy-straight-rails"
+        add_entities("legacy-straight-rail", "straight-rail")
+    else:
+        add_entities("legacy-curved-rail")
+        add_entities("legacy-straight-rail")
     add_entities("lightning-attractor")  # Space Age
     add_entities("linked-belt")
     add_entities("linked-container")
@@ -1041,7 +1131,10 @@ def extract_entities(
     add_entities("spider-vehicle")  # Blueprintable in 2.0
     add_entities("splitter")
     add_entities("storage-tank")
-    add_entities("straight-rail")
+    if game_version < (2, 0):
+        entities["of_type"]["straight-rail"] = []
+    else:
+        add_entities("straight-rail")
     add_entities("thruster")  # Space Age
     add_entities("train-stop")
     add_entities("transport-belt")
@@ -1255,7 +1348,10 @@ def extract_planets(
 ) -> None:
     data = lua.globals().data
 
-    planets = convert_table_to_dict(data.raw["planet"])
+    try:
+        planets = convert_table_to_dict(data.raw["planet"])
+    except TypeError:
+        planets = {}
 
     with open(os.path.join(draftsman_path, "data", "planets.pkl"), "wb") as out:
         data = [planets]
@@ -1277,7 +1373,10 @@ def extract_qualities(
 
     data = lua.globals().data
 
-    raw_qualities = convert_table_to_dict(data.raw["quality"])
+    try:
+        raw_qualities = convert_table_to_dict(data.raw["quality"])
+    except TypeError:
+        raw_qualities = {}
 
     with open(os.path.join(draftsman_path, "data", "qualities.pkl"), "wb") as out:
         data = [raw_qualities]
@@ -1609,9 +1708,12 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
 
     tile_list = []
     for tile in tiles:
-        tiles[tile]["collision_mask"]["layers"] = set(
-            tiles[tile]["collision_mask"]["layers"]
-        )
+        if "layers" in tiles[tile]["collision_mask"]:
+            tiles[tile]["collision_mask"]["layers"] = set(
+                tiles[tile]["collision_mask"]["layers"]
+            )
+        else:
+            tiles[tile]["collision_mask"] = set(tiles[tile]["collision_mask"])
         tile_order = tiles[tile].get("order", None)
         tile_list.append((tile_order is None, tile_order, tile))
 
@@ -1631,7 +1733,12 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
         print("Extracted tiles...")
 
 
-def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
+def extract_data(
+    lua: lupa.LuaRuntime,
+    draftsman_path: str,
+    game_version: tuple[int, ...] = DEFAULT_FACTORIO_VERSION,
+    verbose: bool = False,
+):
     # TODO: this needs to be customizable; how do we do this?
     # Ideally we would have some user-friendly pattern syntax that users could
     # specify...
@@ -1657,7 +1764,7 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fals
     # as necessary
     items = get_items(lua)
 
-    extract_entities(lua, draftsman_path, items, verbose)
+    extract_entities(lua, draftsman_path, game_version, items, verbose)
     extract_equipment(lua, draftsman_path, items, verbose)
     extract_fluids(lua, draftsman_path, items, verbose)
     extract_instruments(lua, draftsman_path, verbose)
@@ -1711,16 +1818,7 @@ def update_draftsman_data(
     if game_path is None:
         mods_path = os.path.join(draftsman_path, "factorio-mods")
 
-    lua_instance = run_data_lifecycle(
-        game_path=game_path,
-        mods_path=mods_path,
-        show_logs=show_logs,
-        no_mods=no_mods,
-        verbose=verbose,
-    )
-
-    # Get the version of Factorio specified by the game data, and write
-    # `_factorio_version.py` with the current factorio version
+    # Get the version of Factorio specified by the game data
     with open(os.path.join(game_path, "base", "info.json")) as base_info_file:
         base_info = json.load(base_info_file)
         factorio_version = base_info["version"]
@@ -1729,21 +1827,26 @@ def update_draftsman_data(
             factorio_version += ".0"
         factorio_version_info = version_string_to_tuple(factorio_version)
 
-    with open(
-        os.path.join(draftsman_path, "_factorio_version.py"), "w"
-    ) as version_file:
-        version_file.write("# _factorio_version.py\n\n")
-        version_file.write('__factorio_version__ = "' + factorio_version + '"\n')
-        version_file.write(
-            "__factorio_version_info__ = {}\n".format(str(factorio_version_info))
-        )
+    lua_instance = run_data_lifecycle(
+        game_path=game_path,
+        mods_path=mods_path,
+        show_logs=show_logs,
+        no_mods=no_mods,
+        verbose=verbose,
+    )
 
     # At this point, `data.raw` in `lua_instance` and should(!) be properly
     # initialized. Hence, we can now extract the data we wish:
 
     if verbose:
         print()
-    extract_data(lua=lua_instance, draftsman_path=draftsman_path, verbose=verbose)
+
+    extract_data(
+        lua=lua_instance,
+        draftsman_path=draftsman_path,
+        game_version=factorio_version_info,
+        verbose=verbose,
+    )
 
     if verbose:
         print("\nUpdate finished.")  # Phew.

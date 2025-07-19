@@ -1,5 +1,6 @@
 # entity.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
@@ -345,14 +346,13 @@ class TestEntityBase:
         with pytest.raises(DataFormatError):
             container.tags = "incorrect"
 
-    # @pytest.mark.xfail(reason="issue 134 https://github.com/redruin1/factorio-draftsman/issues/134")
     def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
         assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
         recycler = new_entity(
-            "recycler", tile_position=[3, 3], direction=Direction.EAST
+            "assembling-machine-1", tile_position=[3, 3], direction=Direction.EAST
         )
-        assert recycler.get_world_bounding_box() == AABB(3.3, 3.3, 6.7, 4.7)
+        assert recycler.get_world_bounding_box() == AABB(3.3, 3.3, 5.7, 5.7)
 
     def test_set_name(self):
         iron_chest = Container("iron-chest")
@@ -371,7 +371,7 @@ class TestEntityBase:
         assert iron_chest.collision_set == None
         assert iron_chest.collision_mask == None
         assert (iron_chest.tile_width, iron_chest.tile_height) == (0, 0)
-        assert iron_chest.inventory_bar_enabled == None
+        assert iron_chest.inventory_bar_enabled == True  # enabled by default
         assert iron_chest.get_world_bounding_box() == None
 
         with pytest.raises(DataFormatError):
@@ -388,13 +388,8 @@ class TestEntityBase:
         iron_chest = new_entity("iron-chest", tile_position=(3, 3))
         assert iron_chest.position.x == 3.5 and iron_chest.position.y == 3.5
 
-        active_provider_chest = new_entity(
-            "active-provider-chest", tile_position=(10, 10)
-        )
-        assert (
-            active_provider_chest.position.x == 10.5
-            and active_provider_chest.position.y == 10.5
-        )
+        inserter = new_entity("inserter", tile_position=(10, 10))
+        assert inserter.position.x == 10.5 and inserter.position.y == 10.5
 
     def test_set_position(self):
         iron_chest = Container("iron-chest")
@@ -546,11 +541,19 @@ class TestEntityFactory:
     def test_pump(self):
         assert isinstance(new_entity("pump"), Pump)
 
-    def test_straight_rail(self):
-        assert isinstance(new_entity("legacy-straight-rail"), LegacyStraightRail)
+    def test_legacy_straight_rail(self):
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "straight-rail"
+        else:
+            entity_name = "legacy-straight-rail"
+        assert isinstance(new_entity(entity_name), LegacyStraightRail)
 
-    def test_curved_rail(self):
-        assert isinstance(new_entity("legacy-curved-rail"), LegacyCurvedRail)
+    def test_legacy_curved_rail(self):
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "curved-rail"
+        else:
+            entity_name = "legacy-curved-rail"
+        assert isinstance(new_entity(entity_name), LegacyCurvedRail)
 
     def test_train_stop(self):
         assert isinstance(new_entity("train-stop"), TrainStop)
@@ -574,19 +577,39 @@ class TestEntityFactory:
         assert isinstance(new_entity("artillery-wagon"), ArtilleryWagon)
 
     def test_logistic_passive_container(self):
-        assert isinstance(new_entity("passive-provider-chest"), LogisticPassiveContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-passive-provider"
+        else:
+            entity_name = "passive-provider-chest"
+        assert isinstance(new_entity(entity_name), LogisticPassiveContainer)
 
     def test_logistic_active_container(self):
-        assert isinstance(new_entity("active-provider-chest"), LogisticActiveContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-active-provider"
+        else:
+            entity_name = "active-provider-chest"
+        assert isinstance(new_entity(entity_name), LogisticActiveContainer)
 
     def test_logistic_storage_container(self):
-        assert isinstance(new_entity("storage-chest"), LogisticStorageContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-storage"
+        else:
+            entity_name = "storage-chest"
+        assert isinstance(new_entity(entity_name), LogisticStorageContainer)
 
     def test_logistic_buffer_container(self):
-        assert isinstance(new_entity("buffer-chest"), LogisticBufferContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-buffer"
+        else:
+            entity_name = "buffer-chest"
+        assert isinstance(new_entity(entity_name), LogisticBufferContainer)
 
     def test_logistic_request_container(self):
-        assert isinstance(new_entity("requester-chest"), LogisticRequestContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-requester"
+        else:
+            entity_name = "requester-chest"
+        assert isinstance(new_entity(entity_name), LogisticRequestContainer)
 
     def test_roboport(self):
         assert isinstance(new_entity("roboport"), Roboport)
@@ -692,7 +715,10 @@ class TestEntityFactory:
     def test_burner_generator(self):
         assert isinstance(new_entity("burner-generator"), BurnerGenerator)
 
-    @pytest.mark.skipif(mods.versions["base"] >= (2, 0, 0), reason="Player ports deprecated > Factorio 2.0")
+    @pytest.mark.skipif(
+        mods.versions.get("base", DEFAULT_FACTORIO_VERSION) >= (2, 0, 0), 
+        reason="Player ports deprecated > Factorio 2.0"
+    )
     def test_player_port(self):
         assert isinstance(new_entity("player-port"), PlayerPort)
 

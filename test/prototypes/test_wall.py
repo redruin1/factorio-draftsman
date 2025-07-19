@@ -18,8 +18,6 @@ import pytest
 
 @pytest.fixture
 def valid_wall():
-    if len(walls) == 0:
-        return None
     return Wall(
         "stone-wall",
         id="test",
@@ -65,7 +63,7 @@ class TestWall:
             "unused_keyword": "whatever",
         }
 
-        # Import from correct dictionary
+        # Import from correct 2.0 dictionary
         d = {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -82,8 +80,7 @@ class TestWall:
             },
             "tags": {"some": "stuff"},
         }
-        wall = Wall.from_dict(d)
-        wall.validate().reissue_all()
+        wall = Wall.from_dict(d, version=(2, 0))
         assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -161,9 +158,9 @@ class TestWall:
                     "output_signal": {"name": "signal-B", "type": "virtual"},
                 },
                 "tags": {"some": "stuff"},
-            }
+            },
+            version=(2, 0),
         )
-        wall.validate(mode=vm.MINIMUM).reissue_all()
         assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -232,7 +229,8 @@ class TestWall:
                     "output_signal": {"name": "signal-B", "type": "virtual"},
                 },
                 "tags": {"some": "stuff"},
-            }
+            },
+            version=(2, 0),
         )
         assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
@@ -294,7 +292,8 @@ class TestWall:
                     "output_signal": {"name": "signal-B", "type": "virtual"},
                 },
                 "tags": {"some": "stuff"},
-            }
+            },
+            version=(2, 0),
         )
         assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
@@ -367,8 +366,6 @@ class TestWall:
         wall = Wall.from_dict(d_1_0, version=(1, 0))
         assert wall.extra_keys is None
         # Output should be equivalent
-        print(wall.position)
-        print(wall.tile_position)
         assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
         # Should be able to output a 2.0 dict
         assert wall.to_dict(version=(2, 0), exclude_defaults=False) == d_2_0

@@ -29,17 +29,18 @@ def valid_display_panel():
     )
 
 
-def test_constructor():
-    curved_rail = DisplayPanel("display-panel")
+@pytest.mark.skipif(len(display_panels) == 0, reason="No DisplayPanels to test")
+class TestDisplayPanel:
+    def test_constructor(self):
+        curved_rail = DisplayPanel("display-panel")
 
-    with pytest.warns(UnknownEntityWarning):
-        DisplayPanel("unknown display panel")
+        with pytest.warns(UnknownEntityWarning):
+            DisplayPanel("unknown display panel")
 
-
-def test_flags():
-    for panel_name in display_panels:
-        panel = DisplayPanel(panel_name)
-        assert panel.power_connectable == False
-        assert panel.dual_power_connectable == False
-        assert panel.circuit_connectable == True
-        assert panel.dual_circuit_connectable == False
+    def test_flags(self):
+        for panel_name in display_panels:
+            panel = DisplayPanel(panel_name)
+            assert panel.power_connectable == False
+            assert panel.dual_power_connectable == False
+            assert panel.circuit_connectable == True
+            assert panel.dual_circuit_connectable == False

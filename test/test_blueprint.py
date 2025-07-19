@@ -1,5 +1,6 @@
 # blueprint.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
 from draftsman.classes.collection import CollectionList
 from draftsman.classes.collision_set import CollisionSet
@@ -574,7 +575,35 @@ class TestBlueprint:
         blueprint.schedules = ScheduleList([schedule])
         assert isinstance(blueprint.schedules, ScheduleList)
         assert blueprint.schedules[0].locomotives[0]() is blueprint.entities[0]
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(1, 0))["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "name": "locomotive",
+                    "position": {"x": 0.0, "y": 0.0},
+                    "entity_number": 1,
+                }
+            ],
+            "schedules": [
+                {
+                    "locomotives": [1],
+                    "schedule": [
+                        {
+                            "station": "station_name",
+                            "wait_conditions": [
+                                {
+                                    "type": "inactivity",
+                                    # "compare_type": "or",
+                                    "ticks": 600,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "version": encode_version(*mods.versions["base"]),
+        }
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -636,7 +665,25 @@ class TestBlueprint:
             ),
         ]
 
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(1, 0))["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "entity_number": 1,
+                    "name": "locomotive",
+                    "position": {"x": 0.0, "y": 4.0},
+                    "orientation": 0.75,
+                },
+                {
+                    "entity_number": 2,
+                    "name": "cargo-wagon",
+                    "position": {"x": 7, "y": 4},
+                    "orientation": 0.75,
+                },
+            ],
+            "version": encode_version(*mods.versions["base"]),
+        }
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -690,7 +737,10 @@ class TestBlueprint:
 
         # Test broadphase positive, but narrowphase negative
         blueprint = Blueprint()
-        blueprint.entities.append("legacy-curved-rail")
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            blueprint.entities.append("curved-rail")
+        else:
+            blueprint.entities.append("legacy-curved-rail")
         blueprint.entities.append("wooden-chest", tile_position=(0, 4))
 
     def test_change_entity_id(self):
@@ -2015,7 +2065,7 @@ class TestBlueprint:
             )
 
         # Errors
-        blueprint.entities.append("lightning-rod", tile_position=(0, 6), id="3")
+        blueprint.entities.append("gate", tile_position=(0, 6), id="3")
 
         with pytest.raises(EntityNotCircuitConnectableError):
             blueprint.add_circuit_connection("green", "3", "1")
@@ -2196,7 +2246,7 @@ class TestBlueprint:
         )
 
         assert len(blueprint.entities) == 4
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -2259,7 +2309,7 @@ class TestBlueprint:
             config=config, position=(0, 4), direction=Direction.EAST, schedule=schedule
         )
         assert len(blueprint.entities) == 6
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [3, 5],
                 "schedule": {
@@ -2296,7 +2346,7 @@ class TestBlueprint:
             config=config, position=(0, 6), direction=Direction.EAST, schedule=schedule
         )
         assert len(blueprint.entities) == 8
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [3, 5],
                 "schedule": {
@@ -2364,7 +2414,7 @@ class TestBlueprint:
         blueprint.add_train_at_station(config=config, station="Station 1")
 
         assert len(blueprint.entities) == 3
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -2409,7 +2459,7 @@ class TestBlueprint:
         )
 
         assert len(blueprint.entities) == 6
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -2493,7 +2543,7 @@ class TestBlueprint:
             config=config, station=blueprint.entities[-1], schedule=schedule
         )
         assert len(blueprint.entities) == 9
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [5, 8],
                 "schedule": {
@@ -2537,7 +2587,7 @@ class TestBlueprint:
             config=config, station=blueprint.entities[-1], schedule=schedule
         )
         assert len(blueprint.entities) == 12
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [5, 8],
                 "schedule": {
@@ -2667,7 +2717,36 @@ class TestBlueprint:
         blueprint.add_train_at_position(config, (20, 0), Direction.NORTH, schedule2)
         train3 = blueprint.find_train_from_wagon(blueprint.entities[-1])
 
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(1, 0))["blueprint"]["schedules"] == [
+            {
+                "locomotives": [1, 3],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "locomotives": [5],
+                "schedule": [
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                # "compare_type": "or", # Default
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [1, 3],
                 "schedule": {
@@ -2704,7 +2783,35 @@ class TestBlueprint:
 
         blueprint.remove_train(train2)
         assert len(blueprint.entities) == 4
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(1, 0))["blueprint"]["schedules"] == [
+            {
+                "locomotives": [1],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "locomotives": [3],
+                "schedule": [
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [1],
                 "schedule": {

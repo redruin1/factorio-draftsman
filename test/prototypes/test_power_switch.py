@@ -13,8 +13,6 @@ import pytest
 
 @pytest.fixture
 def valid_power_switch():
-    if len(power_switches) == 0:
-        return None
     return PowerSwitch(
         "power-switch",
         id="test",

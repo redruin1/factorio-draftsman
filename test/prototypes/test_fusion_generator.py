@@ -24,17 +24,18 @@ def valid_fusion_generator():
     )
 
 
-def test_constructor():
-    generator = FusionGenerator("fusion-generator")
+@pytest.mark.skipif(len(fusion_generators) == 0, reason="No FusionGenerators to test")
+class TestFusionGenerator:
+    def test_constructor(self):
+        generator = FusionGenerator("fusion-generator")
 
-    with pytest.warns(UnknownEntityWarning):
-        FusionGenerator("unknown fusion generator")
+        with pytest.warns(UnknownEntityWarning):
+            FusionGenerator("unknown fusion generator")
 
-
-def test_flags():
-    for generator_name in fusion_generators:
-        generator = FusionGenerator(generator_name)
-        assert generator.power_connectable == False
-        assert generator.dual_power_connectable == False
-        assert generator.circuit_connectable == False
-        assert generator.dual_circuit_connectable == False
+    def test_flags(self):
+        for generator_name in fusion_generators:
+            generator = FusionGenerator(generator_name)
+            assert generator.power_connectable == False
+            assert generator.dual_power_connectable == False
+            assert generator.circuit_connectable == False
+            assert generator.dual_circuit_connectable == False

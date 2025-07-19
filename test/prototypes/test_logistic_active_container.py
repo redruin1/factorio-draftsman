@@ -7,8 +7,8 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.signatures import BlueprintInsertPlan
-from draftsman.error import InvalidEntityError, DataFormatError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.error import DataFormatError
+from draftsman.warning import UnknownEntityWarning
 
 from draftsman.data import mods
 
@@ -18,10 +18,7 @@ import pytest
 
 @pytest.fixture
 def valid_active_container():
-    if len(logistic_active_containers) == 0:
-        return None
     return LogisticActiveContainer(
-        "active-provider-chest",
         id="test",
         quality="uncommon",
         tile_position=(1, 1),
@@ -33,22 +30,21 @@ def valid_active_container():
 class TestActiveContainer:
     def test_constructor_init(self):
         active_chest = LogisticActiveContainer(
-            "active-provider-chest",  # "logistic-chest-active-provider",
             tile_position={"x": 15, "y": 3},
             bar=5,
         )
-        assert active_chest.to_dict() == {
+        assert active_chest.to_dict(version=(2, 0)) == {
             "name": "active-provider-chest",
             "position": {"x": 15.5, "y": 3.5},
             "bar": 5,
         }
+
         active_chest = LogisticActiveContainer(
-            "active-provider-chest",
             position={"x": 15.5, "y": 1.5},
             bar=5,
             tags={"A": "B"},
         )
-        assert active_chest.to_dict() == {
+        assert active_chest.to_dict(version=(2, 0)) == {
             "name": "active-provider-chest",
             "position": {"x": 15.5, "y": 1.5},
             "bar": 5,
@@ -56,43 +52,31 @@ class TestActiveContainer:
         }
         # Warnings
         with pytest.warns(UnknownEntityWarning):
-            LogisticActiveContainer(
-                "this is not an active provider chest"
-            ).validate().reissue_all()
+            LogisticActiveContainer("this is not an active provider chest")
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticActiveContainer(
-                "active-provider-chest", id=25
-            ).validate().reissue_all()
+            LogisticActiveContainer(id=25)
 
         with pytest.raises(DataFormatError):
-            LogisticActiveContainer(
-                "active-provider-chest", position=TypeError
-            ).validate().reissue_all()
+            LogisticActiveContainer(position=TypeError)
 
         with pytest.raises(DataFormatError):
-            LogisticActiveContainer(
-                "active-provider-chest", bar="not even trying"
-            ).validate().reissue_all()
+            LogisticActiveContainer(bar="not even trying")
 
     def test_from_dict(self):
-        # (For now we'll ignore the fact that "active-provider-chest" should be
-        # renamed to "logistic-chest-active-provider" on 1.0)
-
         # TODO: test importing this string into 2.0 and see if Factorio is smart
         # and actually sends the modules to the correct spots
         """0eNp9UMtqwzAQ/Jc5SwE/2jj6lVKKrSzpgrQykhxqjP49knvpqbeZZeexe2BxG62RJcMcYBskwXwcSPyQ2bVZ3leCAWfyUJDZNzanRH5xLA/tZ/vNQnpAUWC50w9MVz4VSDJnpl+/k+xfsvmFYl3430lhDamKg7QG1VAPw+VNYYcZK6hBkSyfvciRzTEIW2052o1zVbeyqUnXGO6bzfys4dpX7Jq9GUsreJ5k/nxA4Ukxnan91I3XW3+dpun91vWlvAAUYWNo"""
 
         # Test old 1.0 items format gets properly modernized
         old_dict = {
-            "name": "active-provider-chest",
+            "name": "logistic-chest-active-provider",
             "position": {"x": 0.5, "y": 0.5},
             "items": {"iron-ore": 50},
         }
         container = LogisticActiveContainer.from_dict(old_dict, version=(1, 0))
-        assert container.name == "active-provider-chest"
         assert container.position.x == container.position.y == 0.5
         assert container.item_requests == [
             BlueprintInsertPlan(
@@ -112,21 +96,18 @@ class TestActiveContainer:
         ]
 
     def test_to_dict(self):
-        container = LogisticActiveContainer("active-provider-chest")
+        container = LogisticActiveContainer()
 
         container.set_item_request(
             "iron-ore", 50, quality="normal", inventory=InventoryType.chest
         )
-
-        # (For now we'll ignore the fact that "active-provider-chest" should be
-        # renamed to "logistic-chest-active-provider" on 1.0)
 
         # On 1.0, read_contents has no effect whatsoever
         assert container.read_contents is True
         assert container.to_dict(
             version=(1, 0), exclude_defaults=False, exclude_none=False
         ) == {
-            "name": "active-provider-chest",
+            "name": "logistic-chest-active-provider",
             "position": {"x": 0.5, "y": 0.5},
             # "bar": None, # Factorio doesn't like this null
             "items": {
@@ -144,7 +125,7 @@ class TestActiveContainer:
         assert container.to_dict(
             version=(1, 0), exclude_defaults=False, exclude_none=False
         ) == {
-            "name": "active-provider-chest",
+            "name": "logistic-chest-active-provider",
             "position": {"x": 0.5, "y": 0.5},
             # "bar": None,
             "items": {
@@ -230,7 +211,7 @@ class TestActiveContainer:
             assert container.dual_circuit_connectable == False
 
     def test_size(self):
-        chest = LogisticActiveContainer("active-provider-chest")
+        chest = LogisticActiveContainer()
         assert chest.size == 48
 
         with pytest.warns(UnknownEntityWarning):
@@ -248,14 +229,12 @@ class TestActiveContainer:
             "legendary": 120,
         }
         for quality, size in qualities.items():
-            chest = LogisticActiveContainer("active-provider-chest", quality=quality)
+            chest = LogisticActiveContainer(quality=quality)
             assert chest.size == size
 
     def test_mergable_with(self):
-        container1 = LogisticActiveContainer("active-provider-chest")
-        container2 = LogisticActiveContainer(
-            "active-provider-chest", bar=10, tags={"some": "stuff"}
-        )
+        container1 = LogisticActiveContainer()
+        container2 = LogisticActiveContainer(bar=10, tags={"some": "stuff"})
 
         assert container1.mergable_with(container1)
 
@@ -266,10 +245,8 @@ class TestActiveContainer:
         assert not container1.mergable_with(container2)
 
     def test_merge(self):
-        container1 = LogisticActiveContainer("active-provider-chest")
-        container2 = LogisticActiveContainer(
-            "active-provider-chest", bar=10, tags={"some": "stuff"}
-        )
+        container1 = LogisticActiveContainer()
+        container2 = LogisticActiveContainer(bar=10, tags={"some": "stuff"})
 
         container1.merge(container2)
         del container2
@@ -278,8 +255,8 @@ class TestActiveContainer:
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        container1 = LogisticActiveContainer("active-provider-chest")
-        container2 = LogisticActiveContainer("active-provider-chest")
+        container1 = LogisticActiveContainer()
+        container2 = LogisticActiveContainer()
 
         assert container1 == container2
 

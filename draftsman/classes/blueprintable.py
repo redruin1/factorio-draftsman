@@ -1,8 +1,7 @@
 # blueprintable.py
 
-from draftsman.classes.exportable import (
-    Exportable,
-)
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.classes.exportable import Exportable
 from draftsman.error import IncorrectBlueprintTypeError
 from draftsman.signatures import (
     Color,
@@ -17,6 +16,7 @@ from draftsman.utils import (
     encode_version,
     decode_version,
     JSON_to_string,
+    reissue_warnings,
     string_to_JSON,
     version_tuple_to_string,
 )
@@ -44,6 +44,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     """
 
     @classmethod
+    @reissue_warnings
     def from_string(
         cls,
         string: str,
@@ -81,7 +82,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         if "version" in json_dict[root_item]:
             version = decode_version(json_dict[root_item]["version"])
         else:
-            version = mods.versions["base"]
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
 
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter()
@@ -257,7 +258,9 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     version: uint64 = attrs.field(
-        factory=lambda: encode_version(*mods.versions["base"]),
+        factory=lambda: encode_version(
+            *mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
+        ),
         converter=try_convert(
             lambda value: (
                 encode_version(*value) if isinstance(value, Sequence) else value
@@ -419,7 +422,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MTSzNzcwNDcxMzWprAVWGHQI='
         """
         if version is None:
-            version = mods.versions["base"]
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
         return JSON_to_string(self.to_dict(version=version))
 
     def __str__(self) -> str:  # pragma: no coverage

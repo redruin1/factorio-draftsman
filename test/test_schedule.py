@@ -14,7 +14,7 @@ import re
 class TestWaitCondition:
     def test_constructor(self):
         # Time passed
-        w = WaitCondition("time")
+        w = WaitCondition("time", compare_type="and")
         assert w.type == "time"
         assert w.compare_type == "and"
         assert w.ticks == 1800
@@ -27,7 +27,7 @@ class TestWaitCondition:
         assert w.ticks == 300
         assert w.condition == None
 
-        w = WaitCondition("circuit")
+        w = WaitCondition("circuit", compare_type="and")
         assert w.type == "circuit"
         assert w.compare_type == "and"
         assert w.ticks == None
@@ -232,8 +232,8 @@ class TestWaitCondition:
 
     def test_bitwise_or(self):
         # WaitCondition and WaitCondition
-        full_cargo = WaitCondition("full")
-        inactivity = WaitCondition("inactivity")
+        full_cargo = WaitCondition("full", compare_type="and")
+        inactivity = WaitCondition("inactivity", compare_type="and")
 
         conditions = full_cargo | inactivity
         assert isinstance(conditions, WaitConditions)
@@ -248,6 +248,7 @@ class TestWaitCondition:
         # WaitCondition and WaitConditions
         signal_sent = WaitCondition(
             "circuit",
+            compare_type="and",
             condition=Condition(first_signal="signal-A", comparator="==", constant=100),
         )
         sum1 = signal_sent | conditions
@@ -257,6 +258,7 @@ class TestWaitCondition:
             [
                 WaitCondition(
                     "circuit",
+                    compare_type="and",
                     condition=Condition(
                         first_signal="signal-A", comparator="==", constant=100
                     ),
@@ -279,7 +281,7 @@ class TestWaitCondition:
         assert len(sum2) == 3
         assert sum2 == WaitConditions(
             [
-                WaitCondition("full"),
+                WaitCondition("full", compare_type="and"),
                 WaitCondition("inactivity", compare_type="or"),
                 WaitCondition(
                     "circuit",

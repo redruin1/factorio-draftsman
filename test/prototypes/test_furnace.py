@@ -1,6 +1,8 @@
 # test_furnace.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import Direction, InventoryType
+from draftsman.data import mods
 from draftsman.entity import Furnace, furnaces, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -27,8 +29,6 @@ import pytest
 
 @pytest.fixture
 def valid_furnace():
-    if len(furnaces) == 0:
-        return None
     return Furnace(
         "electric-furnace",
         id="test",
@@ -66,15 +66,27 @@ class TestFurnace:
 
     def test_allowed_effects(self):
         furnace = Furnace("stone-furnace")
-        assert furnace.allowed_effects == {"consumption", "speed", "pollution"}
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert furnace.allowed_effects == set()
+        else:
+            assert furnace.allowed_effects == {"consumption", "speed", "pollution"}
+
         furnace = Furnace("electric-furnace")
-        assert furnace.allowed_effects == {
-            "speed",
-            "productivity",
-            "quality",
-            "pollution",
-            "consumption",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert furnace.allowed_effects == {
+                "speed",
+                "productivity",
+                "pollution",
+                "consumption",
+            }
+        else:
+            assert furnace.allowed_effects == {
+                "speed",
+                "productivity",
+                "quality",
+                "pollution",
+                "consumption",
+            }
 
         with pytest.warns(UnknownEntityWarning):
             furnace = Furnace("unknown-furance")
@@ -82,21 +94,21 @@ class TestFurnace:
 
     def test_allowed_input_ingredients(self):
         furnace = Furnace("stone-furnace")
-        assert furnace.allowed_input_ingredients == {
-            "iron-plate",
-            "stone",
-            "iron-ore",
-            "lithium",
-            "copper-ore",
-        }
-        furnace = Furnace("electric-furnace")
-        assert furnace.allowed_input_ingredients == {
-            "iron-plate",
-            "stone",
-            "iron-ore",
-            "lithium",
-            "copper-ore",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert furnace.allowed_input_ingredients == {
+                "iron-plate",
+                "stone",
+                "iron-ore",
+                "copper-ore",
+            }
+        else:
+            assert furnace.allowed_input_ingredients == {
+                "iron-plate",
+                "stone",
+                "iron-ore",
+                "lithium",
+                "copper-ore",
+            }
 
         with pytest.warns(UnknownEntityWarning):
             furnace = Furnace("unknown-furance")
@@ -121,14 +133,25 @@ class TestFurnace:
 
     def test_set_item_request(self):
         furnace = Furnace("stone-furnace")
-        assert furnace.allowed_modules == {
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert furnace.allowed_modules == {
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+                # "speed-module",
+                # "speed-module-2",
+                # "speed-module-3",
+            }
+        else:
+            assert furnace.allowed_modules == {
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+            }
+
         assert furnace.total_module_slots == 0
 
         # # No slots on stone furnace for modules

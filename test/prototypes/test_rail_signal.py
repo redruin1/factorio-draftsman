@@ -17,8 +17,6 @@ import pytest
 
 @pytest.fixture
 def valid_rail_signal():
-    if len(rail_signals) == 0:
-        return None
     return RailSignal(
         "rail-signal",
         id="test",
@@ -51,7 +49,7 @@ class TestRailSignal:
             yellow_output_signal="signal-B",
             green_output_signal="signal-C",
         )
-        assert rail_signal.to_dict() == {
+        assert rail_signal.to_dict(version=(2, 0)) == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -67,7 +65,7 @@ class TestRailSignal:
             yellow_output_signal={"name": "signal-B", "type": "virtual"},
             green_output_signal={"name": "signal-C", "type": "virtual"},
         )
-        assert rail_signal.to_dict() == {
+        assert rail_signal.to_dict(version=(2, 0)) == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -91,18 +89,18 @@ class TestRailSignal:
 
     def test_1_0_serialization(self):
         signal = RailSignal("rail-signal", yellow_output_signal="signal-T")
-        assert signal.to_dict(version=(2, 0)) == {
-            "name": "rail-signal",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {
-                "yellow_output_signal": {"name": "signal-T", "type": "virtual"},
-            },
-        }
         assert signal.to_dict(version=(1, 0)) == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
                 "orange_output_signal": {"name": "signal-T", "type": "virtual"},
+            },
+        }
+        assert signal.to_dict(version=(2, 0)) == {
+            "name": "rail-signal",
+            "position": {"x": 0.5, "y": 0.5},
+            "control_behavior": {
+                "yellow_output_signal": {"name": "signal-T", "type": "virtual"},
             },
         }
 
@@ -218,7 +216,7 @@ class TestRailSignal:
         assert rail_signal.yellow_output_signal == SignalID(
             name="signal-A", type="virtual"
         )
-        assert rail_signal.to_dict() == {
+        assert rail_signal.to_dict(version=(2, 0)) == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -230,7 +228,7 @@ class TestRailSignal:
         assert rail_signal.yellow_output_signal == SignalID(
             name="signal-B", type="virtual"
         )
-        assert rail_signal.to_dict() == {
+        assert rail_signal.to_dict(version=(2, 0)) == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -243,7 +241,7 @@ class TestRailSignal:
             assert rail_signal.yellow_output_signal == SignalID(
                 name="unknown", type="virtual"
             )
-        assert rail_signal.to_dict() == {
+        assert rail_signal.to_dict(version=(2, 0)) == {
             "name": "rail-signal",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -340,7 +338,7 @@ class TestRailSignal:
         assert signal1.green_output_signal == SignalID(name="signal-C", type="virtual")
         assert signal1.tags == {"some": "stuff"}
 
-        assert signal1.to_dict()["control_behavior"] == {
+        assert signal1.to_dict(version=(2, 0))["control_behavior"] == {
             "red_output_signal": {"name": "signal-A", "type": "virtual"},
             "yellow_output_signal": {"name": "signal-B", "type": "virtual"},
             "green_output_signal": {"name": "signal-C", "type": "virtual"},

@@ -21,8 +21,6 @@ import pytest
 
 @pytest.fixture
 def valid_arithmetic_combinator():
-    if len(arithmetic_combinators) == 0:
-        return None
     return ArithmeticCombinator(
         "arithmetic-combinator",
         id="test",
@@ -50,7 +48,7 @@ class TestArithmeticCombinator:
             operation="+",
             second_operand=10,
         )
-        assert combinator.to_dict() == {
+        assert combinator.to_dict(version=(2, 0)) == {
             "name": "arithmetic-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "direction": 4,
@@ -62,7 +60,7 @@ class TestArithmeticCombinator:
                 }
             },
         }
-        assert combinator.to_dict(exclude_none=False) == {
+        assert combinator.to_dict(version=(2, 0), exclude_none=False) == {
             "name": "arithmetic-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "direction": 4,
@@ -74,7 +72,7 @@ class TestArithmeticCombinator:
                 }
             },
         }
-        assert combinator.to_dict(exclude_defaults=False) == {
+        assert combinator.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "arithmetic-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "quality": "normal",
@@ -93,7 +91,9 @@ class TestArithmeticCombinator:
             "items": [],
             "tags": {},
         }
-        assert combinator.to_dict(exclude_none=False, exclude_defaults=False) == {
+        assert combinator.to_dict(
+            version=(2, 0), exclude_none=False, exclude_defaults=False
+        ) == {
             "name": "arithmetic-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "quality": "normal",
@@ -124,7 +124,7 @@ class TestArithmeticCombinator:
             operation="/",
             second_operand="signal-B",
         )
-        assert combinator.to_dict() == {
+        assert combinator.to_dict(version=(2, 0)) == {
             "name": "arithmetic-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "direction": Direction.EAST,
@@ -145,7 +145,7 @@ class TestArithmeticCombinator:
             operation="xor",
             second_operand={"name": "signal-B", "type": "virtual"},
         )
-        assert combinator.to_dict() == {
+        assert combinator.to_dict(version=(2, 0)) == {
             "name": "arithmetic-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "direction": Direction.EAST,
@@ -364,7 +364,7 @@ class TestArithmeticCombinator:
             "iron-ore",
             {"red", "green"},
         )
-        assert combinator.to_dict()["control_behavior"] == {
+        assert combinator.to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "operation": "+",
@@ -380,7 +380,7 @@ class TestArithmeticCombinator:
             {"red", "green"},
             "signal-B",
         )
-        assert combinator.to_dict()["control_behavior"] == {
+        assert combinator.to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "operation": "/",
@@ -395,7 +395,7 @@ class TestArithmeticCombinator:
             second_operand=100,
             output_signal="signal-C",
         )
-        assert combinator.to_dict()["control_behavior"] == {
+        assert combinator.to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_constant": 10,
                 "operation": "AND",
@@ -410,7 +410,7 @@ class TestArithmeticCombinator:
             second_operand="signal-D",
             output_signal="signal-E",
         )
-        assert combinator.to_dict()["control_behavior"] == {
+        assert combinator.to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_constant": 10,
                 "operation": "OR",
@@ -422,17 +422,17 @@ class TestArithmeticCombinator:
         combinator.set_arithmetic_condition(
             first_operand=10, operation="or", second_operand=None
         )
-        assert combinator.to_dict()["control_behavior"] == {
+        assert combinator.to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {"first_constant": 10, "operation": "OR"}
         }
 
         combinator.set_arithmetic_condition(
             first_operand=None, second_operand=None, output_signal=None
         )
-        assert "control_behavior" not in combinator.to_dict()
+        assert "control_behavior" not in combinator.to_dict(version=(2, 0))
 
         combinator.set_arithmetic_condition()
-        assert "control_behavior" not in combinator.to_dict()
+        assert "control_behavior" not in combinator.to_dict(version=(2, 0))
 
         with pytest.raises(DataFormatError):
             combinator.set_arithmetic_condition(first_operand=TypeError)
@@ -468,7 +468,7 @@ class TestArithmeticCombinator:
             )
 
         combinator.set_arithmetic_condition()
-        assert "control_behavior" not in combinator.to_dict()
+        assert "control_behavior" not in combinator.to_dict(version=(2, 0))
 
     def test_mergable(self):
         combinatorA = ArithmeticCombinator("arithmetic-combinator")
@@ -505,7 +505,7 @@ class TestArithmeticCombinator:
         )
 
         combinatorA.merge(combinatorB)
-        assert combinatorA.to_dict()["control_behavior"] == {
+        assert combinatorA.to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "first_signal_networks": {"green": False},
@@ -528,7 +528,7 @@ class TestArithmeticCombinator:
         blueprint.entities.append(entity_to_merge, merge=True)
 
         assert len(blueprint.entities) == 1
-        assert blueprint.entities[0].to_dict()["control_behavior"] == {
+        assert blueprint.entities[0].to_dict(version=(2, 0))["control_behavior"] == {
             "arithmetic_conditions": {
                 "first_signal": {"name": "signal-A", "type": "virtual"},
                 "first_signal_networks": {"green": False},
@@ -550,14 +550,14 @@ class TestArithmeticCombinator:
 
         assert len(blueprint.entities) == 1
         assert len(blueprint.groups[0].entities) == 0
-        assert blueprint.to_dict()["blueprint"]["entities"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
                 "name": "arithmetic-combinator",
                 "position": {"x": 0.5, "y": 1.0},
             }
         ]
-        assert blueprint.to_dict()["blueprint"]["wires"] == [[1, 2, 1, 4]]
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["wires"] == [[1, 2, 1, 4]]
 
     def test_eq(self):
         combinatorA = ArithmeticCombinator("arithmetic-combinator")

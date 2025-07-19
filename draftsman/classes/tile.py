@@ -9,6 +9,7 @@
     }
 """
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.exportable import (
     Exportable,
@@ -22,7 +23,7 @@ from draftsman.signatures import (
 from draftsman.utils import AABB
 from draftsman.validators import instance_of
 
-import draftsman.data.tiles as tiles
+from draftsman.data import mods, tiles
 
 import attrs
 from typing import Any, Optional, TYPE_CHECKING
@@ -107,7 +108,14 @@ class Tile(SpatialLike, Exportable):
 
     @property
     def collision_mask(self) -> Optional[set]:
-        return tiles.raw.get(self.name, {"collision_mask": None})["collision_mask"]
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            return tiles.raw.get(self.name, {}).get("collision_mask", None)
+        else:
+            return (
+                tiles.raw.get(self.name, {})
+                .get("collision_mask", {})
+                .get("layers", None)
+            )
 
     # =========================================================================
 

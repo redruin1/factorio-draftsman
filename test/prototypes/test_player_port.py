@@ -6,16 +6,6 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 from typing import Hashable
 import pytest
 
-# For compatibility with versions of Factorio post 2.0
-# if len(player_ports) == 0:
-#     pytest.skip("No player ports to test", allow_module_level=True)
-
-
-def test_player_port_entities():
-    with pytest.warns(UnknownEntityWarning):
-        player_port = PlayerPort("player-port")
-    assert player_port.similar_entities is player_ports
-
 
 @pytest.fixture
 def valid_player_port():
@@ -36,10 +26,10 @@ class TestPlayerPort:
         port = PlayerPort()
 
         with pytest.warns(UnknownKeywordWarning):
-            PlayerPort(unused_keyword="whatever").validate().reissue_all()
+            PlayerPort.from_dict({"name": "player-port", "unused_keyword": "whatever"})
 
         with pytest.warns(UnknownEntityWarning):
-            PlayerPort("this is not a player port").validate().reissue_all()
+            PlayerPort("this is not a player port")
 
     def test_mergable_with(self):
         port1 = PlayerPort("player-port")

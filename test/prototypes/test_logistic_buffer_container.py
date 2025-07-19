@@ -19,10 +19,7 @@ import pytest
 
 @pytest.fixture
 def valid_buffer_container():
-    if len(logistic_buffer_containers) == 0:
-        return None
     return LogisticBufferContainer(
-        "buffer-chest",
         id="test",
         quality="uncommon",
         tile_position=(1, 1),
@@ -42,22 +39,21 @@ def valid_buffer_container():
 class TestBufferContainer:
     def test_constructor_init(self):
         buffer_chest = LogisticBufferContainer(
-            "buffer-chest",
             tile_position=[15, 3],
             bar=5,
         )
-        assert buffer_chest.to_dict() == {
+        assert buffer_chest.to_dict(version=(2, 0)) == {
             "name": "buffer-chest",
             "position": {"x": 15.5, "y": 3.5},
             "bar": 5,
         }
+
         buffer_chest = LogisticBufferContainer(
-            "buffer-chest",
             position={"x": 15.5, "y": 1.5},
             bar=5,
             tags={"A": "B"},
         )
-        assert buffer_chest.to_dict() == {
+        assert buffer_chest.to_dict(version=(2, 0)) == {
             "name": "buffer-chest",
             "position": {"x": 15.5, "y": 1.5},
             "bar": 5,
@@ -66,30 +62,20 @@ class TestBufferContainer:
 
         # Warnings
         with pytest.warns(UnknownEntityWarning):
-            LogisticBufferContainer(
-                "this is not a buffer chest"
-            ).validate().reissue_all()
+            LogisticBufferContainer("this is not a buffer chest")
 
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticBufferContainer("buffer-chest", id=25).validate().reissue_all()
+            LogisticBufferContainer(id=25)
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "buffer-chest", position=TypeError
-            ).validate().reissue_all()
+            LogisticBufferContainer(position=TypeError)
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "buffer-chest", bar="not even trying"
-            ).validate().reissue_all()
+            LogisticBufferContainer(bar="not even trying")
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "buffer-chest", sections=["very", "wrong"]
-            ).validate().reissue_all()
+            LogisticBufferContainer(sections=["very", "wrong"])
         with pytest.raises(DataFormatError):
-            LogisticBufferContainer(
-                "buffer-chest", tags="incorrect"
-            ).validate().reissue_all()
+            LogisticBufferContainer(tags="incorrect")
 
     def test_power_and_circuit_flags(self):
         for name in logistic_buffer_containers:
@@ -111,13 +97,12 @@ class TestBufferContainer:
             "legendary": 120,
         }
         for quality, size in qualities.items():
-            chest = LogisticBufferContainer("buffer-chest", quality=quality)
+            chest = LogisticBufferContainer(quality=quality)
             assert chest.size == size
 
     def test_mergable_with(self):
-        container1 = LogisticBufferContainer("buffer-chest")
+        container1 = LogisticBufferContainer()
         container2 = LogisticBufferContainer(
-            "buffer-chest",
             bar=10,
             sections=[
                 ManualSection(
@@ -143,9 +128,8 @@ class TestBufferContainer:
         assert not container1.mergable_with(container2)
 
     def test_merge(self):
-        container1 = LogisticBufferContainer("buffer-chest")
+        container1 = LogisticBufferContainer()
         container2 = LogisticBufferContainer(
-            "buffer-chest",
             bar=10,
             sections=[
                 ManualSection(
@@ -182,8 +166,8 @@ class TestBufferContainer:
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        container1 = LogisticBufferContainer("buffer-chest")
-        container2 = LogisticBufferContainer("buffer-chest")
+        container1 = LogisticBufferContainer()
+        container2 = LogisticBufferContainer()
 
         assert container1 == container2
 
@@ -200,12 +184,12 @@ class TestBufferContainer:
         assert isinstance(container1, Hashable)
 
     def test_old_format_conversion(self):
-        old_dict = {"name": "buffer-chest", "position": {"x": 0.5, "y": 0.5}}
+        old_dict = {"name": "logistic-chest-buffer", "position": {"x": 0.5, "y": 0.5}}
         chest = LogisticBufferContainer.from_dict(old_dict, version=(1, 0))
         assert chest.to_dict(version=(1, 0)) == old_dict
 
         old_dict_with_filters = {  # TODO: actually validate this
-            "name": "buffer-chest",
+            "name": "logistic-chest-buffer",
             "position": {"x": 0.5, "y": 0.5},
             "request_filters": [
                 {

@@ -12,8 +12,6 @@ import pytest
 
 @pytest.fixture
 def valid_pump():
-    if len(pumps) == 0:
-        return None
     return Pump(
         "pump",
         id="test",

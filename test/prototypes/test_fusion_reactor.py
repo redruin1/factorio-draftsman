@@ -24,17 +24,18 @@ def valid_fusion_reactor():
     )
 
 
-def test_constructor():
-    reactor = FusionReactor("fusion-reactor")
+@pytest.mark.skipif(len(fusion_reactors) == 0, reason="No FusionReactors to test")
+class TestFusionReactor:
+    def test_constructor(self):
+        reactor = FusionReactor("fusion-reactor")
 
-    with pytest.warns(UnknownEntityWarning):
-        FusionReactor("unknown fusion reactor")
+        with pytest.warns(UnknownEntityWarning):
+            FusionReactor("unknown fusion reactor")
 
-
-def test_flags():
-    for reactor_name in fusion_reactors:
-        reactor = FusionReactor(reactor_name)
-        assert reactor.power_connectable == False
-        assert reactor.dual_power_connectable == False
-        assert reactor.circuit_connectable == False
-        assert reactor.dual_circuit_connectable == False
+    def test_flags(self):
+        for reactor_name in fusion_reactors:
+            reactor = FusionReactor(reactor_name)
+            assert reactor.power_connectable == False
+            assert reactor.dual_power_connectable == False
+            assert reactor.circuit_connectable == False
+            assert reactor.dual_circuit_connectable == False

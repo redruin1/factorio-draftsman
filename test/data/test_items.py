@@ -1,6 +1,7 @@
 # test_items.py
 
-from draftsman.data import items
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.data import items, mods
 
 import copy
 import pytest
@@ -76,15 +77,23 @@ class TestItemsData:
     def test_get_stack_size(self):
         assert items.get_stack_size("artillery-shell") == 1
         assert items.get_stack_size("nuclear-fuel") == 1
-        assert items.get_stack_size("rocket-fuel") == 20
         assert items.get_stack_size("iron-ore") == 50
         assert items.get_stack_size("iron-plate") == 100
         assert items.get_stack_size("electronic-circuit") == 200
-        assert items.get_stack_size("space-science-pack") == 200
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert items.get_stack_size("rocket-fuel") == 10
+            assert items.get_stack_size("space-science-pack") == 2_000
+        else:
+            assert items.get_stack_size("rocket-fuel") == 20
+            assert items.get_stack_size("space-science-pack") == 200
 
         # TODO: should this raise an error instead?
         assert items.get_stack_size("unknown!") == None
 
+    @pytest.mark.skipif(
+        mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0),
+        reason="Weight is a 2.0 concept",
+    )
     def test_get_weight(self):
         # Unrecognized
         assert items.get_weight("unknown thingy") is None

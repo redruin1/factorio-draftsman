@@ -14,8 +14,6 @@ import pytest
 
 @pytest.fixture
 def valid_infinity_container():
-    if len(infinity_containers) == 0:
-        return None
     return InfinityContainer(
         "infinity-chest",
         id="test",

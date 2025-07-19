@@ -1,6 +1,8 @@
 # test_container.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import InventoryType, ValidationMode
+from draftsman.data import mods
 from draftsman.entity import Container, containers, Accumulator
 from draftsman.error import (
     DataFormatError,
@@ -26,8 +28,6 @@ import pytest
 
 @pytest.fixture
 def valid_container():
-    if len(containers) == 0:
-        return None
     return Container(
         "wooden-chest",
         id="test",
@@ -114,9 +114,13 @@ class TestContainer:
             assert container.bar == 100
 
         # Disabled bar
-        # Since no chest with disabled bar exists, we coerce the data to fit
-        container = Container("crash-site-chest-1")
-        container.prototype["inventory_type"] = "normal"
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            container = Container("big-ship-wreck-1")
+        else:
+            # Since no chest with disabled bar on 2.0 exists, we coerce the data
+            # to fit
+            container = Container("crash-site-chest-1")
+            container.prototype["inventory_type"] = "normal"
         with pytest.warns(BarWarning):
             container.bar = 2
 

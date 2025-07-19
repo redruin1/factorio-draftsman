@@ -1,6 +1,6 @@
 # mod_settings.py
 
-# from draftsman import __factorio_version_info__
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.data import mods
 from draftsman.utils import encode_version, decode_version
 
@@ -113,7 +113,7 @@ def encode_mod_settings(
     """
     # TODO: check endianness
     if factorio_version is None:
-        factorio_version = mods.versions["base"]
+        factorio_version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
     # Write version number
     version_num = encode_version(*factorio_version)
     destination.write(struct.pack("<Q"), version_num)

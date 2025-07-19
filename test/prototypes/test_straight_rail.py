@@ -28,6 +28,7 @@ def valid_straight_rail():
     )
 
 
+@pytest.mark.skipif(len(straight_rails) == 0, reason="No StraightRails to test")
 class TestStraightRail:
     def test_constructor_init(self):
         straight_rail = StraightRail(

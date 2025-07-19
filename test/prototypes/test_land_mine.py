@@ -9,8 +9,6 @@ import pytest
 
 @pytest.fixture
 def valid_land_mine():
-    if len(land_mines) == 0:
-        return None
     return LandMine(
         "land-mine",
         id="test",

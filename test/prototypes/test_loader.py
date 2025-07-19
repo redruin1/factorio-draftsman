@@ -11,8 +11,6 @@ import pytest
 
 @pytest.fixture
 def valid_loader():
-    if len(loaders) == 0:
-        return None
     return Loader(
         "loader",
         id="test",

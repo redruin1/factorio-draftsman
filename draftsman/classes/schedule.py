@@ -1,5 +1,6 @@
 # schedule.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.association import Association
 from draftsman.classes.exportable import (
     Exportable,
@@ -79,7 +80,7 @@ class WaitCondition(Exportable):
     @compare_type.default
     def _(self):
         # In Factorio 1.0, the default compare type was "or"; in 2.0 it's "and"
-        if mods.versions["base"] < (2, 0):  # pragma: no coverage
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
             return "or"
         else:
             return "and"

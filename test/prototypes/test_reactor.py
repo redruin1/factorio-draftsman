@@ -22,8 +22,6 @@ import pytest
 
 @pytest.fixture
 def valid_reactor():
-    if len(reactors) == 0:
-        return None
     return Reactor(
         "nuclear-reactor",
         id="test",

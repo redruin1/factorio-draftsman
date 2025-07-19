@@ -13,8 +13,6 @@ import pytest
 
 @pytest.fixture
 def valid_transport_belt():
-    if len(transport_belts) == 0:
-        return None
     return TransportBelt(
         "transport-belt",
         id="test",
@@ -91,34 +89,28 @@ class TestTransportBelt:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            belt = TransportBelt.from_dict(
+            TransportBelt.from_dict(
                 {"name": "fast-transport-belt", "invalid_param": 100}
             )
-            belt.validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
-            belt = TransportBelt("this is not a storage tank")
-            belt.validate().reissue_all()
+            TransportBelt("this is not a storage tank")
 
         # Errors
         with pytest.raises(TypeError):
-            belt = TransportBelt("transport-belt", id=25)
-            belt.validate().reissue_all()
+            TransportBelt("transport-belt", id=25)
 
         with pytest.raises(DataFormatError):
-            belt = TransportBelt("transport-belt", position=TypeError)
-            belt.validate().reissue_all()
+            TransportBelt("transport-belt", position=TypeError)
 
         with pytest.raises(DataFormatError):
-            belt = TransportBelt("transport-belt", direction="incorrect")
-            belt.validate().reissue_all()
+            TransportBelt("transport-belt", direction="incorrect")
 
         with pytest.raises(DataFormatError):
-            belt = TransportBelt(
+            TransportBelt(
                 "transport-belt",
                 tags=["also", "very", "wrong"],
             )
-            belt.validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for transport_belt in transport_belts:

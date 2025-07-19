@@ -24,10 +24,7 @@ import pytest
 
 @pytest.fixture
 def valid_request_container():
-    if len(logistic_request_containers) == 0:
-        return None
     return LogisticRequestContainer(
-        "requester-chest",
         id="test",
         quality="uncommon",
         tile_position=(1, 1),
@@ -47,22 +44,20 @@ def valid_request_container():
 class TestRequestContainer:
     def test_constructor_init(self):
         request_chest = LogisticRequestContainer(
-            "requester-chest",
             tile_position=[15, 3],
             bar=5,
         )
-        assert request_chest.to_dict() == {
+        assert request_chest.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 15.5, "y": 3.5},
             "bar": 5,
         }
         request_chest = LogisticRequestContainer(
-            "requester-chest",
             position={"x": 15.5, "y": 1.5},
             bar=5,
             tags={"A": "B"},
         )
-        assert request_chest.to_dict() == {
+        assert request_chest.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 15.5, "y": 1.5},
             "bar": 5,
@@ -73,7 +68,7 @@ class TestRequestContainer:
             sections=[ManualSection(index=0, filters=[("iron-ore", 100)])],
             request_from_buffers=True,
         )
-        assert request_chest.to_dict() == {
+        assert request_chest.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
             "request_filters": {
@@ -101,7 +96,7 @@ class TestRequestContainer:
                 )
             ]
         )
-        assert request_chest.to_dict() == {
+        assert request_chest.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
             "request_filters": {
@@ -130,22 +125,17 @@ class TestRequestContainer:
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticRequestContainer("requester-chest", id=25).validate().reissue_all()
+            LogisticRequestContainer(id=25).validate().reissue_all()
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer(position=TypeError)
+        with pytest.raises(DataFormatError):
+            LogisticRequestContainer(bar="not even trying")
         with pytest.raises(DataFormatError):
             LogisticRequestContainer(
-                "requester-chest", position=TypeError
-            ).validate().reissue_all()
-        with pytest.raises(DataFormatError):
-            LogisticRequestContainer(
-                "requester-chest", bar="not even trying"
-            ).validate().reissue_all()
-        with pytest.raises(DataFormatError):
-            LogisticRequestContainer(
-                "requester-chest",
                 sections=["very", "wrong"],
-            ).validate().reissue_all()
+            )
         with pytest.raises(DataFormatError):
-            LogisticRequestContainer(tags="incorrect").validate().reissue_all()
+            LogisticRequestContainer(tags="incorrect")
 
     def test_power_and_circuit_flags(self):
         for name in logistic_request_containers:
@@ -167,13 +157,13 @@ class TestRequestContainer:
             "legendary": 120,
         }
         for quality, size in qualities.items():
-            chest = LogisticRequestContainer("requester-chest", quality=quality)
+            chest = LogisticRequestContainer(quality=quality)
             assert chest.size == size
 
     def test_logistics_mode(self):
-        container = LogisticRequestContainer("requester-chest")
+        container = LogisticRequestContainer()
         assert container.mode_of_operation == LogisticModeOfOperation.SEND_CONTENTS
-        assert container.to_dict() == {
+        assert container.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
         }
@@ -181,7 +171,7 @@ class TestRequestContainer:
         # Set int
         container.mode_of_operation = 1
         assert container.mode_of_operation == LogisticModeOfOperation.SET_REQUESTS
-        assert container.to_dict() == {
+        assert container.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {"circuit_mode_of_operation": 1},
@@ -190,14 +180,14 @@ class TestRequestContainer:
         # Set Enum
         container.mode_of_operation = LogisticModeOfOperation.NONE
         assert container.mode_of_operation == LogisticModeOfOperation.NONE
-        assert container.to_dict() == {
+        assert container.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {"circuit_mode_of_operation": 2},
         }
 
     def test_set_requests(self):
-        container = LogisticRequestContainer("requester-chest")
+        container = LogisticRequestContainer()
 
         # Shorthand
         section = container.add_section()
@@ -319,16 +309,16 @@ class TestRequestContainer:
     #         container.set_request_filters("incorrect")
 
     def test_request_from_buffers(self):
-        container = LogisticRequestContainer("requester-chest")
+        container = LogisticRequestContainer()
         assert container.request_from_buffers == False
-        assert container.to_dict() == {
+        assert container.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
         }
 
         container.request_from_buffers = True
         assert container.request_from_buffers == True
-        assert container.to_dict() == {
+        assert container.to_dict(version=(2, 0)) == {
             "name": "requester-chest",
             "position": {"x": 0.5, "y": 0.5},
             "request_filters": {"request_from_buffers": True},
@@ -340,16 +330,15 @@ class TestRequestContainer:
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             container.request_from_buffers = "incorrect"
             assert container.request_from_buffers == "incorrect"
-            assert container.to_dict() == {
+            assert container.to_dict(version=(2, 0)) == {
                 "name": "requester-chest",
                 "position": {"x": 0.5, "y": 0.5},
                 "request_filters": {"request_from_buffers": "incorrect"},
             }
 
     def test_mergable_with(self):
-        container1 = LogisticRequestContainer("requester-chest")
+        container1 = LogisticRequestContainer()
         container2 = LogisticRequestContainer(
-            "requester-chest",
             bar=10,
             sections=[
                 ManualSection(
@@ -375,9 +364,8 @@ class TestRequestContainer:
         assert not container1.mergable_with(container2)
 
     def test_merge(self):
-        container1 = LogisticRequestContainer("requester-chest")
+        container1 = LogisticRequestContainer()
         container2 = LogisticRequestContainer(
-            "requester-chest",
             bar=10,
             sections=[
                 ManualSection(
@@ -413,8 +401,8 @@ class TestRequestContainer:
         assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        container1 = LogisticRequestContainer("requester-chest")
-        container2 = LogisticRequestContainer("requester-chest")
+        container1 = LogisticRequestContainer()
+        container2 = LogisticRequestContainer()
 
         assert container1 == container2
 
@@ -431,12 +419,15 @@ class TestRequestContainer:
         assert isinstance(container1, Hashable)
 
     def test_old_format_conversion(self):
-        old_dict = {"name": "requester-chest", "position": {"x": 0.5, "y": 0.5}}
+        old_dict = {
+            "name": "logistic-chest-requester",
+            "position": {"x": 0.5, "y": 0.5},
+        }
         chest = LogisticRequestContainer.from_dict(old_dict, version=(1, 0))
         assert chest.to_dict(version=(1, 0)) == old_dict
 
         old_dict_with_filters = {
-            "name": "requester-chest",
+            "name": "logistic-chest-requester",
             "position": {"x": 0.5, "y": 0.5},
             "request_filters": [
                 {

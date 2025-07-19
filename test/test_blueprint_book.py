@@ -75,6 +75,17 @@ class TestBlueprintableList:
 
         assert blueprint_book.blueprints.data == []
 
+    def test_eq(self):
+        a = BlueprintBook()
+        b = BlueprintBook()
+        assert a.blueprints == b.blueprints
+
+        b.blueprints = [Blueprint()]
+        assert a.blueprints != b.blueprints
+
+        # Different type
+        assert a.blueprints != TypeError
+
     def test_repr(self):
         assert repr(BlueprintBook().blueprints) == "BlueprintableList([])"
 

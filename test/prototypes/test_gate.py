@@ -10,8 +10,6 @@ import pytest
 
 @pytest.fixture
 def valid_gate():
-    if len(gates) == 0:
-        return None
     return Gate(
         "gate",
         id="test",

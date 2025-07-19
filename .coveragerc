@@ -3,6 +3,8 @@
 [run]
 omit = 
     examples/**
+    draftsman/environment/**
+    test/test_all_factorio_versions.py
 branch = True
 command_line = -m pytest test -Werror -vv
 

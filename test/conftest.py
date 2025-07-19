@@ -35,7 +35,7 @@ import os
 #     tag_list = sorted([version_string_to_tuple(tag.name) for tag in repo.tags])
 #     # Only select versions >= 1.0
 #     tag_list = tag_list[tag_list.index((1, 0, 0, 0)):]
-    
+
 #     # Checkout version
 #     repo.git.checkout(version_tuple_to_string(tag_list[0][:3]))
 

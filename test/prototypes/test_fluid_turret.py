@@ -13,8 +13,6 @@ import pytest
 
 @pytest.fixture
 def valid_fluid_turret():
-    if len(fluid_turrets) == 0:
-        return None
     return FluidTurret(
         "flamethrower-turret",
         id="test",

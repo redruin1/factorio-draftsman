@@ -240,7 +240,10 @@ class TestUpgradePlanner:
 
     def test_mapper_count(self):
         upgrade_planner = UpgradePlanner()
-        assert upgrade_planner.mapper_count == 1000
+        if mods.versions["base"] < (2, 0):
+            assert upgrade_planner.mapper_count == 24
+        else:
+            assert upgrade_planner.mapper_count == 1000
 
     def test_mappers(self):
         upgrade_planner = UpgradePlanner()

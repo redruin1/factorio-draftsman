@@ -1,5 +1,6 @@
 # constant_combinator.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
@@ -57,9 +58,9 @@ class ConstantCombinator(
             environment version, which can be queried with
             :py:data:`draftsman.mods.versions`.
         """
-        if mods.versions["base"] < (2, 0):  # pragma: no coverage
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
             return entities.raw.get(self.name, {"item_slot_count": None}).get(
-                "item_slot_count", 20
+                "item_slot_count"
             )
         else:
             return 100_000

@@ -12,7 +12,7 @@ try:
     with source.open("rb") as inp:
         raw: dict[str, dict] = pickle.load(inp)
 
-except FileNotFoundError:
+except FileNotFoundError:  # pragma: no coverage
     raw = {}
 
 

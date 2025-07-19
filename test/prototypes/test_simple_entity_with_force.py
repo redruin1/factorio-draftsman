@@ -9,8 +9,6 @@ import pytest
 
 @pytest.fixture
 def valid_simple_entity_with_force():
-    if len(simple_entities_with_force) == 0:
-        return None
     return SimpleEntityWithForce(
         "simple-entity-with-force",
         id="test",
@@ -23,7 +21,7 @@ def valid_simple_entity_with_force():
 
 
 class TestSimpleEntityWithForce:
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         entity = SimpleEntityWithForce(variation=13)
         assert entity.name == simple_entities_with_force[0]
         assert entity.variation == 13
@@ -38,7 +36,15 @@ class TestSimpleEntityWithForce:
             "name": "simple-entity-with-force",
             "position": {"x": 0.5, "y": 0.5},
         }
-        assert entity.to_dict(exclude_defaults=False) == {
+        assert entity.to_dict(version=(1, 0), exclude_defaults=False) == {
+            "name": "simple-entity-with-force",
+            "position": {"x": 0.5, "y": 0.5},
+            "direction": Direction.NORTH,  # Default
+            "items": {},  # Default
+            "variation": 1,  # Default
+            "tags": {},  # Default
+        }
+        assert entity.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},

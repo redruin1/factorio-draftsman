@@ -16,8 +16,6 @@ import pytest
 
 @pytest.fixture
 def valid_burner_generator():
-    if len(burner_generators) == 0:
-        return None
     return BurnerGenerator(
         "burner-generator",
         id="test",

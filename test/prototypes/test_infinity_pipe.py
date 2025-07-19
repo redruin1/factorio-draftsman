@@ -16,8 +16,6 @@ import pytest
 
 @pytest.fixture
 def valid_infinity_pipe():
-    if len(infinity_pipes) == 0:
-        return None
     return InfinityPipe(
         "infinity-pipe",
         id="test",

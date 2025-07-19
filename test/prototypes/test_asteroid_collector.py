@@ -38,6 +38,9 @@ def valid_asteroid_collector():
     )
 
 
+@pytest.mark.skipif(
+    len(asteroid_collectors) == 0, reason="No AsteroidCollectors to test"
+)
 class TestAsteroidCollector:
     def test_constructor_init(self):
         collector = AsteroidCollector(

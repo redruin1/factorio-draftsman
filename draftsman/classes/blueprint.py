@@ -80,14 +80,16 @@
 
 import draftsman
 
-# from draftsman._factorio_version import __factorio_version_info__
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.blueprintable import Blueprintable
+from draftsman.classes.entity import migrate_name
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.transformable import Transformable
 from draftsman.classes.collection import Collection
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
+from draftsman.data import mods
 from draftsman.error import (
     DraftsmanError,
     UnreasonablySizedBlueprintError,
@@ -301,9 +303,11 @@ class Blueprint(Transformable, Collection, Blueprintable):
         # We then convert all the entities, tiles, and schedules to
         # 1-dimensional lists, flattening any Groups that this blueprint
         # contains, and swapping their Associations into integer indexes
-
         def flatten_collection(inst: Blueprint):
-            schedules = [schedule for schedule in inst.schedules]
+            schedules = [
+                schedule.to_dict(version, exclude_none, exclude_defaults)
+                for schedule in inst.schedules
+            ]
             wires = [wire for wire in inst.wires]
             for group in inst.groups:
                 s, w = flatten_collection(group)
@@ -345,12 +349,8 @@ class Blueprint(Transformable, Collection, Blueprintable):
 
         result[self.root_item]["tiles"] = tiles_out
 
-        schedules_out = []
+        # Change all locomotive associations
         for schedule in flattened_schedules:
-            schedules_out.append(schedule.to_dict())
-
-        # Change all locomotive associations to use number
-        for schedule in schedules_out:
             # Technically a schedule can have no locomotives:
             if "locomotives" in schedule:  # pragma: no branch
                 for i, locomotive in enumerate(schedule["locomotives"]):
@@ -361,27 +361,23 @@ class Blueprint(Transformable, Collection, Blueprintable):
                             flattened_entities.index(locomotive()) + 1
                         )
 
-        result[self.root_item]["schedules"] = schedules_out
+        result[self.root_item]["schedules"] = flattened_schedules
 
         def get_index(assoc):
-            if not isinstance(assoc, int):  # pragma: no branch
-                # We would normally use index, but index uses `==` for comparisons,
-                # wheras we want to use `is` for strict checking:
-                try:
-                    return (
-                        next(
-                            i
-                            for i, entity in enumerate(flattened_entities)
-                            if entity is assoc()
-                        )
-                        + 1
+            try:
+                return (
+                    next(
+                        i
+                        for i, entity in enumerate(flattened_entities)
+                        if entity is assoc()
                     )
-                except StopIteration:
-                    msg = "Association points to entity {} which does not exist in this blueprint".format(
-                        assoc()
-                    )
-                    raise InvalidAssociationError(msg)
-            return assoc  # pragma: no coverage
+                    + 1
+                )
+            except StopIteration:
+                msg = "Association points to entity {} which does not exist in this blueprint".format(
+                    assoc()
+                )
+                raise InvalidAssociationError(msg)
 
         # Wires
         wires_out = []
@@ -476,7 +472,18 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             lambda value, _, inst: EntityList(
                 inst,
                 [
-                    converter.structure(elem, get_entity_class(elem.get("name", None)))
+                    converter.structure(
+                        elem,
+                        get_entity_class(
+                            migrate_name(
+                                elem["name"],
+                                source_version=(1, 0),
+                                dest_version=mods.versions.get(
+                                    "base", DEFAULT_FACTORIO_VERSION
+                                ),
+                            )
+                        ),
+                    )
                     for elem in value
                 ],
             ),
@@ -554,6 +561,13 @@ def structure_blueprint_1_0_factory(t: type):
         wires = blueprint_dict["wires"] = []
         if "entities" in blueprint_dict:
             for entity in blueprint_dict["entities"]:
+
+                # entity["name"] = migrate_name(
+                #     entity["name"],
+                #     source_version=(1, 0),
+                #     dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
+                # )
+
                 # Convert entities to their modern equivalents
                 # if entity["name"] in legacy_entity_conversions:  # pragma: no coverage
                 #     entity["name"] = legacy_entity_conversions[entity["name"]]
@@ -663,7 +677,18 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
             lambda value, _, inst: EntityList(
                 inst,
                 [
-                    converter.structure(elem, get_entity_class(elem.get("name", None)))
+                    converter.structure(
+                        elem,
+                        get_entity_class(
+                            migrate_name(
+                                elem["name"],
+                                source_version=(2, 0),
+                                dest_version=mods.versions.get(
+                                    "base", DEFAULT_FACTORIO_VERSION
+                                ),
+                            )
+                        ),
+                    )
                     for elem in value
                 ],
             ),
@@ -698,3 +723,34 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ),
     },
 )
+
+
+# def structure_blueprint_2_0_factory(t: type):
+#     default_blueprint_hook = (
+#         draftsman_converters.get_version((2, 0)).get_converter().get_structure_hook(t)
+#     )
+
+#     def structure_blueprint_2_0(d: dict, _: type) -> Blueprint:
+#         """
+#         Converts a 2.0 Factorio blueprint string into Draftsman internal form,
+#         preferring modern format where possible.
+#         """
+#         blueprint_dict = d["blueprint"]
+
+#         if "entities" in blueprint_dict:
+#             for entity in blueprint_dict["entities"]:
+#                 print(entity["name"])
+#                 entity["name"] = migrate_name(
+#                     entity["name"],
+#                     source_version=(2, 0),
+#                     dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
+#                 )
+#                 print(entity["name"])
+
+#         return default_blueprint_hook(d, _)
+
+#     return structure_blueprint_2_0
+
+# draftsman_converters.get_version((2, 0)).register_structure_hook(
+#     Blueprint, structure_blueprint_2_0_factory(Blueprint)
+# )

@@ -10,8 +10,6 @@ import pytest
 
 @pytest.fixture
 def valid_generator():
-    if len(generators) == 0:
-        return None
     return Generator(
         "steam-engine",
         id="test",

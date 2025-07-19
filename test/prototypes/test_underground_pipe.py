@@ -11,8 +11,6 @@ import pytest
 
 @pytest.fixture
 def valid_underground_pipe():
-    if len(underground_pipes) == 0:
-        return None
     return UndergroundPipe(
         "pipe-to-ground",
         id="test",

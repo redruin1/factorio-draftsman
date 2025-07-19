@@ -24,17 +24,21 @@ def valid_elevated_half_diagonal_rail():
     )
 
 
-def test_constructor():
-    diagonal_rail = ElevatedHalfDiagonalRail("elevated-half-diagonal-rail")
+@pytest.mark.skipif(
+    len(elevated_half_diagonal_rails) == 0,
+    reason="No ElevatedHalfDiagonalRails to test",
+)
+class TestElevatedHalfDiagonalRail:
+    def test_constructor(self):
+        diagonal_rail = ElevatedHalfDiagonalRail("elevated-half-diagonal-rail")
 
-    with pytest.warns(UnknownEntityWarning):
-        ElevatedHalfDiagonalRail("unknown diagonal rail")
+        with pytest.warns(UnknownEntityWarning):
+            ElevatedHalfDiagonalRail("unknown diagonal rail")
 
-
-def test_flags():
-    for rail_name in elevated_half_diagonal_rails:
-        diagonal_rail = ElevatedHalfDiagonalRail(rail_name)
-        assert diagonal_rail.power_connectable == False
-        assert diagonal_rail.dual_power_connectable == False
-        assert diagonal_rail.circuit_connectable == False
-        assert diagonal_rail.dual_circuit_connectable == False
+    def test_flags(self):
+        for rail_name in elevated_half_diagonal_rails:
+            diagonal_rail = ElevatedHalfDiagonalRail(rail_name)
+            assert diagonal_rail.power_connectable == False
+            assert diagonal_rail.dual_power_connectable == False
+            assert diagonal_rail.circuit_connectable == False
+            assert diagonal_rail.dual_circuit_connectable == False

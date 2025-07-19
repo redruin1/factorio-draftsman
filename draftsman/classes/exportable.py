@@ -1,11 +1,12 @@
 # exportable.py
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import ValidationMode
 from draftsman.error import DataFormatError
 from draftsman.serialization import (
     draftsman_converters,
     make_unstructure_function_from_schema,
 )
-from draftsman.utils import dict_merge
+from draftsman.utils import dict_merge, reissue_warnings
 from draftsman.validators import conditional
 from draftsman.warning import UnknownKeywordWarning
 
@@ -211,6 +212,7 @@ class Exportable:
         return res
 
     @classmethod
+    @reissue_warnings
     def from_dict(
         cls,
         d: dict,
@@ -226,12 +228,12 @@ class Exportable:
             current environment.
         """
         if version is None:
-            version = mods.versions["base"]
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
 
         version_info = draftsman_converters.get_version(version)
         return version_info.get_converter().structure(
             copy.deepcopy(d), cls
-        )  # TODO: move deepcopy internal
+        )  # TODO: remove deepcopy here, use locals in structure func instead
 
     def to_dict(
         self,
@@ -257,7 +259,7 @@ class Exportable:
             automatically, but it is useful to disable for illustation purposes.
         """
         if version is None:
-            version = mods.versions.get("base", (2, 0))
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
         version_info = draftsman_converters.get_version(version)
         converter = version_info.get_converter(exclude_none, exclude_defaults)
         return converter.unstructure(self)

@@ -4,7 +4,7 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
-from draftsman.constants import ValidationMode, Direction
+from draftsman.constants import ValidationMode, Direction, LegacyDirection
 from draftsman.data import mods
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
@@ -151,7 +151,20 @@ class TestEntityList:
         blueprint3.entities = blueprint1.entities | blueprint2.entities
 
         assert len(blueprint3.entities) == 2
-        assert blueprint3.to_dict()["blueprint"]["entities"] == [
+        assert blueprint3.to_dict(version=(1, 0))["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "direction": LegacyDirection.EAST,
+                "position": {"x": 1.5, "y": 0.5},
+                "entity_number": 2,
+            },
+        ]
+        assert blueprint3.to_dict(version=(2, 0))["blueprint"]["entities"] == [
             {
                 "name": "wooden-chest",
                 "position": {"x": 0.5, "y": 0.5},
@@ -172,7 +185,20 @@ class TestEntityList:
         blueprint4.entities = blueprint1.entities | blueprint2.entities
 
         assert len(blueprint4.entities) == 2
-        assert blueprint4.to_dict()["blueprint"]["entities"] == [
+        assert blueprint4.to_dict(version=(1, 0))["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "direction": LegacyDirection.EAST,
+                "position": {"x": 1.5, "y": 0.5},
+                "entity_number": 2,
+            },
+        ]
+        assert blueprint4.to_dict(version=(2, 0))["blueprint"]["entities"] == [
             {
                 "name": "wooden-chest",
                 "position": {"x": 0.5, "y": 0.5},

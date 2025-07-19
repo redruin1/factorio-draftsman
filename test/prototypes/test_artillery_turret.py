@@ -18,8 +18,6 @@ import pytest
 
 @pytest.fixture
 def valid_artillery_turret():
-    if len(artillery_turrets) == 0:
-        return None
     return ArtilleryTurret(
         "artillery-turret",
         id="test",

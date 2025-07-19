@@ -1,6 +1,6 @@
 # test_legacy_straight_rail.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, LegacyDirection
 from draftsman.prototypes.legacy_straight_rail import (
     LegacyStraightRail,
     legacy_straight_rails,
@@ -12,10 +12,7 @@ import pytest
 
 @pytest.fixture
 def valid_legacy_straight_rail():
-    if len(legacy_straight_rails) == 0:
-        return None
     return LegacyStraightRail(
-        "legacy-straight-rail",
         id="test",
         quality="uncommon",
         tile_position=(2, 2),
@@ -24,17 +21,27 @@ def valid_legacy_straight_rail():
     )
 
 
-def test_constructor():
-    straight_rail = LegacyStraightRail("legacy-straight-rail")
+class TestLegacyStraightRail:
+    def test_constructor(self):
+        straight_rail = LegacyStraightRail(direction=Direction.NORTHWEST)
+        assert straight_rail.to_dict(version=(1, 0)) == {
+            "name": "straight-rail",
+            "position": {"x": 1, "y": 1},
+            "direction": LegacyDirection.NORTHWEST,
+        }
+        assert straight_rail.to_dict(version=(2, 0)) == {
+            "name": "legacy-straight-rail",
+            "position": {"x": 1, "y": 1},
+            "direction": Direction.NORTHWEST,
+        }
 
-    with pytest.warns(UnknownEntityWarning):
-        LegacyStraightRail("unknown display panel")
+        with pytest.warns(UnknownEntityWarning):
+            LegacyStraightRail("unknown legacy straight rail")
 
-
-def test_flags():
-    for rail_name in legacy_straight_rails:
-        rail = LegacyStraightRail(rail_name)
-        assert rail.power_connectable == False
-        assert rail.dual_power_connectable == False
-        assert rail.circuit_connectable == False
-        assert rail.dual_circuit_connectable == False
+    def test_flags(self):
+        for rail_name in legacy_straight_rails:
+            rail = LegacyStraightRail(rail_name)
+            assert rail.power_connectable == False
+            assert rail.dual_power_connectable == False
+            assert rail.circuit_connectable == False
+            assert rail.dual_circuit_connectable == False

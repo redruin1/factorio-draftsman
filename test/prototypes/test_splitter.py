@@ -1,6 +1,6 @@
 # test_splitter.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, LegacyDirection
 from draftsman.entity import Splitter, splitters, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import (
@@ -15,8 +15,6 @@ import pytest
 
 @pytest.fixture
 def valid_splitter():
-    if len(splitters) == 0:
-        return None
     return Splitter(
         "splitter",
         id="test",
@@ -41,7 +39,15 @@ class TestSplitter:
             output_priority="right",
             filter="small-lamp",
         )
-        assert splitter.to_dict() == {
+        assert splitter.to_dict(version=(1, 0)) == {
+            "name": "splitter",
+            "position": {"x": 1.5, "y": 2.0},
+            "direction": LegacyDirection.EAST,
+            "input_priority": "left",
+            "output_priority": "right",
+            "filter": "small-lamp",
+        }
+        assert splitter.to_dict(version=(2, 0)) == {
             "name": "splitter",
             "position": {"x": 1.5, "y": 2.0},
             "direction": Direction.EAST,
@@ -58,8 +64,9 @@ class TestSplitter:
                     "position": {"x": 0.5, "y": 1.0},
                     "direction": Direction.WEST,
                     "invalid_keyword": 5,
-                }
-            ).validate().reissue_all()
+                },
+                version=(2, 0),
+            )
 
         with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter").validate().reissue_all()

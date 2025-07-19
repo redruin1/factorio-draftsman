@@ -90,8 +90,8 @@ class SpatialHashMap(SpatialDataStructure):
 
             # If the two objects have no shared collision layers they can
             # never intersect
-            item_layers = item.collision_mask["layers"]
-            other_layers = overlapping_item.collision_mask["layers"]
+            item_layers = item.collision_mask
+            other_layers = overlapping_item.collision_mask
             if len(other_layers.intersection(item_layers)) == 0:
                 continue
 

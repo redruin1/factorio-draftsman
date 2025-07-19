@@ -17,8 +17,6 @@ import pytest
 
 @pytest.fixture
 def valid_rocket_silo():
-    if len(rocket_silos) == 0:
-        return None
     return RocketSilo(
         "rocket-silo",
         id="test",

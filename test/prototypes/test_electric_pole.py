@@ -1,7 +1,9 @@
 # test_electric_pole.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
+from draftsman.data import mods
 from draftsman.entity import ElectricPole, electric_poles, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -13,8 +15,6 @@ import pytest
 
 @pytest.fixture
 def valid_electric_pole():
-    if len(electric_poles) == 0:
-        return None
     return ElectricPole(
         "substation",
         id="test",
@@ -70,7 +70,10 @@ class TestElectricPole:
         assert pole.circuit_wire_max_distance == 7.5
 
         pole.quality = "legendary"
-        assert pole.circuit_wire_max_distance == 17.5
+        if "quality" in mods.versions:
+            assert pole.circuit_wire_max_distance == 17.5
+        else:
+            assert pole.circuit_wire_max_distance == 7.5
 
         with pytest.warns(UnknownEntityWarning):
             pole = ElectricPole("unknown pole")

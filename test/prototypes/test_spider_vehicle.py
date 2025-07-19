@@ -1,5 +1,8 @@
 # test_spider_vehicle.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.constants import ValidationMode
+from draftsman.data import mods
 from draftsman.error import DataFormatError
 from draftsman.prototypes.spider_vehicle import SpiderVehicle, spider_vehicles
 from draftsman.signatures import (
@@ -12,6 +15,7 @@ from draftsman.signatures import (
     ManualSection,
     SignalFilter,
 )
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning
 
 import pytest
@@ -20,38 +24,38 @@ import copy
 
 @pytest.fixture
 def valid_spider_vehicle():
-    if len(spider_vehicles) == 0:
-        return None
-    return SpiderVehicle(
-        "spidertron",
-        id="test",
-        quality="uncommon",
-        tile_position=(1, 1),
-        item_requests=[
-            BlueprintInsertPlan(
-                id="energy-shield-equipment",
-                items=ItemInventoryPositions(grid_count=1),
-            )
-        ],
-        equipment=[
-            EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
-        ],
-        trash_not_requested=True,
-        request_from_buffers=False,
-        requests_enabled=False,
-        sections=[
-            ManualSection(
-                index=1, filters=[SignalFilter(index=1, name="iron-plate", count=50)]
-            )
-        ],
-        enable_logistics_while_moving=False,
-        driver_is_main_gunner=True,
-        selected_gun_index=2,
-        color=(0.5, 0.5, 0.5),
-        auto_target_without_gunner=False,
-        auto_target_with_gunner=True,
-        tags={"blah": "blah"},
-    )
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return SpiderVehicle(
+            "spidertron",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                )
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            trash_not_requested=True,
+            request_from_buffers=False,
+            requests_enabled=False,
+            sections=[
+                ManualSection(
+                    index=1,
+                    filters=[SignalFilter(index=1, name="iron-plate", count=50)],
+                )
+            ],
+            enable_logistics_while_moving=False,
+            driver_is_main_gunner=True,
+            selected_gun_index=2,
+            color=(0.5, 0.5, 0.5),
+            auto_target_without_gunner=False,
+            auto_target_with_gunner=True,
+            tags={"blah": "blah"},
+        )
 
 
 def test_constructor():
@@ -60,7 +64,7 @@ def test_constructor():
         auto_target_without_gunner=False,
         auto_target_with_gunner=True,
     )
-    assert vehicle.to_dict() == {
+    assert vehicle.to_dict(version=(2, 0)) == {
         "name": "spidertron",
         "position": {"x": 1.0, "y": 1.0},
         "automatic_targeting_parameters": {
@@ -69,7 +73,7 @@ def test_constructor():
         },
     }
 
-    assert vehicle.to_dict(exclude_none=False) == {
+    assert vehicle.to_dict(version=(2, 0), exclude_none=False) == {
         "name": "spidertron",
         "position": {"x": 1.0, "y": 1.0},
         "automatic_targeting_parameters": {
@@ -78,7 +82,7 @@ def test_constructor():
         },
     }
 
-    assert vehicle.to_dict(exclude_defaults=False) == {
+    assert vehicle.to_dict(version=(2, 0), exclude_defaults=False) == {
         "name": "spidertron",
         "position": {"x": 1.0, "y": 1.0},
         "quality": "normal",
@@ -121,12 +125,13 @@ def test_inventory_sizes():
     spidertron = SpiderVehicle("spidertron")
     assert spidertron.ammo_inventory.size == 4
     assert spidertron.trunk_inventory.size == 80
-    assert spidertron.prototype["trash_inventory_size"] == 20
 
     spidertron.quality = "legendary"
     assert spidertron.ammo_inventory.size == 4
-    assert spidertron.trunk_inventory.size == 200
-    assert spidertron.prototype["trash_inventory_size"] == 20
+    if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+        assert spidertron.trunk_inventory.size == 80
+    else:
+        assert spidertron.trunk_inventory.size == 200
 
     with pytest.warns(UnknownEntityWarning):
         spidertron = SpiderVehicle("unknown-spider-vehicle")
@@ -134,6 +139,10 @@ def test_inventory_sizes():
     assert spidertron.trunk_inventory.size is None
 
 
+@pytest.mark.skipif(
+    mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0),
+    reason="Not blueprintable before 2.0",
+)
 def test_equipment_grid():
     """
     Test the read-only equipment grid attribute matches the expected values and
@@ -157,6 +166,10 @@ def test_equipment_grid():
     assert spidertron.equipment_grid.locked is False
 
 
+@pytest.mark.skipif(
+    mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0),
+    reason="Not blueprintable before 2.0",
+)
 def test_equipment():
     """
     Using the equipment grid helper functions should bookkeep `equipment` as

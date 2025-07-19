@@ -1,6 +1,8 @@
 # test_assembling_machine.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import Direction, InventoryType
+from draftsman.data import mods
 from draftsman.entity import AssemblingMachine, assembling_machines, Container
 from draftsman.error import (
     InvalidEntityError,
@@ -34,8 +36,6 @@ import pytest
 
 @pytest.fixture
 def valid_assembling_machine():
-    if len(assembling_machines) == 0:
-        return None
     return AssemblingMachine(
         "assembling-machine-1",
         id="test",
@@ -120,20 +120,34 @@ class TestAssemblingMachine:
 
     def test_set_recipe(self):
         machine = AssemblingMachine("assembling-machine-3")
-        assert machine.allowed_modules == {
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "productivity-module",
-            "productivity-module-2",
-            "productivity-module-3",
-            "quality-module",
-            "quality-module-2",
-            "quality-module-3",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+            }
+        else:
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+                "quality-module",
+                "quality-module-2",
+                "quality-module-3",
+            }
+
         machine.set_item_request(
             "productivity-module-3",
             1,
@@ -150,35 +164,58 @@ class TestAssemblingMachine:
 
         machine.recipe = "iron-gear-wheel"
         assert machine.recipe == "iron-gear-wheel"
-        assert machine.allowed_modules == {
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "productivity-module",
-            "productivity-module-2",
-            "productivity-module-3",
-            "quality-module",
-            "quality-module-2",
-            "quality-module-3",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+            }
+        else:
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+                "quality-module",
+                "quality-module-2",
+                "quality-module-3",
+            }
 
         with pytest.warns(ItemLimitationWarning):
             machine.recipe = "wooden-chest"
         assert machine.recipe == "wooden-chest"
-        assert machine.allowed_modules == {
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "quality-module",
-            "quality-module-2",
-            "quality-module-3",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+            }
+        else:
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "quality-module",
+                "quality-module-2",
+                "quality-module-3",
+            }
 
         # machine.items = None
         # with pytest.warns(ModuleCapacityWarning):
@@ -217,13 +254,21 @@ class TestAssemblingMachine:
 
     def test_allowed_effects(self):
         machine = AssemblingMachine("assembling-machine-3")
-        assert machine.allowed_effects == {
-            "pollution",
-            "productivity",
-            "speed",
-            "consumption",
-            "quality",
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_effects == {
+                "pollution",
+                "productivity",
+                "speed",
+                "consumption",
+            }
+        else:
+            assert machine.allowed_effects == {
+                "pollution",
+                "productivity",
+                "speed",
+                "consumption",
+                "quality",
+            }
 
         with pytest.warns(UnknownEntityWarning):
             machine = AssemblingMachine("unknown-machine")

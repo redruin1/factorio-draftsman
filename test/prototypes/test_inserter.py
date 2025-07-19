@@ -1,5 +1,6 @@
 # test_inserter.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.group import Group
 from draftsman.classes.vector import Vector
 from draftsman.constants import (
@@ -8,6 +9,7 @@ from draftsman.constants import (
     ValidationMode,
     InserterModeOfOperation,
 )
+from draftsman.data import mods
 from draftsman.entity import Inserter, inserters, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID, Condition, ItemFilter
@@ -24,8 +26,6 @@ import pytest
 
 @pytest.fixture
 def valid_inserter():
-    if len(inserters) == 0:
-        return None
     return Inserter(
         "inserter",
         id="test",
@@ -72,7 +72,7 @@ class TestInserter:
             read_hand_contents=True,
             read_mode=InserterReadMode.PULSE,
         )
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "inserter",
             "position": {"x": 1.5, "y": 1.5},
             "direction": Direction.EAST,
@@ -96,7 +96,7 @@ class TestInserter:
             "inserter",
             stack_size_control_signal={"name": "signal-A", "type": "virtual"},
         )
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -131,7 +131,11 @@ class TestInserter:
             Inserter("inserter", tags="incorrect").validate().reissue_all()
 
     def test_filter_count(self):
-        assert Inserter("inserter").filter_count == 5
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert Inserter("inserter").filter_count == 0
+            assert Inserter("filter-inserter").filter_count == 5
+        else:
+            assert Inserter("inserter").filter_count == 5
 
     def test_pickup_position(self):
         inserter = Inserter("inserter", direction=Direction.NORTH)
@@ -255,7 +259,11 @@ class TestInserter:
 
         inserter.spoil_priority = "spoiled-first"
         assert inserter.spoil_priority == "spoiled-first"
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(1, 0)) == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
             "spoil_priority": "spoiled-first",
@@ -263,7 +271,11 @@ class TestInserter:
 
         inserter.spoil_priority = "fresh-first"
         assert inserter.spoil_priority == "fresh-first"
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(1, 0)) == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
             "spoil_priority": "fresh-first",
@@ -275,7 +287,7 @@ class TestInserter:
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             inserter.spoil_priority = "incorrect"
             assert inserter.spoil_priority == "incorrect"
-            assert inserter.to_dict() == {
+            assert inserter.to_dict(version=(2, 0)) == {
                 "name": "stack-inserter",
                 "position": {"x": 0.5, "y": 0.5},
                 "spoil_priority": "incorrect",

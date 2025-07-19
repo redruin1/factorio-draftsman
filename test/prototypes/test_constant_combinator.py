@@ -1,6 +1,8 @@
 # test_constant_combinator.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import Direction, ValidationMode
+from draftsman.data import mods
 from draftsman.entity import ConstantCombinator, constant_combinators, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import SignalFilter, ManualSection
@@ -16,8 +18,6 @@ import pytest
 
 @pytest.fixture
 def valid_constant_combinator():
-    if len(constant_combinators) == 0:
-        return None
     return ConstantCombinator(
         "constant-combinator",
         id="test",
@@ -51,7 +51,7 @@ class TestConstantCombinator:
                 )
             ],
         )
-        assert combinator.to_dict() == {
+        assert combinator.to_dict(version=(2, 0)) == {
             "name": "constant-combinator",
             "position": {"x": 0.5, "y": 2.5},
             "control_behavior": {
@@ -108,7 +108,13 @@ class TestConstantCombinator:
 
     def test_max_signal_count(self):
         combinator = ConstantCombinator()
-        assert combinator.max_signal_count == 100_000
+        base_ver = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
+        if base_ver == (1, 0, 0, 0):
+            assert combinator.max_signal_count == 18  # weird
+        elif base_ver < (2, 0):
+            assert combinator.max_signal_count == 20
+        else:
+            assert combinator.max_signal_count == 100_000
 
     def test_add_section(self):
         combinator = ConstantCombinator()
@@ -165,8 +171,6 @@ class TestConstantCombinator:
             section.set_signal(1, "iron-ore", TypeError)
         # with pytest.raises(DataFormatError): # TODO: is this an error?
         #     combinator.set_signal(-1, "iron-ore", 0)
-
-        assert combinator.max_signal_count == 100_000
 
         # 1.0 limitation
         # with pytest.raises(DataFormatError):
@@ -235,7 +239,7 @@ class TestConstantCombinator:
                 )
             ],
         )
-        assert cc.to_dict() == {
+        assert cc.to_dict(version=(2, 0)) == {
             "name": "constant-combinator",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {

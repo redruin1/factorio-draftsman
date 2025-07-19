@@ -191,13 +191,13 @@ class AABB(Shape):
         new transformed instance.
 
         ``amt`` is expressed in increments of :py:data:`.Direction`, such that
-        ``2`` is a rotation of 90 degrees clockwise and ``-2`` is a rotation of
+        ``4`` is a rotation of 90 degrees clockwise and ``-4`` is a rotation of
         90 degrees counter-clockwise.
 
-        :raises ValueError: If ``amt`` is odd, as AABB's cannot be rotated by
-            45 degrees.
+        :raises ValueError: If ``amt`` is not % 4, as AABB's can only be rotated
+            by 90 degrees.
 
-        :param amt: The amount to rotate, expressed as an increments of 45
+        :param amt: The amount to rotate, expressed as an increments of 22.5
             degrees.
         """
         if amt % 4 != 0:

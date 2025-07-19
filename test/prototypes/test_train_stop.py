@@ -1,6 +1,6 @@
 # test_train_stop.py
 
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction, LegacyDirection, ValidationMode
 from draftsman.entity import TrainStop, train_stops, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import Color, SignalID
@@ -18,8 +18,6 @@ import pytest
 
 @pytest.fixture
 def valid_train_stop():
-    if len(train_stops) == 0:
-        return None
     return TrainStop("train-stop")  # TODO: complete
 
 
@@ -28,7 +26,12 @@ class TestTrainStop:
         train_stop = TrainStop(
             "train-stop", tile_position=(0, 0), direction=Direction.EAST
         )
-        assert train_stop.to_dict() == {
+        assert train_stop.to_dict(version=(1, 0)) == {
+            "name": "train-stop",
+            "position": {"x": 1.0, "y": 1.0},
+            "direction": LegacyDirection.EAST,
+        }
+        assert train_stop.to_dict(version=(2, 0)) == {
             "name": "train-stop",
             "position": {"x": 1.0, "y": 1.0},
             "direction": Direction.EAST,
@@ -54,9 +57,10 @@ class TestTrainStop:
                         "type": "virtual",
                     },  # Default
                 },
-            }
+            },
+            version=(2, 0),
         )
-        assert train_stop.to_dict() == {
+        assert train_stop.to_dict(version=(2, 0)) == {
             "name": "train-stop",
             "position": {"x": 1.0, "y": 1.0},
             "direction": Direction.EAST,
@@ -87,9 +91,10 @@ class TestTrainStop:
                     "trains_limit_signal": {"name": "signal-B", "type": "virtual"},
                     "trains_count_signal": {"name": "signal-C", "type": "virtual"},
                 },
-            }
+            },
+            version=(2, 0),
         )
-        assert train_stop.to_dict() == {
+        assert train_stop.to_dict(version=(2, 0)) == {
             "name": "train-stop",
             "position": {"x": 1.0, "y": 1.0},
             "direction": Direction.EAST,
@@ -108,7 +113,6 @@ class TestTrainStop:
             stop = TrainStop.from_dict(
                 {"name": "train-stop", "invalid_keyword": "whatever"}
             )
-            stop.validate().reissue_all()
 
         # Incorrect direction
         with pytest.warns(DirectionWarning):
@@ -124,11 +128,9 @@ class TestTrainStop:
         # Errors
         with pytest.raises(DataFormatError):
             stop = TrainStop(station=100)
-            stop.validate().reissue_all()
 
         with pytest.raises(DataFormatError):
             stop = TrainStop(color="wrong")
-            stop.validate().reissue_all()
 
     def test_color(self):
         assert TrainStop("train-stop").color == Color(242 / 255, 0, 0, 127 / 255)

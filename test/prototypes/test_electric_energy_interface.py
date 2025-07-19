@@ -14,8 +14,6 @@ import pytest
 
 @pytest.fixture
 def valid_electric_energy_interface():
-    if len(electric_energy_interfaces) == 0:
-        return None
     return ElectricEnergyInterface(
         "electric-energy-interface",
         id="test",
@@ -37,7 +35,7 @@ class TestElectricEnergyInterface:
             "name": "electric-energy-interface",
             "position": {"x": 1.0, "y": 1.0},
         }
-        assert interface.to_dict(exclude_defaults=False) == {
+        assert interface.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "electric-energy-interface",
             "quality": "normal",
             "position": {"x": 1.0, "y": 1.0},

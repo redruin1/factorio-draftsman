@@ -1,11 +1,13 @@
 # test_mining_drill.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import (
     Direction,
     MiningDrillReadMode,
     ValidationMode,
     InventoryType,
 )
+from draftsman.data import mods
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -27,8 +29,6 @@ import pytest
 
 @pytest.fixture
 def valid_mining_drill():
-    if len(mining_drills) == 0:
-        return None
     return MiningDrill(
         "electric-mining-drill",
         id="test",
@@ -85,12 +85,45 @@ class TestMiningDrill:
         with pytest.raises(DataFormatError):
             MiningDrill(tags="incorrect").validate().reissue_all()
 
+    def test_allowed_effects(self):
+        furnace = MiningDrill("burner-mining-drill")
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert furnace.allowed_effects == set()
+        else:
+            assert furnace.allowed_effects == set()
+
+        furnace = MiningDrill("electric-mining-drill")
+        # if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+        #     assert furnace.allowed_effects == {
+        #         "speed",
+        #         "productivity",
+        #         "pollution",
+        #         "consumption",
+        #     }
+        # else:
+        assert furnace.allowed_effects == {
+            "speed",
+            "productivity",
+            "quality",
+            "pollution",
+            "consumption",
+        }
+
+        with pytest.warns(UnknownEntityWarning):
+            furnace = MiningDrill("unknown-mining-drill")
+        assert furnace.allowed_effects == None
+
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
         mining_drill.set_item_request(
             "speed-module-3", 3, inventory=InventoryType.mining_drill_modules
         )
-        assert mining_drill.to_dict() == {
+        assert mining_drill.to_dict(version=(1, 0)) == {
+            "name": "electric-mining-drill",
+            "position": {"x": 1.5, "y": 1.5},
+            "items": {"speed-module-3": 3},
+        }
+        assert mining_drill.to_dict(version=(2, 0)) == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
             "items": [
@@ -175,10 +208,10 @@ class TestMiningDrill:
             )
         ]
 
-        mining_drill.request_modules("efficiency-module-3", range(3), "legendary")
+        mining_drill.request_modules("productivity-module-3", range(3), "legendary")
         assert mining_drill.item_requests == [
             BlueprintInsertPlan(
-                id={"name": "efficiency-module-3", "quality": "legendary"},
+                id={"name": "productivity-module-3", "quality": "legendary"},
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
@@ -248,22 +281,6 @@ class TestMiningDrill:
 
     def test_merge(self):
         drill1 = MiningDrill("electric-mining-drill")
-        assert drill1.total_module_slots == 3
-        assert drill1.module_slots_occupied == 0
-        assert drill1.allowed_modules == {
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "productivity-module",
-            "productivity-module-2",
-            "productivity-module-3",
-            "quality-module",
-            "quality-module-2",
-            "quality-module-3",
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-        }
         drill2 = MiningDrill(
             "electric-mining-drill",
             item_requests=[

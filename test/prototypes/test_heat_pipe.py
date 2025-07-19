@@ -10,8 +10,6 @@ import pytest
 
 @pytest.fixture
 def valid_heat_pipe():
-    if len(heat_pipes) == 0:
-        return None
     return HeatPipe(
         "heat-pipe",
         id="test",

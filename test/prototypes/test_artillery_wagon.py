@@ -18,8 +18,6 @@ import pytest
 
 @pytest.fixture
 def valid_artillery_wagon():
-    if len(artillery_wagons) == 0:
-        return None
     with draftsman.validators.set_mode(ValidationMode.MINIMUM):
         return ArtilleryWagon(
             "artillery-wagon",
@@ -62,7 +60,7 @@ class TestArtilleryWagon:
             orientation=0.75,
             enable_logistics_while_moving=False,
         )
-        assert artillery_wagon.to_dict() == {
+        assert artillery_wagon.to_dict(version=(2, 0)) == {
             "name": "artillery-wagon",
             "position": {"x": 1.0, "y": 1.0},
             "orientation": 0.75,

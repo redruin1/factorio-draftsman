@@ -22,8 +22,6 @@ import pytest
 
 @pytest.fixture
 def valid_decider_combinator():
-    if len(decider_combinators) == 0:
-        return None
     return DeciderCombinator(
         "decider-combinator",
         id="test",
@@ -53,7 +51,7 @@ class TestDeciderCombinator:
                 )
             ],
         )
-        assert combinator.to_dict() == {
+        assert combinator.to_dict(version=(2, 0)) == {
             "name": "decider-combinator",
             "position": {"x": 4.0, "y": 3.5},
             "direction": Direction.EAST,
@@ -72,15 +70,13 @@ class TestDeciderCombinator:
 
         # Warnings
         with pytest.warns(UnknownEntityWarning):
-            DeciderCombinator(
-                "this is not an arithmetic combinator"
-            ).validate().reissue_all()
+            DeciderCombinator("this is not an arithmetic combinator")
 
         # Errors
         with pytest.raises(DataFormatError):
-            DeciderCombinator(conditions="incorrect").validate().reissue_all()
+            DeciderCombinator(conditions="incorrect")
         with pytest.raises(DataFormatError):
-            DeciderCombinator(outputs="incorrect").validate().reissue_all()
+            DeciderCombinator(outputs="incorrect")
 
     def test_power_and_circuit_flags(self):
         for name in decider_combinators:
@@ -610,7 +606,7 @@ class TestDeciderCombinator:
         comb1.merge(comb2)
         del comb2
 
-        assert comb1.to_dict() == {
+        assert comb1.to_dict(version=(2, 0)) == {
             "name": "decider-combinator",
             "position": {"x": 0.5, "y": 1.0},
             "direction": Direction.SOUTH,

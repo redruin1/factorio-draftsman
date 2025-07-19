@@ -20,6 +20,13 @@ from draftsman._version import (
 
 import attrs
 
+DEFAULT_FACTORIO_VERSION = (2, 0, 0)
+"""
+The Factorio version that Draftsman should assume it is operating under if it
+cannot determine the version from it's current environment, due to its absence
+or corruption. Should rarely (if ever) need to be used, intended to be a 
+last-ditch fallback.
+"""
 
 # def field(*, default=attrs.NOTHING, omittable=True):
 #     """

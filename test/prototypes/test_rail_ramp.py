@@ -24,17 +24,18 @@ def valid_rail_ramp():
     )
 
 
-def test_constructor():
-    ramp = RailRamp("rail-ramp")
+@pytest.mark.skipif(len(rail_ramps) == 0, reason="No RailRamps to test")
+class TestRailRamp:
+    def test_constructor(self):
+        ramp = RailRamp("rail-ramp")
 
-    with pytest.warns(UnknownEntityWarning):
-        RailRamp("unknown rail ramp")
+        with pytest.warns(UnknownEntityWarning):
+            RailRamp("unknown rail ramp")
 
-
-def test_flags():
-    for ramp_name in rail_ramps:
-        ramp = RailRamp(ramp_name)
-        assert ramp.power_connectable == False
-        assert ramp.dual_power_connectable == False
-        assert ramp.circuit_connectable == False
-        assert ramp.dual_circuit_connectable == False
+    def test_flags(self):
+        for ramp_name in rail_ramps:
+            ramp = RailRamp(ramp_name)
+            assert ramp.power_connectable == False
+            assert ramp.dual_power_connectable == False
+            assert ramp.circuit_connectable == False
+            assert ramp.dual_circuit_connectable == False

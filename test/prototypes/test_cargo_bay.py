@@ -22,17 +22,18 @@ def valid_cargo_bay():
     )
 
 
-def test_constructor():
-    bay = CargoBay("cargo-bay")
+@pytest.mark.skipif(len(cargo_bays) == 0, reason="No CargoBays to test")
+class TestCargoBay:
+    def test_constructor(self):
+        bay = CargoBay("cargo-bay")
 
-    with pytest.warns(UnknownEntityWarning):
-        CargoBay("unknown cargo bay")
+        with pytest.warns(UnknownEntityWarning):
+            CargoBay("unknown cargo bay")
 
-
-def test_flags():
-    for bay_name in cargo_bays:
-        bay = CargoBay(bay_name)
-        assert bay.power_connectable == False
-        assert bay.dual_power_connectable == False
-        assert bay.circuit_connectable == False
-        assert bay.dual_circuit_connectable == False
+    def test_flags(self):
+        for bay_name in cargo_bays:
+            bay = CargoBay(bay_name)
+            assert bay.power_connectable == False
+            assert bay.dual_power_connectable == False
+            assert bay.circuit_connectable == False
+            assert bay.dual_circuit_connectable == False

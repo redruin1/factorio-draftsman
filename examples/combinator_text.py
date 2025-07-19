@@ -67,14 +67,14 @@ def main():
     blueprint = Blueprint()
 
     combinator = ConstantCombinator("constant-combinator")
-    num_combinators = math.ceil(len(letter_list) / combinator.slot_count)
+    num_combinators = math.ceil(len(letter_list) / combinator.max_signal_count)
     for i in range(num_combinators):
         combinator.tile_position = (i, 0)
         blueprint.entities.append(combinator)
 
     for i, letter in enumerate(letter_list):
-        current_entity = int(i / combinator.slot_count)
-        index = i % combinator.slot_count
+        current_entity = int(i / combinator.max_signal_count)
+        index = i % combinator.max_signal_count
         id = "signal-{}".format(translations[letter])
         value = ord(letter)
         blueprint.entities[current_entity].sections[0].set_signal(index, id, value)

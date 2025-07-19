@@ -19,7 +19,7 @@ try:
         categories: dict[str, list[str]] = _data[1]
         for_machine: dict[str, list[str]] = _data[2]
 
-except FileNotFoundError:
+except FileNotFoundError:  # pragma: no coverage
     raw = {}
     categories = {}
     for_machine = {}

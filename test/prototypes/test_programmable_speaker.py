@@ -28,8 +28,6 @@ import pytest
 
 @pytest.fixture
 def valid_programmable_speaker():
-    if len(programmable_speakers) == 0:
-        return None
     return ProgrammableSpeaker(
         "programmable-speaker",
         id="test",
@@ -69,7 +67,7 @@ class TestProgrammableSpeakerTesting:
             instrument_id=1,
             note_id=1,
         )
-        assert speaker.to_dict() == {
+        assert speaker.to_dict(version=(2, 0)) == {
             "name": "programmable-speaker",
             "position": {"x": 10.5, "y": 10.5},
             "parameters": {
@@ -106,7 +104,7 @@ class TestProgrammableSpeakerTesting:
             instrument_id=1,
             note_id=1,
         )
-        assert speaker.to_dict() == {
+        assert speaker.to_dict(version=(2, 0)) == {
             "name": "programmable-speaker",
             "position": {"x": 10.5, "y": 10.5},
             "parameters": {
@@ -142,7 +140,10 @@ class TestProgrammableSpeakerTesting:
             },
         }
         with pytest.warns(UnknownKeywordWarning):
-            speaker = ProgrammableSpeaker.from_dict(unknown_keyword_dict)
+            speaker = ProgrammableSpeaker.from_dict(
+                unknown_keyword_dict, version=(2, 0)
+            )
+
         speaker.extra_keys["name"] = "programmable-speaker"
         assert speaker.to_dict() == unknown_keyword_dict
 
@@ -220,7 +221,7 @@ class TestProgrammableSpeakerTesting:
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             speaker.playback_mode = "incorrect"
             assert speaker.playback_mode == "incorrect"
-            assert speaker.to_dict() == {
+            assert speaker.to_dict(version=(2, 0)) == {
                 "name": "programmable-speaker",
                 "position": {"x": 0.5, "y": 0.5},
                 "parameters": {"playback_mode": "incorrect"},
@@ -573,7 +574,7 @@ class TestProgrammableSpeakerTesting:
         assert speaker1.note_id == 1
         assert speaker1.tags == {"some": "stuff"}
 
-        assert speaker1.to_dict() == {
+        assert speaker1.to_dict(version=(2, 0)) == {
             "name": "programmable-speaker",
             "position": {"x": 0.5, "y": 0.5},
             "parameters": {

@@ -18,8 +18,6 @@ import pytest
 
 @pytest.fixture
 def valid_ammo_turret():
-    if len(ammo_turrets) == 0:
-        return None
     return AmmoTurret(
         "gun-turret",
         id="test",
@@ -94,7 +92,11 @@ class TestAmmoTurret:
             TargetID(index=0, name="small-biter"),
             TargetID(index=1, name="medium-biter"),
         ]
-        assert turret.to_dict() == {
+        assert turret.to_dict(version=(1, 0)) == {
+            "name": "gun-turret",
+            "position": {"x": 1.0, "y": 1.0},
+        }
+        assert turret.to_dict(version=(2, 0)) == {
             "name": "gun-turret",
             "position": {"x": 1.0, "y": 1.0},
             "priority_list": [
@@ -114,7 +116,7 @@ class TestAmmoTurret:
             TargetID(index=0, name="small-biter"),
             TargetID(index=1, name="medium-biter"),
         ]
-        assert turret.to_dict() == {
+        assert turret.to_dict(version=(2, 0)) == {
             "name": "gun-turret",
             "position": {"x": 1.0, "y": 1.0},
             "priority_list": [

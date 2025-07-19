@@ -19,8 +19,6 @@ import pytest
 
 @pytest.fixture
 def valid_locomotive():
-    if len(locomotives) == 0:
-        return None
     with draftsman.validators.set_mode(ValidationMode.MINIMUM):
         return Locomotive(
             "locomotive",

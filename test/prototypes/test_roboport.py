@@ -17,8 +17,6 @@ import pytest
 
 @pytest.fixture
 def valid_roboport():
-    if len(roboports) == 0:
-        return None
     return Roboport(
         "roboport",
         id="test",
@@ -48,7 +46,7 @@ class TestRoboport:
             tile_position=[1, 1],
             read_items_mode=Roboport.ReadItemsMode.NONE,
         )
-        assert roboport.to_dict() == {
+        assert roboport.to_dict(version=(2, 0)) == {
             "name": "roboport",
             "position": {"x": 3.0, "y": 3.0},
             "control_behavior": {"read_items_mode": Roboport.ReadItemsMode.NONE},
@@ -64,7 +62,7 @@ class TestRoboport:
             available_construction_signal="signal-C",
             total_construction_signal="signal-D",
         )
-        assert roboport.to_dict() == {
+        assert roboport.to_dict(version=(2, 0)) == {
             "name": "roboport",
             "position": {"x": 3.0, "y": 3.0},
             "control_behavior": {
@@ -100,7 +98,7 @@ class TestRoboport:
             total_construction_signal={"name": "signal-D", "type": "virtual"},
         )
 
-        assert roboport.to_dict() == {
+        assert roboport.to_dict(version=(2, 0)) == {
             "name": "roboport",
             "position": {"x": 3.0, "y": 3.0},
             "control_behavior": {
@@ -169,7 +167,7 @@ class TestRoboport:
         with draftsman.validators.set_mode(ValidationMode.DISABLED):
             roboport.read_robot_stats = "incorrect"
             assert roboport.read_robot_stats == "incorrect"
-            assert roboport.to_dict() == {
+            assert roboport.to_dict(version=(2, 0)) == {
                 "name": "roboport",
                 "position": {"x": 2, "y": 2},
                 "control_behavior": {"read_robot_stats": "incorrect"},
@@ -336,7 +334,31 @@ class TestRoboport:
         )
         assert roboport1.tags == {"some": "stuff"}
 
-        assert roboport1.to_dict(exclude_defaults=False)["control_behavior"] == {
+        assert roboport1.to_dict(version=(1, 0), exclude_defaults=False)[
+            "control_behavior"
+        ] == {
+            "read_logistics": True,
+            "read_robot_stats": True,
+            "available_logistic_output_signal": {
+                "name": "signal-A",
+                "type": "virtual",
+            },
+            "total_logistic_output_signal": {
+                "name": "signal-B",
+                "type": "virtual",
+            },
+            "available_construction_output_signal": {
+                "name": "signal-C",
+                "type": "virtual",
+            },
+            "total_construction_output_signal": {
+                "name": "signal-D",
+                "type": "virtual",
+            },
+        }
+        assert roboport1.to_dict(version=(2, 0), exclude_defaults=False)[
+            "control_behavior"
+        ] == {
             "read_items_mode": Roboport.ReadItemsMode.LOGISTICS,
             "read_robot_stats": True,
             "available_logistic_output_signal": {

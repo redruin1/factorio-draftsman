@@ -9,8 +9,6 @@ import pytest
 
 @pytest.fixture
 def valid_pipe():
-    if len(pipes) == 0:
-        return None
     return Pipe(
         "pipe",
         id="test",

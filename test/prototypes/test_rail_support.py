@@ -22,17 +22,18 @@ def valid_rail_support():
     )
 
 
-def test_constructor():
-    support = RailSupport("rail-support")
+@pytest.mark.skipif(len(rail_supports) == 0, reason="No RailSupports to test")
+class TestRailSupport:
+    def test_constructor(self):
+        support = RailSupport("rail-support")
 
-    with pytest.warns(UnknownEntityWarning):
-        RailSupport("unknown rail support")
+        with pytest.warns(UnknownEntityWarning):
+            RailSupport("unknown rail support")
 
-
-def test_flags():
-    for support_name in rail_supports:
-        support = RailSupport(support_name)
-        assert support.power_connectable == False
-        assert support.dual_power_connectable == False
-        assert support.circuit_connectable == False
-        assert support.dual_circuit_connectable == False
+    def test_flags(self):
+        for support_name in rail_supports:
+            support = RailSupport(support_name)
+            assert support.power_connectable == False
+            assert support.dual_power_connectable == False
+            assert support.circuit_connectable == False
+            assert support.dual_circuit_connectable == False

@@ -1,5 +1,6 @@
 # inventory.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.exportable import Exportable
 from draftsman.data import entities, mods, qualities
 from draftsman.constants import InventoryType, ValidationMode
@@ -38,18 +39,14 @@ class InventoryMixin(Exportable):
         Returns ``None`` if this entity is not recognized by Draftsman. Not
         exported; read only.
         """
-        if mods.versions["base"] < (2, 0):  # pragma: no coverage
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
             # "enable_inventory_bar"
-            return entities.raw.get(self.name, {"enable_inventory_bar": None}).get(
-                "enable_inventory_bar", True
-            )
+            return entities.raw.get(self.name, {}).get("enable_inventory_bar", True)
         else:
             # "inventory_type"
-            inventory_type = entities.raw.get(self.name, {"inventory_type": None}).get(
+            inventory_type = entities.raw.get(self.name, {}).get(
                 "inventory_type", "with_bar"
             )
-            if inventory_type is None:
-                return None
             return inventory_type in ("with_bar", "with_filters_and_bar")
 
     # =========================================================================

@@ -16,8 +16,6 @@ import pytest
 
 @pytest.fixture
 def valid_heat_interface():
-    if len(heat_interfaces) == 0:
-        return None
     return HeatInterface(
         "heat-interface",
         id="test",

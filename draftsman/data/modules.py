@@ -4,7 +4,7 @@ import pickle
 
 from importlib.resources import files
 
-from draftsman import data
+from draftsman import data, DEFAULT_FACTORIO_VERSION
 from draftsman.data import recipes, mods
 
 from typing import Optional
@@ -103,9 +103,17 @@ def get_modules_from_effects(
 
         # I think the module's positive effects has to be a subset of the
         # set of allowed effects
-        positive_effects = {
-            effect for effect, value in module["effect"].items() if value > 0
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            positive_effects = {
+                effect
+                for effect, value in module["effect"].items()
+                if value["bonus"] > 0
+            }
+        else:
+            positive_effects = {
+                effect for effect, value in module["effect"].items() if value > 0
+            }
+
         if positive_effects.issubset(allowed_effects):
             output.add(module_name)
 

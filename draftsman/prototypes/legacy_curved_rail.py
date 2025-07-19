@@ -1,10 +1,12 @@
 # legacy_curved_rail.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
+from draftsman.data import mods
 from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
 
 from draftsman.data.entities import legacy_curved_rails
@@ -18,7 +20,13 @@ _left_turn = CollisionSet(
 _right_turn = CollisionSet(
     [AABB(-1.75, 1.8, -0.25, 3.9), Rectangle((0.375, -0.7175), 1.4, 5.45, 35)]
 )
-_rotated_collision_sets["legacy-curved-rail"] = {
+
+if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+    _legacy_curved_rail_name = "curved-rail"
+else:
+    _legacy_curved_rail_name = "legacy-curved-rail"
+
+_rotated_collision_sets[_legacy_curved_rail_name] = {
     Direction.NORTH: _left_turn,
     Direction.NORTHEAST: _right_turn,
     Direction.EAST: _left_turn.rotate(4),

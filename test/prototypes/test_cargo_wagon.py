@@ -1,6 +1,7 @@
 # test_cargo_wagon.py
 
 from draftsman.constants import InventoryType, Orientation, ValidationMode
+from draftsman.data import mods
 from draftsman.entity import CargoWagon, cargo_wagons, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
@@ -25,8 +26,6 @@ import pytest
 
 @pytest.fixture
 def valid_cargo_wagon():
-    if len(cargo_wagons) == 0:
-        return None
     with draftsman.validators.set_mode(ValidationMode.MINIMUM):
         return CargoWagon(
             "cargo-wagon",
@@ -174,17 +173,40 @@ class TestCargoWagon:
         wagon = CargoWagon("cargo-wagon")
         assert wagon.inventory.size == 40
 
-        assert wagon.prototype.get("quality_affects_inventory_size", False) is False
-        wagon.quality = "legendary"
-        assert wagon.inventory.size == 40
+        if "quality" in mods.versions:
+            assert wagon.prototype.get("quality_affects_inventory_size", False) is False
+            wagon.quality = "legendary"
+            assert wagon.inventory.size == 40
 
-        # Manually override to test the modded case
-        wagon.prototype["quality_affects_inventory_size"] = True
-        assert wagon.inventory.size == 100
+            # Manually override to test the modded case
+            wagon.prototype["quality_affects_inventory_size"] = True
+            assert wagon.inventory.size == 100
 
         with pytest.warns(UnknownEntityWarning):
             wagon = CargoWagon("unknown wagon")
         assert wagon.inventory.size is None
+
+    def test_set_inventory_filter(self):
+        wagon = CargoWagon("cargo-wagon")
+
+        wagon.inventory.set_filter(0, "wooden-chest")
+        assert wagon.inventory.filters == [
+            ItemFilter(**{"index": 0, "name": "wooden-chest"}),
+        ]
+
+        # Replace existing
+        wagon.inventory.set_filter(0, "iron-chest")
+        assert wagon.inventory.filters == [
+            ItemFilter(**{"index": 0, "name": "iron-chest"}),
+        ]
+
+        # Remove existing
+        wagon.inventory.set_filter(0, None)
+        assert wagon.inventory.filters == []
+
+        # TODO: Ensure errors even if validation is off
+        with pytest.raises(DataFormatError):
+            wagon.inventory.set_filter("incorrect", 0)
 
     def test_set_inventory_filters(self):
         wagon = CargoWagon("cargo-wagon")
@@ -215,9 +237,9 @@ class TestCargoWagon:
 
         # Explicit format
         wagon.inventory.filters = [
-            {"index": 0, "name": "iron-ore"},
-            {"index": 1, "name": "copper-ore"},
-            {"index": 2, "name": "iron-ore"},
+            ItemFilter(**{"index": 0, "name": "iron-ore"}),
+            ItemFilter(**{"index": 1, "name": "copper-ore"}),
+            ItemFilter(**{"index": 2, "name": "iron-ore"}),
         ]
         assert wagon.inventory.filters == [
             ItemFilter(**{"index": 0, "name": "iron-ore"}),
@@ -226,7 +248,7 @@ class TestCargoWagon:
         ]
         assert wagon.to_dict() == {
             "name": "cargo-wagon",
-            "position": {"x": 1.0, "y": 2.5},
+            "position": {"x": 0.0, "y": 0.0},
             "inventory": {
                 "filters": [
                     {"index": 1, "name": "iron-ore"},
@@ -245,43 +267,6 @@ class TestCargoWagon:
         with pytest.raises(DataFormatError):
             wagon.inventory.filters = "incorrect"
         assert wagon.inventory.filters[0].name == "unknown"
-
-    def test_set_inventory_filter(self):
-        wagon = CargoWagon("cargo-wagon")
-
-        wagon.inventory.set_filter(0, "wooden-chest")
-        assert wagon.inventory.filters == [
-            ItemFilter(**{"index": 0, "name": "wooden-chest"}),
-        ]
-
-        # Replace existing
-        wagon.inventory.set_filter(0, "iron-chest")
-        assert wagon.inventory.filters == [
-            ItemFilter(**{"index": 0, "name": "iron-chest"}),
-        ]
-
-        # Remove existing
-        wagon.inventory.set_filter(0, None)
-        assert wagon.inventory.filters == []
-
-        # TODO: Ensure errors even if validation is off
-        with pytest.raises(DataFormatError):
-            wagon.inventory.set_filter("incorrect", 0)
-
-    def test_set_inventory_filters(self):
-        wagon = CargoWagon("cargo-wagon")
-
-        # Shorthand
-        data = ["iron-ore", "copper-ore", "coal"]
-        wagon.inventory.filters = data
-        assert wagon.inventory.filters == [
-            ItemFilter(**{"index": 0, "name": "iron-ore"}),
-            ItemFilter(**{"index": 1, "name": "copper-ore"}),
-            ItemFilter(**{"index": 2, "name": "coal"}),
-        ]
-
-        with pytest.raises(DataFormatError):
-            wagon.inventory.filters = "incorrect"
 
     def test_set_inventory_bar(self):
         wagon = CargoWagon("cargo-wagon")

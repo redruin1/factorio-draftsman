@@ -11,8 +11,6 @@ import pytest
 
 @pytest.fixture
 def valid_boiler():
-    if len(boilers) == 0:
-        return None
     return Boiler(
         "boiler",
         id="test",

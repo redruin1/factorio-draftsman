@@ -16,10 +16,7 @@ import pytest
 
 @pytest.fixture
 def valid_storage_container():
-    if len(logistic_storage_containers) == 0:
-        return None
     return LogisticStorageContainer(
-        "storage-chest",
         id="test",
         quality="uncommon",
         tile_position=(1, 1),
@@ -33,7 +30,6 @@ def valid_storage_container():
 class TestLogisticStorageContainer:
     def test_constructor_init(self):
         storage_chest = LogisticStorageContainer(
-            "storage-chest",
             tile_position=[15, 3],
             bar=5,
             connections={
@@ -45,13 +41,8 @@ class TestLogisticStorageContainer:
                 }
             },
         )
-        assert storage_chest.to_dict() == {
-            "name": "storage-chest",
-            "position": {"x": 15.5, "y": 3.5},
-            "bar": 5,
-        }
         assert storage_chest.to_dict(version=(1, 0)) == {
-            "name": "storage-chest",
+            "name": "logistic-chest-storage",
             "position": {"x": 15.5, "y": 3.5},
             "bar": 5,
             "connections": {
@@ -63,10 +54,22 @@ class TestLogisticStorageContainer:
                 }
             },
         }
+        assert storage_chest.to_dict(version=(2, 0)) == {
+            "name": "storage-chest",
+            "position": {"x": 15.5, "y": 3.5},
+            "bar": 5,
+        }
+
         storage_chest = LogisticStorageContainer(
-            "storage-chest", position=[15.5, 1.5], bar=5, tags={"A": "B"}
+            position=[15.5, 1.5], bar=5, tags={"A": "B"}
         )
-        assert storage_chest.to_dict() == {
+        assert storage_chest.to_dict(version=(1, 0)) == {
+            "name": "logistic-chest-storage",
+            "position": {"x": 15.5, "y": 1.5},
+            "bar": 5,
+            "tags": {"A": "B"},
+        }
+        assert storage_chest.to_dict(version=(2, 0)) == {
             "name": "storage-chest",
             "position": {"x": 15.5, "y": 1.5},
             "bar": 5,
@@ -98,22 +101,16 @@ class TestLogisticStorageContainer:
         # Errors
         # Raises schema errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
-            LogisticStorageContainer("storage-chest", id=25).validate().reissue_all()
+            LogisticStorageContainer(id=25).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            LogisticStorageContainer(
-                "storage-chest", position=TypeError
-            ).validate().reissue_all()
+            LogisticStorageContainer(position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            LogisticStorageContainer(
-                "storage-chest", bar="not even trying"
-            ).validate().reissue_all()
+            LogisticStorageContainer(bar="not even trying").validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            LogisticStorageContainer(
-                "storage-chest", connections="incorrect"
-            ).validate().reissue_all()
+            LogisticStorageContainer(connections="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in logistic_storage_containers:
@@ -124,9 +121,8 @@ class TestLogisticStorageContainer:
             assert container.dual_circuit_connectable == False
 
     def test_mergable_with(self):
-        container1 = LogisticStorageContainer("storage-chest")
+        container1 = LogisticStorageContainer()
         container2 = LogisticStorageContainer(
-            "storage-chest",
             bar=10,
             # item_requests=[{"name": "utility-science-pack", "index": 1, "count": 0}],
             tags={"some": "stuff"},
@@ -159,8 +155,8 @@ class TestLogisticStorageContainer:
     #     assert container1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        container1 = LogisticStorageContainer("storage-chest")
-        container2 = LogisticStorageContainer("storage-chest")
+        container1 = LogisticStorageContainer()
+        container2 = LogisticStorageContainer()
 
         assert container1 == container2
 

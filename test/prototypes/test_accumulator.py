@@ -13,8 +13,6 @@ import pytest
 
 @pytest.fixture
 def valid_accumulator():
-    if len(accumulators) == 0:
-        return None
     return Accumulator(
         "accumulator",
         id="test",

@@ -9,8 +9,6 @@ import pytest
 
 @pytest.fixture
 def valid_radar():
-    if len(radars) == 0:
-        return None
     return Radar(
         "radar",
         id="test",

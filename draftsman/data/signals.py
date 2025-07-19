@@ -31,7 +31,7 @@ try:
         quality: list[str] = _data["quality"]
         # hidden: list[str] = _data["hidden"]
 
-except FileNotFoundError:
+except FileNotFoundError:  # pragma: no coverage
     raw = {}
     type_of = {}
 

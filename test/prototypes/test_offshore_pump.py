@@ -16,8 +16,6 @@ import pytest
 
 @pytest.fixture
 def valid_offshore_pump():
-    if len(offshore_pumps) == 0:
-        return None
     return OffshorePump(
         "offshore-pump",
         id="test",
