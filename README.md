@@ -173,58 +173,61 @@ git clone --recurse-submodules https://github.com/redruin1/factorio-draftsman.gi
 cd factorio-draftsman
 ```
 
-Create a virtual environment of your personal flavor and enter inside of it. If you are looking to contribute to Draftsman however, it's recommended that you use `uv` if you're going to be running the full `tox` test suite:
+Create a virtual environment of your personal flavor and enter inside of it. If you are looking to contribute to Draftsman however, it's recommended that you use [`uv`](https://github.com/astral-sh/uv) since most of the CI tools use it:
 
 ```perl
 pip install uv # or via pipx or standalone script, see uv docs
-uv python install 3.8 3.9 3.10 3.11 3.12 3.13
 uv venv
 ```
 
-Install the package with the `dev` extra in editable mode:
+Install the package in editable mode:
 
 ```
-uv pip install -e .[dev]
+pip install -e .
 ```
 
-You should now be able to run the test suite with `pytest`:
+You should now be able to run the test suite with [`pytest`](https://docs.pytest.org/en/stable/#):
 
 ```
 python -m pytest test -Werror -vv
 ```
 
-Or more succinctly using `coverage`:
+Or - more succinctly - using [`coverage`](https://coverage.readthedocs.io/en/latest/):
 
 ```
 coverage run
 ```
 
-To run a mock CI against all Python versions, run tox:
+To run a mock CI against all supported Python versions, run [`tox`](https://tox.wiki/en/4.27.0/):
 
 ```
 tox
 ```
 
-And to run a CI pass with every possible permutation of Python version > 3.7 and Factorio version > 1.0, run:
+However, Draftsman (>= 3.0) also provides a [`justfile`](https://github.com/casey/just) which has a number of recipes which make contributing much easier. 
+Type `just` to see a list of all options:
 
-```
-tox -e giga-check
+```perl
+Available recipes:
+    ci              # Run 'lint + test + report-coverage'
+    ci-all          # Run 'lint + test-all + report-coverage'
+    lint *args      # Run black and ruff
+    test            # Run test suite against {current Factorio version, all Python versions}
+    test-all        # Run test suite against {all Factorio versions, latest Python version} (LONG)
+    report-coverage # Combine all coverage files and create HTML report
 ```
 
-Note that testing currently is only *guaranteed* to work with a vanilla install.
-If you intend to make changes to be submitted as a PR, see [CONTRIBUTING.md](CONTRIBUTING.md) for additional information.
+Note that testing currently is only guaranteed to pass with a vanilla [environment](TODO).
 
 --------------------------------------------------------------------------------
 
-## Contributing
+# Contributing
 
-Draftsman is a large and expansive project, intended to be used by as many people as possible. As such, it is a difficult project to maintain by myself. All support is welcome, whether it be finding/fixing bugs, improving mod compatibility, adding features, improving documentation, adding examples, or anything in-between. I maintain a [`TODO.md`](TODO.md) list which contains all the features that I'm currently planning on implementing (eventually, at least).
+All support is welcome, whether it be finding/fixing bugs, improving mod compatibility, adding useful features, improving existing documentation, adding new examples, or anything in-between. Check [`TODO.md`](TODO.md) for a list of features which are (eventually) planned for a future version of Draftsman.
 
-Bugs are tracked on the issue page; If you have an issue that's affecting you, search here for your issue and create a new one if it's not there.
+Bugs are tracked on the issue page; If you have an issue that's affecting you, search here for your issue and create a new one if it's not there. Feature requests also belong here if you can make a strong case for it's inclusion into the project.
 
-If you have a feature request that is on the TODO list, or that you firmly believe belongs in Draftsman and you have a working prototype, then the issues page is also the place for that.
-
-If you have a feature request that isn't currently on the TODO list and you believe it might be a good fit for the project, but you're not absolutely sure if it belongs or how it should be implemented into Draftsman, start a [discussion thread here](https://github.com/redruin1/factorio-draftsman/discussions/categories/ideas). If a discussed feature is accepted, it will get added to the TODO list and tracked on the issues page. 
+If you have a feature request that isn't currently on the TODO list and you believe it might be a good fit for the project, but you're not absolutely sure if it belongs or how it should be implemented into Draftsman, start a [discussion thread here](https://github.com/redruin1/factorio-draftsman/discussions/categories/ideas). If a discussed feature is accepted, it should be added to the TODO list and tracked on the issues page. Questions on how to use Draftsman are also recommended to live in the discussions channel.
 
 If you want to contribute, read [CONTRIBUTING.md](CONTRIBUTING.md) first, fork the project, and dive in. When you're ready, submit a PR with the changes towards the intended branch, describing what exactly the changes intend to do (linking against any relevant issues if necessary). If all checks pass, you can expect the PR to merged in a (relatively) timely manner and pushed to the next minor or major version.
 

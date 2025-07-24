@@ -59,12 +59,16 @@ class CollectionList(MutableSequence):
         initlist: Optional[list[Collection]] = None,
         parent: Optional[Collection] = None,
     ):
-        self.data = [] if initlist is None else initlist
+        self.data = []
         self.key_map = {}
         self.key_to_idx = {}
         self.idx_to_key = {}
 
         self._parent: "Collection" = parent
+
+        if initlist is not None:
+            for elem in initlist:
+                self.append(elem)
 
     @reissue_warnings
     def append(self, group, copy=True, merge=False, **kwargs):

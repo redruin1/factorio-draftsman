@@ -339,6 +339,17 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     # =========================================================================
 
     # TODO
+    # @abstractmethod
+    # def migrate_to(self, target_version: tuple[int, ...] | None):
+    #     """
+    #     Takes this particular Blueprintable and attempts to migrate it to the
+    #     specified version, mostly renaming entity/tile/recipe names.
+
+    #     TODO
+    #     """
+    #     pass  # pragma: no coverage
+
+    # TODO
     # def formatted_label(self) -> str:
     #     """
     #     Returns a formatted string for the console that can be displayed with

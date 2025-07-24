@@ -126,8 +126,8 @@ For simplicity's sake we'll ignore ``Blueprint`` for the moment and focus on jus
 
 :py:class:`.Container` is a type of ``Entity``, used for holding items and typically includes all the regular chests. 
 The first positional argument to any entity is always it's name. 
-It's name has to match the name of a valid Factorio name (`under the current environment <TODO>`_), otherwise it will raise an :py:class:`.UnknownEntityWarning`.
-If Draftsman cannot recognize your entity, you can still create, import, modify, and export it; but Draftsman will be unable to provide useful metadata about it, and it will be validate it entirely. 
+It's name has to match the name of a valid Factorio name (`under the current environment <environment.rst>`_), otherwise it will raise an :py:class:`.UnknownEntityWarning`.
+If Draftsman cannot recognize your entity, you can still create, import, modify, and export it; but Draftsman will be unable to provide useful metadata about it, or validate it entirely. 
 You can query exactly what the valid names for containers are by checking :py:data:`draftsman.data.entities.containers`:
 
 .. doctest::
@@ -241,7 +241,7 @@ For compatibility, you can also specify ``position`` or ``tile_position`` as a `
 
     >>> container.position = {"x": -10.5, "y": 10.5}
     >>> container.position
-    <Vector>(-10.5, 10.5)
+    Vector(-10.5, 10.5)
 
 You can specify these parameters (in any of the above forms) in the constructor to immediately set the Entity's position as well:
 
@@ -399,7 +399,7 @@ One final thing. Remember that aside above about unrecognized entities still bei
     None
     >>> container.bar = 100 # ... which means no warnings!
 
-Draftsman knows that all entities must have a bar that can fit inside an unsigned short; but if it doesn't know anything about ``"unknown-container"``, it cannot assert whether or not a bar value of 100 lies inside or outside of it's inventory.
+Draftsman knows that all entities must have a bar that can fit inside an unsigned short; but if it doesn't know anything about ``"unknown-container"``, it cannot assert whether or not a bar value of 100 lies inside or outside of it's inventory size.
 Thus, if you want or need access to this contextual information, it is generally recommended to keep your `Draftsman environment <TODO>`_ up to date with your scripts.
 
 With all the components discussed, we can finally put all the pieces together.
@@ -417,8 +417,8 @@ Here's a full working example:
 
     # Normalize coordinates to furnace center
     furnace = blueprint.find_entities_filtered(type = "furnace")[0]
-    center = [furnace.tile_position["x"] + 1, furnace.tile_position["y"] + 1]
-    blueprint.translate(-center[0], -center[1])
+    center = furnace.tile_position + (1, 1)
+    blueprint.translate(-center.x, -center.y)
 
     # Create our new entity
     container = Container("steel-chest", tile_position = (3, 0))
@@ -436,7 +436,7 @@ And for completeness sake, here's a copy of the changed blueprint string:
 
 Hopefully now you can start to see just how convenient Draftsman is for manipulating blueprint strings. 
 Still, this barely scratches the surface of this module's capabilities. 
-If you want to know more about how Draftsman works and how you can use it to it's fullest, check out the :doc:`Crash Course <handbook/crash_course>`.
+If you want to know more about how Draftsman works and how you can use it to it's fullest, check out the :doc:`concepts <concepts/index>`.
 
 If you want to take a look at some more complex examples, you can take a look at the `examples folder here <https://github.com/redruin1/factorio-draftsman/tree/main/examples>`_.
 

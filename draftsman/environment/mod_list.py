@@ -230,7 +230,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 )
             )
         folder_name = m.group(1)
-        mod_name = m.group(2).replace(" ", "")
+        mod_name = m.group(2)
         # external_mod_version = m.group(3)
         files = zipfile.ZipFile(mod_location, mode="r")
 
@@ -640,7 +640,7 @@ def set_mods_enabled(
         mod_list_dict = {"mods": [{"name": mod, "enabled": True} for mod in mods]}
 
     if mod_names == ["all"]:
-        mod_names = [mod for mod in mods if mod.name not in ("base", "core")]
+        mod_names = [mod for mod in mods if mod not in ("base", "core")]
     else:
         # Check to make sure that all of the mods given point to discovered mods
         for mod_name in mod_names:

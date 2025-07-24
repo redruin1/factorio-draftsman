@@ -1,6 +1,6 @@
 # extras.py
 
-from draftsman.classes.collection import EntityCollection
+from draftsman.classes.collection import Collection
 from draftsman.classes.entity_like import EntityLike
 from draftsman.entity import TransportBelt, UndergroundBelt, Splitter
 
@@ -8,7 +8,7 @@ from typing import Union
 from typing import cast as typing_cast
 
 
-def reverse_belts(blueprint: EntityCollection) -> None:
+def reverse_belts(blueprint: Collection) -> None:
     """
     Modifies the passed in blueprint or group in-place to swap the direction of
     all belts. Instead of just inverting the direction of each belt, this

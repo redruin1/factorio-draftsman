@@ -1,5 +1,7 @@
 # TODO
 
+### Remove all old typing constructs (`Union`, `List`, etc.) now that minimum Python version > 3.9
+
 ---
 ### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 

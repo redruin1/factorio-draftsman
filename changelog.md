@@ -54,6 +54,10 @@
         ```py
         blueprint.add_circuit_connection("red", ("a", "b", "c"), ("x", "y", "z"))
         ```
+* Tidied up the build system
+    * Removed `setup.py` in favor of more modern `pyproject.toml`
+    * You can now use `just` with draftsman to run common CI commands, see new README
+* Fixed an issue where certain mods would no be displayed correctly as disabled when using `draftsman list`
 
 ## 2.0.3
 * Updated `factorio-data` to version `2.0.48` (latest)
