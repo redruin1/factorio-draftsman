@@ -19,6 +19,7 @@ dependencies = [
     "lupa >= 2.0",
     "GitPython >= 3.1.43",
     "thefuzz >= 0.20.0",
+    "enum_tools >= 0.13.0",
     "typing",
     "typing_extensions; python_version < '3.8'",
 ]
