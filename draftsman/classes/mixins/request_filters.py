@@ -20,12 +20,16 @@ class RequestFiltersMixin(Exportable):
         validator=instance_of(bool),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to mark items in the inventory not currently requested for 
     removal.
 
-    .. NOTE::
+    Only has an effect on versions of Factorio >= 2.0.
 
-        Only has an effect on versions of Factorio >= 2.0.
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -35,6 +39,10 @@ class RequestFiltersMixin(Exportable):
         validator=instance_of(bool),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this entity should request items from buffer chests in its 
     logistic network.
     """
@@ -46,12 +54,16 @@ class RequestFiltersMixin(Exportable):
         validator=instance_of(bool),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Master toggle for all logistics requests on this entity. Superceeds any 
-    logistic request toggles on any contained logistic sections.
+    logistic request toggles on any contained logistic :py:attr:`.sections`.
 
-    .. NOTE::
+    Only has an effect on versions of Factorio >= 2.0.
 
-        Only has an effect on versions of Factorio >= 2.0.
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -61,6 +73,10 @@ class RequestFiltersMixin(Exportable):
         validator=instance_of(list[ManualSection]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The list of logistics sections that this entity is configured to request.
     """
 
@@ -88,7 +104,8 @@ class RequestFiltersMixin(Exportable):
         :param active: Whether or not this particular group is contributing its
             contents to the output in this specific combinator.
 
-        :returns: A reference to the :class:`.ManualSection` just added.
+        :returns: A reference to the :class:`.ManualSection` just added, from
+            which you can add entries to.
         """
         self.sections += [
             ManualSection(

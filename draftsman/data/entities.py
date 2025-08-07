@@ -1,5 +1,14 @@
 # entities.py
 
+"""
+.. WARNING::
+
+    The data provided here is purely for illustration, and is not guaranteed
+    to remain constant across Factorio updates, Draftsman updates, mod
+    configuration changes, and so on. Always treat the values read in your own
+    environment as authoratative.
+"""
+
 import pickle
 
 from importlib.resources import files
@@ -187,66 +196,6 @@ def add_entity(
     :param kwargs: Any other entity specific data that you want to populate the
         new entity with.
     """
-    # entity_map = {
-    #     "container": containers,
-    #     "storage-tank": storage_tanks,
-    #     "transport-belt": transport_belts,
-    #     "underground-belt": underground_belts,
-    #     "splitter": splitters,
-    #     "inserter": inserters,
-    #     "filter-inserter": filter_inserters,
-    #     "loader": loaders,
-    #     "electric-pole": electric_poles,
-    #     "pipe": pipes,
-    #     "pipe-to-ground": underground_pipes,
-    #     "pump": pumps,
-    #     "straight-rail": straight_rails,
-    #     "curved-rail": curved_rails,
-    #     "train-stop": train_stops,
-    #     "rail-signal": rail_signals,
-    #     "rail-chain-signal": rail_chain_signals,
-    #     "locomotive": locomotives,
-    #     "cargo-wagon": cargo_wagons,
-    #     "fluid-wagon": fluid_wagons,
-    #     "artillery-wagon": artillery_wagons,
-    #     "logistic-container": logistic_passive_containers,  # FIXME
-    #     "roboport": roboports,
-    #     "lamp": lamps,
-    #     "arithmetic-combinator": arithmetic_combinators,
-    #     "decider-combinator": decider_combinators,
-    #     "constant-combinator": constant_combinators,
-    #     "power-switch": power_switches,
-    #     "programmable-speaker": programmable_speakers,
-    #     "boiler": boilers,
-    #     "generator": generators,
-    #     "solar-panel": solar_panels,
-    #     "accumulator": accumulators,
-    #     "reactor": reactors,
-    #     "heat-pipe": heat_pipes,
-    #     "mining-drill": mining_drills,
-    #     "offshore-pump": offshore_pumps,
-    #     "furnace": furnaces,
-    #     "assembling-machine": assembling_machines,
-    #     "lab": labs,
-    #     "beacon": beacons,
-    #     "rocket-silo": rocket_silos,
-    #     "land-mine": land_mines,
-    #     "wall": walls,
-    #     "gate": gates,
-    #     "turret": turrets,  # FIXME
-    #     "radar": radars,
-    #     "electric-energy-interface": electric_energy_interfaces,
-    #     "linked-container": linked_containers,
-    #     "heat-interface": heat_interfaces,
-    #     "linked-belt": linked_belts,
-    #     "infinity-container": infinity_containers,
-    #     "infinity-pipe": infinity_pipes,
-    #     "burner-generator": burner_generators,
-    # }
-
-    # if entity_type not in entity_map:
-    #     raise ValueError("Unrecognized 'entity_type' '{}'".format(entity_type))
-
     raw, of_type = target
 
     raw[name] = {

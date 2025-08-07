@@ -44,9 +44,8 @@ class ConstantCombinator(
     @property
     def max_signal_count(self) -> uint32:
         """
-        The total number of signals that this ``ConstantCombinator`` can
-        hold. Returns ``None`` if the entity's name is not recognized by
-        Draftsman. Not exported; read only.
+        The total number of signals that this entity can hold. Returns ``None``
+        if the entity's name is not recognized by Draftsman.
 
         .. NOTE::
 
@@ -72,29 +71,38 @@ class ConstantCombinator(
         validator=instance_of(list[ManualSection]),
     )
     """
-    List of "manually" (player) defined signal section.
+    .. serialized::
 
-    .. NOTE::
+        This attribute is imported/exported from blueprint strings.
 
-        Beware of giving sections the same or existing names! If a named
-        group already exists within a save, then the group that was defined
-        first will overwrite all other data you try to specify.
+    List of "manually" (player) defined signal sections.
 
     .. NOTE::
 
         When importing a constant combinator from a Factorio 1.0 string, the 
-        :py:attr:`.item_slot_count` signals it contains will be added to the 
-        first slots of the first :py:class:`.ManualSection` in this list.
+        first :py:attr:`.max_signal_count` (usually 20) signals it contains will 
+        be added to the first slots of the first :py:class:`.ManualSection` in 
+        this list.
 
         Similarly, when exporting a constant combinator to a Factorio 1.0 
-        string, only the first :py:attr:`.item_slot_count` filters of the 
+        string, only the first :py:attr:`.max_signal_count` filters of the 
         first :py:class:`.ManualSection` will be exported.
+
+    .. WARNING::
+
+        Beware of giving sections the same or existing names! If a named
+        group already exists within a save, then the group that already exists
+        in the save will overwrite whatever new values you define.
     """
 
     # =========================================================================
 
     enabled: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this Constant combinator is "on" and currently outputting
     it's contents to connected wires. Default state is enabled.
     """
@@ -110,11 +118,11 @@ class ConstantCombinator(
         """
         Adds a new section to the constant combinator.
 
-        .. NOTE::
+        .. WARNING::
 
             Beware of giving sections the same or existing names! If a named
-            group already exists within a save, then the group that was defined
-            first will overwrite all other data you try to specify.
+            group already exists within a save, then the group that already
+            exists in the save will overwrite whatever new values you define.
 
         :param group: The name to give this group. The group will have no name
             if omitted.

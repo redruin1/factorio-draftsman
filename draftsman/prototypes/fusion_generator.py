@@ -13,6 +13,8 @@ import attrs
 @attrs.define
 class FusionGenerator(EnergySourceMixin, DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity which converts plasma into energy.
     """
 

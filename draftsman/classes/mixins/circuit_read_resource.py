@@ -11,8 +11,6 @@ import attrs
 @attrs.define(slots=False)
 class CircuitReadResourceMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Enables the Entity to read the resources underneath it.
 
     .. seealso::
@@ -23,10 +21,12 @@ class CircuitReadResourceMixin(Exportable):
 
     read_resources: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this Entity is set to read the resources underneath to a
     circuit network.
-
-    :exception DataFormatError: If set to anything other than a ``bool``.
     """
 
     read_mode: MiningDrillReadMode = attrs.field(
@@ -35,12 +35,11 @@ class CircuitReadResourceMixin(Exportable):
         validator=instance_of(MiningDrillReadMode),
     )
     """
-    The mode in which the resources underneath the Entity should be read.
-    Either ``MiningDrillReadMode.UNDER_DRILL`` or
-    ``MiningDrillReadMode.TOTAL_PATCH``.
+    .. serialized::
 
-    :exception DataFormatError: If set to anything other than a
-        ``MiningDrillReadMode`` value or their ``int`` equivalent.
+        This attribute is imported/exported from blueprint strings.
+
+    The mode in which the resources underneath the Entity should be read.
     """
 
 

@@ -8,8 +8,7 @@ class InputIngredientsMixin:
         The subset of :py:attr:`.items` where each key is a valid input
         ingredient that can be consumed by this entity. Returns an empty dict if
         this entity consumes no ingredients, or what ingredients this entity
-        consumes cannot be deduced with the current data configuration. Not
-        exported; read only.
+        consumes cannot be deduced with the current data configuration.
         """
         return [
             item_request

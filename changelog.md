@@ -1,23 +1,22 @@
 # Changelog
 
 ## 3.0.0
-* Updated `factorio-data` to version `2.0.60` (latest stable)
-* Updated `compatibility/defines.lua` to `2.0.49` (latest stable)
+* Updated `factorio-data` to version `2.0.63` (latest stable)
 * Switched from `pydantic` to `attrs`; 
     * A much better fit for Draftsman's scope, much more flexible, and much less boilerplate to maintain
     * Clearer distinction between loading steps:
         * Constructors are for initializing Draftsman objects
         * `from_dict()` and `from_string()` methods are for importing from raw JSON/Blueprint String
         * `to_dict()` and `to_string()` methods are for exporting to raw JSON/Blueprint String
-        * Hooks are defined outside of the class scope which convers the raw JSON format to the internal Python object form
+        * Hooks are defined outside of the class scope which converts the raw JSON format to the internal Python object form
         * This now means that the Python objects are not strictly tied to the JSON format, which means they can deviate for ease of use/performance reasons
         * Conversion functions are separate from validation, meaning shorthands can be resolved even with validation functions turned off
 * Draftsman entities can now handle importing/exporting between Factorio 1.0 and Factorio 2.0 blueprint string formats
     * Simply specify `version=(1, 0)` or `version=(2, 0)` in any of `to/from_dict()` or `to/from_string()` methods
     * While serialization/deserialization is correctly implemented, *migration* from an old to new string is not (fully) implemented, and so some parts will still have to be done manually
-        * For example, Draftsman will not convert `"filter-inserter"` into `"fast-inserter"` for you
+        * For example, Draftsman will not convert a 1.0 `"filter-inserter"` into a 2.0 `"fast-inserter"` for you
 * Added tests to validate the exported formats of all objects match the above JSON schemas, on both game versions
-* Added `draftsman.constants.Inventory` which is part of defines
+* Added `draftsman.constants.InventoryType` which is part of defines
 * Changed the constant `ValidationMode.NONE` to be the more explicit `ValidationMode.DISABLED`
 * Removed the `validate_assignment` attribute entirely
     * Instead, validation is now on a global flag (until there is a good reason for it not to be); makes things much simpler
@@ -37,7 +36,7 @@
 * Calling a objects `validate()` method is now guaranteed to also validate all of its children
 * Removed `RequestItemsMixin` and implemented it directly in `Entity` (since all entities can request construction items)
 * Removed `__factorio_version__` and `__factorio_version_info__`
-    * Users should instead use `draftsman.data.mods.versions["base"]` if you want to query the current Factorio version; this allows you to change the Factorio version midway through scripts (if desired)
+    * Users should instead use `draftsman.data.mods.versions["base"]` if you want to query the current Factorio version; this gives you the flexibility to change Factorio version midway through scripts (if necessary)
 * Added `tiles` to `Groups` (#118)
     * `Blueprint.entities` is now 1-dimensional
     * A new attribute `Blueprint.groups` now holds children associated with that blueprint
@@ -57,7 +56,10 @@
 * Tidied up the build system
     * Removed `setup.py` in favor of more modern `pyproject.toml`
     * You can now use `just` with draftsman to run common CI commands, see new README
+* Made docs pass and fixed code coverage
+* Wrote an obnoxious amount of new and updated documentation
 * Fixed an issue where certain mods would no be displayed correctly as disabled when using `draftsman list`
+* Fixed #182 (Failing to update with any mods, with an AttributeError caused by an internal function.)
 
 ## 2.0.3
 * Updated `factorio-data` to version `2.0.48` (latest)

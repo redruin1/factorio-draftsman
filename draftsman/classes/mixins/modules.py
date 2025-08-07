@@ -17,8 +17,6 @@ from typing import Iterable, Optional
 
 class ModulesMixin(metaclass=ABCMeta):
     """
-    (Implicitly inherits :py:class:`~.ItemRequestMixin`)
-
     Allows the entity to have modules, and keep track of the amount of modules
     currently inside the entity.
     """
@@ -26,8 +24,8 @@ class ModulesMixin(metaclass=ABCMeta):
     @property
     def total_module_slots(self) -> int:
         """
-        The total number of module slots in the Entity. Returns ``None`` if this
-        entity's name is not recognized by Draftsman. Not exported; read only.
+        The total number of module slots the Entity can hold. Returns ``None``
+        if this entity's name is not recognized by Draftsman.
         """
         return entities.raw.get(self.name, {"module_slots": None}).get(
             "module_slots", 0
@@ -40,7 +38,7 @@ class ModulesMixin(metaclass=ABCMeta):
     def module_slots_occupied(self) -> int:
         """
         The total number of module slots that are currently taken by inserted
-        modules. Not exported; read only.
+        modules. Returns ``0`` if unable to determine.
         """
         # Default to subclass implementation, as it depends on the inventory
         pass  # pragma: no coverage
@@ -52,7 +50,7 @@ class ModulesMixin(metaclass=ABCMeta):
         """
         A set of all effect modifiers that this entity supports via modules and
         beacons. Returns ``None`` if this entity's name is not recognized by
-        Draftsman. Not exported; read only.
+        Draftsman.
         """
         return entities.get_allowed_effects(self.name, default=entities.NO_EFFECTS)
 
@@ -64,7 +62,7 @@ class ModulesMixin(metaclass=ABCMeta):
         A list of all valid modules that can be inserted into this entity.
         Determined by the 'allowed_effects' key in the data.raw entry for this
         entity. Returns ``None`` if this entity's name is not recognized by
-        Draftsman. Not exported; read only.
+        Draftsman.
         """
         return modules.get_modules_from_effects(self.allowed_effects, None)
 

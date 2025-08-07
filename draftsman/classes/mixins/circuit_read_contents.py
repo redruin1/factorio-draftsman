@@ -9,20 +9,23 @@ import attrs
 
 
 @attrs.define(slots=False)
-class CircuitReadContentsMixin(Exportable):  # (ControlBehaviorMixin)
+class CircuitReadContentsMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
-    Enables the Entity to read it's contents.
+    Allows the Entity to read it's contents and send it to a connected circuit
+    network.
 
     .. seealso::
 
-        | :py:class:`~draftsman.classes.mixins.circuit_read_hand.CircuitReadHandMixin`
-        | :py:class:`~draftsman.classes.mixins.circuit_read_resource.CircuitReadResourceMixin`
+        | :py:class:`.CircuitReadHandMixin`
+        | :py:class:`.CircuitReadResourceMixin`
     """
 
     read_contents: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this Entity is set to read it's contents to a circuit
     network.
     """
@@ -33,7 +36,11 @@ class CircuitReadContentsMixin(Exportable):  # (ControlBehaviorMixin)
         validator=instance_of(BeltReadMode),
     )
     """
-    The mode in which the contents of the Entity should be read. Either
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The manner in which the contents of the Entity should be read. Either
     ``BeltReadMode.PULSE`, ``BeltReadMode.HOLD``, or 
     ``BeltReadMode.HOLD_ALL_BELTS`` (the lattermost only being available in 
     Factorio 2.0).

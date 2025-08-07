@@ -36,8 +36,12 @@ class Splitter(DirectionalMixin, Entity):
         default="none", validator=one_of("left", "none", "right")
     )
     """
-    The input priority of the ``Splitter``. Can be one of ``"left"``,
-    ``"right"``, or ``"none"``.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The side that receives input priority. Can be one of ``"left"``, ``"right"``, 
+    or ``"none"``.
     """
 
     # =========================================================================
@@ -46,8 +50,12 @@ class Splitter(DirectionalMixin, Entity):
         default="none", validator=one_of("left", "none", "right")
     )
     """
-    The output priority of the ``Splitter``. Can be one of ``"left"`` or
-    ``"right"``.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The side that receives output priority. Can be one of ``"left"``, ``"right"``, 
+    or ``"none"``.
     """
 
     # =========================================================================
@@ -58,11 +66,13 @@ class Splitter(DirectionalMixin, Entity):
         metadata={"never_null": True},
     )
     """
-    Sets the Splitter's filter. If ``filter`` is set but ``output_priority``
-    is not, then the output side defaults to ``"left"``.
+    .. serialized::
 
-    :exception TypeError: If set to anything other than a ``str`` or ``None``.
-    :exception InvalidItemError: If set to an invalid item name.
+        This attribute is imported/exported from blueprint strings.
+
+    Sets the Splitter's filter. If :py:attr:`.filter` is set but 
+    :py:attr:`.output_priority` is not, then the output side defaults to 
+    ``"left"``.
     """
 
     # =========================================================================

@@ -39,6 +39,10 @@ class Wall(
 
     circuit_enabled: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this gate should be activated based on a circuit condition. 
     """
 
@@ -46,9 +50,13 @@ class Wall(
 
     read_gate: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this entity should continuously output a unit signal whenever 
     the gate is open, with the type of this signal determined by 
-    :py:attr:`.output_signal`.
+    :py:attr:`~Wall.output_signal`.
     """
 
     # =========================================================================

@@ -11,6 +11,8 @@ import attrs
 class PlayerPort(Entity):
     """
     A constructable respawn point typically used in scenarios.
+
+    .. deprecated:: 2.0 (Factorio)
     """
 
     @property

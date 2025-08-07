@@ -54,8 +54,7 @@ class ProgrammableSpeaker(
         """
         A dict of all instrument and note names that this ``ProgrammableSpeaker``
         has. Each key is the name of the instrument, and each value a ``set`` of
-        string names of each note corresponding to that instrument. Not exported;
-        read only.
+        string names of each note corresponding to that instrument.
         """
         result = {}
         for instrument in instruments_data.raw.get(self.name, {}):
@@ -71,19 +70,28 @@ class ProgrammableSpeaker(
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     Whether or not the value of the signal should indicate the particular note
     of the instrument to play. If this attribute is ``True``, then the signal
     that the speaker will read from is specified as the 
-    :py:attr:`~Condition.first_signal` of 
-    :py:attr:`~ProgrammableSpeaker.circuit_condition`.
+    :py:attr:`~Condition.first_signal` of :py:attr:`.circuit_condition`.
     """
 
     # =========================================================================
 
     stop_playing_sounds: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not any change in the input playback signal will automatically
     cease the currently playing sound.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -92,9 +100,15 @@ class ProgrammableSpeaker(
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not the volume of this speaker should be dynamically controlled
     via circuit signal, or if it should always remain the constant value 
     specified by :py:attr:`.volume`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -105,6 +119,10 @@ class ProgrammableSpeaker(
         validator=instance_of(Optional[SignalID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What volume signal to use when dynamically setting this speakers volume. Has
     no effect if :py:attr:`.volume_controlled_by_signal` is ``False``.
     """
@@ -113,12 +131,14 @@ class ProgrammableSpeaker(
 
     volume: float = attrs.field(default=1.0, validator=instance_of(float))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The volume of the programmable speaker, in the range ``[0.0, 1.0]``.
 
     Raises :py:class:`VolumeRangeWarning` if set to a value outside of the
     range ``[0.0, 1.0]``.
-
-    :exception DataFormatError: If set to anything other than a ``float``.
     """
 
     @volume.validator
@@ -140,6 +160,10 @@ class ProgrammableSpeaker(
         default="local", validator=one_of("local", "surface", "global")
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     In what manner to broadcast the audio from this programmable speaker:
 
     * ``"local"`` only plays the audio when physically near the speaker, 
@@ -151,35 +175,39 @@ class ProgrammableSpeaker(
     .. NOTE::
 
         In Factorio 1.0, only modes ``"local"`` and ``"surface"`` are permitted.
-
-    :exception DataFormatError: If set to anything other than the values above.
     """
 
     # =========================================================================
 
     show_alert: bool = attrs.field(default=False, validator=instance_of(bool))
     """
-    Whether or not to show an alert to the player(s) if a sound is played.
+    .. serialized::
 
-    :exception DataFormatError: If set to anything other than a ``bool``.
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not to show an alert to the player(s) if a sound is played.
     """
 
     # =========================================================================
 
     allow_polyphony: bool = attrs.field(default=False, validator=instance_of(bool))
     """
-    Whether or not to allow the speaker to play multiple notes at once.
+    .. serialized::
 
-    :exception DataFormatError: If set to anything other than a ``bool``.
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not to allow the speaker to play multiple notes at once.
     """
 
     # =========================================================================
 
     show_alert_on_map: bool = attrs.field(default=True, validator=instance_of(bool))
     """
-    Whether or not to show the alert on the map where the speaker lives.
+    .. serialized::
 
-    :exception DataFormatError: If set to anything other than a ``bool``.
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not to show the alert on the map where the speaker lives.
     """
 
     # =========================================================================
@@ -191,13 +219,12 @@ class ProgrammableSpeaker(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+        
     What icon to show to the player(s) and on the map if the speaker makes a
     sound (and alerts are enabled).
-
-    :exception IncompleteSignalError: If set to a ``str`` that is not a valid
-        signal ID.
-    :exception DataFormatError: If set to a ``dict`` that does not match
-        :py:class:`.SIGNAL_ID`.
     """
 
     # =========================================================================
@@ -208,11 +235,12 @@ class ProgrammableSpeaker(
         validator=instance_of(str),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What message to show to the player(s) if the speaker makes a sound (and
     alerts are enabled).
-
-    :exception DataFormatError: If set to anything other than a ``str`` or 
-        ``None``.
     """
 
     # =========================================================================
@@ -221,10 +249,12 @@ class ProgrammableSpeaker(
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not the value of a signal determines the pitch of the note to
     play.
-
-    :exception DataFormatError: If set to anything other than a ``bool``.
     """
 
     # =========================================================================
@@ -234,11 +264,12 @@ class ProgrammableSpeaker(
         validator=instance_of(Optional[uint32]),
     )
     """
-    Numeric index of the instrument.
+    .. serialized::
 
-    :exception InvalidInstrumentID: If set to a number that is not
-        recognized as a valid instrument index for this speaker.
-    :exception DataFormatError: If set to anything other than an ``int`` or ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    Numeric index of the instrument. Updated in tandem with 
+    :py:attr:`.instrument_name`.
     """
 
     @instrument_id.validator
@@ -310,12 +341,11 @@ class ProgrammableSpeaker(
         default=0, validator=instance_of(Optional[uint32])
     )
     """
-    Numeric index of the note. Updated in tandem with ``note_name``.
+    .. serialized::
 
-    :exception InvalidInstrumentID: If set to a number that is not
-        recognized as a valid note index for this speaker.
-    :exception DataFormatError: If set to anything other than an ``int`` or 
-        ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    Numeric index of the note. Updated in tandem with :py:attr:`.note_name`.
     """
 
     @note_id.validator

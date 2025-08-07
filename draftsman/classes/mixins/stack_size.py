@@ -12,8 +12,6 @@ from typing import Optional
 @attrs.define(slots=False)
 class StackSizeMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Gives the entity a stack size attribute. Allows it to give a constant,
     overridden stack size and a circuit-set stack size.
     """
@@ -22,11 +20,12 @@ class StackSizeMixin(Exportable):
         default=None, validator=instance_of(Optional[uint8])
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The inserter's stack size override. Will use this unless a circuit
     stack size is set and enabled.
-
-    :exception DataFormatError: If set to anything other than a ``uint8`` or 
-        ``None``.
     """
 
     # =========================================================================
@@ -35,9 +34,11 @@ class StackSizeMixin(Exportable):
         default=False, validator=instance_of(bool)
     )
     """
-    Whether or not the inserter's stack size is controlled by circuit signal.
+    .. serialized::
 
-    :exception DataFormatError: If set to anything other than a ``bool``.
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not the inserter's stack size is controlled by circuit signal.
     """
 
     # =========================================================================
@@ -48,7 +49,12 @@ class StackSizeMixin(Exportable):
         validator=instance_of(Optional[SignalID]),
     )
     """
-    Specify the stack size input signal for the inserter, if enabled.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    What circuit network signal should indicate the current stack size, if 
+    enabled.
     """
 
     # =========================================================================

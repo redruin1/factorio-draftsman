@@ -24,7 +24,6 @@ class PowerConnectableMixin(Exportable):
         """
         The maximum distance that this entity can reach for power connections.
         Returns ``None`` if this entity's name is not recognized by Draftsman.
-        Not exported; read only.
         """
         return entities.raw.get(self.name, {"maximum_wire_distance": None})[
             "maximum_wire_distance"
@@ -38,45 +37,18 @@ class PowerConnectableMixin(Exportable):
     )
 
     @property
-    def neighbours(self) -> list:
+    def neighbours(self) -> list[int]:
         """
-        The power pole neighbours that this entity connects to.
+        .. deprecated:: 3.0.0 (Factorio 2.0)
 
-        ``neighbours`` is traditionally specified as a list of ``ints``, each
-        one representing the index of the entity in the parent blueprint that
-        this Entity connects to, in 1-indexed notation. For example, if
-        ``entity.neighbours == [1, 2]``, then ``entity`` would have power wires
-        to ``blueprint.entities[0]`` and ``blueprint.entities[1]``.
+            This information is now converted and stored in the
+            :py:attr:`.Blueprint.wires` attribute whenever possible.
 
-        Draftsman implements a more sophisticated neighbours format, where
-        entities themselves (or rather, references to them) are used as the
-        entries of the ``neighbours`` list. This makes connections independent
-        of their location in the parent blueprint, so you can specify power
-        connections even before you've placed all the entities in one. Draftsman
-        uses this format when making connections, but is still compatible with
-        simple integers.
-
-        .. WARNING::
-
-            Int-based neighbours lists are fragile; if you want to preserve
-            connections in integer format, you have to preserve entity order.
-            Any new entities must be added to the end. Keep this in mind when
-            importing an already-made blueprint string with connections already
-            made.
-
-        .. NOTE::
-
-            Power switch wire connections are abnormal; they are not treated as
-            neighbours and instead as special copper circuit connections.
-            Inspect an Entity's ``connections`` attribute if you're looking for
-            those wires.
-
-        :getter: Gets the neighbours of the Entity.
-        :setter: Sets the neighbours of the Entity. Defaults to an empty list if
-            set to ``None``.
-
-        :exception DataFormatError: If set to anything that does not match the
-            specification above.
+        The set of neighbouring power poles that this pole connects to. Limited
+        to 5 unique entries, since power poles (pre Factorio 2.0) could only
+        have a maximum of 5 connections. Each integer entry in this list
+        corresponds to the :py:attr:`.entity_number` of a corresponding entity
+        in the same blueprint.
         """
         return self._neighbours
 

@@ -1,6 +1,13 @@
 Validation
 ==========
 
+Factorio-safety and Factorio-correctness
+----------------------------------------
+
+Draftsman is designed to be as easy to pick up and use as possible, particularly for the layman Factorio players who do not posess intricate knowledge of Factorio's blueprint string format.
+To help ensure this, Draftsman (by default) has a suite of mechanisms for ensuring proper usage, reducing the hysterisis of creating a disformed blueprint string, attempting to import it into Factorio, it failing with a difficult to read error message, deducing the mistake, and then finally fixing your script.
+This is particularly handy for the majority of "layman" Factorio players who do not posess intricate knowledge of Factorio's blueprint string format.
+
 Draftsman is fully annotated and mypy compliant, meaning that you can use any PEP-compliant static analysis tools with Draftsman:
 
 TODO: example
@@ -21,30 +28,37 @@ This allows you to use Draftsman as not only a way to manipulate blueprint strin
 
     # TODO
 
-However, runtime validation of course incurs a runtime cost, which may not be desirable. 
-Hence, Draftsman allows you to disable runtime validation in cases where it is deemed unnecessary:
 
-TODO
+These warnings and exceptions can then be caught or ignored, at the user's discretion.
 
-You may also want
-
-Entity Attributes
------------------
-
-Most attributes on entities are implemented as properties with custom getters and setters.
-This allows for a clean API, inline type checking, as well as ensuring that certain values are read only and not (easily) deletable.
-It also allows for the ability to specify values in more concise "shorthand" formats, which are then automatically expanded into their true internal representation:
+However, while runtime validation is useful when prototyping your scripts; it incurs a serious performance overhead, especially when working with large blueprints with very many components.
+In addition, a user might want to control the types of errors/warnings that are issued; sometimes you might want only to be notified of catastrophic errors and to ignore minor issues, and perhaps at other times you want even more linting-like behavior than the default setting provides.
+Thus, validation can be configured to meet individual scripts needs:
 
 .. code-block:: python
 
-    # TODO
+    import draftsman
+    from draftsman.constants import ValidationMode
 
-TODO
+    draftsman.validation.set_mode(ValidationMode.DISABLED)
+    # No Draftsman errors will be issued beyond this point.
+
+Here ``ValidationMode`` corresponds to different preconfigured severities, in order of least to most strict:
+
+* ``DISABLED``: Disables all validation entirely, reducing runtime cost to almost nothing.
+* ``MINIMUM``: Only issues exceptions when Draftsman is absolutely certain that the structure of data it owns is malformed in some way, and will be unable to import into Factorio - aligning with *Factorio-safety*.
+* ``STRICT``: The default Draftsman behavior. Issues all the same exceptions of ``MINIMUM``, in addition to warnings about items that Draftsman *believes* will cause an error on import, but cannot guarantee. An example includes things like trying to create a modded entity that Draftsman does not know anything about - it *might* have the correct attributes and data and import into the game just fine, but Draftsman cannot know for sure - so it issues a warning. Matching Draftsman's environment will resolve errors like these.
+* ``PEDANTIC``: This includes all of the above errors and warnings, in addition to "ineffectual" issues where no functionality is different, albeit conceptually out-of-spec.
+
+This flag is global for the entire module, but it can be used as a context manager if you only want to change the validation mode for a specific section of code:
 
 .. code-block:: python
 
-    container = Container()    
-    # Incorrect values are correctly caught by validators at runtime
-    container.bar = "incorrect"
+    draftsman.validation.set_mode(ValidationMode.DISABLED):
+    assert draftsman.validation.get_mode() is ValidationMode.DISABLED
 
-By default, entity attributes run a set of validator functions at runtime. However, these functions can be disabled to reduce (almost) all of the overhead associated with them.
+    with draftsman.validation.set_mode(ValidationMode.PEDANTIC):
+        assert draftsman.validation.get_mode() is ValidationMode.PEDANTIC
+
+    # Now that we're out of the context manager block, we return to `DISABLED`
+    assert draftsman.validation.get_mode() is ValidationMode.DISABLED

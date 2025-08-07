@@ -62,6 +62,10 @@ class TrainStop(
         validator=instance_of(str),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The name of this station.
     """
 
@@ -73,6 +77,10 @@ class TrainStop(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     A limit to the amount of trains that can use this stop. If set to ``None``, 
     this stop has no limit on the number of trains that can path to it. 
     Overridden by the circuit signal set train limit (if present).
@@ -82,14 +90,24 @@ class TrainStop(
 
     priority: LuaDouble = attrs.field(default=50, validator=instance_of(LuaDouble))
     """
-    The static priority that schedules should use to bias trains to or away from 
-    this train stop. Overridden by :py:attr:`.`
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The (static) priority that schedules should use to bias trains to or away 
+    from this train stop. Overridden by :py:attr:`.set_priority`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
 
     send_to_train: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to send the contents of any connected circuit network to
     the train to determine it's schedule.
     """
@@ -98,6 +116,10 @@ class TrainStop(
 
     read_from_train: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     Whether or not to broadcast the train's contents to connected circuit 
     networks when stopped at this train stop.
     """
@@ -106,8 +128,13 @@ class TrainStop(
 
     read_stopped_train: bool = attrs.field(default=False, validator=instance_of(bool))
     """
-    Whether or not to read a unique number associated with the train
-    currently stopped at the station.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not to read a unique number associated with the train currently 
+    stopped at the station. The signal used is determined by 
+    :py:attr:`.train_stopped_signal`.
     """
 
     # =========================================================================
@@ -119,16 +146,24 @@ class TrainStop(
         metadata={"never_null": True},
     )
     """
-    What signal to output the unique train ID if a train is currently
-    stopped at a station.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    What signal to output the unique train ID if a train is currently stopped at 
+    a station.
     """
 
     # =========================================================================
 
     signal_limits_trains: bool = attrs.field(default=False, validator=instance_of(bool))
     """
-    Whether or not an external signal should limit the number of trains that
-    can use this stop.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not an external signal should limit the number of trains that can 
+    use this stop. The signal used is determined by :py:attr:`.trains_limit_signal`.
     """
 
     # =========================================================================
@@ -140,6 +175,10 @@ class TrainStop(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What signal to read to limit the number of trains that can use this stop.
     """
 
@@ -147,8 +186,13 @@ class TrainStop(
 
     read_trains_count: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to read the number of trains that currently use this stop and
-    broadcast it to any connected circuit network.
+    broadcast it to any connected circuit network. The signal used is determined
+    by :py:attr:`.trains_count_signal`.
     """
 
     # =========================================================================
@@ -160,6 +204,10 @@ class TrainStop(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What signal to use to output the current number of trains that use this
     stop.
     """
@@ -168,8 +216,14 @@ class TrainStop(
 
     set_priority: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not the priority of this train stop should be set via the circuit
     network. The signal used is determined by :py:attr:`.priority_signal`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -181,7 +235,13 @@ class TrainStop(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Which signal to read the dynamic priority of this train stop from.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================

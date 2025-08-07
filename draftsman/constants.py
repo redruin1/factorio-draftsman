@@ -7,8 +7,10 @@ Enumerations of frequently used constants.
 from draftsman.classes.vector import Vector
 from draftsman.serialization import draftsman_converters
 
+
 from datetime import timedelta
 from enum import IntEnum, Enum
+from enum_tools.documentation import document_enum
 from functools import total_ordering
 import math
 from typing import Literal
@@ -17,18 +19,9 @@ from typing import Literal
 class Direction(IntEnum):
     """
     Factorio direction enum. Encompasses all 16 cardinal directions, diagonals,
-    and half-dagonals in the range [0, 15] where north is 0 and increments
+    and half-dagonals in the range [0, 15] where north is 0 and incrementing
     clockwise. Provides a number of convenience constants and functions over
     working with a raw int value.
-
-    * ``NORTH     (0)`` (Default)
-    * ``NORTHEAST (1)``
-    * ``EAST      (2)``
-    * ``SOUTHEAST (3)``
-    * ``SOUTH     (4)``
-    * ``SOUTHWEST (5)``
-    * ``WEST      (6)``
-    * ``NORTHWEST (7)``
     """
 
     NORTH = 0
@@ -261,19 +254,10 @@ SIXTEEN_WAY_DIRECTIONS = {direction for direction in Direction}
 
 class LegacyDirection(IntEnum):
     """
-    Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
-    in the range [0, 7] where north is 0 and increments clockwise. Provides a
-    number of convenience constants and functions over working with a raw int
-    value.
-
-    * ``NORTH     (0)`` (Default)
-    * ``NORTHEAST (1)``
-    * ``EAST      (2)``
-    * ``SOUTHEAST (3)``
-    * ``SOUTH     (4)``
-    * ``SOUTHWEST (5)``
-    * ``WEST      (6)``
-    * ``NORTHWEST (7)``
+    Old Factorio direction enum. Encompasses all 8 cardinal directions and
+    diagonals in the range [0, 7] where north is 0 and incrementing clockwise.
+    Provides a number of convenience constants and functions over working with a
+    raw int value.
     """
 
     NORTH = 0
@@ -401,7 +385,7 @@ class LegacyDirection(IntEnum):
 
     def to_modern(self) -> Direction:
         """
-        Converts this :py:class:`.LegactDirection` to a :py:class:`.Direction`.
+        Converts this :py:class:`.LegacyDirection` to a :py:class:`.Direction`.
         """
         mapping = {
             # fmt: off
@@ -425,26 +409,6 @@ draftsman_converters.get_version((1, 0)).register_unstructure_hook(
     Direction, lambda inst: inst.to_legacy()
 )
 
-# class OrientationMeta(type):
-#     _mapping = {
-#         "NORTH": 0.0,
-#         "NORTHEAST": 0.125,
-#         "EAST": 0.25,
-#         "SOUTHEAST": 0.375,
-#         "SOUTH": 0.5,
-#         "SOUTHWEST": 0.625,
-#         "WEST": 0.75,
-#         "NORTHWEST": 0.875,
-#     }
-
-#     def __getattr__(cls, name):
-#         if name in cls._mapping:
-#             return Orientation(cls._mapping[name])
-#         else:
-#             super().__getattr__(name)
-
-#     # NORTH = Orientation(0.0)
-
 
 @total_ordering
 class Orientation(float):
@@ -459,15 +423,6 @@ class Orientation(float):
         Currently only supports addition and subtraction. If you want to perform
         more complex operations, it's best to convert it to a float and then
         convert it back to an Orientation when complete.
-
-    * ``NORTH     (0.000)`` (Default)
-    * ``NORTHEAST (0.125)``
-    * ``EAST      (0.250)``
-    * ``SOUTHEAST (0.375)``
-    * ``SOUTH     (0.500)``
-    * ``SOUTHWEST (0.625)``
-    * ``WEST      (0.750)``
-    * ``NORTHWEST (0.875)``
     """
 
     # Note: These are overwritten with Orientation() instances after definition
@@ -636,185 +591,210 @@ Orientation.WEST = Orientation(0.75)
 Orientation.NORTHWEST = Orientation(0.875)
 
 
+@document_enum
 class BeltReadMode(IntEnum):
     """
-    Determines what manner belts should send their contents signal.
-
-    * ``PULSE (0)``
-        Pulse the signal for one tick when first detected. (Default)
-    * ``HOLD (1)``
-        Hold the signal for as long as the item is present.
-    * ``HOLD_ALL_BELTS (2)``
-        Hold the signal for all items on all contiguous connected belt segments.
+    Determines what manner belts should send their contents as signals.
     """
 
     PULSE = 0
+    """
+    Pulse the signal for one tick when first detected.
+    """
     HOLD = 1
+    """
+    Hold the signal for as long as the item is present.
+    """
     HOLD_ALL_BELTS = 2
+    """
+    Hold the signal for all items on all contiguous connected belt segments.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
 
+@document_enum
 class InserterReadMode(IntEnum):
     """
     Determines what manner inserters should send their contents signal.
-
-    * ``PULSE (0)``
-        Pulse the signal for one tick when first detected. (Default)
-    * ``HOLD (1)``
-        Hold the signal for as long as the item is present.
     """
 
     PULSE = 0
+    """
+    Pulse the signal for one tick when first detected.
+    """
     HOLD = 1
+    """
+    Hold the signal for as long as the item is present.
+    """
 
 
+@document_enum
 class MiningDrillReadMode(IntEnum):
     """
     Used to specify whether the mining drill will read just the resources
     accessible to it or the entire resource patch.
-
-    * ``UNDER_DRILL (0)``
-        Only return the resources directly minable by this drill. (Default)
-    * ``TOTAL_PATCH (1)``
-        Return the entire contents of the ore patches the drill is over.
     """
 
     UNDER_DRILL = 0
+    """
+    Only return the resources directly minable by this drill.
+    """
     TOTAL_PATCH = 1
+    """
+    Return the entire contents of the ore patches the drill is over.
+    """
 
 
+@document_enum
 class SiloReadMode(IntEnum):
     """
     Determines how rocket silos should interact with the circuit network.
-
-    * ``NONE (0)``
-        Do nothing.
-    * ``READ_CONTENTS (1)``
-        Send the contents of the currently loaded rocket. (Default)
-    * ``READ_ORBITAL_REQUESTS (2)``
-        Send the set of items desired by any space platforms in orbit.
     """
 
     NONE = 0
+    """
+    Do nothing.
+    """
     READ_CONTENTS = 1
+    """
+    Send the contents of the currently loaded rocket.
+    """
     READ_ORBITAL_REQUESTS = 2
+    """
+    Send the set of items desired by all space platforms in orbit.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
 
+@document_enum
 class InserterModeOfOperation(IntEnum):
     """
+    .. deprecated:: 3.0.0 (Factorio 2.0)
+
+        In modern Factorio, each of these operations can be controlled
+        individually as opposed to this "master" mode.
+
     Inserter circuit control constants. Determines how the Entity should behave
     when connected to a circuit network.
-
-    * ``ENABLE_DISABLE (0)``
-        Turns the inserter on or off depending on the circuit condition.
-        (Default)
-    * ``SET_FILTERS (1)``
-        Sets the inserter's filter signals based on read signals.
-    * ``READ_HAND_CONTENTS (2)``
-        Reads the contents of the inserter's hand and sends it to the connected
-        wire(s).
-    * ``NONE (3)``
-        Does nothing.
-    * ``SET_STACK_SIZE (4)``
-        Sets the stack size override to the value of an input signal.
     """
 
     ENABLE_DISABLE = 0
+    """
+    Turns the inserter on or off depending on the circuit condition.
+    """
     SET_FILTERS = 1
+    """
+    Sets the inserter's filter signals based on read signals.
+    """
     READ_HAND_CONTENTS = 2
+    """
+    Reads the contents of the inserter's hand and sends it to the connected
+    wire(s).
+    """
     NONE = 3
+    """
+    Does nothing. Ignores any connected circuit network signal.
+    """
     SET_STACK_SIZE = 4
+    """
+    Sets the stack size override to the value of an input signal.
+    """
 
 
+@document_enum
 class LampColorMode(IntEnum):
     """
     In what manner should circuit signals sent to a Lamp be interpreted when
     determining that Lamp's color.
-
-    * ``COLOR_MAPPING (0)``
-        The given signal type broadcasts that particular color, so giving
-        ``signal-red`` will display the color red. If multiple color signals are
-        provided, the first one according to sort order is displayed.
-        (Default)
-    * ``COMPONENTS (1)``
-        Three signals are used, where the value of each one corresponds to the
-        8-bit red, green, and blue values of the final color.
-    * ``PACKED_RGB (2)``
-        One signal is used, where each color component is pulled from a specific
-        8 bits of the input signal.
-        wire(s).
     """
 
     COLOR_MAPPING = 0
+    """
+    The given signal type broadcasts that particular color, so providing the 
+    signal ``"signal-red"`` will display the color red. If multiple color 
+    signals are provided, the first one according to sort order is displayed.
+    """
     COMPONENTS = 1
+    """
+    Three signals are used, where the value of each one corresponds to the 8-bit 
+    red, green, and blue values of the final color.
+    """
     PACKED_RGB = 2
+    """
+    One signal is used, where each color component is pulled from a specific
+    8-bits of the input signal.
+    """
 
 
+@document_enum
 class LogisticModeOfOperation(IntEnum):
     """
     Logistics container circuit control constants. Determines how the Entity
     should behave when connected to a circuit network.
-
-    * ``SEND_CONTENTS (0)``
-        Reads the inventory of the container and sends it to the connected
-        circuit network. (Default)
-    * ``SET_REQUESTS (1)``
-        Sets the item requests based on the input signals to the container.
-    * ``NONE (2)``
-        Does nothing with a connected circuit network.
     """
 
     SEND_CONTENTS = 0
+    """
+    Reads the inventory of the container and sends it to the connected circuit 
+    network.
+    """
     SET_REQUESTS = 1
+    """
+    Sets the item requests based on the input signals to the container.
+    """
     NONE = 2
+    """
+    Does nothing with the connected circuit network.
+    """
 
 
+@document_enum
 class FilterMode(IntEnum):
     """
-    Filter mode constant.
-
-    * ``WHITELIST (0)``
-        Include only the listed items. (Default)
-    * ``BLACKLIST (1)``
-        Exclude only the listed items.
+    In what manner should this filter be treated.
     """
 
     WHITELIST = 0
+    """
+    Include only the listed items.
+    """
     BLACKLIST = 1
+    """
+    Exclude only the listed items.
+    """
 
 
+@document_enum
 class TileSelectionMode(IntEnum):
     """
     Tile selection mode for :py:class:`.UpgradePlanner`.
-
-    * ``NORMAL (0)``
-        Constructed tiles are only removed if there are no entities in the
-        selected area. (Default)
-    * ``ALWAYS (1)``
-        Constructed tiles are always scheduled for deconstruction, regardless of
-        selection contents.
-    * ``NEVER (2)``
-        Constructed tiles are never scheduled for deconstruction, regardless of
-        selection contents.
-    * ``ONLY (3)``
-        Only tiles are selected for deconstruction; entities are completely
-        ignored when using this mode.
     """
 
     NORMAL = 0
+    """
+    Tiles are only selected if there are no entities in the selected area.
+    """
     ALWAYS = 1
+    """
+    Tiles are always selected regardless of selection contents.
+    """
     NEVER = 2
+    """
+    Tiles are never selected regardless of selection contents.
+    """
     ONLY = 3
+    """
+    Only tiles are selected and entities are completely ignored.
+    """
 
 
+@document_enum
 class Ticks(int, Enum):
     """
     Constant values that correspond to the number of Factorio ticks for that
     measure of time at normal game-speed.
-
-    * ``SECOND``: 60
-    * ``MINUTE``: 60 * ``SECOND``
-    * ``HOUR``  : 60 * ``MINUTE``
-    * ``DAY``   : 24 * ``HOUR``
     """
 
     SECOND = 60
@@ -850,124 +830,185 @@ class Ticks(int, Enum):
         )
 
 
+@document_enum
 class WaitConditionType(str, Enum):
     """
-    All valid string identifiers for the type of a train's
-    :py:class:`WaitCondition` object.
-
-    * ``TIME_PASSED``
-        Triggered when a certain number of ticks has passed.
-    * ``INACTIVITY``
-        Triggered when the state of the train currently at the station is
-        unaltered for a number of ticks.
-    * ``FULL_CARGO``
-        Triggered when there is no more room for any new cargo in any of the
-        stopped train's wagons.
-    * ``EMPTY_CARGO``
-        Triggered when there is no more cargo in any of the stopped train's
-        wagons.
-    * ``ITEM_COUNT``
-        Triggered when the count of some loaded item passes some specified
-        condition.
-    * ``FLUID_COUNT``
-        Triggered when the count of some loaded fluid passes some specified
-        condition.
-    * ``CIRCUIT_CONDITION``
-        Triggered when a circuit signal passed to the train stop passes some
-        specified condition.
-    * ``PASSENGER_PRESENT``
-        Triggered if a player is inside any of the stopped train's wagons.
-    * ``PASSENGER_NOT_PRESENT``
-        Triggered if a player is not inside any of the stopped train's wagons.
+    All valid string identifiers for the type of a train's or space platform's
+    :py:class:`.WaitCondition` object.
     """
 
     ALL_REQUESTS_STATISFIED = "all_requests_satisfied"
+    """
+    Trigger if all of the logistics requests at this particular planet are 
+    satisfied.
+    """
     ANY_PLANET_IMPORT_ZERO = "any_planet_import_zero"
+    """
+    Trigger if any of the logistics requests for any planet are zero.
+    """
     ANY_REQUEST_NOT_SATISFIED = "any_request_not_satisfied"
+    """
+    Trigger if any logistics request on the space platform is below satisfaction.
+    """
     ANY_REQUEST_ZERO = "any_request_zero"
+    """
+    Trigger if any logistics request on the space platform is zero.
+    """
     AT_STATION = "at_station"
+    """
+    Trigger if the vehicle is currently stopped at a particular location on it's
+    route.
+    """
     CIRCUIT_CONDITION = "circuit"
+    """
+    Trigger if a circuit condition for that stop evaluates to true.
+    """
     DAMAGE_TAKEN = "damage_taken"
+    """
+    Trigger if the space platform has taken damage beyond a specific threshold.
+    """
     DESTINATION_FULL_OR_NO_PATH = "destination_full_or_no_path"
+    """
+    Trigger if the locomotive has no feasible way to get to it's next stop on
+    it's schedule, either by a lack of space at the destination stop or because
+    there is no physical route to the station.
+    """
     EMPTY_CARGO = "empty"
+    """
+    Trigger if the cargo for this entity is entirely empty.
+    """
     FLUID_COUNT = "fluid_count"
+    """
+    Trigger if the fluid cargo in the locomotive is beyond a particular 
+    threshold.
+    """
     FUEL_COUNT_ALL = "fuel_item_count_all"
+    """
+    Triggered if the fuel in all locomotives is beyond some threshold.
+    """
     FUEL_COUNT_ANY = "fuel_item_count_any"
+    """
+    Triggered if the fuel in any locomotive is beyond some threshold.
+    """
     FULL_CARGO = "full"
+    """
+    Triggered if the item cargo space is entirely occupied in this vehicle.
+    """
     FULL_FUEL = "fuel_full"
+    """
+    Triggered when all locomotives are entirely full of fuel.
+    """
     NOT_EMPTY = "not_empty"
+    """
+    Triggered when the vehicle is not entirely empty of cargo.
+    """
     INACTIVITY = "inactivity"
+    """
+    Triggered after the vehicle has been inactive for a specified period of time.
+    """
     ITEM_COUNT = "item_count"
+    """
+    Triggered when a certain number of a particular item is contained within 
+    this vehicles inventory.
+    """
     NOT_AT_STATION = "not_at_station"
+    """
+    Triggered when a train is not located at a particular station.
+    """
     PASSENGER_PRESENT = "passenger_present"
+    """
+    Triggered when a passenger is present in the vehicle (train or space
+    platform).
+    """
     PASSENGER_NOT_PRESENT = "passenger_not_present"
+    """
+    Triggered when a passenger is not present in the vehicle (train or space
+    platform).
+    """
     REQUEST_SATISFIED = "request_satisfied"
+    """
+    Triggered when a space platform logistic request is satisfied.
+    """
     REQUEST_NOT_SATISFIED = "request_not_satisfied"
+    """
+    Triggered when a space platform logistic request is not satisfied.
+    """
     SPECIFIC_DESTINATION_FULL = "specific_destination_full"
+    """
+    Triggered when a specific station name is full.
+    """
     SPECIFIC_DESTINATION_NOT_FULL = "specific_destination_not_full"
+    """
+    Triggered when a specific station name is not full.
+    """
     TIME_PASSED = "time"
+    """
+    Triggered when a certain number of ticks has passed.
+    """
 
 
+@document_enum
 class WaitConditionCompareType(str, Enum):
     """
     All valid string identitfiers for the type of comparison between multiple
-    :py:class:`WaitCondition` objects.
-
-    * ``AND``
-        Boolean AND this condition with the subsequent one.
-    * ``OR``
-        Boolean OR this conditions with the subsequent one.
+    :py:class:`.WaitCondition` objects.
     """
 
     AND = "and"
+    """
+    Boolean AND this condition with the subsequent one.
+    """
     OR = "or"
+    """
+    Boolean OR this conditions with the subsequent one.
+    """
 
 
+@document_enum
 class WireColor(str, Enum):
     """
     The valid wire colors for circuit connection types in Factorio, either red
     or green.
-
-    * ``RED``
-        Red wire.
-    * ``GREEN``
-        Green wire.
     """
 
     RED = "red"
     GREEN = "green"
 
 
+@document_enum
 @total_ordering
 class ValidationMode(Enum):
     """
     The manner in which to validate a given Draftsman object.
-
-    * ``DISABLED``
-        No validation will be performed at all. Shorthand conversions will still
-        take place, meaning that all values will still attempt to be coerced to
-        their internal form whenever possible.
-    * ``MINIMUM``
-        The minimum amount of validation needed in order to validate that the
-        structure of the object conforms to what Factorio expects. Importing an
-        object that has been validated with this mode is not guaranteed to
-        succeed, as while the object might be structurally correct, the data
-        inside of it might still be malformed.
-    * ``STRICT``
-        The default mode. Includes all of the errors from ``MINIMUM``,
-        but attempts to point out and remedy issues with the objects values.
-        Also includes conceptual faults that will not result in the intended
-        effect, such as setting an assembling machine's recipe to something that
-        it cannot produce.
-    * ``PEDANTIC``
-        The most verbose option. Includes all of the previous errors and
-        warnings, in addition to more linting-like behavior.
     """
 
     DISABLED = "disabled"
+    """
+    No validation will be performed at all. Shorthand conversions will still
+    take place, meaning that all values will still attempt to be coerced to
+    their internal form whenever possible.
+    """
     MINIMUM = "minimum"
+    """
+    The minimum amount of validation needed in order to validate that the
+    structure of the object conforms to what Factorio expects. Importing an
+    object that has been validated with this mode is not guaranteed to
+    succeed, as while the object might be structurally correct, the data
+    inside of it might still be malformed.
+    """
     STRICT = "strict"
+    """
+    The default mode. Includes all of the errors from ``MINIMUM``,
+    but attempts to point out and remedy issues with the objects values.
+    Also includes conceptual faults that will not result in the intended
+    effect, such as setting an assembling machine's recipe to something that
+    it cannot produce.
+    """
     PEDANTIC = "pedantic"
+    """
+    The most verbose option. Includes all of the previous errors and warnings, 
+    in addition to more linting-like behavior.
+    """
 
     def __bool__(self) -> bool:
         return self is not ValidationMode.DISABLED
@@ -987,60 +1028,79 @@ class ValidationMode(Enum):
         return NotImplemented
 
 
-class InventoryType(IntEnum):
+@document_enum
+class WireConnectorID(IntEnum):
+    """
+    Constants which define which type of connection point this particular ``wire``
+    connects to.
+    """
+
+    COMBINATOR_INPUT_RED = 1
+    CIRCUIT_RED = 1
+    COMBINATOR_INPUT_GREEN = 2
+    CIRCUIT_GREEN = 2
+    COMBINATOR_OUTPUT_RED = 3
+    COMBINATOR_OUTPUT_GREEN = 4
+    POLE_COPPER = 5
+    POWER_SWITCH_LEFT_COPPER = 5
+    POWER_SWITCH_RIGHT_COPPER = 6
+
+
+@document_enum
+class InventoryType(IntEnum):  # TODO: fix docs here
     """
     Constants which define which internal inventories
-    :py:attr:`Entity.item_requests` should reside in.
+    :py:attr:`.Entity.item_requests` should reside in.
     """
 
     artillery_turret_ammo = 1
     artillery_wagon_ammo = 1
-    assembling_machine_dump = 7
-    assembling_machine_input = 2
-    assembling_machine_modules = 4
-    assembling_machine_output = 3
     beacon_modules = 1
-    burnt_result = 6
-    car_ammo = 3
-    car_trunk = 2
     cargo_landing_pad_main = 1
-    cargo_landing_pad_trash = 2
     cargo_unit = 1
     cargo_wagon = 1
-    character_ammo = 4
-    character_armor = 5
     character_corpse = 1
-    character_guns = 3
     character_main = 1
-    character_trash = 8
-    character_vehicle = 7
     chest = 1
-    editor_ammo = 4
-    editor_armor = 5
-    editor_guns = 3
     editor_main = 1
     fuel = 1
-    furnace_modules = 4
-    furnace_result = 3
+    hub_main = 1
+    item_main = 1
+    roboport_robot = 1
+    robot_cargo = 1
+    turret_ammo = 1
+    assembling_machine_input = 2
+    car_trunk = 2
+    cargo_landing_pad_trash = 2
     furnace_source = 2
     god_main = 2
-    hub_main = 1
     hub_trash = 2
-    item_main = 1
     lab_input = 2
-    lab_modules = 3
     logistic_container_trash = 2
     mining_drill_modules = 2
     roboport_material = 2
-    roboport_robot = 1
-    robot_cargo = 1
     robot_repair = 2
     rocket_silo_input = 2
-    rocket_silo_modules = 4
+    spider_trunk = 2
+    assembling_machine_output = 3
+    car_ammo = 3
+    character_guns = 3
+    editor_guns = 3
+    furnace_result = 3
+    lab_modules = 3
     rocket_silo_output = 3
+    spider_ammo = 3
+    assembling_machine_modules = 4
+    character_ammo = 4
+    editor_ammo = 4
+    furnace_modules = 4
+    rocket_silo_modules = 4
+    spider_trash = 4
+    character_armor = 5
+    editor_armor = 5
+    burnt_result = 6
+    assembling_machine_dump = 7
+    character_vehicle = 7
+    character_trash = 8
     rocket_silo_rocket = 9
     rocket_silo_trash = 11
-    spider_ammo = 3
-    spider_trash = 4
-    spider_trunk = 2
-    turret_ammo = 1

@@ -8,12 +8,8 @@ from draftsman.classes.exportable import (
 )
 from draftsman.classes.vector import Vector
 from draftsman.constants import (
-    Direction,
     InventoryType,
     ValidationMode,
-    FOUR_WAY_DIRECTIONS,
-    EIGHT_WAY_DIRECTIONS,
-    SIXTEEN_WAY_DIRECTIONS,
 )
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
@@ -26,7 +22,6 @@ from draftsman.signatures import (
     EntityID,
     get_suggestion,
     uint32,
-    uint64,
 )
 from draftsman.utils import (
     aabb_to_dimensions,
@@ -72,6 +67,14 @@ class _PosVector(Vector):
             value - self.entity().tile_height / 2
         )
 
+    # @classmethod
+    # def from_other(cls, other: Vector | tuple[float, float]) -> _PosVector:
+    #     return Vector.from_other(other=other, type_cast=float)
+
+
+# draftsman_converters.register_structure_hook(_PosVector, lambda d, _: _PosVector.from_other(d))
+# draftsman_converters.register_unstructure_hook(_PosVector, lambda v: v.to_dict())
+
 
 class _TileVector(Vector):
     def __init__(self, x, y, entity):
@@ -87,6 +90,14 @@ class _TileVector(Vector):
     def y(self, value):
         self._data[1] = int(value)
         self.entity().position._data[1] = value + self.entity().tile_height / 2
+
+    # @classmethod
+    # def from_other(cls, other: Vector | tuple[int, int]) -> _PosVector:
+    #     return Vector.from_other(other=other, type_cast=float)
+
+
+# draftsman_converters.register_structure_hook(_TileVector, lambda d, _: _TileVector.from_other(d))
+# draftsman_converters.register_unstructure_hook(_TileVector, lambda v: v.to_dict())
 
 
 @attrs.define
@@ -113,14 +124,13 @@ class Entity(EntityLike, Exportable):
         self,
         name: str,
         id: Optional[str] = None,
-        position: Optional[_PosVector] = None,
-        tile_position: _TileVector = attrs.NOTHING,
+        position=None,
+        tile_position=attrs.NOTHING,
         mirror: bool = False,
         quality: QualityID = "normal",
         item_requests: list[BlueprintInsertPlan] = attrs.NOTHING,
         tags: Optional[dict[str, Any]] = attrs.NOTHING,
         *,
-        entity_number: Optional[uint64] = None,
         extra_keys: Optional[dict[Any, Any]] = None,
         **kwargs,
     ):
@@ -133,7 +143,6 @@ class Entity(EntityLike, Exportable):
             quality=quality,
             item_requests=item_requests,
             tags=tags,
-            entity_number=entity_number,
             extra_keys=extra_keys,
         )
 
@@ -181,9 +190,9 @@ class Entity(EntityLike, Exportable):
     @property
     def prototype(self) -> dict:
         """
-        Returns the prototype entry from data.raw for this entity. If the entity
-        has a name which is not recognized, an empty dict is returned instead.
-        Not exported; read only.
+        The prototype dictionary extracted from Factorio's ``data.raw`` for this
+        entity. If this entity's name does not correspond to an entry under the
+        current environment, an empty dict is returned instead.
         """
         return entities.raw.get(self.name, {})
 
@@ -197,9 +206,8 @@ class Entity(EntityLike, Exportable):
         though there are some differences,
         :ref:`as noted here <handbook.entities.differences>`.
         Can be used as a criteria to search with in
-        :py:meth:`.EntityCollection.find_entities_filtered`. Returns ``None`` if
+        :py:meth:`.Collection.find_entities_filtered`. Returns ``None`` if
         this entity's name is not recognized when created without validation.
-        Not exported; read only.
         """
         return self.prototype.get("type", None)
 
@@ -209,44 +217,19 @@ class Entity(EntityLike, Exportable):
     def global_position(self) -> Vector:
         """
         The "global", or root-most position of the Entity. This value is always
-        equivalent to :py:meth:`~.Entity.position`, unless the entity exists
-        inside an :py:class:`.EntityCollection`. If it does, then it's global
+        equivalent to :py:attr:`.position`, unless the entity exists inside of a
+        containing :py:class:`.Collection` - if it does, then it's global
         position is equivalent to the sum of all parent positions plus it's own
-        position. For example, if an Entity exists within a :py:class:`.Group`
-        at position ``(5, 5)`` and the ``Group`` exists at ``(5, 5)``, the
-        ``global_position`` of the Entity will be ``(10, 10)``.
+        position.
 
-        This is used to get an entity's "actual" position in a blueprint, used
-        when adding to a :py:class:`.SpatialHashMap` and when querying the
-        entity by region. This attribute is always exported, but renamed to
-        "position"; read only.
+        For example, if an Entity exists within a :py:class:`.Group` at position
+        ``(5, 5)`` and the :py:attr:`.Group.position` is ``(5, 5)``, the
+        ``global_position`` of the Entity will be ``(10, 10)``.
         """
         if self._parent and hasattr(self._parent, "global_position"):
             return self._parent.global_position + self.position
         else:
             return self.position
-
-    # =========================================================================
-
-    @property
-    def valid_directions(self) -> set[Direction]:
-        """
-        A set containing all directions that this entity can face. Not exported;
-        read only.
-        """
-        if not self.rotatable:  # pragma: no coverage
-            return {Direction.NORTH}
-        try:
-            if "building-direction-8-way" in self.flags:  # pragma: no coverage
-                return EIGHT_WAY_DIRECTIONS
-            elif "building-direction-16-way" in self.flags:  # pragma: no coverage
-                return SIXTEEN_WAY_DIRECTIONS
-            else:
-                return FOUR_WAY_DIRECTIONS
-        except TypeError:
-            # In the unknown case, assume that the entity could have any valid
-            # direction
-            return SIXTEEN_WAY_DIRECTIONS
 
     # =========================================================================
 
@@ -280,14 +263,14 @@ class Entity(EntityLike, Exportable):
     def collision_mask(self) -> set:
         """
         The set of all collision layers that this Entity collides with,
-        specified as strings. Equivalent to Factorio's ``data.raw`` equivalent.
-        Not exported; read only.
+        specified as strings. Equivalent to Factorio's ``data.raw`` entry.
         """
         # We guarantee that the "collision_mask" key will exist during
         # `draftsman-update`, and that it will have it's proper default based
         # on it's type
         # For simplicity later (and due to the fact we don't need any extra keys)
-        # the set we return is only the collision layers
+        # the set we return is only the collision layers, hence the version
+        # specific malarkey
         if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
             return self.prototype.get("collision_mask", None)
         else:
@@ -331,6 +314,10 @@ class Entity(EntityLike, Exportable):
 
     @property  # Cache?
     def tile_width(self) -> int:
+        """
+        The width of the entity in tiles, taking into account it's current
+        orientation.
+        """
         # Overwritten by `DirectionMixin` in order to handle `direction`.
         return Entity.static_tile_width.fget(self)
 
@@ -338,6 +325,10 @@ class Entity(EntityLike, Exportable):
 
     @property  # Cache?
     def tile_height(self) -> int:
+        """
+        The height of the entity in tiles, taking into account it's current
+        orientation.
+        """
         # Overwritten by `DirectionMixin` in order to handle `direction`.
         return Entity.static_tile_height.fget(self)
 
@@ -347,7 +338,7 @@ class Entity(EntityLike, Exportable):
     def square(self) -> bool:
         """
         Whether or not the tile width of this entity matches it's tile height,
-        giving it a square footprint. Not exported; read only.
+        giving it a square footprint.
         """
         return self.static_tile_width == self.static_tile_height
 
@@ -357,7 +348,7 @@ class Entity(EntityLike, Exportable):
     def flags(self) -> Optional[list[str]]:
         """
         A set of string flags which indicate a number of behaviors of this
-        prototype. Not exported; read only.
+        prototype.
 
         .. seealso::
 
@@ -371,9 +362,8 @@ class Entity(EntityLike, Exportable):
     def flippable(self) -> bool:
         """
         Whether or not this entity can be mirrored in game using 'F' or 'G'.
-        Not exported; read only.
 
-        .. NOTE::
+        .. WARNING::
 
             Work in progress. May be incorrect, especially for modded entities.
         """
@@ -382,12 +372,15 @@ class Entity(EntityLike, Exportable):
     # =========================================================================
 
     @property
-    def surface_conditions(self) -> Optional[dict]:
+    def surface_conditions(self) -> Optional[dict]:  # TODO: better typing
         """
         Gets the dictionary of surface constraints which apply when placing this
-        entity. If this entity has no constraints whatsoever, an empty
-        dictionary is returned. If this entity is unrecognized by Draftsman,
-        `None` is returned. Not exported; read only.
+        entity. A missing entry in this dict means that this entity has no
+        restriction for that particular property type.
+
+        If this entity has no constraints whatsoever, an empty dictionary is
+        returned. If this entity is unrecognized by Draftsman, ``None`` is
+        returned.
         """
         return entities.raw.get(self.name, {"surface_conditions": None}).get(
             "surface_conditions", {}
@@ -399,43 +392,49 @@ class Entity(EntityLike, Exportable):
 
     # TODO: which of these do I want? Need to investigate what happens when you
     # give the game a blueprint with two entities with the same entity_number...
-    _entity_number: Optional[uint64] = attrs.field(
-        default=None,
-        repr=False,
-        eq=False,
-        kw_only=True,
-        validator=instance_of(Optional[uint64]),
-        metadata={"omit": False},
-    )
+    # _entity_number: Optional[uint64] = attrs.field(
+    #     default=None,
+    #     repr=False,
+    #     eq=False,
+    #     kw_only=True,
+    #     validator=instance_of(Optional[uint64]),
+    #     metadata={"omit": False},
+    # )
 
-    @property
-    def entity_number(self) -> Optional[uint64]:
-        # TODO: an entity number is used for associations, dummy
-        # Fix this docstring
-        # TODO: also, I'm not convinced this should exist in Entity even for
-        # posterity/completeness-sake; it's a mechanism for holding relationship
-        # information which is entirely superceeded by Associations, and keeping
-        # it here will likely confuse more people than help them
-        """
-        A numeric value associated with this entity, 1-indexed. In practice this is
-        the index of the dictionary in the blueprint's 'entities' list, but this is
-        not strictly enforced, and its even possible for multiple entities to share
-        the same ``entity_number`` in the same blueprint without consequence.
+    # @property
+    # def entity_number(self) -> Optional[uint64]:
+    #     # TODO: an entity number is used for associations, dummy
+    #     # Fix this docstring
+    #     # TODO: also, I'm not convinced this should exist in Entity even for
+    #     # posterity/completeness-sake; it's a mechanism for holding relationship
+    #     # information which is entirely superceeded by Associations, and keeping
+    #     # it here will likely confuse more people than help them
+    #     """
+    #     .. serialized::
 
-        An :py:class:`.Entity` created outside of a blueprint has no way to
-        determine it's own ``entity_number``, so it defaults to ``None``. Entities
-        added to blueprints also default to ``None``, as since entity lists
-        are frequently modified it makes the most sense to only generate these
-        values when exporting. This value is only populated when importing from an
-        existing blueprint string, but the value is not kept "accurate" if the
-        parent entity list in which it resides changes.
+    #         This attribute is imported/exported from blueprint strings.
 
-        This attribute is provided for posterity in case this value is somehow
-        useful, but since its value is non-authorative, it gets overwritten when
-        exporting to follow the above "entity number == index in entities list"
-        axiom.
-        """
-        return self._entity_number
+    #     A numeric value associated with this entity, in order to give each
+    #     entity a unique ID for resolving wire connections. In most circumstances
+    #     this is the 1-based index of the entity in the imported blueprint's
+    #     :py:attribute:`~.Blueprint.entities` list - but this is not strictly
+    #     enforced, and it's even possible for multiple entities to share the same
+    #     ``entity_number`` in the same blueprint.
+
+    #     An :py:class:`.Entity` created outside of a blueprint has no way to
+    #     determine it's own ``entity_number``, so it defaults to ``None``. Entities
+    #     added to blueprints also default to ``None``, as since entity lists
+    #     are frequently modified it makes the most sense to only generate these
+    #     values when exporting. This value is only populated when importing from an
+    #     existing blueprint string, but the value is not kept "accurate" if the
+    #     parent entity list in which it resides changes.
+
+    #     This attribute is provided for posterity in case this value is somehow
+    #     useful, but since its value is non-authorative, it gets overwritten when
+    #     exporting to follow the above "entity number == index in entities list"
+    #     axiom.
+    #     """
+    #     return self._entity_number
 
     # =========================================================================
 
@@ -444,7 +443,13 @@ class Entity(EntityLike, Exportable):
         # on_setattr=read_only, # In a perfect world, but flexibility is better methinks
         metadata={"omit": False},
     )
-    """The name of the entity."""
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
+    The name of the entity.
+    """
 
     @name.default
     def get_default_entity(self):
@@ -490,9 +495,9 @@ class Entity(EntityLike, Exportable):
         default=None, on_setattr=_set_id, metadata={"omit": True}
     )
     """
-    A unique string ID associated with this entity. ID's can be anything,
-    though there can only be one entity with a particular ID in an
-    EntityCollection. Not exported.
+    A unique string ID associated with this entity. IDs can be anything,
+    though there can only be one entity with a particular ID in a
+    :py:class:`.Collection`.
     """
 
     @id.validator
@@ -543,26 +548,20 @@ class Entity(EntityLike, Exportable):
         metadata={"omit": False},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The "canonical" position of the Entity, or the one that Factorio uses.
     Positions of most entities are located at their center, which can either
     be in the middle of a tile or on it's transition, depending on the
-    Entity's ``tile_width`` and ``tile_height``.
+    Entity's :py:attr:`.tile_width` and :py:attr:`.tile_height`.
 
-    ``position`` can be specified as a ``dict`` with ``"x"`` and ``"y"``
-    keys, or more succinctly as a sequence of floats, usually a ``list`` or
-    ``tuple``. ``position`` can also be specified more verbosely as a
-    ``Vector`` instance as well.
+    This property is updated in tandem with :py:attr:`.tile_position`, so using 
+    them both interchangeably is both allowed and encouraged.
 
-    This property is updated in tandem with ``tile_position``, so using them
-    both interchangeably is both allowed and encouraged.
-
-    :getter: Gets the position of the Entity.
-    :setter: Sets the position of the Entity.
-
-    :exception IndexError: If the set value does not match the above
-        specification.
     :exception DraftsmanError: If the entities position is modified when
-        inside a EntityCollection, :ref:`which is forbidden.
+        inside a :py:class:`.Collection`, :ref:`which is forbidden.
         <handbook.blueprints.forbidden_entity_attributes>`
     """
 
@@ -613,27 +612,18 @@ class Entity(EntityLike, Exportable):
     """
     The tile-position of the Entity. The tile position is the position
     according the the LuaSurface tile grid, and is the top left corner of
-    the top-leftmost tile of the Entity.
+    the top-leftmost tile that the Entity overlaps.
 
-    ``tile_position`` can be specified as a ``dict`` with ``"x"`` and
-    ``"y"`` keys, or more succinctly as a sequence of floats, usually a
-    ``list`` or ``tuple``.
+    This property is updated in tandem with :py:attr:`.position`, so using them 
+    both interchangeably is both allowed and encouraged.
 
-    This property is updated in tandem with ``position``, so using them both
-    interchangeably is both allowed and encouraged.
-
-    :getter: Gets the tile position of the Entity.
-    :setter: Sets the tile position of the Entity.
-
-    :exception IndexError: If the set value does not match the above
-        specification.
     :exception DraftsmanError: If the entities position is modified when
-        inside a EntityCollection, :ref:`which is forbidden.
+        inside a :py:class:`.Collection`, :ref:`which is forbidden.
         <handbook.blueprints.forbidden_entity_attributes>`
     """
 
     @tile_position.default
-    def get_default_tile_position(self):
+    def _get_default_tile_position(self):
         """
         Populate the internal _TileVector with a reference to the instantiated
         entity.
@@ -648,8 +638,14 @@ class Entity(EntityLike, Exportable):
 
     mirror: bool = attrs.field(default=False, validator=instance_of(bool))
     """
-    Whether or not this blueprint is mirrored horizontally or vertically, 
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not this blueprint is mirrored horizontally or vertically,
     specifically in regards to it's fluid inputs/outputs.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -659,16 +655,34 @@ class Entity(EntityLike, Exportable):
         validator=one_of(QualityID),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The quality of this entity. Can modify certain other attributes of the
     entity in (usually) positive ways.
 
-    Draftsman attributes that are dependent on quality will use this value when
-    determining certain attribute values.
+    Draftsman will automatically scale attributes based on quality value when
+    appropriate. For example:
+
+    .. doctest::
+
+        >>> from draftsman.entities import Container
+        >>> c = Container("steel-chest", quality="normal")
+        >>> c.size
+        48
+        >>> c.quality_affects_inventory_size
+        True
+        >>> c.quality = "legendary"
+        >>> c.size
+        120
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
 
-    def _items_converter(value):
+    def _items_converter(value: list[BlueprintInsertPlan] | None):
         if value is None:
             return []
         elif isinstance(value, list):
@@ -685,12 +699,17 @@ class Entity(EntityLike, Exportable):
         validator=instance_of(list[BlueprintInsertPlan]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     A list of items to deliver to the entity. Not to be confused with logistics
     requests (which are persistent), item requests are only fulfilled once when
     the entity is first constructed. Most notably, modules are requested to
     entities with this field.
 
-    For user-friendly ways to modify this array, see TODO and TODO.
+    For user-friendly ways to modify this array, see :py:meth:`.set_item_request` 
+    and :py:meth:`~.ModulesMixin.request_modules`.
     """
 
     # =========================================================================
@@ -699,15 +718,12 @@ class Entity(EntityLike, Exportable):
         factory=dict, validator=instance_of(Optional[dict])
     )
     """
-    Tags associated with this Entity. Commonly used by mods to add custom
-    data to a particular Entity when exporting and importing Blueprint
-    strings.
+    .. serialized::
 
-    :getter: Gets the tags of the Entity, or ``None`` if not set.
-    :setter: Sets the Entity's tags.
+        This attribute is imported/exported from blueprint strings.
 
-    :exception TypeError: If tags is set to anything other than a ``dict``
-        or ``None``.
+    Tags associated with this Entity ghosts. Commonly used by mods to add custom
+    data to a particular Entity when exporting and importing Blueprint strings.
     """
 
     # =========================================================================
@@ -735,14 +751,19 @@ class Entity(EntityLike, Exportable):
     # Methods
     # =========================================================================
 
-    def is_placable_on(self, surface_name: str) -> bool:
+    def is_placable_on(self, planet_name: str) -> bool:
         """
-        Check to see if this entity is placable on a particular planet/surface.
-        `surface_name` must be the name of a registered surface in `data.planets`.
-        If the `surface_properties` of this entity are unknown, then this
-        function always returns `True`.
+        Check to see if this entity is placable on a particular planet.
+        If the :py:attr:`.surface_conditions` of this entity are unknown, then
+        this function always returns ``True``.
+
+        :param planet_name: The name of the planet being checked, such as
+            ``"nauvis"`` or ``"vulcanus"``.
+
+        :returns: ``True`` if the entity can be placed on this surface, ``False``
+            otherwise.
         """
-        surface_properties = get_surface_properties(surface_name)
+        surface_properties = get_surface_properties(planet_name)
         return passes_surface_conditions(self.surface_conditions, surface_properties)
 
     # =========================================================================
@@ -761,15 +782,15 @@ class Entity(EntityLike, Exportable):
         ``count`` is set to ``0`` or ``None``.
 
         :param item: The string name of the requested item.
-        :param quality: The quality of the requested item.
         :param count: The desired amount of that item. If omitted a count of
             ``0`` will be assumed.
-        :param inventory: The particular inventory to request this item to,
-            since entities can have more than one distinct inventories to
-            request items to. If omitted, it will default to ``1``, which is
-            usally the "primary" inventory.
+        :param quality: The quality of the requested item.
+        :param inventory: The particular :py:class:`.InventoryType` to request
+            this item to, since entities (As of Factorio 2.0) can have more than
+            one distinct inventory to request items to. If omitted, it will
+            default to ``1``, which is usally the "primary" inventory.
         :param slot: The particular slot in the inventory to place the item. The
-            next open slot will be chosen automatically if omitted.
+            next empty slot will be chosen automatically if omitted.
 
         :exception TypeError: If ``item`` is anything other than a ``str``, or
             if ``count`` is anything other than an ``int`` or ``None``.
@@ -843,6 +864,36 @@ class Entity(EntityLike, Exportable):
         exclude_defaults: bool = True,
         entity_number: Optional[int] = None,
     ):
+        """
+        Export this object to a JSON dictionary, usually directly prior to
+        encoding into the compressed blueprint string format.
+
+        :param version: Which Factorio version format this entity should be
+            exported with. The same Draftsman object can be converted to many
+            version-specific output dictionaries, each of which may have
+            different structures.
+
+            The given version tuple will automatically attempt to grab the
+            closest applicable converter - meaning that specifying a
+            version of ``(1, 1, 96)`` will use the 1.0 converter, and a
+            version of ``(2, 0, 32)`` will use the 2.0 converter.
+
+            If no version is provided, it will default to current environment's
+            Factorio version, or to :py:data:`draftsman.DEFAULT_FACTORIO_VERSION`
+            if unable to read the current environment.
+        :param exclude_none: Whether or not ``None`` properties should be
+            omitted from the output string. For certain properties this option
+            has no effect, as they either must always be present or never
+            be present if ``None``.
+        :param exclude_defaults: Whether or not to exclude properties that are
+            equivalent to their default values. Including these values in the
+            generated output is redundant as Factorio will populate them
+            automatically, but it is useful to disable for illustation purposes.
+        :param entity_number: What numeric index this entity should be given,
+            used for when resolving associations into concrete integer indexes.
+            If omitted (usually when debugging), no ``"entity_number"`` key is
+            provided to the output dict.
+        """
         if version is None:
             version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
         res = {}
@@ -968,7 +1019,7 @@ _export_fields = attrs.fields(_ExportEntity)
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     Entity,
     lambda fields: {
-        "entity_number": fields._entity_number.name,
+        "entity_number": None,
         "name": (
             fields.name,
             lambda input, _, inst: migrate_name(
@@ -1037,7 +1088,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     Entity,
     lambda fields: {
-        "entity_number": fields._entity_number.name,
+        "entity_number": None,
         "name": (
             fields.name,
             lambda input, _, inst: migrate_name(

@@ -42,6 +42,10 @@ class LogisticPassiveContainer(
 
     read_contents: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to broadcast the contents of this logi chest to any connected 
     circuit network.
 
@@ -50,6 +54,8 @@ class LogisticPassiveContainer(
         Only has an effect on versions of Factorio >= 2.0. On prior versions,
         this value is hardcoded to always read the contents to the circuit 
         network if connected by wire.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================

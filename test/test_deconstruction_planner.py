@@ -4,7 +4,7 @@ from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
 from draftsman.data import mods
 from draftsman.error import DataFormatError
-from draftsman.signatures import Icon
+from draftsman.signatures import Icon, EntityFilter, TileFilter
 from draftsman.utils import encode_version
 from draftsman.warning import DraftsmanWarning, UnknownEntityWarning, UnknownTileWarning
 
@@ -106,8 +106,6 @@ class TestDeconstructionPlannerTesting:
     def test_set_entity_filters(self):
         decon_planner = DeconstructionPlanner()
 
-        EntityFilter = DeconstructionPlanner.EntityFilter
-
         # Test Shorthand
         decon_planner.entity_filters = ["transport-belt", "fast-transport-belt"]
         assert decon_planner.entity_filters == [
@@ -162,17 +160,8 @@ class TestDeconstructionPlannerTesting:
     def test_set_tile_filters(self):
         decon_planner = DeconstructionPlanner()
 
-        TileFilter = DeconstructionPlanner.TileFilter
-
         # Test Shorthand
         decon_planner.tile_filters = ["concrete", "stone-path"]
-        assert decon_planner.tile_filters == [
-            TileFilter(**{"name": "concrete", "index": 0}),
-            TileFilter(**{"name": "stone-path", "index": 1}),
-        ]
-
-        # Test Abridged
-        decon_planner.set_tile_filters("concrete", "stone-path")
         assert decon_planner.tile_filters == [
             TileFilter(**{"name": "concrete", "index": 0}),
             TileFilter(**{"name": "stone-path", "index": 1}),
@@ -207,8 +196,6 @@ class TestDeconstructionPlannerTesting:
     def test_set_entity_filter(self):
         decon_planner = DeconstructionPlanner()
 
-        EntityFilter = DeconstructionPlanner.EntityFilter
-
         # Normal case
         decon_planner.set_entity_filter(0, "transport-belt")
         decon_planner.set_entity_filter(1, "fast-transport-belt")
@@ -235,12 +222,10 @@ class TestDeconstructionPlannerTesting:
         #     decon_planner.set_entity_filter("incorrect", None)
 
         with pytest.raises(DataFormatError):
-            decon_planner.set_entity_filter("incorrect", "incorrect")
+            decon_planner.set_entity_filter("incorrect", "wooden-chest")
 
     def test_set_tile_filter(self):
         decon_planner = DeconstructionPlanner()
-
-        TileFilter = DeconstructionPlanner.TileFilter
 
         # Normal case
         decon_planner.set_tile_filter(0, "concrete")

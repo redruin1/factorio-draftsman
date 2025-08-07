@@ -10,12 +10,16 @@ import attrs
 @attrs.define(slots=False)
 class ArtilleryAutoTargetMixin(Exportable):
     """
-    Gives the entity the "artillery_auto_targeting" parameter. Used by artillery
-    turrets and artillery wagons.
+    Gives the entity the "artillery_auto_targeting" parameter. Used by
+    :py:class:`.ArtilleryTurret` and :py:class:`.ArtilleryWagon`.
     """
 
     auto_target: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this artillery turret should automatically target enemy
     structures within range.
     """

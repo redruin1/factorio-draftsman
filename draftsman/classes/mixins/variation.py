@@ -15,8 +15,13 @@ class VariationMixin(Exportable):
     entities like text-plates.
     """
 
+    # TODO: OneIndexed
     variation: uint16 = attrs.field(default=1, validator=instance_of(uint16))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The graphical variation of the entity.
     """
 

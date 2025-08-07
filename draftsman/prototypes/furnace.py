@@ -40,7 +40,9 @@ class Furnace(
     Entity,
 ):
     """
-    An entity that takes a fuel and an input item and creates an output item.
+    An entity that automatically determines it's recipe from it's input items.
+    Obviously includes regular furnaces, but can also include other machines
+    like recyclers.
     """
 
     @property
@@ -54,7 +56,7 @@ class Furnace(
         """
         A set of strings, each one an ingredient that can be used as a input for
         this particular furnace. Returns ``None`` if this entity is not
-        recognized by Draftsman. Not exported; read only.
+        recognized by Draftsman.
         """
         crafting_categories = entities.raw.get(
             self.name, {"crafting_categories": None}

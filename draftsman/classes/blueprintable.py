@@ -38,9 +38,6 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     An abstract base class representing "blueprint-like" objects, such as
     :py:class:`.Blueprint`, :py:class:`.DeconstructionPlanner`,
     :py:class:`.UpgradePlanner`, and :py:class:`.BlueprintBook`.
-
-    All attributes default to keys in the ``self._root`` object, but can (and
-    are) overwritten in select circumstances.
     """
 
     @classmethod
@@ -96,16 +93,20 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @abstractmethod
     def root_item(self) -> str:
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The "root" key of this Blueprintable's dictionary form. For example,
         blueprints have the ``root_item`` key "blueprint":
 
-        ```
-        {
-            "blueprint": { # <- this is the "root_item"
-                ...
+        .. code-block:: python
+
+            {
+                "blueprint": { # <- this is the "root_item"
+                    ...
+                }
             }
-        }
-        ```
 
         All keys (except for :py:attr:`index`) are contained within this sub-
         dictionary.
@@ -116,6 +117,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     @abstractmethod
     def item(self) -> str:
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         Always the name of the corresponding Factorio item to this blueprintable
         instance. Read only.
 
@@ -145,10 +150,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         validator=and_(instance_of(str), byte_length(200)),
     )
     """
-    The user given name (title) of the blueprintable.
+    .. serialized::
 
-    :exception TypeError: When setting ``label`` to something other than
-        ``str`` or ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    The user given name (title) of the blueprintable.
     """
 
     # =========================================================================
@@ -160,32 +166,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         metadata={"never_null": True},
     )
     """
-    The color of the Blueprint's label.
+    .. serialized::
 
-    The ``label_color`` parameter exists in a dict format with the "r", "g",
-    "b", and an optional "a" keys. The color can be specified like that, or
-    it can be specified more succinctly as a sequence of 3-4 numbers,
-    representing the colors in that order.
+        This attribute is imported/exported from blueprint strings.
 
-    The value of each of the numbers (according to Factorio spec) can be
-    either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
-    <= 1.0, the former range is used, and the latter otherwise. If "a" is
-    omitted, it defaults to 1.0 or 255 when imported, depending on the
-    range of the other numbers.
-
-    :getter: Gets the color of the label, or ``None`` if not set.
-    :setter: Sets the label color of the ``Blueprint``.
-
-    :exception DataFormatError: If the input ``label_color`` does not match
-        the above specification.
-
-    :example:
-
-    .. code-block:: python
-
-        blueprint.label_color = (127, 127, 127)
-        print(blueprint.label_color)
-        # {'r': 127.0, 'g': 127.0, 'b': 127.0}
+    The :py:class:`.Color` of the Blueprint's label.
     """
 
     # =========================================================================
@@ -196,11 +181,12 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         validator=and_(instance_of(str), byte_length(500)),
     )
     """
-    The description of the blueprintable. Visible when hovering over it when
-    inside someone's inventory.
+    .. serialized::
 
-    :exception TypeError: If setting to anything other than a ``str`` or
-        ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    The description of the blueprintable. Visible when hovering over it when
+    inside someone's inventory. Has a maximum size of 500 bytes.
     """
 
     # =========================================================================
@@ -225,26 +211,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         validator=instance_of(list[Icon]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The visible icons of the blueprintable, as shown in the icon in
-    Factorio's GUI.
+    Factorio's GUI. A max of 4 :py:class:`.Icon` s are permitted.
 
-    Stored as a list of ``Icon`` objects, which are dicts that contain a
-    ``"signal"`` dict and an ``"index"`` key. Icons can be specified in this
-    format, or they can be specified more succinctly with a simple list of
-    signal names as strings.
-
-    All signal entries must be a valid signal ID. If the input format is a
-    list of strings, the index of each item will be it's place in the list
-    + 1. A max of 4 icons are permitted.
-
-    :getter: Gets the list if icons, or ``None`` if not set.
-    :setter: Sets the icons of the Blueprint. Removes the attribute if set
-        to ``None``.
-
-    :exception DataFormatError: If the set value does not match either of
-        the specifications above.
-
-    :example:
+    Icons can also be specified more succinctly as a simple list of signal names:
 
     .. doctest::
 
@@ -252,11 +226,15 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         >>> blueprint = Blueprint()
         >>> blueprint.icons = ["transport-belt"]
         >>> blueprint.icons
-        [{'index': 1, 'signal': {'name': 'transport-belt', 'type': 'item'}}]
+        [Icon(index=0, signal=SignalID(name='transport-belt', type='item'))]
     """
 
     # =========================================================================
 
+    # TODO: why bother having the integer representation at all? Just have
+    # `version` point to a tuple instead of `version_tuple`, and do the custom
+    # encoding
+    # If people really want the integer, they can just use `encode_version`
     version: uint64 = attrs.field(
         factory=lambda: encode_version(
             *mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
@@ -272,6 +250,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         },
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The version of Factorio the Blueprint was created in/intended for.
 
     The Blueprint ``version`` is a 64-bit integer, which is a bitwise-OR
@@ -281,22 +263,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
     which will give you a more readable output. This version number defaults
     to the version of Factorio of Draftsman's environment.
 
-    The version can be set either as said 64-bit int, or a sequence of
-    ints, usually a list or tuple, which is then encoded into the combined
-    representation. The sequence is defined as:
+    The version can be set either a 64-bit int in the format above, or as a 
+    sequence of ints (usually a list or tuple) which is then encoded into the 
+    combined representation. The sequence is defined as:
     ``[major_version, minor_version, patch, development_release]``
     with ``patch`` and ``development_release`` defaulting to 0.
-
-    .. seealso::
-
-        `<https://wiki.factorio.com/Version_string_format>`_
-
-    :getter: Gets the version, or ``None`` if not set.
-    :setter: Sets the version of the Blueprint. Removes the attribute if set
-        to ``None``.
-
-    :exception TypeError: If set to anything other than an ``int``, sequence
-        of ``ints``, or ``None``.
 
     :example:
 
@@ -308,6 +279,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         >>> assert blueprint.version == 281474976710656
         >>> assert blueprint.version_tuple() == (1, 0, 0, 0)
         >>> assert blueprint.version_string() == "1.0.0.0"
+
+    .. seealso::
+
+        `<https://wiki.factorio.com/Version_string_format>`_
     """
 
     # =========================================================================
@@ -321,17 +296,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         default=None, validator=instance_of(Optional[uint16])
     )
     """
-    The location of the blueprintable in a parent :py:class:`BlueprintBook`. 
-    This member is automatically generated if omitted, but can be manually set 
-    with this attribute. ``index`` has no meaning when the blueprintable is not 
-    located inside another BlueprintBook.
+    .. serialized::
 
-    :getter: Gets the index of this blueprintable, or ``None`` if not set.
-        A blueprintable's index is only generated when exporting with
-        :py:meth:`.Blueprintable.to_dict`, so ``index`` will still be ``None``
-        until specified otherwise.
-    :setter: Sets the index of the :py:class:`.Blueprintable`, or removes it
-        if set to ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    The location of the blueprintable in a parent :py:class:`.BlueprintBook`. 
+    This member is automatically generated if omitted, but can be manually set 
+    with this attribute. This attribute has no meaning when the blueprintable is 
+    not located inside another blueprint book.
     """
 
     # =========================================================================

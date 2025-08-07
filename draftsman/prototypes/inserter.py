@@ -114,6 +114,10 @@ class Inserter(
         validator=instance_of(Optional[Vector]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The configured pickup position "offset" used for when inserters have custom 
     pickup/dropoff locations (think adjustable inserter mods).
 
@@ -139,6 +143,10 @@ class Inserter(
         validator=instance_of(Optional[Vector]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The configured drop position "offset" used for when inserters have custom 
     pickup/dropoff locations (think adjustable inserter mods).
 
@@ -162,11 +170,12 @@ class Inserter(
         default="whitelist", validator=one_of("whitelist", "blacklist")
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The mode that the given filter should operate under, if the inserter is 
     configured to operate with filters.
-
-    :exception DataFormatError: If set to a value that is neither ``"whitelist"``
-        nor ``"blacklist"``.
     """
 
     # =========================================================================
@@ -176,12 +185,13 @@ class Inserter(
         validator=one_of("spoiled-first", "fresh-first", None),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this inserter should prefer most fresh or most spoiled
     items when grabbing from an inventory. If set to ``None``, this inserter
-    will ignore the spoiled value of items entirely.
-
-    :raises DataFormatError: When set to a value other than ``"spoiled-first"``,
-        ``"fresh-first"``, or ``None``.
+    will ignore the spoiled value of items from it's pickup logic entirely.
     """
 
     # =========================================================================

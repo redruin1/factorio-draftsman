@@ -5,6 +5,9 @@ from draftsman.classes.exportable import Exportable
 from draftsman.constants import (
     Direction,
     ValidationMode,
+    FOUR_WAY_DIRECTIONS,
+    EIGHT_WAY_DIRECTIONS,
+    SIXTEEN_WAY_DIRECTIONS,
 )
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
@@ -106,35 +109,33 @@ class DirectionalMixin(Exportable):
         Whether or not this entity actually has their collision set rotated by
         their direction. Some entities (such as rail signals) have many valid
         directions they can exist as but reuse the same collision set for all of
-        them. Not exported; read only.
+        them.
         """
         return self.rotatable and not self.square
 
     # =========================================================================
 
-    # @property
-    # def valid_directions(self) -> set[Direction]:
-    #     """
-    #     A set containing all directions that this entity can face. Not exported;
-    #     read only.
-    #     """
-    #     """
-    #     A set containing all directions that this entity can face. Not exported;
-    #     read only.
-    #     """
-    #     if not self.rotatable:
-    #         return {Direction.NORTH}
-    #     try:
-    #         if "building-direction-8-way" in self.flags:
-    #             return EIGHT_WAY_DIRECTIONS
-    #         elif "building-direction-16-way" in self.flags:
-    #             return SIXTEEN_WAY_DIRECTIONS
-    #         else:
-    #             return FOUR_WAY_DIRECTIONS
-    #     except TypeError:
-    #         # In the unknown case, assume that the entity could occupy any valid
-    #         # direction
-    #         return SIXTEEN_WAY_DIRECTIONS
+    @property
+    def valid_directions(self) -> set[Direction]:
+        """
+        A set containing all directions that this entity can face. If
+        :py:attr:`~.direction` is set to a direction not contained within this
+        set, it is clamped to the nearest correct direction when imported into
+        Factorio.
+        """
+        if not self.rotatable:
+            return {Direction.NORTH}
+        try:
+            if "building-direction-8-way" in self.flags:
+                return EIGHT_WAY_DIRECTIONS
+            elif "building-direction-16-way" in self.flags:
+                return SIXTEEN_WAY_DIRECTIONS
+            else:
+                return FOUR_WAY_DIRECTIONS
+        except TypeError:
+            # In the unknown case, assume that the entity could occupy any valid
+            # direction
+            return SIXTEEN_WAY_DIRECTIONS
 
     # =========================================================================
 
@@ -191,6 +192,10 @@ class DirectionalMixin(Exportable):
         on_setattr=_set_direction,
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The direction that the Entity is facing. An Entity's "front" is usually
     the direction of it's outputs, if it has any.
 
@@ -199,16 +204,13 @@ class DirectionalMixin(Exportable):
     the machine has a fluid input or output.
 
     Raises :py:class:`~draftsman.warning.DirectionWarning` if set to a
-    diagonal direction. In that case, the direction will default to the
-    closest valid direction going counter-clockwise.
+    direction not contained within :py:attr:`valid_directions`.
 
     :exception DraftsmanError: If the direction is set while inside a
         Collection, and the target entity is both non-square and the
         particular rotation would change it's apparent tile width and height.
         See, :ref:`here<handbook.blueprints.forbidden_entity_attributes>`
         for more info.
-    :exception ValueError: If set to anything other than a ``Direction``, or
-        an equivalent ``int``.
     """
 
     @direction.validator

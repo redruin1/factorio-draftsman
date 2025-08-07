@@ -9,7 +9,7 @@ from draftsman.classes.schedule_list import ScheduleList
 from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, Orientation
+from draftsman.constants import Direction, Orientation, WireConnectorID
 from draftsman.signatures import StockConnection
 from draftsman.error import (
     DuplicateIDError,
@@ -429,11 +429,30 @@ class Collection(metaclass=ABCMeta):
         kw_only=True,
     )
     """
-    The list of the Blueprint's entities. Internally the list is a custom
-    class named :py:class:`.EntityList`, which has all the normal properties
-    of a regular list, as well as some extra features. For more information
-    on ``EntityList``, check out this writeup
-    :ref:`here <handbook.blueprints.blueprint_differences>`.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The list containing this collection's entities.
+
+    Supports inserting/appending new entities via a string name, as well as any
+    keyword arguments to pass to that entity's constructor:
+
+    .. code-block::
+
+        blueprint.entities.append("wooden-chest", bar=10)
+        assert type(blueprint.entities[-1]) is Container
+        assert blueprint.entities[-1].name == "wooden-chest"
+        assert blueprint.entities[-1].bar == 10
+
+    In addition to indexing by integer location, :py:class:`.EntityList` also 
+    supports indexing via string, corresponding to the :py:attr:`~.Entity.id` of 
+    the entity:
+
+    .. code-block::
+
+        blueprint.entities.insert(0, "wooden-chest", id="example")
+        assert blueprint.entities["example"] is blueprint.entities[0]
     """
 
     @entities.default
@@ -455,23 +474,20 @@ class Collection(metaclass=ABCMeta):
         kw_only=True,
     )
     """
-    The list of the collection's tiles. Internally the list is a custom
-    class named :py:class:`~.TileList`, which has all the normal properties
-    of a regular list, as well as some extra features.
+    .. serialized::
 
-    :example:
+        This attribute is imported/exported from blueprint strings.
 
-    .. code-block:: python
+    The list containing this collection's tiles.
+
+    Supports inserting/appending new tiles via a string name, as well as any
+    keyword arguments to pass to that entity's constructor:
+
+    .. code-block::
 
         blueprint.tiles.append("landfill")
-        assert isinstance(blueprint.tiles[-1], Tile)
+        assert type(blueprint.tiles[-1]) is Tile
         assert blueprint.tiles[-1].name == "landfill"
-
-        blueprint.tiles.insert(0, "refined-hazard-concrete", position=(1, 0))
-        assert blueprint.tiles[0].position == {"x": 1.5, "y": 1.5}
-
-        blueprint.tiles = None
-        assert len(blueprint.tiles) == 0
     """
 
     @tiles.default
@@ -502,21 +518,23 @@ class Collection(metaclass=ABCMeta):
         kw_only=True,
     )
     """
-    A list of child :py:class:`.Group`s that this collection contains.
+    A list of child :py:class:`.Group` objects that this collection contains.
 
     Like :py:class:`.EntityList`, Groups added to this list with populated IDs
     can be accessed via those IDs:
-
-    .. example::
         
-        blueprint = Blueprint()
-        new_group = Group(id="something")
-        blueprint.groups.append(new_group)
-        assert blueprint.groups["something"] == new_group
+    .. doctest::
+
+        >>> blueprint = Blueprint()
+        >>> new_group = Group(id="something")
+        >>> blueprint.groups.append(new_group)
+        >>> assert blueprint.groups["something"] == new_group
 
     This attribute is not exported. Instead, all entities/tiles that are 
     contained within it are "flattened" to the root-most entity/tile lists, with
     their positions and associations preserved.
+
+    .. versionadded:: 3.0.0
     """
 
     @groups.default
@@ -541,18 +559,11 @@ class Collection(metaclass=ABCMeta):
         kw_only=True,
     )
     """
-    A list of the entity collections's train schedules.
+    .. serialized::
 
-    .. seealso::
+        This attribute is imported/exported from blueprint strings.
 
-        `<https://wiki.factorio.com/Blueprint_string_format#Schedule_object>`_
-
-    :getter: Gets the schedules of this collection.
-    :setter: Sets the schedules of this collection. Defaults to an empty
-        :py:class:`.ScheduleList` if set to ``None``.
-
-    :exception ValueError: If set to anything other than a ``list`` of
-        :py:class:`.Schedule` or .
+    A list of the Collections's :py:class:`.Schedule` s.
     """
 
     @schedules.default
@@ -561,28 +572,32 @@ class Collection(metaclass=ABCMeta):
 
     # =========================================================================
 
-    wires: list[list[Association, int, Association, int]] = attrs.field(
-        factory=list,
-        converter=lambda v: list() if v is None else v,
-        # TODO: validators
-        kw_only=True,
+    wires: list[list[Association, WireConnectorID, Association, WireConnectorID]] = (
+        attrs.field(
+            factory=list,
+            converter=lambda v: list() if v is None else v,
+            # TODO: validators
+            kw_only=True,
+        )
     )
     """
-    A list of the wire connections in this blueprint.
+    .. serialized::
 
-    Wires are specified as a list of 4 integers; the first pair of numbers
-    represents the first entity, and the second pair represents the second
-    entity. The first number of each pair represents the ``entity_number``
-    of the corresponding entity in the list, and the second number indicates
+        This attribute is imported/exported from blueprint strings.
+    
+    A list of all the wire connections in this blueprint.
+
+    Wires are specified as two pairs of :py:class:`.Association` and 
+    :py:class:`.WireType`; the first pair represents the first entity, and the 
+    second pair represents the second entity. The association points to the 
+    corresponding entity in this collection, and the wire type enum indicates
     what type of connection it is.
 
-    When exported to JSON, the associations in each wire are resolved to 
-    integers corresponding to the given ``"entity_number"`` in the resulting
-    ``"entities"`` list.
+    When exported to JSON, the associations and enums in each wire are resolved 
+    to integers corresponding to the given ``entity_number`` in the resulting
+    ``entities`` list.
 
-    :getter: Gets the wires of the Blueprint.
-    :setter: Sets the wires of the Blueprint. Defaults to an empty list if
-        set to ``None``.
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -593,15 +608,16 @@ class Collection(metaclass=ABCMeta):
         kw_only=True,
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     A list of connections between train cars, documenting exactly which ones
     are connected to what. Prior to Factorio 2.0, train car connections were 
     inferred and automatically generated on blueprint import; this field allows
     for manual control over this behavior.
 
-    Each :py:class:`.StockConnection` element contains a ``stock`` Association
-    which points to the locomotive or wagon in question, along with optional
-    ``front`` and ``back`` Associations pointing to which stock this car is 
-    connected to (if any).
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -949,17 +965,17 @@ class Collection(metaclass=ABCMeta):
         """
         Adds a copper wire power connection between two entities. Each entity
         can be either a reference to the original entity to connect, the index
-        of the entity in the ``entities`` list, or it's string ID. Tuples of
-        strings and ints mean to recursively search through
-        :py:class:`EntityCollection` instances in the base level, following the
-        logic of :py:meth:`.EntityList.__getitem__`. For example:
+        of the entity in the :py:attr:`.entities` list, or it's string ID.
+        Tuples of strings and ints mean to recursively search through the
+        :py:class:`Collection` 's :py:class:`.groups` for an entity at that tree
+        "path". For example:
 
         .. code-block:: python
 
             blueprint.entities.append("small-electric-pole")
-            group = Group("group") # Type of EntityCollection
+            group = Group("group") # A type of `Collection`
             group.entities.append("small-electric-pole", tile_position=(5, 0))
-            blueprint.entities.append(group)
+            blueprint.groups.append(group)
 
             # Add a connection between the first power pole and the first entity
             # in the group
@@ -1439,50 +1455,6 @@ class Collection(metaclass=ABCMeta):
                 stacklevel=2,
             )
 
-        # 1.0 code
-        # # Add entity_2 to entity_1.connections
-
-        # # if entity_1.connections[str(side1)] is None:
-        # #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
-        # current_side = entity_1.connections[str(side_1)]
-
-        # # if color not in current_side:
-        # if current_side[color] is None:
-        #     current_side[color] = []
-        # current_color = current_side[color]
-
-        # # If dual circuit connectable specify the target side
-        # if entity_2.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_2)}
-
-        # if entry not in current_color:
-        #     current_color.append(entry)
-
-        # # Add entity_1 to entity_2.connections
-
-        # # if entity_2.connections[str(side2)] is None:
-        # #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
-        # current_side = entity_2.connections[str(side_2)]
-
-        # # if color not in current_side:
-        # if current_side[color] is None:
-        #     current_side[color] = []
-        # current_color = current_side[color]
-
-        # # If dual circuit connectable specify the target side
-        # if entity_1.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_1)}
-
-        # if entry not in current_color:
-        #     current_color.append(entry)
-
-        # 2.0 code
         color_value = {"red": 1, "green": 2}
         dir_value = {"input": 0, "output": 2}
 
@@ -1490,7 +1462,12 @@ class Collection(metaclass=ABCMeta):
         wire_type_2 = color_value[color] + dir_value[side_2]
 
         self.wires.append(
-            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+            [
+                Association(entity_1),
+                WireConnectorID(wire_type_1),
+                Association(entity_2),
+                WireConnectorID(wire_type_2),
+            ]
         )
 
     def remove_circuit_connection(
@@ -1567,45 +1544,6 @@ class Collection(metaclass=ABCMeta):
         if side_2 not in {"input", "output"}:
             raise InvalidConnectionSideError("'{}'".format(side_2))
 
-        # 1.0 code
-        # # Remove from source
-        # if entity_2.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_2)}
-
-        # try:
-        #     current_side = entity_1.connections[str(side_1)]
-        #     current_color = current_side[color]
-        #     current_color.remove(entry)
-        #     # Remove redundant structures from source if applicable
-        #     if len(current_color) == 0:
-        #         entity_1.connections[str(side_1)][color] = None
-        #     # if len(current_side) == 0:
-        #     #     del entity_1.connections[str(side1)]
-        # except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
-        #     pass
-
-        # # Remove from target
-        # if entity_1.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_1)}
-
-        # try:
-        #     current_side = entity_2.connections[str(side_2)]
-        #     current_color = current_side[color]
-        #     current_color.remove(entry)
-        #     # Remove redundant structures from target if applicable
-        #     if len(current_color) == 0:
-        #         entity_2.connections[str(side_2)][color] = None
-        #     # if len(current_side) == 0:
-        #     #     del entity_2.connections[str(side2)]
-        # except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
-        #     pass
-
         # 2.0 code
         color_value = {"red": 1, "green": 2}
         dir_value = {"input": 0, "output": 2}
@@ -1615,13 +1553,23 @@ class Collection(metaclass=ABCMeta):
 
         try:
             self.wires.remove(
-                [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+                [
+                    Association(entity_1),
+                    WireConnectorID(wire_type_1),
+                    Association(entity_2),
+                    WireConnectorID(wire_type_2),
+                ]
             )
         except ValueError:
             pass
         try:
             self.wires.remove(
-                [Association(entity_2), wire_type_2, Association(entity_1), wire_type_1]
+                [
+                    Association(entity_2),
+                    WireConnectorID(wire_type_2),
+                    Association(entity_1),
+                    WireConnectorID(wire_type_1),
+                ]
             )
         except ValueError:
             pass

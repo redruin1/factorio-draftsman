@@ -66,6 +66,10 @@ class RailChainSignal(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The blue output signal. Sent with a unit value when the rail signal's state 
     is blue.
     """

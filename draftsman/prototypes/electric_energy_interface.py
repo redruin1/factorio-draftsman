@@ -73,13 +73,7 @@ class ElectricEnergyInterface(EnergySourceMixin, DirectionalMixin, Entity):
         converter=try_convert(float), validator=instance_of(float)
     )
     """
-    The amount of electrical energy stored in this entity in Joules.
-
-    :getter: Gets the value of the buffer.
-    :setter: Sets the value of the buffer.
-
-    :exception TypeError: If set to anything other than a ``float`` or
-        ``None``.
+    The amount of electrical energy that can be stored in this entity in Joules.
     """
 
     @buffer_size.default
@@ -94,12 +88,6 @@ class ElectricEnergyInterface(EnergySourceMixin, DirectionalMixin, Entity):
     )
     """
     The amount of electrical energy to create each tick in Joules.
-
-    :getter: Gets how much to make.
-    :setter: Sets how much to make.
-
-    :exception TypeError: If set to anything other than a ``float`` or
-        ``None``.
     """
 
     @power_production.default
@@ -114,12 +102,6 @@ class ElectricEnergyInterface(EnergySourceMixin, DirectionalMixin, Entity):
     )
     """
     The amount of electrical energy to use each tick in Joules.
-
-    :getter: Gets how much to use.
-    :setter: Sets how much to use.
-
-    :exception TypeError: If set to anything other than a ``float`` or
-        ``None``.
     """
 
     @power_usage.default

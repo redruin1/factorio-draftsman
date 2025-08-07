@@ -12,6 +12,8 @@ import attrs
 @attrs.define
 class ElevatedCurvedRailA(DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     Elevated curved rails which connect straight rails to half-diagonal rails.
     """
 

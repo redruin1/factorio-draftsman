@@ -65,6 +65,10 @@ class OrientationMixin(Exportable):
         validator=instance_of(Orientation),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The angle that the current Entity is facing, expressed as a ``float``
     in the range ``[0.0, 1.0)``, where ``0.0`` is North and increases
     clockwise.

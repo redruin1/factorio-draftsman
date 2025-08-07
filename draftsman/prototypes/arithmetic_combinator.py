@@ -97,6 +97,10 @@ class ArithmeticCombinator(
         ),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The first operand of the ``ArithmeticCombinator``. Cannot be set to
     ``"signal-anything"`` or ``"signal-everything"`` as those signals are
     prohibited on combinators of this type. Raises an error if set to
@@ -106,12 +110,6 @@ class ArithmeticCombinator(
     and this operand is *unset* from ``"signal-each"``, the output signal is
     set to ``None``.
 
-    :getter: Gets the first operand of the operation, or ``None`` if not set.
-    :setter: Sets the first operand of the operation. Removes the key if set
-        to ``None``.
-
-    :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
-        ``str`` name of a valid signal, an ``int``, or ``None``.
     :exception DraftsmanError: If set to ``"signal-anything"`` or
         ``"signal-everything"``.
     :exception DraftsmanError: If set to ``"signal-each"`` when
@@ -126,6 +124,10 @@ class ArithmeticCombinator(
         validator=instance_of(CircuitNetworkSelection),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Which wire colors should the first signal read from when calculating. If 
     :py:attr:`.first_operand` is a constant, this attribute has no effect.
 
@@ -143,6 +145,10 @@ class ArithmeticCombinator(
         validator=one_of(ArithmeticOperation),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The operation of the ``ArithmeticCombinator`` Can be one of:
 
     .. code-block:: python
@@ -169,6 +175,10 @@ class ArithmeticCombinator(
         ),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The second operand of the ``ArithmeticCombinator``. Cannot be set to
     ``"signal-anything"`` or ``"signal-everything"`` as those signals are
     prohibited on combinators of this type. Raises an error if set to
@@ -177,11 +187,6 @@ class ArithmeticCombinator(
     :py:attr:`.output_signal` of this combinator is set to ``"signal-each"``
     and this operand is *unset* from ``"signal-each"``, the output signal is
     set to ``None``.
-
-    :getter: Gets the second operand of the operation, or ``None`` if not
-        set.
-    :setter: Sets the second operand of the operation. Removes the key if
-        set to ``None``.
 
     :exception TypeError: If set to anything other than a ``SIGNAL_ID``, the
         ``str`` name of a valid signal, an ``int``, or ``None``.
@@ -199,6 +204,10 @@ class ArithmeticCombinator(
         validator=instance_of(CircuitNetworkSelection),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Which wire colors should the second signal read from when calculating. If 
     :py:attr:`.second_operand` is a constant, this attribute has no effect.
 
@@ -220,14 +229,15 @@ class ArithmeticCombinator(
         ),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The output signal of the ``ArithmeticCombinator``. Cannot be set to
     ``"signal-anything"`` or ``"signal-everything"`` as those signals are
     prohibited on combinators of this type. Can be set to ``"signal-each"``,
     but only if one of :py:attr:`.first_operand` or :py:attr:`.second_operand`
     are set to ``"signal-each"`` as well.
-
-    :getter: Gets the output signal, or ``None`` if not set.
-    :setter: Sets the output signal. Removes the key if set to ``None``.
 
     :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
         ``None``.

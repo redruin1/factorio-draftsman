@@ -22,7 +22,10 @@ class Car(
     Entity,
 ):
     """
-    A drivable entity which moves in one direction and can steer left or right.
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
+    A drivable entity which moves in along one axis and can steer left or right.
+    Includes vanilla tanks as well as regular cars.
     """
 
     @property

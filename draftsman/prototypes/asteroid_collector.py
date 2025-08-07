@@ -34,6 +34,8 @@ class AsteroidCollector(
     Entity,
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity which collects asteroid chunks in space.
     """
 
@@ -49,6 +51,10 @@ class AsteroidCollector(
         validator=instance_of(Optional[Inventory]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Internal inventory of this asteroid collector. Attempting to set the 
     :py:attr:`~.Inventory.filters` of this object has no effect.
     """
@@ -73,6 +79,10 @@ class AsteroidCollector(
         validator=instance_of(list[AsteroidChunkID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The set of manually specified chunk filters for this asteroid collector.
     Overridden by any circuit filters, if configured and present.
     """
@@ -81,22 +91,24 @@ class AsteroidCollector(
 
     read_contents: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this Entity is set to read it's contents to a connected 
     circuit network.
-
-    :exception TypeError: If set to anything other than a ``bool`` or
-        ``None``.
     """
 
     # =========================================================================
 
     read_hands: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     Whether or not this Entity is set to read it's hands to a connected circuit
     network.
-
-    :exception TypeError: If set to anything other than a ``bool`` or
-        ``None``.
     """
 
     # =========================================================================

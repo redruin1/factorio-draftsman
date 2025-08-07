@@ -18,10 +18,14 @@ class IOTypeMixin(Exportable):
         default="input", validator=one_of("input", "output", None)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether this entity is set to recieve or send items. Used to
-    differentiate between input and output underground belts/pipes, as well as
+    differentiate between input and output underground belts, as well as
     whether or not a loader inserts or removes items from an adjacent
-    container. Can be one of ``"input"`` or ``"output"``.
+    container.
     """
 
     # =========================================================================

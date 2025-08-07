@@ -29,7 +29,6 @@ class Lab(ModulesMixin, EnergySourceMixin, Entity):
         """
         The inputs that this Lab uses to research, listed in their Factorio
         order. Returns ``None`` if this entity is not recognized by Draftsman.
-        Not exported; read only.
         """
         return entities.raw.get(self.name, {"inputs": None})["inputs"]
 

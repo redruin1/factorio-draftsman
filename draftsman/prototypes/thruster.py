@@ -10,6 +10,8 @@ import attrs
 @attrs.define
 class Thruster(Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity which accellerates space platforms.
     """
 

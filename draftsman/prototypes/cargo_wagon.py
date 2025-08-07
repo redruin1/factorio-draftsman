@@ -59,6 +59,10 @@ class CargoWagon(
         ),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Inventory object of this cargo wagon. Holds metadata associated with this
     wagons inventory, such as it's size, limiting bar position, and item filters
     (if any).

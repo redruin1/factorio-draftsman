@@ -4,6 +4,7 @@ from draftsman.classes.exportable import Exportable
 from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
+    Comparator,
     ItemFilter,
     ItemIDName,
     int64,
@@ -11,6 +12,7 @@ from draftsman.signatures import (
 from draftsman.validators import instance_of
 
 import attrs
+import bisect
 from typing import Literal, Optional
 
 
@@ -25,8 +27,7 @@ class FiltersMixin(Exportable):
         """
         The number of filter slots that this Entity has in total. Equivalent to
         the ``"filter_count"`` key in Factorio's ``data.raw``. Returns ``None``
-        if this entity's name is not recognized by Draftsman. Not exported; read
-        only.
+        if this entity's name is not recognized by Draftsman.
         """
         return entities.raw.get(self.name, {"filter_count": None}).get(
             "filter_count", 0
@@ -36,8 +37,12 @@ class FiltersMixin(Exportable):
 
     use_filters: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this inserter should use filters at all. Overrided by
-    ``circuit_set_filters``, if present.
+    :py:attr:`~.CircuitSetFiltersMixin.circuit_set_filters`, if present.
     """
 
     # =========================================================================
@@ -56,6 +61,10 @@ class FiltersMixin(Exportable):
         validator=instance_of(list[ItemFilter]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The manually-set item filters that this inserter/loader will abide by. These
     values are overridden by filters set by the circuit network, if so 
     configured.
@@ -70,17 +79,18 @@ class FiltersMixin(Exportable):
         quality: Literal[
             "normal", "uncommon", "rare", "epic", "legendary", "any"
         ] = "normal",
-        comparator: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "=",
+        comparator: Comparator = "=",
     ):
         """
         Sets one of the item filters of the Entity.
 
-        :param index: The index of the filter to set.
+        :param index: The index of the filter to set. Should be less than
+            :py:attr:`.filter_count`.
         :param item: The string name of the item to filter.
-
-        :exception IndexError: If ``index`` is set to a value exceeding or equal
-            to ``filter_count``.
-        :exception InvalidItemError: If ``item`` is not a valid item name.
+        :param quality: The item's quality.
+        :param comparator: In what manner should the quality of the filter be
+            interpreted - defaults to an exact match (``"="``), but can also be
+            specified as a range.
         """
         if item is not None:
             new_entry = ItemFilter(
@@ -101,8 +111,7 @@ class FiltersMixin(Exportable):
                 break
 
         if found_index is None:
-            # TODO: bisect
-            self.filters.append(new_entry)
+            bisect.insort(self.filters, new_entry, key=lambda e: e.index)
 
     # =========================================================================
 

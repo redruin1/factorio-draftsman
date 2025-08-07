@@ -11,6 +11,8 @@ import attrs
 @attrs.define
 class RailRamp(DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     A ramp which transitions between ground and elevated rails.
     """
 

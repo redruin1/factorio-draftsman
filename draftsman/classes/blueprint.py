@@ -1,81 +1,11 @@
 # blueprint.py
 
 """
-.. code-block:: python
+Contains the :py:class:`.Blueprint` class for easily creating and exporting blueprints.
 
-    {
-        "blueprint": {
-            "item": "blueprint", # The associated item with this structure
-            "label": str, # A user given name for this blueprint
-            "label_color": { # The overall color of the label
-                "r": float[0.0, 1.0] or int[0, 255], # red
-                "g": float[0.0, 1.0] or int[0, 255], # green
-                "b": float[0.0, 1.0] or int[0, 255], # blue
-                "a": float[0.0, 1.0] or int[0, 255]  # alpha (optional)
-            },
-            "icons": [ # A set of signals to act as visual identification
-                {
-                    "signal": {"name": str, "type": str}, # Name and type of signal
-                    "index": int, # In range [1, 4], starting top-left and moving across
-                },
-                ... # Up to 4 icons total
-            ],
-            "description": str, # A user given description for this blueprint
-            "version": int, # The encoded version of Factorio this planner was created
-                            # with/designed for (64 bits)
-            "snap-to-grid": { # The size of the grid to snap this blueprint to
-                "x": int, # X dimension in units
-                "y": int, # Y dimension in units
-            }
-            "absolute-snapping": bool, # Whether or not to use absolute placement
-                                       # (defaults to True)
-            "position-relative-to-grid": { # The offset of the grid if using absolute
-                                           # placement
-                "x": int, # X offset in units
-                "y": int, # Y offset in units
-            }
-            "entities": [ # A list of entities in this blueprint
-                {
-                    "name": str, # Name of the entity,
-                    "entity_number": int, # Unique number associated with this entity
-                    "position": {"x": float, "y": float}, # Position of the entity
-                    ... # Any associated Entity key/value
-                },
-                ...
-            ]
-            "tiles": [ # A list of tiles in this blueprint
-                {
-                    "name": str, # Name of the tile
-                    "position": {"x": int, "y": int}, # Position of the tile
-                },
-                ...
-            ],
-            "schedules": [ # A list of the train schedules in this blueprint
-                {
-                    "schedule": [ # A list of schedule records
-                        {
-                            "station": str, # Name of the stop associated with these
-                                            # conditions
-                            "wait_conditions": [
-                                {
-                                    "type": str, # Name of the type of condition
-                                    "compare_type": "and" or "or",
-                                    "ticks": int, # If using "time" or "inactivity"
-                                    "condition": CONDITION, # If a circuit condition is
-                                                            # needed
-                                }
-                            ],
-                        },
-                        ...
-                    ]
-                    "locomotives": [int, ...] # A list of ints, corresponding to
-                                              # "entity_number" in "entities"
-                },
-                ...
-            ]
+.. seealso::
 
-        }
-    }
+    `<https://wiki.factorio.com/Blueprint_string_format>`_
 """
 
 import draftsman
@@ -123,9 +53,7 @@ def _throw_invalid_association(entity):
 @draftsman.define
 class Blueprint(Transformable, Collection, Blueprintable):
     """
-    Factorio Blueprint class. Contains and maintains a list of ``EntityLikes``
-    and ``Tiles`` and a selection of other metadata. Inherits all the functions
-    and attributes you would expect, as well as some extra functionality.
+    Factorio Blueprint class.
     """
 
     @property
@@ -142,7 +70,14 @@ class Blueprint(Transformable, Collection, Blueprintable):
             "omit": False,
         },
     )
-    # TODO: description
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Always the name of the corresponding Factorio item to this blueprintable
+    instance. Read only.
+    """
 
     # =========================================================================
 
@@ -153,16 +88,13 @@ class Blueprint(Transformable, Collection, Blueprintable):
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Sets the size of the snapping grid to use. The presence of this entry
     determines whether or not the Blueprint will have a snapping grid or
     not.
-
-    The value can be set either as a ``dict`` with ``"x"`` and ``"y"`` keys,
-    or as a sequence of ints.
-
-    :getter: Gets the size of the snapping grid, or ``None`` if not set.
-    :setter: Sets the size of the snapping grid. Removes the attribute if
-        set to ``None``
     """
 
     # =========================================================================
@@ -183,11 +115,6 @@ class Blueprint(Transformable, Collection, Blueprintable):
     .. NOTE::
 
         This attribute does not offset each entities position until export!
-
-    :getter: Gets the offset amount of the snapping grid, or ``None`` if not
-        set.
-    :setter: Sets the offset amount of the snapping grid. Removes the
-        attribute if set to ``None``.
     """
 
     # =========================================================================
@@ -197,12 +124,13 @@ class Blueprint(Transformable, Collection, Blueprintable):
         validator=instance_of(bool),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not the blueprint uses absolute positioning or relative
     positioning for the snapping grid. On import, a value of ``None`` is
     interpreted as a default ``True``.
-
-    :exception TypeError: If set to anything other than a ``bool`` or
-        ``None``.
     """
 
     # =========================================================================
@@ -213,12 +141,12 @@ class Blueprint(Transformable, Collection, Blueprintable):
         validator=instance_of(Vector),
     )
     """
-    The absolute position of the snapping grid in the world. Only used if
-    ``absolute_snapping`` is set to ``True``.
+    .. serialized::
 
-    :getter: Gets the absolute grid-position offset.
-    :setter: Sets the absolute grid-position offset. Is given a value of
-        ``(0, 0)`` if set to ``None``
+        This attribute is imported/exported from blueprint strings.
+
+    The absolute position of the snapping grid in the world. Only used if
+    :py:attr:`.absolute_snapping` is set to ``True``.
     """
 
     # =========================================================================

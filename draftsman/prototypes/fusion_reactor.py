@@ -11,6 +11,8 @@ import attrs
 @attrs.define
 class FusionReactor(EnergySourceMixin, DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     A reactor which produces hot plasma.
     """
 

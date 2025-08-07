@@ -75,18 +75,16 @@ class Tile(SpatialLike, Exportable):
 
         return self.position
 
-    position: Vector = attrs.field(
+    position: Vector = attrs.field(  # TODO: maybe tile_position?
         factory=lambda: Vector(0, 0),
         converter=Vector.from_other,
         on_setattr=_set_position,
         metadata={"omit": False},
     )
     """
-    The position of the tile, in tile-grid coordinates.
+    
 
-    ``position`` can be specified as a ``dict`` with ``"x"`` and
-    ``"y"`` keys, or more succinctly as a sequence of floats, usually a
-    ``list`` or ``tuple``.
+    The position of the tile, in integer tile-grid coordinates.
     """
 
     # =========================================================================

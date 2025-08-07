@@ -1,6 +1,5 @@
 # spatial_hashmap.py
 
-# from draftsman.classes.collection import EntityCollection
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector

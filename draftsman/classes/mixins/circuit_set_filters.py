@@ -10,13 +10,15 @@ import attrs
 @attrs.define(slots=False)
 class CircuitSetFiltersMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
-    Allows the entity to specify its filters from the circuit network.
+    Allows the entity to specify its filters from a connected circuit network.
     """
 
     circuit_set_filters: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this entity should set it's filters via signals given to it
     from connected circuit networks.
     """

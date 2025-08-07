@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Comparator, Condition, SignalID, int32
+from draftsman import signatures
 from draftsman.validators import instance_of
 
 import attrs
@@ -10,10 +10,8 @@ from typing import Union
 
 
 @attrs.define(slots=False)
-class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
+class LogisticConditionMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Allows the Entity to have an logistic enable condition, such as when the
     amount of some item in the logistic network exceeds some constant.
     """
@@ -22,15 +20,29 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
         default=False,
         validator=instance_of(bool),
     )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not this entity should connect to the logistic network it resides
+    in.
+    """
 
     # =========================================================================
 
-    logistic_condition: Condition = attrs.field(
-        factory=lambda: Condition(first_signal=None, comparator="<", constant=0),
-        converter=Condition.converter,
-        validator=instance_of(Condition),
+    logistic_condition: signatures.Condition = attrs.field(
+        factory=lambda: signatures.Condition(
+            first_signal=None, comparator="<", constant=0
+        ),
+        converter=signatures.Condition.converter,
+        validator=instance_of(signatures.Condition),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The logistic condition that must be passed in order for this entity to 
     function, if configured to do so.
     """
@@ -39,16 +51,16 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
 
     def set_logistic_condition(
         self,
-        first_operand: Union[SignalID, None] = None,
-        comparator: Comparator = "<",
-        second_operand: Union[SignalID, int32] = 0,
+        first_operand: Union[signatures.SignalID, None] = None,
+        comparator: signatures.Comparator = "<",
+        second_operand: Union[signatures.SignalID, signatures.int32] = 0,
     ):
         """
         Sets the logistic condition of the Entity.
 
-        ``cmp`` can be specified as stored as the single unicode character which
-        is used by Factorio, or you can use the Python formatted 2-character
-        equivalents::
+        ``comparator`` can be specified as stored as the single unicode
+        character which is used by Factorio, or you can use the Python formatted
+        2-character equivalents::
 
             # One of:
             [">", "<", "=",  "≥",  "≤",  "≠"]
@@ -63,9 +75,9 @@ class LogisticConditionMixin(Exportable):  # (ControlBehaviorMixin)
         :param second_operand: The string name of the second signal, or some
             32-bit constant.
 
-        :exception DataFormatError: If ``a`` is not a valid signal name, if
-            ``comparator`` is not a valid operation, or if ``b`` is neither a
-            valid signal name nor a constant.
+        :exception DataFormatError: If ``first_operand`` is not a valid signal
+            name, if ``comparator`` is not a valid operation, or if
+            ``second_operand`` is neither a valid signal name nor a constant.
         """
         self._set_condition(
             "logistic_condition", first_operand, comparator, second_operand

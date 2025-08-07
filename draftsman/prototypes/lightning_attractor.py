@@ -11,6 +11,8 @@ import attrs
 @attrs.define
 class LightningAttractor(EnergySourceMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity that protects an area from lightning strike damage and converts
     their energy for a power grid.
     """

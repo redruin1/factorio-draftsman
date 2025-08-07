@@ -53,9 +53,9 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     @property
     def parent(self) -> Optional["Collection"]:
         """
-        The parent :py:class:`.EntityCollection` object that contains the entity,
+        The parent :py:class:`.Collection` object that contains the entity,
         or ``None`` if the entity does not currently exist within an
-        :py:class:`.EntityCollection`. Not exported; read only.
+        :py:class:`.Collection`.
         """
         return self._parent
 
@@ -64,8 +64,19 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     @property
     def power_connectable(self) -> bool:
         """
-        Whether or not this EntityLike can be connected using power wires. Not
-        exported; read only.
+        Whether or not this EntityLike can be connected using power wires.
+
+        :example:
+
+        .. doctest::
+
+            >>> from draftsman.entity import *
+            >>> Beacon().power_connectable
+            False
+            >>> ElectricPole().power_connectable
+            True
+            >>> PowerSwitch().power_connectable
+            True
         """
         return False
 
@@ -74,8 +85,19 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     @property
     def dual_power_connectable(self) -> bool:
         """
-        Whether or not this EntityLike has two power connection points. Not
-        exported; read only.
+        Whether or not this EntityLike has two power connection points.
+
+        :example:
+
+        .. doctest::
+
+            >>> from draftsman.entity import *
+            >>> Beacon().dual_power_connectable
+            False
+            >>> ElectricPole().dual_power_connectable
+            False
+            >>> PowerSwitch().dual_power_connectable
+            True
         """
         return False
 
@@ -84,8 +106,19 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     @property
     def circuit_connectable(self) -> bool:
         """
-        Whether or not this EntityLike can be connected using circuit wires. Not
-        exported; read only.
+        Whether or not this EntityLike can be connected using circuit wires.
+
+        :example:
+
+        .. doctest::
+
+            >>> from draftsman.entity import *
+            >>> Beacon().circuit_connectable
+            False
+            >>> Inserter().circuit_connectable
+            True
+            >>> DeciderCombinator().circuit_connectable
+            True
         """
         return False
 
@@ -94,8 +127,19 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     @property
     def dual_circuit_connectable(self) -> bool:
         """
-        Whether or not this EntityLike has two circuit connection points. Not
-        exported; read only.
+        Whether or not this EntityLike has two circuit connection points.
+
+        :example:
+
+        .. doctest::
+
+            >>> from draftsman.entity import *
+            >>> Beacon().dual_circuit_connectable
+            False
+            >>> Inserter().dual_circuit_connectable
+            False
+            >>> DeciderCombinator().dual_circuit_connectable
+            True
         """
         return False
 
@@ -105,7 +149,7 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     def double_grid_aligned(self) -> bool:
         """
         Whether or not this EntityLike is "double-grid-aligned", which applies
-        to a number of rail entities. Not exported; read only.
+        to entities which need to align with the rail grid.
         """
         return False
 
@@ -114,11 +158,13 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     @property
     def rotatable(self) -> bool:
         """
-        Whether or not this EntityLike can be rotated. Note that this does not
-        mean that the entity will prevent a blueprint from rotating; more, that
-        this EntityLike does not have a concept of different rotation angles.
-        For example, any :py:class:`.Reactor` entity will always return
-        ``rotatable`` as ``False`` when queried. Not exported; read only.
+        Whether or not this :py:class:`.EntityLike` has the capability of
+        being rotated. This does not mean that blueprints containing these
+        entities cannot be rotated; rather, it just means they will only ever
+        have one orientation.
+
+        For example, it's impossible for a Factorio :py:class:`.Reactor` to be
+        oriented, so :py:attr:`.Reactor.rotatable` always returns ``False``.
         """
         return False
 
@@ -128,7 +174,7 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     def flags(self) -> set[str]:
         """
         The set of flags associated with this EntityLike. Returns ``None`` if
-        the entitylike is not recognized by Draftsman. Not exported; read only.
+        the entitylike is not recognized by Draftsman.
         """
         return set()
 
@@ -195,15 +241,15 @@ class EntityLike(SpatialLike, metaclass=ABCMeta):
     def get(self) -> Union["Entity", list["Entity"]]:
         """
         Gets this :py:class:`.Entity`. Redundant for regular instances of
-        :py:class:`.Entity`, but is needed for :py:class:`.EntityCollections`
+        :py:class:`.Entity`, but is needed for :py:class:`.Collections`
         like :py:class:`.Group`.
 
-        This function represents the resolution from some abstract EntityLike
-        object (which can have no relation to Factorio whatsoever) to one or
-        more valid Factorio-importable Entity instances.
+        This function resolves some abstract :py:class:`.EntityLike`
+        object (which can have no direct relation to Factorio whatsoever) to one
+        or more valid Factorio-importable :py:class:`.Entity` instances.
 
-        :returns: This :py:class:`.EntityLike` minimum :py:class:`.Entity`
-            representation.
+        :returns: One or more :py:class:`.Entity` instances that represents this
+            entire :py:class:`.EntityLike`.
         """
         return self
 

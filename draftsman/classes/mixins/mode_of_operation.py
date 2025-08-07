@@ -10,11 +10,9 @@ import attrs
 
 
 @attrs.define(slots=False)
-class InserterModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
+class InserterModeOfOperationMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
-    Gives the Inserter a mode of operation constant.
+    Gives the :py:class:`.Inserter` a ``mode_of_operation`` attribute.
     """
 
     mode_of_operation: InserterModeOfOperation = attrs.field(
@@ -23,17 +21,23 @@ class InserterModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
         validator=instance_of(InserterModeOfOperation),
     )
     """
+    .. deprecated:: 3.0.0 (Factorio 2.0)
+
+        In Factorio 2.0, an inserter can have any combination of these modes
+        defined simultaneously, via attributes like 
+        :py:attr:`~.Inserter.circuit_enabled`, 
+        :py:attr:`~.Inserter.circuit_set_filters`,
+        :py:attr:`~.Inserter.circuit_set_stack_size`, etc.
+        
+        This attribute is only respected when exporting for the old Factorio 1.0
+        format.
+
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The behavior that the inserter should follow when connected to a circuit
-    network.
-
-    .. NOTE::
-
-        This is only used in Factorio 1.0. In Factorio 2.0, an inserter can have 
-        multiple of these behaviors defined simultaneously, each controlled with
-        an individual toggle attribute.
-
-    :exception DataFormatError: If set to a value that cannot be interpreted as 
-        a valid ``InserterModeOfOperation``.
+    network, defined as one of several integer "modes".
     """
 
 
@@ -47,18 +51,11 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     },
 )
 
-# draftsman_converters.get_version((2, 0)).add_hook_fns(
-#     InserterModeOfOperationMixin,
-#     lambda fields: {},
-# )
-
 
 @attrs.define(slots=False)
-class LogisticModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
+class LogisticModeOfOperationMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
-    Gives the Logistics container a mode of operation constant.
+    Gives the logistics container a ``mode_of_operation`` attribute.
     """
 
     mode_of_operation: LogisticModeOfOperation = attrs.field(
@@ -67,11 +64,12 @@ class LogisticModeOfOperationMixin(Exportable):  # (ControlBehaviorMixin)
         validator=instance_of(LogisticModeOfOperation),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The behavior that the logistic container should follow when connected to
     a circuit network.
-
-    :exception DataFormatError: If set to a value that cannot be interpreted as 
-        a valid ``LogisticModeOfOperation``.
     """
 
 

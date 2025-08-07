@@ -171,4 +171,4 @@ For convenience, you can populate a Group from a compressed blueprint string dir
     assert len(imported_group.entities) == 1
     assert len(imported_group.tiles) == 15
 
-Groups import ``entities``, ``tiles``, ``schedules``, ``wires``, and ``stock_connections`` from the blueprint string (using the ``version`` to determine the imported data format, if present) and all other information is stripped.
+Groups import :py:attr:`~.Group.entities`, :py:attr:`~.Group.tiles`, :py:attr:`~.Group.schedules`, :py:attr:`~.Group.wires`, and :py:attr:`~.Group.stock_connections` from the blueprint string (using the ``version`` to determine the imported data format, if present) and all other information is stripped.

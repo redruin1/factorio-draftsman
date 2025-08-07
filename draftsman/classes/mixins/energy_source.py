@@ -19,13 +19,12 @@ class EnergySourceMixin:
     @property
     def energy_source(self) -> Optional[dict]:
         """
-        The energy source specification for this entity. See
-        https://lua-api.factorio.com/latest/types/BaseEnergySource.html
+        The energy source specification for this entity. Returns ``None`` if
+        this entity is not recognized by the current environment.
 
+        .. seealso::
 
-        :returns: A dictionary containing the parameters of this energy source,
-            or ``None`` if this entity is not recognized by the current
-            Draftsman environment.
+            https://lua-api.factorio.com/latest/types/BaseEnergySource.html.
         """
         return self.prototype.get("energy_source", None)
 
@@ -34,11 +33,11 @@ class EnergySourceMixin:
     # =========================================================================
 
     @property
-    def fuel_input_size(self) -> Optional[uint16]:
+    def fuel_input_size(self) -> uint16 | None:
         """
         Gets the total number of fuel input slots that this entity can hold.
         Returns ``None`` if the name of this entity is not recognized by
-        Draftsman. Not exported; read only.
+        Draftsman.
         """
         if self.energy_source is not None:
             return self.energy_source.get("fuel_inventory_size", 0)
@@ -48,12 +47,11 @@ class EnergySourceMixin:
     # =========================================================================
 
     @property
-    def fuel_output_size(self) -> Optional[uint16]:
+    def fuel_output_size(self) -> uint16 | None:
         """
         Gets the total number of fuel output slots that this entity has. Returns
         ``None`` if the entity does not have a BurnerEnergySource, or if the
-        entity itself is not recognized in the current environment. Not exported;
-        read only.
+        entity itself is not recognized in the current environment.
         """
         if self.energy_source is not None:
             return self.energy_source.get("burnt_inventory_size", 0)
@@ -69,7 +67,7 @@ class EnergySourceMixin:
         source to power this entity. If this entity does not burn items to
         power itself (and instead uses electricity, fluid, void, etc.) then this
         property returns an empty set. Returns ``None`` if this entity is not
-        recognized by Draftsman. Not exported; read only.
+        recognized by Draftsman.
         """
         if self.name not in entities.raw:
             return None
@@ -80,7 +78,7 @@ class EnergySourceMixin:
         # single "category"
         if "fuel_categories" in self.energy_source:
             fuel_categories = self.energy_source["fuel_categories"]
-        else:  # pragma: no coverage
+        else:
             # Factorio 1.0 only
             fuel_categories = [self.energy_source.get("fuel_category", "chemical")]
 

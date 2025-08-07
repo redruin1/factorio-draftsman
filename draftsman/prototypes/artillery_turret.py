@@ -30,7 +30,7 @@ class ArtilleryTurret(
     Entity,
 ):
     """
-    A turret which can only target fixed enemy structures and uses artillery
+    A turret which can only target enemy structures and uses artillery
     ammunition.
     """
 

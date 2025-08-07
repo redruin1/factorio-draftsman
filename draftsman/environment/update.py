@@ -9,7 +9,6 @@ from draftsman import DEFAULT_FACTORIO_VERSION, __file__ as draftsman_root_file
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.data.entities import add_entity
 from draftsman.environment.mod_list import (
-    Dependency,
     Mod,
     file_to_string,
     archive_to_string,
@@ -250,9 +249,9 @@ def python_require(
         filepath = filepath.replace("\\", "/")
         # Make it local to the archive, replacing the global path to the local
         # internal path
-        filepath = filepath.replace(mod.location, mod.internal_folder)
+        filepath = filepath.replace(mod.location, mod.archive_folder)
         try:
-            string_contents = archive_to_string(mod.files, filepath)
+            string_contents = archive_to_string(mod.archive, filepath)
             fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
             return string_contents, fixed_filepath
         except KeyError:
@@ -425,14 +424,9 @@ def run_data_lifecycle(
     mods = {name: mod_list[0] for name, mod_list in mods.items() if mod_list[0].enabled}
 
     for mod_name, mod in mods.items():
-        # Core has no dependecies, so determining it's tree is redundant
-        if mod_name == "core":
+        # core/base have no dependecies, so determining their trees is redundant
+        if mod_name == "core" or mod_name == "base":
             continue
-        # Base depends on core, though the game does not tell us this
-        elif mod_name == "base":
-            mod.dependencies = [
-                Dependency(flag=None, name="core", operation=None, version=None)
-            ]
 
         if verbose:
             print(mod_name)
@@ -491,14 +485,22 @@ def run_data_lifecycle(
                 # want it to modify the load order, so we skip that part
                 continue
 
-            # Replace the Dependency object with a reference to the actual
-            # loaded and selected Mod
-            mod.dependencies[i] = mods[dependency.name]
+            # If we're here, the mod should be considered part of the load order
+            # Hence we update it's `reference` so it's counted when running
+            # `get_depth()` later.
+            dependency.reference = mods[dependency.name]
 
     # Get load order (Sort the mods by the least to most deep dependency tree
     # first and their name second)
-    load_order: list[Mod] = [
-        mod for mod in sorted(mods.values(), key=lambda x: (x.get_depth(), x.name))
+    load_order: list[Mod] = [mods["core"]] + [  # core is special
+        mod
+        for mod in sorted(
+            (mod for mod in mods.values() if mod.name != "core"),
+            key=lambda x: (
+                x.get_depth(),
+                x.name.lower(),  # Factorio doesn't distinguish between upper/lowercase
+            ),
+        )
     ]
 
     if verbose:

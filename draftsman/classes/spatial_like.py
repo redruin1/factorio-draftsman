@@ -55,10 +55,8 @@ class SpatialLike(metaclass=ABCMeta):
     def get_world_bounding_box(self) -> Optional[AABB]:
         """
         Gets the world-space coordinates AABB that completely encompasses the
-        :py:attr:`.collision_set` of this SpatialLike. Behaves similarly to the
-        old function ``get_area()``, except now it correctly handles non-AABB
-        collision shapes. Returns ``None`` if the collision set of the target
-        object is unknown.
+        :py:attr:`.collision_set` of this :py:class:`.SpatialLike`. Returns
+        ``None`` if the collision set of the target object is unknown.
         """
         # `collision_set` may be None in the case where we're working with an
         # unknown entity

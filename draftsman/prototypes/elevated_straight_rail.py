@@ -34,6 +34,8 @@ for rail_name in elevated_straight_rails:
 @attrs.define
 class ElevatedStraightRail(DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     Straight rail entities that lie on a layer above regular entities.
     """
 

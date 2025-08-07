@@ -1,7 +1,5 @@
 .. py:currentmodule:: draftsman.environment.script
 
-.. draftsman_command_line_tool
-
 :py:mod:`~draftsman.environment.script`
 =======================================
 
@@ -40,7 +38,7 @@ Enter ``draftsman -h`` to get a list of all commands that the tool supports, wit
     -v, --verbose         Report additional information to stdout when available.
 
 All commands have the ``GAME_PATH`` and ``MODS_PATH`` arguments (which allow you to specify where Draftsman should look for it's data) and the ``verbose`` argument for printing additional useful information.
-Each command also has it's own ``-h``, which allows you to inspect each one in more detail.
+Each command also has it's own help command (``-h``), which allows you to inspect each one in more detail.
 
 ``draftsman list``
 ------------------
@@ -50,18 +48,18 @@ Lists all detected mods at the specified game and mod paths, sorted alphabetical
 .. code-block:: text
 
     > draftsman list   
-     ✓ (dir) base               2.0.61
-     ✓ (dir) core                    -
-     ✓ (dir) elevated-rails     2.0.61
-     ✓ (dir) quality            2.0.61
-     ✓ (dir) space-age          2.0.61
+    ✓ (dir) base               2.0.61
+    ✓ (dir) core                    -
+    ✓ (dir) elevated-rails     2.0.61
+    ✓ (dir) quality            2.0.61
+    ✓ (dir) space-age          2.0.61
 
 From left to right:
 
 * A check mark indicates that the mod is *enabled*, wheras an empty space would indicate that it's *disabled*. 
 * If the data is located in a directory it will print the string ``(dir)``; if the file is compressed inside of an archive (typical for mods) it will print ``(zip)``.
-* Following this is the internal name of the "mod", although in this case "mod" also includes the game's data itself; hence why the "mods" ``base`` and ``core`` are in this list. This is simply a peculiarity of how the game abstracts it's internal data.
-* Finally, the mod version is also printed. Only the ``core`` mod is special and exempt from this requirement, instead printing a dash to indicate no value.
+* Following this is the internal name of the "mod" - although in this case the term "mod" also refers tp the game's data itself; hence why the "mods" ``base`` and ``core`` are in this list. This is simply a peculiarity of how Factorio abstracts it's internal data.
+* Finally, the mod version is also printed. Only the ``core`` mod is special and exempt from this requirement, instead printing a dash to indicate it has no value.
 
 Sometimes, you can have multiples of the same mod with different versions. In this case, each mod version is displayed, with a horizontally-spanning arrow to indicate that it is a duplicate of the name above:
 
@@ -71,9 +69,9 @@ Sometimes, you can have multiples of the same mod with different versions. In th
        (zip) ├──────────────>                                     1.2.3
        (zip) └──────────────>                                     1.2.2
 
-Here, there are three different versions of ``Krastorio2Assets``.
-Take note both that the sublist is sorted in descending version, and the only mod in this list indicated as active is the latest version.
-This is to indicate that the mod specified as enabled will be the one which Draftsman (and indeed Factorio) will pick when running the data lifecycle.
+Here, there are three different versions of ``Krastorio2Assets``, all of which are compressed zip archives.
+Take note both that the sublist is sorted by descending version, and that the only mod in this list indicated as enabled is the latest version.
+This is to indicate that the topmost mod listed will be the one Draftsman (and indeed Factorio) will pick when running the data lifecycle.
 If there are two copies of the exact same mod with the exact same version, but one is a folder and the other is an archive, the folder will be preferred.
 
 Using the verbose ``-v`` option will also display exactly where the mods are located on disk, alongside a more explicit table view:
@@ -82,14 +80,14 @@ Using the verbose ``-v`` option will also display exactly where the mods are loc
 
     > draftsman -v list
     on? ┃ type  ┃ name           ┃ version ┃ location
-    ━━━━╋━━━━━━━╋━━━━━━━━━━━━━━━━╋━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    ----╋-------╋----------------╋---------╋-------------------------------------------------------------------------------------
      ✓  ┃ (dir) ┃ base           ┃  2.0.61 ┃ D:/SourceCode/repos/Python/factorio-draftsman/draftsman/factorio-data/base
      ✓  ┃ (dir) ┃ core           ┃       - ┃ D:/SourceCode/repos/Python/factorio-draftsman/draftsman/factorio-data/core
      ✓  ┃ (dir) ┃ elevated-rails ┃  2.0.61 ┃ D:/SourceCode/repos/Python/factorio-draftsman/draftsman/factorio-data/elevated-rails
      ✓  ┃ (dir) ┃ quality        ┃  2.0.61 ┃ D:/SourceCode/repos/Python/factorio-draftsman/draftsman/factorio-data/quality
      ✓  ┃ (dir) ┃ space-age      ┃  2.0.61 ┃ D:/SourceCode/repos/Python/factorio-draftsman/draftsman/factorio-data/space-age
 
-Here you can see that the script is pulling data from the local ``factorio-data`` installation (the default location).
+Here you can see that the script is pulling data from a local ``factorio-data`` installation (the default location).
 
 ``draftsman mod-settings``
 --------------------------
@@ -131,7 +129,7 @@ Decodes the ``mod-settings.dat`` file and allows you to view it's key-value pair
             bobmods-inserters-gui-position: 'right'
             bobmods-inserters-show-window: 'off'
 
-If no file is found, the script early-exits, specifiying where it couldn't find the desired file:
+If no file is found, the script early-exits, specifying where it couldn't find the desired file:
 
 .. code-block:: text
 
@@ -140,7 +138,7 @@ If no file is found, the script early-exits, specifiying where it couldn't find 
 
 Currently, there are no faculties to modify these values externally via this script, although adding this functionality would be trivial; see :py:meth:`~draftsman.environment.mod_settings.write_mod_settings`.
 
-``draftsman enable/disable``
+``draftsman enable|disable``
 ----------------------------
 
 Enables or disables a mod or mods. For example, if you wanted to disable the Factorio 2.0 DLC mods, simply specify the name of each one separated by spaces:
@@ -227,7 +225,7 @@ Reads or writes the version of the Draftsman-installed Factorio version.
 .. NOTE::
 
     The version that this command outputs is the git tag of the ``factorio-data`` repository.
-    The value that is internally stored and extracted is usually *one version ahead of this tag*:
+    The value that is internally stored and extracted is usually *one minor version ahead of this tag*:
 
     .. code-block:: python
 

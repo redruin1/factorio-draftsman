@@ -103,6 +103,10 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         validator=instance_of(list[EquipmentComponent]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The equipment specification of this particular entity, defining what 
     equipment is requested and where it should live in the 
     :py:attr:`.equipment_grid`.
@@ -112,7 +116,7 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         This construct specifies *where* items should live, but on it's own it 
         does nothing; you also need to *request* the items with 
         :py:attr:`.item_requests` in order for robots to actually try to fulfill
-        the grid's contents. Alternativly, you can use the helper methods
+        the grid's contents. Alternatively, you can use the helper methods
         :py:meth:`.add_equipment()` and :py:meth:`.remove_equipment()` which
         will take care of this book-keeping for you.
     """
@@ -165,11 +169,12 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         self, name: str, position: Vector = (0, 0), quality: QualityID = "normal"
     ) -> None:
         """
-        Adds a piece of equipment with ``equipment_name`` at ``position``, where
-        position is an integer coordinate corresponding to the top-left tile of
-        the placed equipment.
+        Adds a piece of equipment with ``name`` at ``position``, where position
+        is an integer coordinate corresponding to the top-left tile of the
+        placed equipment. Also update's this entity's :py:attr:`.item_requests`
+        to actually deliver the equipment items on construction.
 
-        :param equipment_name: The name of the equipment to place in the grid.
+        :param name: The name of the equipment to place in the grid.
         :param position: The integer position with which to place this
             particular piece of equipment. Usually specified as a tuple.
         :param quality: The quality of the equipment to add.
@@ -212,7 +217,10 @@ class EquipmentGridMixin(Exportable):  # (ItemRequestMixin)
         quality: Optional[QualityID] = None,
     ) -> None:
         """
-        Removes all equipment matching the passed in arguments.
+        Removes all equipment matching the passed in arguments. Providing just
+        a name will remove all equipment with that name, regardless of position
+        or quality - providing just a position will only remove the item that
+        exists at that position, and so forth.
 
         Every time equipment is removed, any item requests associated with it
         are also updated properly. If the item request has no items requested

@@ -6,9 +6,10 @@
 
 Tools and methods for manipulating the set of data that Draftsman extracts from Factorio's Lua data.
 
-For information on how to use the ``draftsman`` command-line utility, see :ref:`here <draftsman_command_line_tool>`.
+For information on how to use the ``draftsman`` command-line utility, see :doc:`here <./script>`.
 
 .. toctree::
+    :maxdepth: 1
 
     script.rst
     mod_list.rst

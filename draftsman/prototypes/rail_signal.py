@@ -65,6 +65,10 @@ class RailSignal(
         validator=instance_of(bool),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not a connected circuit network should control the state of this
     rail signal.
     """
@@ -76,6 +80,10 @@ class RailSignal(
         validator=instance_of(bool),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to read the state of the rail signal as their output
     signals.
     """

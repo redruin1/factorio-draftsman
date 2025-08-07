@@ -31,16 +31,14 @@ class HeatInterface(Entity):
         validator=instance_of(float),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The temperature of the interface in degrees.
 
     Raises :py:class:`.TemperatureRangeWarning` if set to a value not in the
     range ``[0, 1000]``.
-
-    :getter: Gets the temperature of the interface.
-    :setter: Sets the temperature of the interface
-
-    :exception TypeError: If set to anything other than an ``int`` or
-        ``None``.
     """
 
     @temperature.validator
@@ -63,6 +61,10 @@ class HeatInterface(Entity):
         validator=one_of("at-least", "at-most", "exactly", "add", "remove"),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Manner in which to interact with the heat network. Can be one of:
 
     .. code-block:: python
@@ -73,9 +75,6 @@ class HeatInterface(Entity):
         "add"       # Add this temperature amount each tick
         "remove"    # Remove this temperature amount each tick
         None        # No mode set
-
-    :exception DataFormatError: If set to anything other than one of the
-        valid strings above or ``None``.
     """
 
     # =========================================================================

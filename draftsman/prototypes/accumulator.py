@@ -37,6 +37,10 @@ class Accumulator(
         validator=instance_of(Optional[SignalID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The signal used to output this accumulator's charge level, if connected to
     a circuit network.
 

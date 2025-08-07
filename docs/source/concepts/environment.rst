@@ -75,7 +75,7 @@ If a script makes a reference to ``"some-modded-entity"``, being able to determi
 In extreme cases that depend heavily on this mod-specific metadata, scripts may not possess enough information to run properly under a pure vanilla configuration.
 You can mitigate this somewhat by using the :py:data:`draftsman.data.mods` module to query the fingerprint of the current environment:
 
-.. doctest::
+.. code-block:: python
 
     from draftsman.data import mods
 
@@ -133,8 +133,8 @@ For more information on how to use the ``draftsman`` console utility, see :doc:`
 From Python Script
 ~~~~~~~~~~~~~~~~~~
 
-Sometimes it might be more convenient to update the environment directly from python script, however.
-For the same functionality that the update script uses, you can use the methods located in :py:mod:`draftsman.environment`:
+Sometimes it might be more convenient to update the environment directly from Python script, however.
+For the same functionality that the console script has, you can use the methods located in :py:mod:`draftsman.environment`:
 
 .. code-block:: python
 
@@ -143,9 +143,9 @@ For the same functionality that the update script uses, you can use the methods 
     # Exactly equivalent to calling `draftsman update`
     update_draftsman_data()
 
-Neighbouring files in ``environment`` also provide mechanisms for changing Factorio version, decoding ``mod-settings.dat`` files, enabling/disabling mods, and more.
+Neighbouring files in the ``environment`` module also provide mechanisms for changing Factorio version, decoding ``mod-settings.dat`` files, enabling/disabling mods, and more.
 
-If there is some information that you need that Draftsman does not export for it's own purposes, Draftsman provides a convenience function you can call to return a complete loaded Lua instance you can manipulate:
+If there is some information that you need that Draftsman does not export for it's own purposes, Draftsman also provides a convenience function you can call to return a complete loaded Lua instance you can extract data from yourself:
 
 .. code-block:: python
 
@@ -156,26 +156,26 @@ If there is some information that you need that Draftsman does not export for it
         mods_path=..., # Mod folder path
     )
 
-    game_data = lua_instance.globals().data.raw
+    data_raw = lua_instance.globals().data.raw
     
     # Extract yo shizz
-    shizz = game_data[...]
+    shizz = data_raw[...]
 
 
 Updating the Environment with Mods
 ----------------------------------
 
 Because we're emulating the game's loading process directly, including mods in Draftsman is exactly as easy as it is installing mods in Factorio. 
-Doing so allows us to get the same level of validation that we get on vanilla entities as with modded ones; we can tell if a AAI warehouse's inventory bar exceeds it's inventory size, or if the wire connection distance between a Space Exploration pylon is too great for Factorio to connect, or that the entity ``"ltn-train-sotp"`` does not exist (and should be ``"ltn-train-stop"`` instead).
+Doing so allows us to get the same level of validation that we get on vanilla entities as with modded ones; we can tell if a AAI warehouse's inventory bar exceeds it's inventory size, or if the wire connection distance between a Space-Exploration pylon is too great for Factorio to connect, or that the entity ``"ltn-train-sotp"`` does not exist (and should be ``"ltn-train-stop"`` instead).
 
 Including mods is usually a drag-and-drop operation, provided you have the mods already downloaded. 
-Simply move the mods you want to install to the ``site-packages/draftsman/factorio-mods/`` folder, or point to a different ``mods_path`` using either the console utility or python script as illustrated above.
+Simply move the mods you want to install to the ``site-packages/draftsman/factorio-mods/`` folder, or point to a different ``mods_path`` using either the console utility or Python script as illustrated above.
 
 Draftsman's loading process was designed to perfectly match Factorio's.
 However, this implementation is most likely not perfect, and ensuring correct behavior across all mods configurations possible is difficult to anticipate.
-If you use Draftsman and come across an error that does not happen when loading the same mods with the same configuration in Factorio itself, please leave a issue `here <https://github.com/redruin1/factorio-draftsman/issues>`_ so I can track and resolve it.
+If you use Draftsman and come across an error that does not happen when loading the same mods with the same configuration in Factorio itself, please leave a issue `here <https://github.com/redruin1/factorio-draftsman/issues>`_ so it can be tracked and resolved.
 
 How dependent is Draftsman on it's environment?
 -----------------------------------------------
 
-The environment is not strictly necessary for Draftsman functionality; you can delete all pickle files in the data folder and the module will still run, though all of the features and benefits mentioned above will be absent. Any imported string will default to :py:class:`.Entity` instances, because there is no context to determine whether ``"some-entity"`` should be a :py:class:`.Container`, an :py:class:`.Inserter`, an :py:class:`.AgriculturalTower`, etc. However, if you're fine with these concessions, then there is nothing in Draftsman that isn't capable of coping with the lack of this contextual information, and if there is, it should be considered a bug and filed `here <https://github.com/redruin1/factorio-draftsman/issues>`_
+The environment is not strictly necessary for Draftsman functionality; you can delete all pickle files in the data folder and the module will still run, though all of the features and benefits mentioned above will be absent. Any imported blueprint string will default to making each given entity generic :py:class:`.Entity` instances, because there is no context to determine whether ``"some-entity"`` should be a :py:class:`.Container`, an :py:class:`.Inserter`, an :py:class:`.AgriculturalTower`, etc. However, if you're fine with these concessions, then there is nothing in Draftsman that isn't capable of coping with the lack of this contextual information, and if there is, it should be considered a bug and filed `here <https://github.com/redruin1/factorio-draftsman/issues>`_

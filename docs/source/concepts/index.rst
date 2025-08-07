@@ -2,12 +2,13 @@ Draftsman Concepts
 ==================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
     
     entities.rst
     blueprints.rst
+    associations.rst
     validation.rst
     versioning.rst
     environment.rst
-
     groups.rst
+    extras.rst

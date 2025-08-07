@@ -21,15 +21,12 @@ class CircuitReadHandMixin(Exportable):
 
     read_hand_contents: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this Entity is set to read the contents of it's hand to a
     circuit network.
-
-    :getter: Gets the value of ``read_hand_contents``, or ``None`` if not
-        set.
-    :setter: Sets the value of ``read_hand_contents``.
-
-    :exception TypeError: If set to anything other than a ``bool`` or
-        ``None``.
     """
 
     # =========================================================================
@@ -40,14 +37,12 @@ class CircuitReadHandMixin(Exportable):
         validator=instance_of(InserterReadMode),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The mode in which the contents of the Entity should be read. Either
     ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
-
-    :getter: Gets the value of ``read_mode``, or ``None`` if not set.
-    :setter: Sets the value of ``read_mode``.
-
-    :exception ValueError: If set to anything other than a ``ReadMode``
-        value or their ``int`` equivalent.
     """
 
 

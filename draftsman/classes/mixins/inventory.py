@@ -36,8 +36,7 @@ class InventoryMixin(Exportable):
     def inventory_bar_enabled(self) -> Optional[bool]:
         """
         Whether or not this Entity has its inventory limiting bar enabled.
-        Returns ``None`` if this entity is not recognized by Draftsman. Not
-        exported; read only.
+        Returns ``None`` if this entity is not recognized by Draftsman.
         """
         if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
             # "enable_inventory_bar"
@@ -54,8 +53,8 @@ class InventoryMixin(Exportable):
     @property
     def quality_affects_inventory_size(self) -> Optional[bool]:
         """
-        Whether or not the quality of this entity modifies its inventory size.
-        Not exported; read only.
+        Whether or not the :py:attr:`.quality` of this entity modifies its
+        inventory size.
         """
         return entities.raw.get(
             self.name, {"quality_affects_inventory_size": None}
@@ -89,7 +88,7 @@ class InventoryMixin(Exportable):
         """
         The number of inventory slots filled by the item requests for this
         entity. Useful for quickly determining the capacity of the chest after
-        the item requests have been delivered. Not exported; read only.
+        the item requests have been delivered.
         """
         return calculate_occupied_slots(self.item_requests, InventoryType.chest)
 
@@ -105,16 +104,15 @@ class InventoryMixin(Exportable):
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     The limiting bar of the inventory. Used to prevent the final-most
     slots in the inventory from accepting new items.
 
     Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
     exceeds the Entity's ``inventory_size`` attribute.
-
-    :exception DataFormatError: If set to anything other than an ``int`` or
-        ``None``.
-    :exception DataFormatError: If the set value lies outside of the range
-        ``[0, 65536)``.
     """
 
     @bar.validator

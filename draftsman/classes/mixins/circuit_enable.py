@@ -10,25 +10,20 @@ import attrs
 @attrs.define(slots=False)
 class CircuitEnableMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Allows the entity to control whether or not it's circuit condition affects
     its operation.
     """
 
     circuit_enabled: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not the machine enables its operation based on a circuit
-    condition. Only used on entities that have multiple operation states,
-    including (but not limited to) a inserters, belts, train-stops,
-    power-switches, etc.
-
-    :getter: Gets the value of ``circuit_enable``, or ``None`` if not set.
-    :setter: Sets the value of ``circuit_enable``. Removes the attribute if
-        set to ``None``.
-
-    :exception TypeError: If set to anything other than a ``bool`` or
-        ``None``.
+    condition. Certain entities lack this attribute despite still having a 
+    :py:attr:`~.CircuitConditionMixin.circuit_condition`; in those cases, being 
+    circuit enabled is implied by being connected to a circuit network at all.
     """
 
     def merge(self, other: "CircuitEnableMixin"):

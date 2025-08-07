@@ -20,8 +20,17 @@ class PlayerDescriptionMixin(Exportable):
         validator=and_(instance_of(str), byte_length(500)),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The user-facing description given to this entity, usually for documentation 
     purposes.
+
+    Has a maximum size of 200 bytes; any string longer than this will be 
+    truncated on import-export cycle
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
 

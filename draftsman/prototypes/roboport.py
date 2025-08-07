@@ -61,6 +61,10 @@ class Roboport(
         validator=instance_of(ReadItemsMode),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     In what manner should this roboport read it's own contents.
 
     .. NOTE::
@@ -68,20 +72,20 @@ class Roboport(
         In Factorio 1.0, only modes ``NONE`` and ``LOGISTICS`` are permitted.
         Attempting to export with mode ``MISSING_REQUESTS`` gets converted to
         mode ``NONE``.
-    
-    :exception DataFormatError: If set to anything other than the correct enum
-        or equivalent int.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
 
     read_robot_stats: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to read the number of construction and logistics robots
     in the logisitics network to any connected circuit network.
-
-    :exception DataFormatError: If set to anything other than a ``bool`` or 
-        ``None``.
     """
 
     # =========================================================================
@@ -93,11 +97,12 @@ class Roboport(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What signal to output the number of available logistic robots to the
     circuit network with.
-
-    :exception DataFormatError: If set to anything that isn't a valid 
-        ``SIGNAL_ID`` or ``None``.
     """
 
     # =========================================================================
@@ -109,11 +114,12 @@ class Roboport(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What signal to output the total number of logistic robots to the
     circuit network with.
-
-    :exception DataFormatError: If set to anything that isn't a valid 
-        ``SIGNAL_ID`` or ``None``.
     """
 
     # =========================================================================
@@ -125,11 +131,12 @@ class Roboport(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     What signal to output the number of available construction robots to the
     circuit network with.
-
-    :exception DataFormatError: If set to anything that isn't a valid 
-        ``SIGNAL_ID`` or ``None``.
     """
 
     # =========================================================================
@@ -141,11 +148,12 @@ class Roboport(
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What signal to output the total number of construction robots to the
     circuit network with.
-
-    :exception DataFormatError: If set to anything that isn't a valid 
-        ``SIGNAL_ID`` or ``None``.
     """
 
     # =========================================================================
@@ -157,11 +165,14 @@ class Roboport(
         metadata={"never_null": True},
     )
     """
-    What signal to output the total number of roboports in the current network
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    What signal to output the total number of roboports in this current network
     with.
 
-    :exception DataFormatError: If set to anything that isn't a valid 
-        ``SIGNAL_ID`` or ``None``.
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================

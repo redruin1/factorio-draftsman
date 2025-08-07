@@ -27,31 +27,53 @@ class DisplayPanel(
     Entity,
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity which can display text and an icon to a surface or map view.
     """
 
     @attrs.define
     class Message(Exportable):
+        """
+        One of (possibly) many messages that a display panel can show. Only used
+        if said display panel is connected to a circuit network to evaluate
+        their :py:attr:`.condition` against.
+        """
+
         icon: Optional[SignalID] = attrs.field(
             default=None,
             converter=SignalID.converter,
             validator=instance_of(Optional[SignalID]),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The message's display icon.
         """
+
         text: str = attrs.field(default="", validator=instance_of(str))
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The message's text label.
         """
+
         condition: Condition = attrs.field(
             factory=Condition,
             converter=Condition.converter,
             validator=instance_of(Condition),
         )
         """
-        The condition that must be satisfied in order for this messsage to be
-        able to be displayed.
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The condition that must be satisfied in order for this message to be
+        displayed.
         """
 
     # =========================================================================

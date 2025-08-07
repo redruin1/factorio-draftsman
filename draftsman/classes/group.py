@@ -51,36 +51,21 @@ class Group(
 
     .. code-block::
 
-        <Blueprint>.entities => [
-            <Group "1">.entities => [<Entity "A">, <Entity "B">, <Entity "C">],
-            <Group "2">.entities => [<Entity "A">, <Entity "B">, <Entity "C">],
+        Blueprint().groups = [
+            Group("1").entities = [Entity(id="A"), Entity(id="B"), Entity(id="C")],
+            Group("2").entities = [Entity(id="A"), Entity(id="B"), Entity(id="C")],
         ]
 
     This is particularly useful if each group has a similar function, but just
     exists as a different "part" of the overall blueprint.
 
-    To aid in quickly accessing nested entities in such structures,
-    ``EntityLists`` support indexing with a sequence, usually a tuple. For
-    example, assuming the Blueprint structure above, all of the following
-    assertions are true:
-
-    .. code-block:: python
-
-        assert blueprint.entities[("1", "A")].id == "A"
-        assert isinstance(blueprint.entities[("2", "A")], Entity)
-        assert blueprint.entities[("1", "C")] is blueprint.entities["1"].entities["C"]
-
-    ``EntityLike`` instances in a Group are considered to be in "group-space";
-    meaning their positions are offset by the position of the Group they reside
-    in. If a Group is located at position ``(5, 5)``, and an entity inside of it
-    is located at ``(5, 5)``, when added to a Blueprint the entity will be
-    located at ``(10, 10)``. This effect continues if Groups nest inside of
-    other Groups, which is also perfectly legal.
-
-    Groups have their own ``SpatialHashMap`` instances, so they will issue
-    :py:class:`~draftsman.warning.OverlappingObjectsWarning` when entities
-    overlap, both when adding entities to the Group and when adding the Group to
-    another ``EntityCollection``.
+    :py:class:`.EntityLike` instances in a Group are considered to be in
+    "group-space"; meaning their positions are offset by the position of the
+    Group they reside in. If a Group is located at position ``(5, 5)``, and an
+    entity inside of it is located at ``(5, 5)``, when the group is added to a
+    parent Blueprint the contained entity will be located at the position
+    ``(10, 10)``. This effect continues if Groups nest inside of other Groups,
+    which is also perfectly legal.
     """
 
     # TODO: ideally we would only define this method once
@@ -179,11 +164,6 @@ class Group(
     """
     The ID of the Group. The most local form of identification between
     Groups.
-
-    :getter: Gets the ID of the Group.
-    :setter: Sets the ID of the Group.
-
-    :exception TypeError: If set to anything other than a ``str`` or ``None``.
     """
 
     @id.validator
@@ -196,20 +176,15 @@ class Group(
     name: str = attrs.field(default="group", validator=instance_of(str), kw_only=True)
     """
     The name of the Group. Defaults to ``"group"``. Can be specified to any
-    string to aid in organization. For example:
+    string to aid in organization and querying. For example:
 
-    .. code-block:: python
+    .. doctest::
 
-        blueprint.entities.append(Group("A"))
-        blueprint.entities.append(Group("B", name="different_name"))
+        >>> blueprint.entities.append(Group("A"))
+        >>> blueprint.entities.append(Group("B", name="different_name"))
 
-        diff = blueprint.find_entities_filtered(name="different_name")
-        assert diff[0] is blueprint.entities["B"]
-
-    :getter: Gets the name of the Group.
-    :setter: Sets the name of the Group.
-
-    :exception TypeError: If set to anything other than a ``str``.
+        >>> different_entities = blueprint.find_entities_filtered(name="different_name")
+        >>> assert different_entities[0] is blueprint.entities["B"]
     """
 
     # =========================================================================
@@ -221,20 +196,15 @@ class Group(
     )
     """
     The type of the Group. Defaults to ``"group"``. Can be specified to any
-    string to aid in organization. For example:
+    string to aid in organization and querying. For example:
 
-    .. code-block:: python
+    .. doctest::
 
-        blueprint.entities.append(Group("A"))
-        blueprint.entities.append(Group("B", type="different_type"))
+        >>> blueprint.entities.append(Group("A"))
+        >>> blueprint.entities.append(Group("B", type="different_type"))
 
-        diff = blueprint.find_entities_filtered(type="different_type")
-        assert diff[0] is blueprint.entities["B"]
-
-    :getter: Gets the type of the Group.
-    :setter: Sets the type of the Group.
-
-    :exception TypeError: If set to anything other than a ``str``.
+        >>> different_entities = blueprint.find_entities_filtered(type="different_type")
+        >>> assert different_entities[0] is blueprint.entities["B"]
     """
 
     # =========================================================================
@@ -249,19 +219,6 @@ class Group(
     """
     The position of the Group. Acts as the origin of all the entities
     contained within, and offsets them on export.
-
-    ``position`` can be specified as a ``dict`` with ``"x"`` and ``"y"``
-    keys, or more succinctly as a sequence of floats, usually a ``list`` or
-    ``tuple``.
-
-    :getter: Gets the position of the Group.
-    :setter: Sets the position of the Group.
-
-    :exception IndexError: If the set value does not match the above
-        specification.
-    :exception DraftsmanError: If the Group's position is modified when
-        inside a EntityCollection, :ref:`which is forbidden
-        <handbook.blueprints.forbidden_entity_attributes>`.
     """
 
     # =========================================================================
@@ -271,7 +228,7 @@ class Group(
         """
         The "global", or root-most position of the Group. This value is always
         equivalent to :py:attr:`~.Group.position`, unless the group exists
-        inside another :py:class:`.EntityCollection`. If it does, then it's
+        inside another :py:class:`.Collection`. If it does, then it's
         global position is equivalent to the sum of all parent positions plus
         it's own position. Used when recursing the position of any sub-entity
         contained within the ``Group``. Read only.
@@ -307,13 +264,7 @@ class Group(
     )
     """
     The set of all collision layers that this Entity collides with,
-    specified as strings. Defaults to an empty ``set``. Not exported.
-
-    :getter: Gets the collision mask of the Group.
-    :setter: Sets the collision mask of the Group, or sets it to an empty
-        set if ``None`` was input.
-
-    :exception TypeError: If set to anything other than a `set` or None.
+    specified as strings. Defaults to an empty ``set``.
     """
 
     # =========================================================================

@@ -5,10 +5,6 @@
 ============================================
 
 .. automodule:: draftsman.classes.upgrade_planner
-    :noindex:
-    
-.. autoclass:: UpgradePlanner
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

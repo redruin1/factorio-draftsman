@@ -6,16 +6,20 @@
 ### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 
 ---
+### Make the delineation between train schedule/space platform conditions/interrupts larger, as they're not all interchangable
+Right now we just have `WaitCondition` and `WaitConditionType` which is used for everything, but this doesn't guard against a user trying to use the wrong conditions in the wrong circumstance
+
+---
 ### Validation caching
 Ideally, whether or not a entity or blueprint is considered valid can be retained as long as the entity does not change after validation. For example, if you validate a single entity, and then add that entity to a blueprint 1000 times, you only have to validate the attributes of the blueprint itself, since the entities are guaranteed to already be in a valid state. Ideally, each exportable object would have a `is_valid` attribute which would be set to false when an attribute is set, which can then be quickly checked in any parent `validate()` function.
 
 ---
 ### Integrate with `ruff`
-Add rules to add more strictness
+Mostly done already, just need to add rules to add more strictness
 
 ---
 ### Revamp the `add_x` data functions so that they support more features
-* Inline sorting
+* Inline sorting (this one's a doozy)
 * Support additional keyword arguments in line with the prototype documentation
 * Perhaps there might be a way to redesign `env.py` such that it can use the data functions, encouraging code reuse
 

@@ -112,28 +112,64 @@ class Exportable:
 
     # =========================================================================
 
-    extra_keys: Optional[dict[Any, Any]] = attrs.field(
+    extra_keys: Optional[dict[str, Any]] = attrs.field(
         default=None, kw_only=True, metadata={"omit": True}
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Any additional keys that are not recognized by Draftsman when loading from
     a raw JSON dictionary end up as keys in this attribute. Under normal 
     circumstances, this field should always remain ``None``, indicating that all 
-    fields provided were properly translated into the internal Python class. 
+    fields provided were properly translated into the internal Python format. 
     
-    This attribute allows you to have "raw-like" access to the input/output dict,
-    should you wish to add additional keys when distributing serialized 
-    blueprint strings. Any keys that remain in this dict will be respected on 
-    output, so you can populate this dictionary with custom keys (beyond what 
-    you could do with ``tags``) and they will be combined on output, meaning 
-    round-trip import-export cycles are stable:
+    If there are any values in ``extra_keys`` after being imported from a raw
+    JSON dictionary, then (left alone) these values will also be exported back
+    into an output JSON dictionary in order to keep import-export cycles stable.
+    A side effect of this is that users can use this attribute to *add* 
+    additional fields that will end up in the output string, primarily for 
+    custom metadata that can be read by other tools::
 
-    TODO: round-trip example
+        >>> input_dict = {
+        ...    "name": "wooden-chest",
+        ...    "position": {"x": 0.5, "y": 0.5},
+        ...    "unknown_key": "blah"
+        ... }
+        >>> container = Container.from_dict(input_dict)
+        >>> container.extra_keys
+        {"unknown_key": "blah"}
+        >>> container.extra_keys["custom"] = "data"
+        >>> container.to_dict()
+        {
+            "name": "wooden-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "unknown_key": "blah",
+            "custom": "data"
+        }
 
     The structure of input keys are preserved, meaning you may have to recurse
-    through keys to find the unknown data:
+    through keys to find the unknown data::
 
-    TODO: control_behavior example
+        >>> input_dict = {
+        ...     "name": "wooden-chest",
+        ...     "position": {"x": 0.5, "y": 0.5},
+        ...     "nested": {
+        ...         "dictionary": "value"
+        ...     }
+        ... }
+        >>> container = Container.from_dict(input_dict)
+        >>> container.extra_keys
+        {"nested": {"dictionary": "value"}}
+
+    .. NOTE::
+
+        While Draftsman makes an effort to preserve keys that it doesn't 
+        recognize, Factorio itself makes no such effort - so if you create a 
+        blueprint string with custom metadata and then import it into the game, 
+        that additional data will be stripped and cannot be retrieved when 
+        exporting a new string from the game.
     """
 
     @extra_keys.validator
@@ -158,6 +194,8 @@ class Exportable:
         Try to convert the given ``value`` to an instance of this particular
         class. By default, it assumes value is a ``dict`` whose keywords map
         to attributes of this class.
+
+        :meta private:
         """
         try:
             return cls(**value)
@@ -169,10 +207,6 @@ class Exportable:
     ) -> ValidationResult:
         """
         Validates the called object against it's known format.
-        Method that attempts to first coerce the object into a known form, and
-        then checks the values of its attributes for correctness. If unable to
-        do so, this function raises :py:class:`.DataFormatError`. Otherwise,
-        no errors are raised and :py:attr:`.is_valid` is set to ``True``.
 
         :example:
 
@@ -180,8 +214,9 @@ class Exportable:
 
             >>> from draftsman.entity import Container
             >>> from draftsman.error import DataFormatError
-            >>> c = Container("wooden-chest", validate_assignment="none")
-            >>> c.bar = "incorrect"
+            >>> c = Container("wooden-chest")
+            >>> with draftsman.validators.set_mode(ValidationMode.NONE):
+            ...     c.bar = "incorrect"
             >>> try:
             ...     c.validate().reissue_all()
             ... except DataFormatError as e:
@@ -190,11 +225,9 @@ class Exportable:
 
         :param mode: How strict to be when valiating the object, corresponding
             to the number and type of errors and warnings returned.
-        :param force: Whether or not to ignore this entity's `is_valid` flag and
-            attempt to revalidate anyway.
 
-        :returns: A :py:class:`ValidationResult` object containing the
-            corresponding errors and warnings.
+        :returns: A :py:class:`.ValidationResult` object, which contains all
+            errors and warnings from the validation pass.
         """
         mode = ValidationMode(mode)
         res = ValidationResult([], [])
@@ -224,8 +257,16 @@ class Exportable:
 
         :param d: The dictionary to interpret.
         :param version: The Factorio version that the input data is compliant
-            with. If omitted, Draftsman will default to the version of the
-            current environment.
+            with.
+
+            The given version tuple will automatically attempt to grab the
+            closest applicable converter - meaning that specifying a
+            version of ``(1, 1, 96)`` will use the 1.0 converter, and a
+            version of ``(2, 0, 32)`` will use the 2.0 converter.
+
+            If no version is provided, it will default to current environment's
+            Factorio version, or to :py:data:`draftsman.DEFAULT_FACTORIO_VERSION`
+            if unable to read the current environment.
         """
         if version is None:
             version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
@@ -249,6 +290,15 @@ class Exportable:
             exported with. The same Draftsman object can be converted to many
             version-specific output dictionaries, each of which may have
             different structures.
+
+            The given version tuple will automatically attempt to grab the
+            closest applicable converter - meaning that specifying a
+            version of ``(1, 1, 96)`` will use the 1.0 converter, and a
+            version of ``(2, 0, 32)`` will use the 2.0 converter.
+
+            If no version is provided, it will default to current environment's
+            Factorio version, or to :py:data:`draftsman.DEFAULT_FACTORIO_VERSION`
+            if unable to read the current environment.
         :param exclude_none: Whether or not ``None`` properties should be
             omitted from the output string. For certain properties this option
             has no effect, as they either must always be present or never
@@ -256,7 +306,8 @@ class Exportable:
         :param exclude_defaults: Whether or not to exclude properties that are
             equivalent to their default values. Including these values in the
             generated output is redundant as Factorio will populate them
-            automatically, but it is useful to disable for illustation purposes.
+            automatically, but it is useful to disable for debug/illustation
+            purposes.
         """
         if version is None:
             version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
@@ -277,7 +328,7 @@ class Exportable:
         for attr in attrs.fields(cls):
             # Making the copy of an entity directly "removes" its parent, as there
             # is no guarantee that that cloned entity will actually lie in some
-            # EntityCollection
+            # Collection
             if "deepcopy_func" in attr.metadata:
                 object.__setattr__(
                     result,

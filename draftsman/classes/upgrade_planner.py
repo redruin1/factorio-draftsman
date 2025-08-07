@@ -39,14 +39,20 @@ import warnings
 
 @attrs.define
 class UpgradeMapperSource(Exportable):
+    """
+    An object representing an existing entity or item to select to be upgraded.
+    """
+
     type: Literal["entity", "item"] = attrs.field(validator=one_of("entity", "item"))
     """
     The type of this particular mapping, either ``"entity"`` or ``"item"``.
     """
+
     name: Optional[str] = attrs.field(validator=instance_of(Optional[str]))
     """
     Name of the item or entity being upgraded from.
     """
+
     quality: Literal[None, QualityID] = attrs.field(
         default=None,
         validator=one_of(Literal[None, QualityID]),
@@ -54,7 +60,10 @@ class UpgradeMapperSource(Exportable):
     )
     """
     The item/entity quality to compare against.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     comparator: Comparator = attrs.field(
         default="=",
         converter=try_convert(normalize_comparator),
@@ -63,7 +72,10 @@ class UpgradeMapperSource(Exportable):
     """
     The comparison operation to use when determining which items/entities to 
     upgrade.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     module_filter: Optional[EntityFilter] = attrs.field(
         default=None,
         converter=EntityFilter.converter,
@@ -72,6 +84,8 @@ class UpgradeMapperSource(Exportable):
     """
     When upgrading modules, this defines the specific entities to apply the 
     upgrade to. ``None`` applies it to all entities.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     @classmethod
@@ -105,16 +119,22 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
 
 @attrs.define
 class UpgradeMapperDestination(Exportable):
+    """
+    An object representing a target entity or item to upgrade to.
+    """
+
     type: Literal["entity", "item"] = attrs.field(validator=one_of("entity", "item"))
     """
     The type of this particular mapping, either ``"entity"`` or ``"item"``.
     """
+
     name: Optional[str] = attrs.field(
         default=None, validator=instance_of(Optional[str])
     )
     """
     Name of the item or entity being upgraded to.
     """
+
     quality: Literal[None, QualityID] = attrs.field(
         default=None,
         validator=one_of(Literal[None, QualityID]),
@@ -122,20 +142,28 @@ class UpgradeMapperDestination(Exportable):
     )
     """
     The entity quality to upgrade to.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     module_limit: Optional[uint16] = attrs.field(
         default=None, validator=instance_of(Optional[uint16])
     )
     """
     When upgrading modules, this defines the maximum number of this module to be 
     installed in the destination entity. ``0`` or ``None`` means no limit.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     module_slots: Optional[list[ItemID]] = attrs.field(
         default=[], validator=instance_of(Optional[list[ItemID]])
     )
     """
     When upgrading entities, this defines which modules to be installed in 
     the destination entity.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     @classmethod
@@ -169,10 +197,16 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
 
 @attrs.define
 class Mapper(Exportable):
+    """
+    An object which represents a upgrade "path" from an existing entity/item to
+    an upgraded entity/item.
+    """
+
     index: uint64 = attrs.field(validator=instance_of(uint64))
     """
     Index of this mapper in the upgrade planner's GUI.
     """
+
     from_: Optional[UpgradeMapperSource] = attrs.field(
         default=None,
         converter=UpgradeMapperSource.converter,
@@ -181,6 +215,7 @@ class Mapper(Exportable):
     """
     Which item/entity to upgrade from.
     """
+
     to: Optional[UpgradeMapperDestination] = attrs.field(
         default=None,
         converter=UpgradeMapperDestination.converter,
@@ -216,16 +251,16 @@ def check_valid_upgrade_pair(
     from_obj: UpgradeMapperSource | None, to_obj: UpgradeMapperDestination | None
 ) -> list[Warning]:
     """
-    Checks two :py:data:`MAPPING_ID` objects to see if it's possible for
-    ``from_obj`` to upgrade into ``to_obj``.
+    Checks a mapping from a "source" object to a "destination" objects,
+    and returns a list of warnings if the transformation is malformed in some
+    way.
 
-    :param from_obj: A ``dict`` containing a ``"name"`` and ``"type"`` key, or
-        ``None`` if that entry was null.
-    :param to_obj: A ``dict`` containing a ``"name"`` and ``"type"`` key , or
-        ``None`` if that entry was null.
+    :param from_obj: The source entity/item specification.
+    :param to_obj: The destination entity/item specification.
 
-    :returns: A list of one or more Warning objects containing the reason why
-        the mapping would be invalid, or ``None`` if no reason could be deduced.
+    :returns: A list of one or more ``Warning`` objects containing the reason
+        why the mapping would be invalid, or ``None`` if the transformation is
+        considered valid.
     """
 
     # First we need to check if Draftsman even recognizes both from and to,
@@ -406,7 +441,14 @@ class UpgradePlanner(Blueprintable):
             "omit": False,
         },
     )
-    # TODO: description
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Always the name of the corresponding Factorio item to this blueprintable
+    instance. Read only.
+    """
 
     # =========================================================================
 
@@ -438,16 +480,16 @@ class UpgradePlanner(Blueprintable):
         validator=instance_of(list[Mapper]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The list of mappings of one entity or item type to the other entity or
     item type.
 
     Using :py:meth:`.set_mapping()` will attempt to keep this list sorted
     by each mapping's internal ``"index"``, but outside of this function
     this  behavior is not required or enforced.
-
-    :getter: Gets the mappers dictionary, or ``None`` if not set.
-    :setter: Sets the mappers dictionary, or deletes the dictionary if set
-        to ``None``
     """
 
     @mappers.validator
@@ -524,19 +566,17 @@ class UpgradePlanner(Blueprintable):
         """
         Sets a single mapping in the :py:class:`.UpgradePlanner`. Setting
         multiple mappers at the same index overwrites the entry at that index
-        with the last set value. Both ``from_obj`` and ``to_obj`` can be set to
-        ``None`` which will create an unset mapping (and the resulting spot on
-        the in-game GUI will be blank).
+        with the last set value. Both ``source`` and ``destination`` can be set
+        to ``None`` which will create an unset mapping (and the resulting spot
+        on the in-game GUI will be blank).
 
         This function will also attempt to keep the list sorted by each mapper's
         ``index`` key. This behavior is not enforced anywhere else, and if the
         :py:attr:`.mappers` list is ever made unsorted, calling this function
         does not resort said list and does not guarantee a correct sorted result.
 
-        :param from_obj: The :py:data:`.MAPPING_ID` to convert entities/items
-            from. Can be set to ``None`` which will leave it blank.
-        :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
-            Can be set to ``None`` which will leave it blank.
+        :param source: The source entity/item specification.
+        :param destination: The destination entity/item specification.
         :param index: The location in the upgrade planner's mappers list.
         """
         new_mapping = Mapper(index=index, from_=source, to=destination)
@@ -549,7 +589,6 @@ class UpgradePlanner(Blueprintable):
                 return
 
         # Otherwise, insert it sorted by index
-        # TODO: make backwards compatible
         bisect.insort(self.mappers, new_mapping, key=lambda x: x.index)
 
     def remove_mapping(
@@ -561,9 +600,9 @@ class UpgradePlanner(Blueprintable):
         """
         Removes a specified upgrade planner mapping. If ``index`` is not
         specified, the function searches for the first occurrence where both
-        ``from_obj`` and ``to_obj`` match. If ``index`` is also specified, the
-        algorithm will try to remove the first occurrence where all 3 criteria
-        match.
+        ``source`` and ``destination`` match. If ``index`` is also specified,
+        the algorithm will try to remove the first occurrence where all 3
+        criteria match.
 
         .. NOTE::
 
@@ -574,13 +613,12 @@ class UpgradePlanner(Blueprintable):
             necessarily ``0``. If you want to remove the first entry in the
             mappers list, then you can simply do `del upgrade_planner.mappers[0]`.
 
+        :param source: The source entity/item specification.
+        :param destination: The destination entity/item specification.
+        :param index: The index of the mapping in the mapper to search.
+
         :raises ValueError: If the specified mapping does not currently exist
             in the :py:attr:`.mappers` list.
-
-        :param from_obj: The :py:data:`.MAPPING_ID` to to convert entities/items
-            from.
-        :param to_obj: The :py:data:`.MAPPING_ID` to convert entities/items to.
-        :param index: The index of the mapping in the mapper to search.
         """
         source = UpgradeMapperSource.converter(source)
         destination = UpgradeMapperDestination.converter(destination)
@@ -609,10 +647,10 @@ class UpgradePlanner(Blueprintable):
         multiple mapper objects that share the same index, then the only the
         first one is removed.
 
+        :param index: The index of the mapping in the mapper to search.
+
         :raises ValueError: If no matching mappers could be found that have a
             matching index.
-
-        :param index: The index of the mapping in the mapper to search.
         """
         # Simple search and pop
         for i, mapping in enumerate(self.mappers):

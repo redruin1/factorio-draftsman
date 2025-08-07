@@ -28,6 +28,8 @@ class AgriculturalTower(
     Entity,
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity that can plant and harvest growables.
     """
 
@@ -39,6 +41,10 @@ class AgriculturalTower(
 
     read_contents: bool = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to broadcast the entities inside of this tower's inventory to
     any connected circuit network.
     """

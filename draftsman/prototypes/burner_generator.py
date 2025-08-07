@@ -16,7 +16,8 @@ import attrs
 @attrs.define
 class BurnerGenerator(EnergySourceMixin, DirectionalMixin, Entity):
     """
-    A electrical generator that only requires fuel in order to function.
+    A electrical generator that turns burnable fuel directly into electrical
+    energy.
     """
 
     @property

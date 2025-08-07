@@ -17,8 +17,6 @@ if TYPE_CHECKING:  # pragma: no coverage
 @attrs.define(slots=False)
 class ReadRailSignalMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Allows the Entity to set red, yellow, and green circuit output signals.
     """
 
@@ -29,6 +27,10 @@ class ReadRailSignalMixin(Exportable):
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The red output signal. Sent with a unit value when the rail signal's state 
     is red.
     """
@@ -42,6 +44,10 @@ class ReadRailSignalMixin(Exportable):
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The yellow output signal. Sent with a unit value when the rail signal's 
     state is yellow.
     """
@@ -55,6 +61,10 @@ class ReadRailSignalMixin(Exportable):
         metadata={"never_null": True},
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The green output signal. Sent with a unit value when the rail signal's state
     is green.
     """

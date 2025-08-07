@@ -4,19 +4,22 @@ from draftsman.utils import get_suggestion
 from draftsman.error import IncorrectModFormatError, MissingModError
 from draftsman.utils import version_string_to_tuple
 
+import attrs
 import io
 import json
 import os
 import re
-from typing import NamedTuple
+from typing import Optional
 import zipfile
 
 
-class Dependency(NamedTuple):
+@attrs.define
+class Dependency:
     flag: str
     name: str
     operation: str
     version: str
+    reference: Optional["Mod"]
 
     def __str__(self):
         return "{} {} {} {}".format(
@@ -90,9 +93,22 @@ class Mod:
             dependency = dependency.replace(" ", "")
             # Convert
             m = Mod.dependency_regex.match(dependency)
-            dependency = Dependency(flag=m[1], name=m[2], operation=m[3], version=m[4])
+            dependency = Dependency(
+                flag=m[1], name=m[2], operation=m[3], version=m[4], reference=None
+            )
             # Replace
             dependencies[i] = dependency
+
+        # For *some* reason, it seems "base" is an implicit dependency of ALL
+        # mods, regardless of whether or not it's actually specified
+        # Hence, we always add "base" as a dependency if not present in order to
+        # bring it in line with how Factorio loads it's mods
+        # I cannot figure out where this is documented, if so
+        # if "base" not in [dependency.name for dependency in dependencies]:
+        #     dependencies.insert(0, Dependency(
+        #         flag="", name="base", operation=None, version=None,
+        #     ))
+
         self.dependencies: list[Dependency] = dependencies
 
         self.feature_flags = {
@@ -120,11 +136,13 @@ class Mod:
         # self.enabled = enabled
         # self.dependencies = []
 
-    def setup_archive(self):
+    def setup_archive(self, archive, archive_folder):
         """
         Initialize the internal structure with archive data.
         """
         self.is_archive = True
+        self.archive = archive
+        self.archive_folder = archive_folder
 
     def setup_folder(self):
         """
@@ -141,8 +159,11 @@ class Mod:
     def get_depth(self):
         depth = 1
         for dependency in self.dependencies:
-            dependency: "Mod"
-            depth = max(depth, depth + dependency.get_depth())
+            # Not all dependencies matter during the load order (optionals,
+            # incompatible, etc.) so we only consider the ones that actually
+            # point to a loaded mod in the current load cycle
+            if dependency.reference is not None:
+                depth = max(depth, depth + dependency.reference.get_depth())
         return depth
 
     def get_file(self, filepath) -> str:
@@ -150,10 +171,9 @@ class Mod:
         Grabs the data from the file as a string.
         """
         if self.is_archive:
-            return archive_to_string(self.data)
+            return archive_to_string(self.archive, self.archive_folder + "/" + filepath)
         else:
             return file_to_string(filepath=self.location + "/" + filepath)
-        pass
 
     def __lt__(self, other: "Mod") -> bool:
         return self.name < other.name
@@ -404,7 +424,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     )
 
     if is_archive:
-        current_mod.setup_archive()
+        current_mod.setup_archive(files, mod_folder)
     else:
         current_mod.setup_folder()
 

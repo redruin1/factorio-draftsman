@@ -66,6 +66,10 @@ class RocketSilo(
         default=False, validator=instance_of(Optional[bool])
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to automatically launch the rocket when it's cargo is
     full.
 
@@ -82,6 +86,10 @@ class RocketSilo(
         validator=instance_of(SiloReadMode),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     In which manner this entity should behave when connected to a circuit 
     network.
 
@@ -96,6 +104,10 @@ class RocketSilo(
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this rocket silo should automatically attempt to fulfill the
     requests of space platforms stationed above it.
 
@@ -110,6 +122,10 @@ class RocketSilo(
         default=0, validator=instance_of(uint32)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     An internal ID used for keeping track of which logistic requests this silo
     should send to space platforms above.
 

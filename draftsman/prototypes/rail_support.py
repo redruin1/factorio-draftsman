@@ -12,6 +12,8 @@ import attrs
 @attrs.define
 class RailSupport(DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity that permits the construction of elevated rails above it.
     """
 

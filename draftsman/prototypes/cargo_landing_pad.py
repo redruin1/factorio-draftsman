@@ -22,6 +22,8 @@ class CargoLandingPad(
     Entity,
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     A entity on a surface which recieves cargo from space platforms.
     """
 

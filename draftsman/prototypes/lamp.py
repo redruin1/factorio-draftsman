@@ -47,10 +47,11 @@ class Lamp(
 
     use_colors: bool = attrs.field(default=False, validator=instance_of(bool))
     """
-    Whether or not this entity should use color signals to determine it's
-    color.
+    .. serialized::
 
-    :exception TypeError: If set to anything other than a ``bool`` or ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not this entity should use signals to determine it's color.
     """
 
     # =========================================================================
@@ -61,8 +62,14 @@ class Lamp(
         validator=instance_of(LampColorMode),
     )
     """
-    In what way to interpret signals given to the lamp if ``use_colors`` is 
-    ``True``.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    In what way to interpret signals given to the lamp if :py:attr:`.use_colors` 
+    is ``True``.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -73,8 +80,12 @@ class Lamp(
         validator=instance_of(Optional[SignalID]),
     )
     """
-    The signal to pull the red color component from, if :py:attr:`color_mode` is
-    ``1``.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
+    The signal to pull the red color component from, if :py:attr:`.color_mode` is
+    :py:attr:`.LampColorMode.COMPONENTS`.
     """
 
     # =========================================================================
@@ -85,8 +96,14 @@ class Lamp(
         validator=instance_of(Optional[SignalID]),
     )
     """
-    The signal to pull the green color component from, if :py:attr:`color_mode` 
-    is ``1``.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The signal to pull the green color component from, if :py:attr:`.color_mode` 
+    is :py:attr:`.LampColorMode.COMPONENTS`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -97,8 +114,14 @@ class Lamp(
         validator=instance_of(Optional[SignalID]),
     )
     """
-    The signal to pull the blue color component from, if :py:attr:`color_mode` 
-    is ``1``.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The signal to pull the blue color component from, if :py:attr:`.color_mode` 
+    is :py:attr:`.LampColorMode.COMPONENTS`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
@@ -109,17 +132,27 @@ class Lamp(
         validator=instance_of(Optional[SignalID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     The signal to pull the entire encoded color from, if :py:attr:`color_mode` 
-    is ``2``.
+    is :py:attr:`.LampColorMode.PACKED_RGB`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================
 
     always_on: Optional[bool] = attrs.field(default=False, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     Whether or not this entity should always be active, regardless of the
-    current day-night cycle. This option is superceeded by any condition
-    simultaneously specified.
+    current day-night cycle. This option is superceeded by any given 
+    :py:attr:`.circuit_condition`.
     """
 
     # =========================================================================
@@ -129,8 +162,13 @@ class Lamp(
         validator=instance_of(Color),
     )
     """
-    What (static) color should this lamp have. Setting the lamp's color via
-    ``use_colors`` and ``color_mode`` overrides this value if either are present.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    What (static) :py:attr:`.Color` should this lamp have. Setting the lamp's 
+    color via :py:attr:`.use_colors` and :py:attr:`.color_mode` overrides this 
+    value if either are present.
     """
 
     @color.default

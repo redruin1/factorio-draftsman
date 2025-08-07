@@ -6,6 +6,5 @@
 
 .. autoclass:: OffshorePump
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

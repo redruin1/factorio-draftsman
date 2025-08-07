@@ -1,61 +1,12 @@
 # blueprintbook.py
 
 """
-.. code-block:: python
+Contains the :py:class:`.BlueprintBook` class for easily creating and
+manipulating Factorio blueprint books.
 
-    {
-        "blueprint_book": {
-            "item": "blueprint-book", # The associated item with this structure
-            "label": str, # A user given name for this blueprint book planner
-            "label_color": { # The overall color of the label
-                "r": float[0.0, 1.0] or int[0, 255], # red
-                "g": float[0.0, 1.0] or int[0, 255], # green
-                "b": float[0.0, 1.0] or int[0, 255], # blue
-                "a": float[0.0, 1.0] or int[0, 255]  # alpha (optional)
-            }
-            "icons": [ # A set of signals to act as visual identification
-                {
-                    "signal": {"name": str, "type": str}, # Name and type of signal
-                    "index": int, # In range [1, 4], starting top-left and moving across
-                },
-                ... # Up to 4 icons total
-            ],
-            "description": str, # A user given description for this blueprint book
-            "version": int, # The encoded version of Factorio this planner was created
-                            # with/designed for (64 bits)
-            "active_index": int, # The currently selected blueprint in "blueprints"
-            "blueprints": [ # A list of all Blueprintable objects this book contains
-                {
-                    {
-                        "item": "blueprint",
-                        ... # Any associated Blueprint key/values
-                    },
-                    "index": int # Index in the Blueprint Book
-                }, # or
-                {
-                    {
-                        "item": "deconstruction-planner",
-                        ... # Any associated DeconstructionPlanner key/values
-                    },
-                    "index": int # Index in the Blueprint Book
-                }, # or
-                {
-                    {
-                        "item": "upgrade-planner",
-                        ... # Any associated UpgradePlanner key/values
-                    },
-                    "index": int # Index in the Blueprint Book
-                }, # or
-                {
-                    {
-                        "item": "blueprint-book",
-                        ... # Any above key/values
-                    },
-                    "index": int # Index in the Blueprint Book
-                }
-            ]
-        }
-    }
+.. seealso::
+
+    `<https://wiki.factorio.com/Blueprint_string_format>`_
 """
 
 from draftsman.classes.blueprint import Blueprint
@@ -172,6 +123,7 @@ class BlueprintBook(Blueprintable):
 
     # =========================================================================
 
+    # TODO: should be an evolve
     item: str = attrs.field(
         default="blueprint-book",
         validator=instance_of(str),
@@ -179,22 +131,25 @@ class BlueprintBook(Blueprintable):
             "omit": False,
         },
     )
-    # TODO: description
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Always the name of the corresponding Factorio item to this blueprintable
+    instance. Read only.
+    """
 
     # =========================================================================
 
     active_index: uint16 = attrs.field(default=0, validator=instance_of(uint16))
     """
-    The currently selected Blueprintable in the BlueprintBook. Zero-indexed,
-    from ``0`` to ``len(blueprint_book.blueprints) - 1``.
+    .. serialized::
 
-    :getter: Gets the index of the currently selected blueprint or blueprint
-        book.
-    :setter: Sets the index of the currently selected blueprint or blueprint
-        book. If the value is ``None``, ``active_index`` defaults to ``0``.
+        This attribute is imported/exported from blueprint strings.
 
-    :exception TypeError: If set to anything other than an ``int`` or
-        ``None``.
+    The currently selected Blueprintable in the BlueprintBook, or in other words
+    the Blueprintable with the matching :py:class:`~.Blueprintable.index`.
     """
 
     # =========================================================================
@@ -211,10 +166,19 @@ class BlueprintBook(Blueprintable):
         on_setattr=_set_blueprints,
     )
     """
-    The list of Blueprintable objects within this BlueprintBook.
+    .. serialized::
 
-    :exception TypeError: If set to anything other than ``list`` or
-        ``None``.
+        This attribute is imported/exported from blueprint strings.
+
+    The list of blueprintable objects within this blueprint book. Can also be 
+    specified as a regular list:
+
+    .. doctest::
+
+        >>> from draftsman.blueprintable import *
+        >>> bpb = BlueprintBook()
+        >>> bpb.blueprints = [Blueprint(), DeconstructionPlanner(), UpgradePlanner()]
+        >>> assert len(bpb.blueprints) == 3
     """
 
     @blueprints.default

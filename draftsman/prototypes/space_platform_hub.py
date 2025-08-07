@@ -22,6 +22,8 @@ class SpacePlatformHub(
     RequestFiltersMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     Main control center of space platforms.
     """
 

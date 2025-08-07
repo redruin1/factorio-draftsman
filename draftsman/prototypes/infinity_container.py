@@ -28,19 +28,23 @@ class InfinityContainer(InventoryMixin, Entity):
         Where in the infinity containers GUI this filter will exist,
         1-based.
         """
+
         name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))
         """
         The name of the item to create/remove.
         """
+
         quality: QualityID = attrs.field(default="normal", validator=one_of(QualityID))
         """
         The quality of the item to create/remove.
         """
+
         count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
         """
         The amount of this item to keep in the entity, as discerned
         by 'mode'.
         """
+
         mode: Literal["at-least", "at-most", "exactly"] = attrs.field(
             default="at-least", validator=one_of("at-least", "at-most", "exactly")
         )
@@ -64,8 +68,16 @@ class InfinityContainer(InventoryMixin, Entity):
         validator=instance_of(list[Filter]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The list of items to infinitely create or remove from this 
     entity's inventory.
+
+    .. seealso::
+
+        :py:meth:`.set_infinity_filter`
     """
 
     # =========================================================================
@@ -74,10 +86,12 @@ class InfinityContainer(InventoryMixin, Entity):
         default=False, validator=instance_of(bool)
     )
     """
-    Whether or not to remove items that exceed the amounts specified in the
-    ``InfinityContainer``'s filters.
+    .. serialized::
 
-    :exception DataFormatError: If set to anything other than a ``bool``.
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not to remove items that exceed the amounts specified in 
+    :py:attr:`.filters`.
     """
 
     # =========================================================================

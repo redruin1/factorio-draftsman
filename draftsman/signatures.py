@@ -1,21 +1,13 @@
 # signatures.py
 
 """
-Module of data formats, implemented as pydantic ``BaseModel`` instances. Used
-to validate and normalize data. Each one raises a ``ValidationError`` if the
-passed in data does not  match the data format specified, which is usually
-wrapped with a ``DataFormatError`` of some kind.
-
-Alongside errors, all functions are set up to use a ``context`` to store
-warnings to be reissued later, since Pydantic does not support this out of the
-box.
+Module of common, "general" data formats.
 """
-
 
 from draftsman.classes.association import Association
 from draftsman.classes.exportable import Exportable
 from draftsman.classes.vector import Vector
-from draftsman.constants import ValidationMode
+from draftsman.constants import InventoryType, ValidationMode
 from draftsman.data import entities, fluids, items, signals, tiles, recipes, modules
 from draftsman.error import (
     InvalidSignalError,
@@ -80,10 +72,6 @@ uint64 = Annotated[int, and_(ge(0), lt(2**64))]
 
 
 def known_name(type: str, structure: dict, issued_warning: Warning):
-    """
-    Validator function builder for any type of unknown name.
-    """
-
     @conditional(ValidationMode.STRICT)
     def validator(
         _inst: Exportable,
@@ -132,18 +120,32 @@ class SignalID(Exportable):
     For convenience, a SignalID object can be constructed with just the string
     name, *if* the current Draftsman environment recognizes the name:
 
-    .. example::
+    .. code-block:: python
 
         some_signal = SignalID("iron-ore")
+
         assert some_signal.name == "iron-ore"
         assert some_signal.type == "item"
         assert some_signal.quality == "normal"
+
+    In certain cases, you can even omit the ``SignalID`` constructor entirely in
+    obvious cases:
+
+    .. code-block:: python
+
+        condition = Condition()
+        condition.first_signal = "iron-ore"
+
+        assert type(condition.first_signal) is SignalID
+        assert condition.first_signal.name == "iron-ore"
+        assert condition.first_signal.type == "item"
+        assert condition.first_signal.quality == "normal"
 
     Because the name ``"iron-ore"`` is known, Draftsman can pick a correct ``type``
     for it. For most applications, this defaults to ``"item"``, but notable
     exceptions include fluids (``"fluid"``) and virtual signals (``"virtual"``):
 
-    .. example::
+    .. code-block:: python
 
         assert SignalID("iron-ore").type == "item"
         assert SignalID("steam").type == "fluid"
@@ -151,11 +153,11 @@ class SignalID(Exportable):
 
     In Factorio 2.0 and up, multiple SignalID's can share the same name but have
     different types. The default signal type is the first entry in the return
-    result of :py:func:`get_valid_types(name)`, which in most circumstances is
+    result of :py:func:`.get_valid_types`, which in most circumstances is
     usually ``"item"``. If you want a different type than the default, it must
-    be manually specified:
+    be manually specified using the constructor:
 
-    .. example::
+    .. code-block:: python
 
         SignalID("assembling-machine") # type="item"
         SignalID("assembling-machine", type="entity")
@@ -230,7 +232,7 @@ class SignalID(Exportable):
 
     @type.validator
     @conditional(ValidationMode.STRICT)
-    def check_type_matches_name(self, _attr: attrs.Attribute, value: SignalIDType):
+    def _check_type_matches_name(self, _attr: attrs.Attribute, value: SignalIDType):
         if self.name in signals.raw:
             expected_types = signals.get_signal_types(self.name)
             if value not in expected_types:
@@ -261,6 +263,13 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
 
 @attrs.define
 class SignalIDBase(Exportable):
+    """
+    A :py:class:`.SignalID` but without any quality definition. Used by
+    :py:class:`.SelectorCombinator`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     name: Optional[SignalIDName] = attrs.field(
         default=None, validator=instance_of(Optional[SignalIDName])
     )
@@ -303,6 +312,12 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class TargetID(Exportable):
+    """
+    An object representing an entry in a target priorities list in turrets.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     index: uint32 = attrs.field(validator=instance_of(uint32))
     """
     Index of the target in the GUI.
@@ -320,6 +335,13 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class AsteroidChunkID(Exportable):
+    """
+    An object representing an entry in a chunk filters list in asteroid
+    collectors.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     index: uint32 = attrs.field(validator=instance_of(uint32))
     """
     Index of the asteroid chunk in the filter UI.
@@ -341,29 +363,43 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class Icon(Exportable):
+    """
+    A visual icon used for all :py:class:`.Blueprintable` classes.
+    """
+
+    index: Annotated[uint8, OneIndexed] = attrs.field(validator=instance_of(uint8))
+    """
+    Numeric index of the icon.
+    """
     signal: SignalID = attrs.field(
         converter=SignalID.converter, validator=instance_of(SignalID)
     )
     """
     Which signal icon to display.
     """
-    index: Annotated[uint8, OneIndexed] = attrs.field(validator=instance_of(uint8))
-    """
-    Numeric index of the icon.
-    """
 
 
 draftsman_converters.add_hook_fns(
     Icon,
     lambda fields: {
-        "signal": fields.signal.name,
         "index": fields.index.name,
+        "signal": fields.signal.name,
     },
 )
 
 
 @attrs.define(hash=True)
 class Color(Exportable):
+    """
+    A object representing a RGBA color.
+
+    The value of each attribute (according to Factorio spec) can be
+    either in the range of [0.0, 1.0] or [0, 255]; if all the numbers are
+    <= 1.0, the former range is used, and the latter otherwise. If "a" is
+    omitted, it defaults to 1.0 or 255 when imported, depending on the
+    range of the other numbers.
+    """
+
     # TODO: better validators
     r: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
     g: float = attrs.field(validator=[attrs.validators.ge(0), attrs.validators.le(255)])
@@ -414,6 +450,12 @@ Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
 
 @attrs.define
 class Condition(Exportable):
+    """
+    A "simple" condition object, used for all logistic conditions as well as
+    almost all circuit conditions. The only circuit condition case that does
+    not use this object is :py:class:`.DeciderCombinator.Condition`.
+    """
+
     first_signal: Optional[SignalID] = attrs.field(
         default=None,
         converter=SignalID.converter,
@@ -462,6 +504,25 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class CircuitNetworkSelection(Exportable):
+    """
+    A definition of which circuit networks to consider when pulling values for
+    circuit operations.
+
+    Can be specified as either:
+
+    * A class instance::
+
+        CircuitNetworkSelection(red=True, green=False)
+
+    * A ``dict``::
+
+        {"red": True, "green": False}
+
+    * Or a ``set``::
+
+        {"red"}
+    """
+
     red: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not to pull values from the red circuit wire.
@@ -492,29 +553,41 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class ItemFilter(Exportable):
+    """
+    A object representing a particular item with a quality or a range of
+    qualities, used for things like :py:attr:`.Inserter.filters`.
+    """
+
     index: Annotated[int64, OneIndexed] = attrs.field(
         validator=instance_of(int64),
     )
     """
     Index of the filter in the GUI.
     """
+
     name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))
     """
     Name of the item.
     """
+
     quality: Literal[None, QualityID] = attrs.field(
         default="normal", validator=one_of(Literal[None, QualityID])
     )
     """
     Quality flag of the item.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     comparator: Comparator = attrs.field(
         default="=",
         converter=try_convert(normalize_comparator),
         validator=one_of(Comparator),
     )
     """
-    Comparator if filtering a range of different qualities.
+    Comparator if filtering a range of multiple qualities.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
 
@@ -549,7 +622,7 @@ class SignalFilter(Exportable):
     """
     An object that specifies a single signal or a range of signal types. Used as
     filters for logistics requests, as well as the signal specifications inside
-    of :py:class:`.ConstantCombinator`s.
+    of :py:class:`.ConstantCombinator`.
     """
 
     index: Annotated[int64, OneIndexed] = attrs.field(
@@ -559,20 +632,25 @@ class SignalFilter(Exportable):
     Numeric index of the signal in the combinator. Typically the index of the 
     signal in the parent 'filters' key, but this is not strictly enforced. 
     """
+
     name: SignalIDName = attrs.field(validator=instance_of(SignalIDName))
     """
     Name of the signal.
     """
+
     count: int32 = attrs.field(validator=instance_of(int32))
     """
     Value of the signal filter, or the lower bound of a range if ``max_count`` 
     is also specified.
     """
+
     type: Optional[SignalIDType] = attrs.field(
         validator=or_(is_none, one_of(SignalIDType))
     )
     """
     Type of the signal.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     @type.default
@@ -590,7 +668,10 @@ class SignalFilter(Exportable):
     """
     Quality flag of the signal. Defaults to special "any" quality signal if not
     specified.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     comparator: Comparator = attrs.field(
         default="=",
         converter=try_convert(normalize_comparator),
@@ -599,7 +680,10 @@ class SignalFilter(Exportable):
     )
     """
     Comparison operator when deducing the quality type.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     max_count: Optional[int32] = attrs.field(
         default=None,
         validator=instance_of(Optional[int32]),
@@ -608,6 +692,8 @@ class SignalFilter(Exportable):
     """
     The maximum amount of the signal to request of the signal to emit. Only used
     (currently) with logistics-type requests.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # Deprecated in 2.0
@@ -712,7 +798,9 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
 class ManualSection(Exportable):
     """
     A "manually" (player) defined collection of signals, typically used for
-    logistics sections as well as constant combinators signal groups.
+    logistic request sections as well as constant combinator signal groups.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     index: Annotated[LuaDouble, OneIndexed] = attrs.field(
@@ -762,12 +850,13 @@ class ManualSection(Exportable):
     Name of this section group. Once named, this group will become registered 
     within the save it is imported into. If a logistic section with the given
     name already exists within the save, the one that exists in the save will 
-    overwrite the one specified here.
+    overwrite any sections more recently specified.
     """
 
     active: bool = attrs.field(default=True, validator=instance_of(bool))
     """
-    Whether or not this logistic section is currently enabled in this entity.
+    Whether or not this logistic section is currently enabled and contributing
+    it's output.
     """
 
     def set_signal(
@@ -788,6 +877,12 @@ class ManualSection(Exportable):
     ) -> None:
         """
         Sets the particular signal at any given point.
+
+        :param index: The index of the signal in the GUI.
+        :param name: The name of the signal.
+        :param count: The amount of the item/the value to output.
+        :param quality: The quality of the signal.
+        :param type: The internal type of the signal.
         """
         if name is not None:
             new_entry = SignalFilter(
@@ -815,13 +910,13 @@ class ManualSection(Exportable):
 
     def get_signal(self, index: int64) -> Optional[SignalFilter]:
         """
-        Get the :py:data:`.SIGNAL_FILTER` ``dict`` entry at a particular index,
-        if it exists.
+        Get the :py:class:`.SignalFilter` entry at a particular index, if it
+        exists.
 
         :param index: The index of the signal to analyze.
 
-        :returns: A ``dict`` that conforms to :py:data:`.SIGNAL_FILTER`, or
-            ``None`` if nothing was found at that index.
+        :returns: A :py:class:`.SignalFilter` instance, or ``None`` if nothing
+        was found at that index.
         """
         return next(
             (item for item in self.filters if item.index == index),
@@ -864,6 +959,13 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class QualityFilter(Exportable):
+    """
+    An object used to select particular qualities; used by
+    :py:attr:`.SelectorCombinator.quality_filter`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     quality: Literal[None, QualityID] = attrs.field(
         default=None,
         validator=one_of(Literal[None, QualityID]),
@@ -872,6 +974,7 @@ class QualityFilter(Exportable):
     """
     The signal quality to compare against.
     """
+
     comparator: Comparator = attrs.field(
         default="=",
         converter=try_convert(normalize_comparator),
@@ -893,19 +996,35 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class InventoryPosition(Exportable):
-    inventory: uint32 = attrs.field(validator=instance_of(uint32))
     """
-    Which inventory this item sits in.
+    An object which represents a particular inventory slot inside of an entity.
+
+    .. seealso::
+
+        :py:class:`.BlueprintInsertPlan`
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
+    inventory: InventoryType = attrs.field(
+        converter=InventoryType, validator=instance_of(InventoryType)
+    )
+    """
+    Which inventory this item sits in. As of Factorio 2.0, entities can have 
+    multiple internal inventories which can be separately delivered to, such as
+    inputs, outputs, ammo storage, trash slots, etc.
+    """
+
     stack: uint32 = attrs.field(validator=instance_of(uint32))
     """
     Which slot in the inventory this item sits in.
     """
+
     count: Optional[uint32] = attrs.field(
         default=1, validator=instance_of(Optional[uint32])
     )
     """
-    The amount of that item to request to that slot. Defaults to 1 if 
+    The amount of the item to request to that slot. Defaults to 1 if 
     omitted.
     """
 
@@ -922,6 +1041,18 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class ItemInventoryPositions(Exportable):
+    """
+    An object which holds a list of all positions an item should be requested to
+    inside of an entity, as well as a count of how many of that item exist in an
+    attached equipment grid.
+
+    .. seealso::
+
+        :py:class:`.BlueprintInsertPlan`
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     def _convert_inventory_location_list(value):
         if isinstance(value, list):
             res = [None] * len(value)
@@ -937,12 +1068,17 @@ class ItemInventoryPositions(Exportable):
         validator=instance_of(list[InventoryPosition]),
     )
     """
-    The list of all locations that the selected item should go.
+    The list of all unique :py:class:`.InventoryPosition` s that the item should 
+    go.
     """
+
     grid_count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
     """
     The total amount of this item being requested to the attached equipment grid,
     if applicable. Always zero if the entity has no equipment grid to request to.
+
+    The positions of the item in the equipment grid is defined elsewhere in the
+    :py:attr:`~.EquipmentGridMixin.equipment` attribute.
     """
 
 
@@ -957,8 +1093,22 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class ItemID(Exportable):
+    """
+    An object representing a particular item. Used by
+    :py:attr:`BlueprintInsertPlan.id`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))
+    """
+    The name of the item.
+    """
+
     quality: QualityID = attrs.field(default="normal", validator=one_of(QualityID))
+    """
+    The quality of the item.
+    """
 
     @classmethod
     def converter(cls, value):
@@ -977,17 +1127,25 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class BlueprintInsertPlan(Exportable):
+    """
+    An object that represents a set of construction requests for a particular
+    item.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     id: ItemID = attrs.field(converter=ItemID.converter, validator=instance_of(ItemID))
     """
-    The item to request.
+    The item and quality of that item to request on construction.
     """
+
     items: ItemInventoryPositions = attrs.field(
         factory=ItemInventoryPositions,
         converter=ItemInventoryPositions.converter,
         validator=instance_of(ItemInventoryPositions),
     )
     """
-    The grids/locations each item is being requested to.
+    The equipment grids/inventories each item is being requested to.
     """
 
 
@@ -1002,10 +1160,17 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class EquipmentID(Exportable):
+    """
+    An object representing a particular type of equipment.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     name: str = attrs.field(validator=instance_of(str))  # TODO: EquipmentName
     """
     The name of the equipment.
     """
+
     quality: QualityID = attrs.field(default="normal", validator=one_of(QualityID))
     """
     The quality of the quipment
@@ -1031,6 +1196,13 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class EquipmentComponent(Exportable):
+    """
+    An object representing a piece of equipment and it's location in an attached
+    equipment grid.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     equipment: EquipmentID = attrs.field(
         converter=EquipmentID.converter, validator=instance_of(EquipmentID)
     )
@@ -1038,7 +1210,7 @@ class EquipmentComponent(Exportable):
     The type of equipment to add.
     """
 
-    position: Vector = attrs.field(
+    position: Vector = attrs.field(  # TODO: maybe tile_position?
         converter=lambda v: Vector.from_other(v, type_cast=int),
         validator=instance_of(Vector),
     )
@@ -1058,10 +1230,19 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class StockConnection(Exportable):
+    """
+    A structure representing a train coupling between wagons.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
     stock: Association = attrs.field(
         converter=lambda v: v if isinstance(v, (Association, int)) else Association(v),
         # TODO: validators
     )
+    """
+    What rolling stock's connections are being defined.
+    """
     front: Optional[Association] = attrs.field(
         converter=lambda v: (
             v if v is None or isinstance(v, (Association, int)) else Association(v)
@@ -1069,6 +1250,9 @@ class StockConnection(Exportable):
         default=None,
         # TODO: validators
     )
+    """
+    What rolling stock is connected at the front of :py:attr:`.stock`.
+    """
     back: Optional[Association] = attrs.field(
         converter=lambda v: (
             v if v is None or isinstance(v, (Association, int)) else Association(v)
@@ -1076,6 +1260,9 @@ class StockConnection(Exportable):
         default=None,
         # TODO: validators
     )
+    """
+    What rolling stock is connected at the back of :py:attr:`.stock`.
+    """
 
 
 draftsman_converters.add_hook_fns(
@@ -1090,6 +1277,17 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class Inventory(Exportable):
+    """
+    An object which represents an inventory - stores metadata related to it's
+    internal :py:attr:`.size`, and allows to set it's :py:attr:`.filters` and
+    limiting :py:attr:`.bar` all in one place.
+
+    .. NOTE::
+
+        On certain entities, setting some of these attributes will have no
+        on the serialized output. Consult each entity attribute for details.
+    """
+
     _parent: Optional[weakref.ref] = attrs.field(
         default=None,
         init=False,
@@ -1113,8 +1311,7 @@ class Inventory(Exportable):
         """
         The number of inventory slots that this Entity has. Equivalent to the
         ``"inventory_size"`` key in Factorio's ``data.raw``. Returns ``None`` if
-        this entity's name is not recognized by Draftsman. Not exported; read
-        only.
+        this entity's name is not recognized by Draftsman.
         """
         return self._size_func(self._parent if self._parent is None else self._parent())
 
@@ -1152,15 +1349,6 @@ class Inventory(Exportable):
 
     Raises :py:class:`~draftsman.warning.IndexWarning` if the set value
     exceeds the Entity's ``inventory_size`` attribute.
-
-    :getter: Gets the bar location of the inventory, or ``None`` if not set.
-    :setter: Sets the bar location of the inventory. Removes the entry from
-        the ``inventory`` object.
-
-    :exception TypeError: If set to anything other than an ``int`` or
-        ``None``.
-    :exception IndexError: If the set value lies outside of the range
-        ``[0, 65536)``.
     """
 
     # =========================================================================
@@ -1220,19 +1408,33 @@ draftsman_converters.add_hook_fns(
 
 @attrs.define
 class EntityFilter(Exportable):
+    """
+    A object representing a filter of a particular entity with a quality or a
+    range of qualities.
+    """
+
     name: EntityID = attrs.field(validator=instance_of(EntityID))
     """
     Name of the entity.
     """
-    quality: Literal[None, QualityID] = attrs.field(
-        default=None,
-        validator=one_of(Literal[None, QualityID]),
+
+    index: Optional[uint64] = attrs.field(default=None, validator=instance_of(uint64))
+    """
+    Position of the filter in the GUI.
+    """
+
+    quality: QualityID = attrs.field(
+        default="normal",
+        validator=one_of(QualityID),
         metadata={"never_null": True},
     )
     """
     Quality flag of the entity. Defaults to special "any" quality signal if not
     specified.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
     comparator: Comparator = attrs.field(
         default="=",
         converter=try_convert(normalize_comparator),
@@ -1240,5 +1442,44 @@ class EntityFilter(Exportable):
         metadata={"omit": False},
     )
     """
-    Comparison operator when deducing the quality type.
+    Comparison operator to use when deducing the range of qualities to select.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
+
+
+draftsman_converters.add_hook_fns(
+    EntityFilter,
+    lambda fields: {
+        "name": fields.name.name,
+        "index": fields.index.name,
+        "quality": fields.quality.name,
+        "comparator": fields.comparator.name,
+    },
+)
+
+
+@attrs.define
+class TileFilter(Exportable):
+    """
+    An object representing the filter of a particular tile.
+    """
+
+    index: Optional[uint64] = attrs.field(validator=instance_of(uint64))
+    """
+    Position of the filter in the GUI.
+    """
+
+    name: TileID = attrs.field(validator=instance_of(TileID))
+    """
+    The name of a valid deconstructable tile.
+    """
+
+
+draftsman_converters.add_hook_fns(
+    EntityFilter,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+    },
+)

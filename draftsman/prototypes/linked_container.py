@@ -34,12 +34,14 @@ class LinkedContainer(InventoryMixin, Entity):
         default=0, converter=_only_use_lowest_bits, validator=instance_of(uint32)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The linking ID that this ``LinkedContainer`` currently has. Encoded as
     a 32 bit unsigned integer, where a container only links to another with
     the same ``link_id``. If an integer greater than 32-bits is passed in,
     only the lowest bits are used.
-
-    :exception DataFormatError: If set to anything other than an ``uint32``.
     """
 
     # =========================================================================

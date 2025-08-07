@@ -29,7 +29,7 @@ class EntityList(Exportable, MutableSequence):
 
     Contains all the functionality of a normal ``list``. Adds the ability
     to index with id strings, as well as extra framework for interfacing with
-    :py:class:`.EntityCollection` classes.
+    :py:class:`.Collection` classes.
     """
 
     @reissue_warnings
@@ -302,7 +302,7 @@ class EntityList(Exportable, MutableSequence):
 
         # Then, try to delete the item from any sublists
         for existing_item in self.data:
-            # if isinstance(existing_item, EntityCollection): # better, but impossible
+            # if isinstance(existing_item, Collection): # better, but impossible
             if hasattr(existing_item, "entities"):  # FIXME: somewhat unsafe
                 try:
                     existing_item.entities.remove(item)
@@ -599,7 +599,7 @@ class EntityList(Exportable, MutableSequence):
         # We create a new list with no parent; this is important because we
         # don't want two EntityLists pointing at the same parent, as this often
         # leads to overlapping entity warnings
-        # Anything to do with EntityCollection specific things has to be
+        # Anything to do with Collection specific things has to be
         # performed AFTER the deepcopy manually by the caller
         parent = memo.get("new_parent", self._parent)
         new = EntityList(parent)
@@ -619,8 +619,8 @@ class EntityList(Exportable, MutableSequence):
         #         # The association must belong outside of the copied region
         #         raise InvalidAssociationError(
         #             "Attempting to connect to {} which lies outside this "
-        #             "EntityCollection; are all Associations between entities "
-        #             "contained within this EntityCollection being copied?".format(
+        #             "Collection; are all Associations between entities "
+        #             "contained within this Collection being copied?".format(
         #                 repr(old())
         #             )
         #         )

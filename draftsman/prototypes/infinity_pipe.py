@@ -31,13 +31,15 @@ class InfinityPipe(Entity):
         validator=instance_of(Optional[FluidID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Sets the name of the infinite fluid.
 
-    :getter: Gets the infinite fluid name, or ``None`` if not set.
-    :setter: Sets the infinite fluid name. Removes the key if set to ``None``.
-
-    :exception TypeError: If set to anything other than a ``str`` or ``None``.
-    :exception InvalidFluidError: If set to an invalid fluid name.
+    .. seealso::
+    
+        :py:meth:`.set_infinite_fluid`
     """
 
     # =========================================================================
@@ -46,10 +48,15 @@ class InfinityPipe(Entity):
         default=0.0, validator=and_(instance_of((float, int)), ge(0.0))
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
     The percentage of the infinite fluid in the pipe, where ``1.0`` is 100%.
 
-    :exception TypeError: If set to anything other than an number or ``None``.
-    :exception ValueError: If set to a negative percentage, which is forbidden.
+    .. seealso::
+    
+        :py:meth:`.set_infinite_fluid`
     """
 
     # =========================================================================
@@ -59,6 +66,10 @@ class InfinityPipe(Entity):
         validator=one_of("at-least", "at-most", "exactly", "add", "remove"),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The mode in which to manage the infinite fluid. Can be one of:
 
     .. code-block:: python
@@ -69,27 +80,31 @@ class InfinityPipe(Entity):
         "add"       # Add this much fluid each tick
         "remove"    # Remove this much fluid each tick
 
-    :getter: Gets the fluid mode, or ``None`` if not set.
-    :setter: Sets the fluid mode. Removes the key if set to ``None``.
-
-    :exception TypeError: If set to anything other than a ``str`` or ``None``.
-    :exception InvalidModeError: If set to anything other than one of the
-        values described above.
+    .. seealso::
+    
+        :py:meth:`.set_infinite_fluid`
     """
 
     # =========================================================================
 
     temperature: int64 = attrs.field(default=0, validator=instance_of(int64))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The temperature of the infinite fluid, in degrees.
 
-    Raises :py:class:`TemperatureRangeWarning` if ``temperature`` is set to
-    anything not in the range ``[0, 1000]``.
+    Raises :py:class:`.TemperatureRangeWarning` if ``temperature`` is set beyond
+    the valid temperature range for the fluid :py:attr:`.fluid_name`.
 
-    :getter: Gets the fluid temperature, or ``None`` if not set.
-    :setter: Sets the fluid temperature. Removes the key if set to ``None``.
+    .. seealso::
 
-    :exception DataFormatError: If set to anything other than a number in range.
+        :py:func:`fluids.get_temperature_range`
+
+    .. seealso::
+    
+        :py:meth:`.set_infinite_fluid`
     """
 
     @temperature.validator

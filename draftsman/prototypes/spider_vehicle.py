@@ -29,6 +29,8 @@ class SpiderVehicle(
     Entity,
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     A drivable entity which can move in any direction at once.
     """
 
@@ -49,6 +51,10 @@ class SpiderVehicle(
         default=True, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this spidertron should automatically target enemies when
     there is no passenger in the vehicle.
     """
@@ -59,6 +65,10 @@ class SpiderVehicle(
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not this spidertron should automatically target enemies when
     there is a passenger in the vehicle.
     """

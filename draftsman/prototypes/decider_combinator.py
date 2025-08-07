@@ -54,7 +54,17 @@ class DeciderCombinator(
     @attrs.define
     class Condition(Exportable):
         """
-        A condition object specifically for DeciderCombinators.
+        A condition object specifically for :py:class:`.DeciderCombinator`.
+        Supports the  delineation between different wire color inputs
+        (:py:attr:`.first_signal_networks` and :py:attr:`.second_signal_networks`)
+        as well as the ability to be AND-ed or OR-ed with other condition
+        objects of the same type::
+
+            condition_1 = DeciderCombinator.Condition(...)
+            condition_2 = DeciderCombinator.Condition(...)
+            condition_3 = DeciderCombinator.Condition(...)
+            decider_combinator.conditions = condition_1 & condition_2 | condition_3
+            assert len(decider_combinator.conditions) == 3
         """
 
         first_signal: Optional[SignalID] = attrs.field(
@@ -63,6 +73,10 @@ class DeciderCombinator(
             validator=instance_of(Optional[SignalID]),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The left-most signal of the condition.
         """
 
@@ -72,6 +86,10 @@ class DeciderCombinator(
             validator=instance_of(CircuitNetworkSelection),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The signal networks (red/green) to sample for the value of the left-most
         signal.
         """
@@ -82,6 +100,10 @@ class DeciderCombinator(
             validator=one_of(Comparator),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The comparison operation to perform between the two operands.
         """
 
@@ -89,6 +111,10 @@ class DeciderCombinator(
             default=None, validator=instance_of(Optional[int32])
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         An optional constant value, which always lies on the right side of the 
         condition.
         """
@@ -99,6 +125,10 @@ class DeciderCombinator(
             validator=instance_of(Optional[SignalID]),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The right-most signal of the condition.
         """
 
@@ -108,6 +138,10 @@ class DeciderCombinator(
             validator=instance_of(CircuitNetworkSelection),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The signal networks (red/green) to sample for the value of the right-most
         signal.
         """
@@ -115,6 +149,14 @@ class DeciderCombinator(
         compare_type: Literal["or", "and"] = attrs.field(
             default="or", validator=one_of("or", "and")
         )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        In what manner should this condition be compared to the condition
+        immediately preceeding it.
+        """
 
         def __or__(self, other):
             if isinstance(other, DeciderCombinator.Condition):
@@ -153,15 +195,63 @@ class DeciderCombinator(
     @attrs.define
     class Input(Exportable):
         """
-        Purely abstract helper object useful for defining complex decider conditions
-        ergonomically.
+        Purely abstract helper object useful for defining complex decider
+        conditions ergonomically. Can be thought of as one "half" of a
+        :py:class:`.DeciderCombinator.Condition` object, wherupon one is created
+        by using conditional operators:
+
+        .. doctest::
+
+            >>> Input = DeciderCombinator.Input
+
+            >>> input_1 = Input(signal="signal-A", networks={"red"})
+            >>> input_2 = Input(signal="signal-B", networks={"green"})
+
+            >>> condition = input_1 < input_2
+
+            >>> assert isinstance(condition, DeciderCombinator.Condition)
+            >>> condition.first_signal.name
+            "signal-A"
+            >>> condition.comparator
+            "<"
+            >>> condition.second_signal.name
+            "signal-B"
+
+        :py:class:`.Input` objects also support comparisons against integers:
+
+        .. doctest::
+
+            >>> condition = Input("signal-C") >= 100
+
+            >>> condition.first_signal.name
+            "signal-C"
+            >>> condition.comparator
+            "≥"
+            >>> condition.constant
+            100
+
+        .. NOTE::
+
+            If you use this syntax alongside boolean combination of
+            :py:class:`~.DeciderCombinator.Condition` objects, make sure to
+            encapsulate each "condition" with parenthesis in order to maintain
+            the correct order of operations::
+
+                # Incorrect:
+                decider_combinator.conditions = input_1 < input_2 & input_3 >= 100
+                # Correct:
+                decider_combinator.conditions = (input_1 < input_2) & (input_3 >= 100)
         """
 
         signal: SignalID = attrs.field(
             converter=SignalID.converter, validator=instance_of(SignalID)
         )
         """
-        TODO
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        What signal this input represents.
         """
         networks: CircuitNetworkSelection = attrs.field(
             factory=CircuitNetworkSelection,
@@ -169,7 +259,11 @@ class DeciderCombinator(
             validator=instance_of(CircuitNetworkSelection),
         )
         """
-        TODO
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        Which circuit wires should this input pull its values from.
         """
 
         def _output_condition(self, comparator, other) -> "DeciderCombinator.Condition":
@@ -214,7 +308,7 @@ class DeciderCombinator(
     @attrs.define
     class Output(Exportable):
         """
-        An output object specifically for DeciderCombinators.
+        An output object specifically for :py:class:`.DeciderCombinator`.
         """
 
         signal: Optional[SignalID] = attrs.field(
@@ -223,13 +317,21 @@ class DeciderCombinator(
             validator=instance_of(Optional[SignalID]),
         )
         """
-        The output signal type.
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The signal to output.
         """
 
         copy_count_from_input: bool = attrs.field(
             default=True, validator=instance_of(bool)
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         Whether or not to source the output signal(s) value from the input wires, or
         to output them with constant values as specified by :py:attr:`.constant`.
         """
@@ -240,11 +342,19 @@ class DeciderCombinator(
             validator=instance_of(CircuitNetworkSelection),
         )
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         Which wire networks to sample values from (red/green).
         """
 
         constant: int32 = attrs.field(default=1, validator=instance_of(int32))
         """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
         The constant value to output to the network, if 
         :py:attr:`.copy_count_from_input` is ``False``. Can be any signed 32-bit 
         number.
@@ -269,6 +379,10 @@ class DeciderCombinator(
         validator=instance_of(list[Condition]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The list of all circuit conditions that this decider combinator contains.
     Each one is evaluated sequentially (in order) and is conjoined with the 
     previous conditoin either with ``"and"`` or ``"or"``.
@@ -286,6 +400,10 @@ class DeciderCombinator(
         validator=instance_of(list[Output]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The list of all circuit_outputs that this decider combinator contains.
     Each indivdiual signal or set of signals are combined together on the output
     wire frame.

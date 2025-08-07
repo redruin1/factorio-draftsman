@@ -8,7 +8,7 @@ The implementations each of the Draftsman's classes.
 Some of which are aliased at the root level of the package, such as :py:mod:`~draftsman.blueprintable` and :py:mod:`~draftsman.tile`.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     association.rst
     blueprint.rst
@@ -20,6 +20,7 @@ Some of which are aliased at the root level of the package, such as :py:mod:`~dr
     entity.rst
     entity_like.rst
     entity_list.rst
+    exportable.rst
     group.rst
     spatial_data_structure.rst
     spatial_hashmap.rst

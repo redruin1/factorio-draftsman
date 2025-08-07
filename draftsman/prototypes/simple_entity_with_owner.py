@@ -3,9 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin, VariationMixin
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import uint16
 from draftsman.utils import fix_incorrect_pre_init
-from draftsman.validators import instance_of
 
 from draftsman.data.entities import simple_entities_with_owner
 
@@ -24,13 +22,6 @@ class SimpleEntityWithOwner(VariationMixin, DirectionalMixin, Entity):
     @property
     def similar_entities(self) -> list[str]:
         return simple_entities_with_owner
-
-    # =========================================================================
-
-    variation: uint16 = attrs.field(default=1, validator=instance_of(uint16))
-    """
-    The graphical variation of the entity.
-    """
 
 
 draftsman_converters.add_hook_fns(

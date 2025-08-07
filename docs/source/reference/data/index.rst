@@ -9,12 +9,7 @@ Each module loads a pickle file of the same name stored alongside the module in 
 This data is updated every time ``draftsman-update`` is called.
 
 .. toctree::
+    :maxdepth: 1
+    :glob:
 
-    entities.rst
-    instruments.rst
-    items.rst
-    mods.rst
-    modules.rst
-    recipes.rst
-    signals.rst
-    tiles.rst
+    ./*

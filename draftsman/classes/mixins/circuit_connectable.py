@@ -17,10 +17,6 @@ class CircuitConnectableMixin(Exportable):
 
     @property
     def circuit_connectable(self) -> bool:
-        """
-        Whether or not this entity can be connected with either red or green
-        circuit wires.
-        """
         return True
 
     # =========================================================================
@@ -28,9 +24,12 @@ class CircuitConnectableMixin(Exportable):
     @property
     def circuit_wire_max_distance(self) -> float:
         """
-        The maximum distance that this entity can reach for circuit connections.
+        The maximum distance that this entity can reach for circuit connections,
+        modified based on the entity's :py:attr:`.quality`. If the ``quality``
+        is unknown, the distance falls back to the default max distance.
+
         Returns ``None`` if the entity's name is not recognized under the
-        current environment. Not exported; read only.
+        current environment.
         """
         wire_max_dist = entities.raw.get(self.name, {}).get(
             "circuit_wire_max_distance", None
@@ -52,16 +51,22 @@ class CircuitConnectableMixin(Exportable):
     @property
     def connections(self) -> dict:
         """
-        Connections dictionary. Primarily holds information about the Entity's
-        circuit connections (as well as copper wire connections).
+        .. deprecated:: 3.0.0 (Factorio 2.0)
 
-        Deprecated in Factorio 2.0. On blueprint string import, this field will
-        be converted to the blueprint's :py:attr:`.Blueprint.wires` attribute.
-        This value is only ever populated when loading from a pre-Factorio 1.0
-        entity dictionary with the method :py:meth:`.from_dict`. This is
-        provided so that users may manually try and reconstruct wire connections
-        with incomplete data, and such that round-trip import/exporting retains
-        all given keys.
+            This information is now converted and stored in
+            :py:attr:`.Blueprint.wires`.
+
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        Connections dictionary. Primarily holds information about the Entity's
+        circuit connections, as well as the copper wire connections into/out of
+        :py:class:`.PowerSwitch`.
+
+        Historically, power connections between power poles were retained in the
+        :py:attr:`~.PowerConnectableMixin.neighbours` attribute - but this
+        attribute is also deprecated in favor of :py:attr:`.Blueprint.wires`.
         """
         return self._connections
 

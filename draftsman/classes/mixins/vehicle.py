@@ -2,14 +2,14 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import Inventory, uint16, uint32
+from draftsman.signatures import Inventory, OneIndexed, uint16, uint32
 from draftsman.validators import and_, instance_of
 
 from draftsman.data import entities, qualities
 
 import attrs
 import math
-from typing import Optional
+from typing import Annotated, Optional
 
 
 def _trunk_inventory_size(entity) -> Optional[uint16]:
@@ -51,6 +51,10 @@ class VehicleMixin(Exportable):
         ),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Inventory object which encodes slot filters for the main inventory of the
     vehicle.
     """
@@ -72,6 +76,10 @@ class VehicleMixin(Exportable):
         ),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Inventory object which encodes slot filters for the ammunition slots of the
     vehicle. Setting the :py:attr:`~.Inventory.bar` of this inventory 
     has no effect.
@@ -87,16 +95,25 @@ class VehicleMixin(Exportable):
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not the driver or the passenger has control of the vehicle's 
     weapons.
     """
 
     # =========================================================================
 
-    selected_gun_index: uint32 = attrs.field(default=1, validator=instance_of(uint32))
+    selected_gun_index: Annotated[uint32, OneIndexed] = attrs.field(
+        default=0, validator=instance_of(uint32)
+    )
     """
-    Which gun is currently selected by the gunner. Defaults to ``1`` for 
-    vehicles with only one gun.
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Which gun is currently selected to fire by the gunner.
     """
 
 

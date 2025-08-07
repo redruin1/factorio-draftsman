@@ -12,6 +12,8 @@ import attrs
 @attrs.define
 class ElevatedHalfDiagonalRail(DirectionalMixin, Entity):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     Elevated rail entities which lie halfway in-between the classic 45 degree
     diagonals.
     """

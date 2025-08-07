@@ -52,6 +52,8 @@ class SelectorCombinator(
     Entity,
 ):
     """
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+
     An entity which has a number of miscellaneous circuit functions.
     """
 
@@ -71,6 +73,10 @@ class SelectorCombinator(
         default="select", validator=one_of(SelectorOperations), metadata={"omit": False}
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The mode of operation that this selector is currently configured to perform.
     """
 
@@ -80,16 +86,32 @@ class SelectorCombinator(
 
     select_max: bool = attrs.field(default=True, validator=instance_of(bool))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to sort the given signals in ascending or descending order
     when :py:attr:`.operation` is ``"select"``.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_select`
     """
 
     index_constant: int32 = attrs.field(default=0, validator=instance_of(int32))
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Which constant signal index to output from the list of given signals when
     :py:attr:`.operation` is ``"select"``. 0-indexed; negative values are valid
     but unused. Overwritten by :py:attr:`.index_signal` if both are present
     simultaneously.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_select`
     """
 
     index_signal: Optional[SignalID] = attrs.field(
@@ -98,10 +120,18 @@ class SelectorCombinator(
         validator=instance_of(Optional[SignalID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Which input signal to pull the index value from in order to select from the
     other input signals when :py:attr:`.operation` is ``"select"``. 0-indexed;
     negative values are valid but unused. Overwrites :py:attr:`.index_constant`
     if both are present simultaneously.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_select`
     """
 
     # =========================================================================
@@ -114,9 +144,17 @@ class SelectorCombinator(
         validator=instance_of(Optional[SignalID]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     What signal to output the sum total number of unique signals on the input to.
     Note that this counts the number of different signals, not the total sum of 
     their given values.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_count`
     """
 
     # =========================================================================
@@ -127,8 +165,16 @@ class SelectorCombinator(
         default=0, validator=instance_of(uint32)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Number of game ticks to wait before selecting a new random signal from the
     input. Can select the same signal multiple times sequentially.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_random`
     """
 
     # =========================================================================
@@ -139,8 +185,16 @@ class SelectorCombinator(
         factory=QualityFilter, validator=instance_of(QualityFilter)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The specification to filter the given input signals. Can select a specific 
     quality, or an inclusive range of qualities.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_quality_filter`
     """
 
     # =========================================================================
@@ -151,17 +205,33 @@ class SelectorCombinator(
         default=False, validator=instance_of(bool)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     Whether or not to select quality from a single signal or from every input 
     signal. If this value is ``False`` the selector uses each signal in "Direct
     Selection" mode, and uses "Select from signal" when this value is ``True``.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_quality_transfer`
     """
 
     quality_source_static: QualityID = attrs.field(
         default="normal", validator=one_of(QualityID)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The quality to use when :py:attr:`.select_quality_from_signal` is ``False``.
     The selector will consider all signals with this specific quality.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_quality_transfer`
     """
 
     quality_source_signal: Optional[SignalIDBase] = attrs.field(
@@ -170,8 +240,16 @@ class SelectorCombinator(
         validator=instance_of(Optional[SignalIDBase]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The input signal type to pull the quality from dynamically, if 
     :py:attr:`.select_quality_from_signal` is ``True``. 
+
+    .. seealso::
+
+        :py:meth:`.set_mode_quality_transfer`
     """
 
     quality_destination_signal: Optional[SignalIDBase] = attrs.field(
@@ -180,8 +258,16 @@ class SelectorCombinator(
         validator=instance_of(Optional[SignalIDBase]),
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The destination signal(s) to output with the read quality value. Can be any
     fixed signal, as well as the wildcard ``"signal-each"``.
+
+    .. seealso::
+
+        :py:meth:`.set_mode_quality_transfer`
     """
 
     @quality_destination_signal.validator

@@ -15,10 +15,13 @@ As of Draftsman 3.0, all import and export methods support working with both Fac
             "x": 4.5,
             "y": 4.5
         },
+        "items": {
+            "productivity-module-3": 2
+        },
         "tags": {},
+        "direction": 0,
         "recipe": "rocket-part",
         "connections": {},
-        "items": {},
         "auto_launch": false
     }
     >>> print(json.dumps(silo.to_dict(version=(2, 0), exclude_defaults=False), indent=4))
@@ -28,14 +31,39 @@ As of Draftsman 3.0, all import and export methods support working with both Fac
             "x": 4.5,
             "y": 4.5
         },
+        "mirror": false,
         "quality": "normal",
+        "items": [
+            {
+                "id": {
+                    "name": "productivity-module-3",
+                    "quality": "normal"
+                },
+                "items": {
+                    "in_inventory": [
+                        {
+                            "inventory": 4,
+                            "stack": 0,
+                            "count": 1
+                        },
+                        {
+                            "inventory": 4,
+                            "stack": 1,
+                            "count": 1
+                        }
+                    ],
+                    "grid_count": 0
+                }
+            }
+        ],
         "tags": {},
+        "direction": 0,
         "recipe": "rocket-part",
         "recipe_quality": "normal",
-        "items": [],
         "control_behavior": {
             "read_items_mode": 1
         },
+        "use_transitional_requests": false,
         "transitional_request_index": 0
     }
 

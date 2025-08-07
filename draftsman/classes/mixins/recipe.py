@@ -34,7 +34,6 @@ class RecipeMixin(Exportable):
         """
         A list of all the recipes that this Entity can set itself to assemble.
         Returns ``None`` if the entity's name is not recognized by Draftsman.
-        Not exported; read only.
         """
         return recipes.for_machine.get(self.name, None)
 
@@ -47,7 +46,7 @@ class RecipeMixin(Exportable):
         """
         Returns a ``set`` of all ingredient names that are valid inputs for the
         currently selected recipe and recipe quality. Returns ``None`` if there
-        is insufficient information to deduce this. Not exported; read only.
+        is insufficient information to deduce this.
         """
         return recipes.get_recipe_ingredients(self.recipe, self.recipe_quality)
 
@@ -65,20 +64,21 @@ class RecipeMixin(Exportable):
         },
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The recipe that this Entity is currently set to make.
 
     Raises a :py:class:`~draftsman.warning.ModuleLimitationWarning` if the
     recipe changes to one that conflicts with the current module requests.
 
-    Raises a :py:class:`~draftsman.warning.ItemLimtiationWarning` if the
+    Raises a :py:class:`~draftsman.warning.ItemLimitationWarning` if the
     recipe changes to one whose input ingredients no longer match the
     current item requests.
 
-    warns UnknownRecipeWarning if set to a string that is not contained within
-    this entity's recipes.
-
-    :exception DataFormatError: If set to anything other than a ``str`` or
-        ``None``.
+    Raises :py:class:`.UnknownRecipeWarning` if set to a string that is not 
+    contained within this entity's recipes.
     """
 
     @recipe.validator
@@ -139,13 +139,13 @@ class RecipeMixin(Exportable):
         default="normal", validator=or_(one_of(QualityID), is_none)
     )
     """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
     The quality of the recipe that this Entity is selected to make.
 
-    :getter: Gets the current recipe quality of the Entity.
-    :setter: Sets the current recipe quality of the Entity.
-
-    :exception DataFormatError: If set to anything other than a ``str`` or
-        ``None``.
+    .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
     # =========================================================================

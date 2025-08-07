@@ -6,6 +6,5 @@
 
 .. autoclass:: LogisticBufferContainer
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:
