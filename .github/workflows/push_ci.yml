@@ -13,13 +13,19 @@ jobs:
     - uses: actions/checkout@master
       with:
         submodules: true
-    - name: Setup Python
-      uses: actions/setup-python@master
-      with:
-        python-version: 3.10.4
-    - name: Run tests and generate coverage report
+    - name: Install Draftsman
       run: |
         pip install --group test
         pip install -e .
-        coverage run
+    - name: Install UV
+      uses: astral-sh/setup-uv@v6
+    - name: Install Just with pipx
+      uses: threeal/pipx-install-action@v2
+      with:
+        packages: rust-just
+    - name: Run tests
+      run: just test
+    - name: Combine and make XML
+      run: |
+        coverage combine
         coverage xml
