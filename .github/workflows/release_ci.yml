@@ -1,2 +1,39 @@
 name: Release Continuous Integration
 on: [release]
+jobs:
+  run:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: '3.10.4'
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Install Draftsman
+      run: |
+        pip install --group test
+        pip install -e .
+    - name: Install UV
+      uses: astral-sh/setup-uv@v6
+    - name: Install Just
+      uses: pipx install rust-just
+    - name: Run giga test and generate coverage report
+      run: just test-all
+    - name: Combine and make XML
+      run: |
+        coverage combine
+        coverage xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        directory: ./coverage/reports/
+        env_vars: PYTHON
+        fail_ci_if_error: true
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
