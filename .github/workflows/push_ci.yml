@@ -20,7 +20,7 @@ jobs:
     - name: Install UV
       uses: astral-sh/setup-uv@v6
     - name: Install Just with pipx
-      uses: threeal/pipx-install-action@v2.0.0
+      uses: threeal/pipx-install-action@v1
       with:
         packages: rust-just
     - name: Run tests
