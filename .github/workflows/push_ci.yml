@@ -1,4 +1,4 @@
-name: Push Continuous Integration
+name: Push CI
 on: [push]
 jobs:
   run:

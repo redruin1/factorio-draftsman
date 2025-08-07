@@ -1,4 +1,4 @@
-name: Release Continuous Integration
+name: Release CI
 on: [release]
 jobs:
   run:
@@ -19,8 +19,10 @@ jobs:
         pip install -e .
     - name: Install UV
       uses: astral-sh/setup-uv@v6
-    - name: Install Just
-      uses: pipx install rust-just
+    - name: Install Just with pipx
+      uses: threeal/pipx-install-action@v2
+      with:
+        packages: rust-just
     - name: Run giga test and generate coverage report
       run: just test-all
     - name: Combine and make XML

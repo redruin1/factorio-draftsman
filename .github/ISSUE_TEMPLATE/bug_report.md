@@ -23,8 +23,8 @@ Add any other context about the issue here, if seemingly relevant.
 Draftsman version: `X.X.X`
 Python version: `X.X.X`
 
-If your issue is related to mod-loading with `draftsman-update`, in addition to the above information, please also include:
-1. The exact `draftsman-update` command that fails/produces incorrect behavior
+If your issue is related to mod-loading with `draftsman update`, in addition to the above information, please also include:
+1. The exact `draftsman update` command that fails/produces incorrect behavior
 2. The error produced by the command (if the command does fail)
 3. The mod list with their versions used with the command
 
