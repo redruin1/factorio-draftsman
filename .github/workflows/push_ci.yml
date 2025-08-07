@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: Push Continuous Integration
 on: [push]
 jobs:
   run:
@@ -19,7 +19,7 @@ jobs:
         python-version: 3.10.4
     - name: Run tests and generate coverage report
       run: |
-        pip install pytest coverage
+        pip install --group test
         pip install -e .
         coverage run
         coverage xml
