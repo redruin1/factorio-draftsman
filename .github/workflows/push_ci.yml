@@ -30,7 +30,7 @@ jobs:
     - name: Run tests
       run: |
         pwd
-        ls
+        ls -ap
         just test
     - name: Combine and make XML
       run: |
