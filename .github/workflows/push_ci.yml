@@ -28,10 +28,7 @@ jobs:
         uv pip install --group test
         uv pip install -e .
     - name: Run tests
-      run: |
-        pwd
-        ls -ap
-        just test
+      run: just test
     - name: Combine and make XML
       run: |
         coverage combine
