@@ -18,14 +18,15 @@ jobs:
         python-version: '3.13'
     - name: Install UV
       uses: astral-sh/setup-uv@v6
-    - name: Install Draftsman
-      run: |
-        uv pip install --group test
-        uv pip install -e .
     - name: Install Just with pipx
       uses: threeal/pipx-install-action@v1
       with:
         packages: rust-just
+    - name: Create venv and Install Draftsman
+      run: |
+        uv venv --python 3.13
+        uv pip install --group test
+        uv pip install -e .
     - name: Run tests
       run: just test
     - name: Combine and make XML
