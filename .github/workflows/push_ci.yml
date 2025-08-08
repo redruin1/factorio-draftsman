@@ -16,12 +16,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    - name: Install Draftsman
-      run: |
-        pip install --group test
-        pip install -e .
     - name: Install UV
       uses: astral-sh/setup-uv@v6
+    - name: Install Draftsman
+      run: |
+        uv pip install --group test
+        uv pip install -e .
     - name: Install Just with pipx
       uses: threeal/pipx-install-action@v1
       with:
