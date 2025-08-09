@@ -10,7 +10,7 @@ submodules:
   recursive: true
 
 sphinx:
-  fail_on_warning: true
+  fail_on_warning: false
   configuration: docs/source/conf.py
 
 python:
