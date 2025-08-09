@@ -40,7 +40,7 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx_copybutton",
-    "sphinx-jsonschema",
+    # "sphinx-jsonschema",
     "sphinx_toolbox.collapse",
     "enum_tools.autoenum",
     "sphinx_immaterial",
