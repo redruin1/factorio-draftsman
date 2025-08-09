@@ -2,7 +2,7 @@
 
 from draftsman.classes.exportable import Exportable
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ManualSection, SignalFilter, LuaDouble
+from draftsman.signatures import ManualSection, SignalFilter
 from draftsman.validators import instance_of
 
 import attrs
@@ -85,7 +85,7 @@ class RequestFiltersMixin(Exportable):
     def add_section(
         self,
         group: Union[str, None] = None,
-        index: Optional[int] = None, # TODO: should be int64
+        index: Optional[int] = None,  # TODO: should be int64
         active: bool = True,
     ) -> ManualSection:
         """

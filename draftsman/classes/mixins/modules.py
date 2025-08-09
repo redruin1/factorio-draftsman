@@ -7,7 +7,6 @@ from draftsman.signatures import (
     ItemID,
     ItemInventoryPositions,
     InventoryPosition,
-    ModuleID,
     QualityID,
 )
 
@@ -71,7 +70,7 @@ class ModulesMixin(metaclass=ABCMeta):
     def request_modules(
         self,
         inventory_id: InventoryType,
-        module_name: str, # TODO: should be ModuleID
+        module_name: str,  # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):

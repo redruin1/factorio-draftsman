@@ -15,7 +15,7 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.signatures import ModuleID, QualityID
+from draftsman.signatures import QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import assembling_machines
@@ -86,7 +86,7 @@ class AssemblingMachine(
 
     def request_modules(
         self,
-        module_name: str, # TODO: should be ModuleID
+        module_name: str,  # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):

@@ -13,7 +13,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.constants import InventoryType
-from draftsman.signatures import ModuleID, QualityID
+from draftsman.signatures import QualityID
 from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data import entities, modules
@@ -69,7 +69,7 @@ class MiningDrill(
 
     def request_modules(
         self,
-        module_name: str, # TODO: should be ModuleID
+        module_name: str,  # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):

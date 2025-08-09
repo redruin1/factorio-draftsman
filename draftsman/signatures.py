@@ -803,9 +803,7 @@ class ManualSection(Exportable):
     .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
-    index: Annotated[int64, OneIndexed] = attrs.field(
-        validator=instance_of(int64)
-    )
+    index: Annotated[int64, OneIndexed] = attrs.field(validator=instance_of(int64))
     """
     Location of the logistics section within the entity. Hard capped to 100 
     sections per entity.
@@ -861,9 +859,9 @@ class ManualSection(Exportable):
 
     def set_signal(
         self,
-        index: int, # TODO: should be int64
-        name: Optional[str], # TODO: should be SignalIDName
-        count: int = 0, # TODO: should be int32
+        index: int,  # TODO: should be int64
+        name: Optional[str],  # TODO: should be SignalIDName
+        count: int = 0,  # TODO: should be int32
         quality: QualityID = "normal",
         type: Optional[str] = None,
     ) -> None:
@@ -900,10 +898,7 @@ class ManualSection(Exportable):
         if existing_index is None:
             self.filters.append(new_entry)
 
-    def get_signal(
-            self, 
-            index: int # TODO: should be int64
-        ) -> Optional[SignalFilter]:
+    def get_signal(self, index: int) -> Optional[SignalFilter]:  # TODO: should be int64
         """
         Get the :py:class:`.SignalFilter` entry at a particular index, if it
         exists.
@@ -1350,8 +1345,8 @@ class Inventory(Exportable):
 
     def set_filter(
         self,
-        index: int, # TODO: should be int64
-        item: Optional[str], # TODO: should be ItemIDName
+        index: int,  # TODO: should be int64
+        item: Optional[str],  # TODO: should be ItemIDName
         quality: QualityID = "normal",
         comparator: Comparator = "=",
     ):

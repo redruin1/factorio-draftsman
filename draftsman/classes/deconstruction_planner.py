@@ -8,10 +8,7 @@ from draftsman.signatures import (
     Comparator,
     QualityID,
     uint8,
-    uint64,
-    EntityID,
     EntityFilter,
-    TileID,
     TileFilter,
 )
 from draftsman.validators import instance_of, try_convert
@@ -192,8 +189,8 @@ class DeconstructionPlanner(Blueprintable):
 
     def set_entity_filter(
         self,
-        index: int, # TODO: should be uint64
-        name: str, # TODO: should be EntityID
+        index: int,  # TODO: should be uint64
+        name: str,  # TODO: should be EntityID
         quality: QualityID = "normal",
         comparator: Comparator = "=",
     ):
@@ -225,9 +222,7 @@ class DeconstructionPlanner(Blueprintable):
             bisect.insort(self.entity_filters, new_entry, key=lambda e: e.index)
 
     def set_tile_filter(
-        self, 
-        index: int, # TODO: should be uint64
-        name: str # TODO: should be TileID
+        self, index: int, name: str  # TODO: should be uint64  # TODO: should be TileID
     ):
         """
         Sets a tile filter in the list of tile filters. Appends the new one

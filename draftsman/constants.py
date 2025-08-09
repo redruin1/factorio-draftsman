@@ -820,7 +820,7 @@ class Ticks(int, Enum):
             15780
 
         :param td: The difference in time between two points.
-        
+
         :returns: The equivalent number of ticks representing this difference,
             rounded to the nearest tick.
         """

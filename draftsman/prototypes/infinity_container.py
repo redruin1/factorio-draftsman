@@ -98,10 +98,10 @@ class InfinityContainer(InventoryMixin, Entity):
 
     def set_infinity_filter(
         self,
-        index: int, # TODO: should be uint16
+        index: int,  # TODO: should be uint16
         item: Optional[str],
         mode: Literal["at-least", "at-most", "exactly", None] = "at-least",
-        count: Optional[int] = None, # TODO: should be uint32
+        count: Optional[int] = None,  # TODO: should be uint32
     ):
         """
         Sets an infinity filter.

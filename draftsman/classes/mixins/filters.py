@@ -7,14 +7,12 @@ from draftsman.signatures import (
     Comparator,
     QualityID,
     ItemFilter,
-    ItemIDName,
-    int64,
 )
 from draftsman.validators import instance_of
 
 import attrs
 import bisect
-from typing import Literal, Optional
+from typing import Optional
 
 
 @attrs.define(slots=False)
@@ -75,8 +73,8 @@ class FiltersMixin(Exportable):
 
     def set_item_filter(
         self,
-        index: int, # TODO: should be int64
-        item: str, # TODO: should be ItemIDName
+        index: int,  # TODO: should be int64
+        item: str,  # TODO: should be ItemIDName
         quality: QualityID = "normal",
         comparator: Comparator = "=",
     ):

@@ -11,7 +11,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.constants import InventoryType, SiloReadMode
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ModuleID, QualityID, uint32
+from draftsman.signatures import QualityID, uint32
 from draftsman.utils import attrs_reuse, fix_incorrect_pre_init
 from draftsman.validators import instance_of, try_convert
 
@@ -138,7 +138,7 @@ class RocketSilo(
 
     def request_modules(
         self,
-        module_name: str, # TODO: should be ModuleID
+        module_name: str,  # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):

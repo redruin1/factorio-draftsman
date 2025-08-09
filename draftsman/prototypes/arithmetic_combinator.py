@@ -253,10 +253,10 @@ class ArithmeticCombinator(
     @reissue_warnings
     def set_arithmetic_condition(
         self,
-        first_operand: Union[str, SignalID, int, None] = None, # TODO: int32
+        first_operand: Union[str, SignalID, int, None] = None,  # TODO: int32
         first_operand_wires: set[Literal["red", "green"]] = {"red", "green"},
         operation: ArithmeticOperation = "*",
-        second_operand: Union[str, SignalID, int, None] = 0, # TODO: int32
+        second_operand: Union[str, SignalID, int, None] = 0,  # TODO: int32
         second_operand_wires: set[Literal["red", "green"]] = {"red", "green"},
         output_signal: Union[str, SignalID, None] = None,
     ):

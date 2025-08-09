@@ -995,11 +995,11 @@ class Collection(metaclass=ABCMeta):
 
         :param entity_1: EntityLike, ID, or index of the first entity to join.
         :param entity_2: EntityLike, ID or index of the second entity to join.
-        :param side_1: Which side of ``entity_1`` to connect power to. Only 
-            necessary to specify for entities that are 
+        :param side_1: Which side of ``entity_1`` to connect power to. Only
+            necessary to specify for entities that are
             :py:attr:`.Entity.dual_power_connectable`.
-        :param side_2: Which side of ``entity_2`` to connect power to. Only 
-            necessary to specify for entities that are 
+        :param side_2: Which side of ``entity_2`` to connect power to. Only
+            necessary to specify for entities that are
             :py:attr:`.Entity.dual_power_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
@@ -1119,10 +1119,10 @@ class Collection(metaclass=ABCMeta):
         :param entity_2: EntityLike, ID or index of the second entity to remove
             the connection to.
         :param side_1: Which side of ``entity_1`` to remove a power connection
-            from. Only necessary to specify for entities that are 
+            from. Only necessary to specify for entities that are
             :py:attr:`.Entity.dual_power_connectable`.
         :param side_2: Which side of ``entity_2`` to remove a power connection
-            from. Only necessary to specify for entities that are 
+            from. Only necessary to specify for entities that are
             :py:attr:`.Entity.dual_power_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
@@ -1291,11 +1291,11 @@ class Collection(metaclass=ABCMeta):
             either ``"red"`` or ``"green"``.
         :param entity_1: ID or index of the first entity to join.
         :param entity_2: ID or index of the second entity to join.
-        :param side_1: Which side of ``entity_1`` to connect to. Only necessary 
-            to specify for entities that are 
+        :param side_1: Which side of ``entity_1`` to connect to. Only necessary
+            to specify for entities that are
             :py:attr:`.Entity.dual_circuit_connectable`.
-        :param side_2: Which side of ``entity_2`` to connect to. Only necessary 
-            to specify for entities that are 
+        :param side_2: Which side of ``entity_2`` to connect to. Only necessary
+            to specify for entities that are
             :py:attr:`.Entity.dual_circuit_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are invalid
@@ -1429,11 +1429,11 @@ class Collection(metaclass=ABCMeta):
             connection to.
         :param entity_2: ID or index of the second entity to remove the
             connection to.
-        :param side_1: Which side of ``entity_1`` to remove the connection from. 
-            Only necessary to specify for entities that are 
+        :param side_1: Which side of ``entity_1`` to remove the connection from.
+            Only necessary to specify for entities that are
             :py:attr:`.Entity.dual_circuit_connectable`.
-        :param side_2: Which side of ``entity_2`` to remove the connection from. 
-            Only necessary to specify for entities that are 
+        :param side_2: Which side of ``entity_2`` to remove the connection from.
+            Only necessary to specify for entities that are
             :py:attr:`.Entity.dual_circuit_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
@@ -1508,13 +1508,16 @@ class Collection(metaclass=ABCMeta):
             group.remove_circuit_connections()
 
         self.wires[:] = [
-            wire for wire in self.wires 
-            if wire[1] not in { # No need to check the other side
-                WireConnectorID.COMBINATOR_INPUT_RED, 
-                WireConnectorID.COMBINATOR_INPUT_GREEN, 
-                WireConnectorID.COMBINATOR_OUTPUT_RED, 
-                WireConnectorID.COMBINATOR_OUTPUT_GREEN
-            }]
+            wire
+            for wire in self.wires
+            if wire[1]
+            not in {  # No need to check the other side
+                WireConnectorID.COMBINATOR_INPUT_RED,
+                WireConnectorID.COMBINATOR_INPUT_GREEN,
+                WireConnectorID.COMBINATOR_OUTPUT_RED,
+                WireConnectorID.COMBINATOR_OUTPUT_GREEN,
+            }
+        ]
 
     # =========================================================================
     # Trains

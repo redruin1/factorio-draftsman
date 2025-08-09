@@ -3,7 +3,7 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import ModulesMixin, EnergySourceMixin
 from draftsman.constants import InventoryType
-from draftsman.signatures import ModuleID, QualityID
+from draftsman.signatures import QualityID
 
 from draftsman.data.entities import labs
 from draftsman.data import entities, modules
@@ -76,7 +76,7 @@ class Lab(ModulesMixin, EnergySourceMixin, Entity):
 
     def request_modules(
         self,
-        module_name: str, # TODO: should be ModuleID
+        module_name: str,  # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):

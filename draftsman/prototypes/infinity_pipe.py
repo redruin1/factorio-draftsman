@@ -139,7 +139,7 @@ class InfinityPipe(Entity):
         mode: Literal[
             "at-least", "at-most", "exactly", "add", "remove", None
         ] = "at-least",
-        temperature: int = None, # TODO: should be int64
+        temperature: int = None,  # TODO: should be int64
     ):
         """
         Sets all of the parameters of the infinite fluid at once.

@@ -128,7 +128,7 @@ class DirectionalMixin(Exportable):
         try:
             if "building-direction-8-way" in self.flags:
                 return EIGHT_WAY_DIRECTIONS
-            elif "building-direction-16-way" in self.flags:
+            elif "building-direction-16-way" in self.flags:  # pragma: no coverage
                 return SIXTEEN_WAY_DIRECTIONS
             else:
                 return FOUR_WAY_DIRECTIONS

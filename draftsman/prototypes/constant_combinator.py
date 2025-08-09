@@ -9,7 +9,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ManualSection, uint32, LuaDouble
+from draftsman.signatures import ManualSection, uint32
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 from draftsman.data import mods
@@ -112,7 +112,7 @@ class ConstantCombinator(
     def add_section(
         self,
         group: Optional[str] = None,
-        index: Optional[int] = None, # TODO: should be int64
+        index: Optional[int] = None,  # TODO: should be int64
         active: bool = True,
     ) -> ManualSection:
         """

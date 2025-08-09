@@ -53,7 +53,7 @@ class LogisticConditionMixin(Exportable):
         self,
         first_operand: Union[signatures.SignalID, None] = None,
         comparator: signatures.Comparator = "<",
-        second_operand: Union[signatures.SignalID, int] = 0, # TODO: should be int32
+        second_operand: Union[signatures.SignalID, int] = 0,  # TODO: should be int32
     ):
         """
         Sets the logistic condition of the Entity.

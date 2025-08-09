@@ -21,7 +21,6 @@ from draftsman.signatures import (
     QualityID,
     EntityID,
     get_suggestion,
-    uint32,
 )
 from draftsman.utils import (
     aabb_to_dimensions,
@@ -772,10 +771,10 @@ class Entity(EntityLike, Exportable):
     def set_item_request(
         self,
         item: str,
-        count: Optional[int] = None, # TODO: should be uint32
+        count: Optional[int] = None,  # TODO: should be uint32
         quality: QualityID = "normal",
         inventory: InventoryType = 1,
-        slot: Optional[int] = None, # TODO: should be uint32
+        slot: Optional[int] = None,  # TODO: should be uint32
     ):
         """
         Creates a construction request for an item. Removes the item request if

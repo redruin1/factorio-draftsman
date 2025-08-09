@@ -113,13 +113,6 @@ class TestDeconstructionPlannerTesting:
             EntityFilter(**{"name": "fast-transport-belt", "index": 1}),
         ]
 
-        # Test Abridged
-        decon_planner.set_entity_filters("transport-belt", "fast-transport-belt")
-        assert decon_planner.entity_filters == [
-            EntityFilter(**{"name": "transport-belt", "index": 0}),
-            EntityFilter(**{"name": "fast-transport-belt", "index": 1}),
-        ]
-
         # Test unknown entity
         with pytest.warns(UnknownEntityWarning):
             decon_planner.entity_filters = ["unknown-thingy"]
