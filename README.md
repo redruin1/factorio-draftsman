@@ -133,16 +133,16 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
 
 ## Features
 * Compatible with Python >= 3.10
-* Compatible with the latest versions of Factorio (1.0.0+)
+* Compatible with all versions of Factorio >= 1.0.0
 * Compatible with Factorio mods(!)
 * Well documented
 * Intuitive and flexible API
 * Useful constructs for ease-of-use:
     * Give entities unique string IDs to make association between entities easier
-    * Filter entities from blueprints by type, region and other parameters [just like Factorio's own API](https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered)
+    * Filter entities from blueprints by type, region and other parameters [just like Factorio's own API](https://lua-api.factorio.com/latest/classes/LuaSurface.html#find_entities_filtered)
     * Entities are categorized and organized within `draftsman.data` for easy and flexible iteration
     * Group entities together and manipulate them all as one unit
-* Verbose Errors and Warnings (["Factorio-safety" and "Factorio-correctness"](TODO))
+* Verbose Errors and Warnings (["Factorio-safety" and "Factorio-correctness"](https://factorio-draftsman.readthedocs.io/en/latest/concepts/validation.html))
 * Expansive and rigorous test suite
 
 # Usage
@@ -162,7 +162,7 @@ draftsman factorio-version latest
 draftsman --mods-path "path/to/mods/folder" update
 ```
 
-For more information on how to use this tool, you can run `draftsman -h` or see it's documentation [here](https://factorio-draftsman.readthedocs.io/en/latest/index.html).
+For more information on how to use this tool, you can run `draftsman -h` or see it's documentation [here](https://factorio-draftsman.readthedocs.io/en/latest/reference/environment/script.html).
 
 ## Installation (For Developers)
 
@@ -217,7 +217,7 @@ Available recipes:
     report-coverage # Combine all coverage files and create HTML report
 ```
 
-Note that testing currently is only guaranteed to pass with a vanilla [environment](TODO).
+Note that testing currently is only guaranteed to pass with a vanilla [environment](https://factorio-draftsman.readthedocs.io/en/latest/concepts/environment.html).
 
 --------------------------------------------------------------------------------
 

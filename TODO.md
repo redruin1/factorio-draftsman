@@ -1,5 +1,7 @@
 # TODO
 
+### Finish `CONTRIBUTING.md`
+
 ### Remove all old typing constructs (`Union`, `List`, etc.) now that minimum Python version > 3.9
 
 ---
