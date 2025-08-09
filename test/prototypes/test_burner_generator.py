@@ -1,6 +1,6 @@
 # test_burner_generator.py
 
-from draftsman.constants import ValidationMode
+from draftsman.constants import Direction, InventoryType
 from draftsman.entity import BurnerGenerator, burner_generators, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import (
@@ -14,12 +14,31 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_burner_generator():
+    return BurnerGenerator(
+        "burner-generator",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        item_requests=[
+            {
+                "id": {"name": "coal"},
+                "items": {
+                    "in_inventory": [
+                        {"inventory": InventoryType.FUEL, "stack": 0, "count": 50}
+                    ]
+                },
+            }
+        ],
+        tags={"blah": "blah"},
+    )
+
+
 class TestBurnerGenerator:
     def test_contstructor_init(self):
         generator = BurnerGenerator("burner-generator")
-
-        with pytest.warns(UnknownKeywordWarning):
-            BurnerGenerator(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             BurnerGenerator("this is not a burner generator").validate().reissue_all()

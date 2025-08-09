@@ -46,7 +46,7 @@ class IncorrectBlueprintTypeError(DraftsmanError):
 
 class DuplicateIDError(DraftsmanError):
     """
-    Raised when two EntityLike's are added to a :py:class:`.EntityCollection`
+    Raised when two EntityLike's are added to a :py:class:`.Collection`
     with the same ID, which is disallowed.
     """
 
@@ -66,7 +66,7 @@ class UnreasonablySizedBlueprintError(DraftsmanError):
 class RotationError(DraftsmanError):
     """
     Raised when a rotation angle has been chosen that does not align with the
-    possible rotations that the :py:class:`.EntityCollection` can have, such as
+    possible rotations that the :py:class:`.Collection` can have, such as
     rotations by 45 degrees.
     """
 
@@ -75,7 +75,7 @@ class RotationError(DraftsmanError):
 
 class FlippingError(DraftsmanError):
     """
-    Raised when attempting to flip a :py:class:`.EntityCollection` that contains
+    Raised when attempting to flip a :py:class:`.Collection` that contains
     entities that cannot be flipped.
     """
 
@@ -127,8 +127,9 @@ class InvalidWireTypeError(DraftsmanError):
 class InvalidAssociationError(DraftsmanError):
     """
     Raised when an Association to an Entity still persists even when the Entity
-    that it refers to has been deleted, or when attempting to create an Association
-    between entities that don't exist within the EntityCollection they should.
+    that it refers to has been deleted, or when attempting to create an
+    Association between entities that don't exist within the
+    :py:class:`.Collection` they should.
     """
 
 
@@ -271,6 +272,17 @@ class InvalidSignalError(DraftsmanError):
     """
     Raised when a signal name does not match any valid entry currently
     recognized by Draftsman.
+    """
+
+    pass
+
+
+class IncompleteSignalError(DraftsmanError):
+    """
+    Raised when a constructing a SignalID from a string name when the name is
+    not recognized by the current environment. In this case, the type is
+    ambiguous, and so must be either defined alongside the name at instantiation
+    or the environment must be updated to accomodate the unknown signal.
     """
 
     pass

@@ -1,8 +1,8 @@
 # inserter.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
+    CircuitSetFiltersMixin,
     FiltersMixin,
     StackSizeMixin,
     CircuitReadHandMixin,
@@ -12,20 +12,25 @@ from draftsman.classes.mixins import (
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, uint8
-from draftsman.utils import get_first
+from draftsman.classes.vector import Vector
+from draftsman.constants import Direction
+from draftsman.serialization import draftsman_converters
+from draftsman.utils import fix_incorrect_pre_init
+from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import inserters
 
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+import attrs
+from typing import Literal, Optional
 
 
+@fix_incorrect_pre_init
+@attrs.define
 class Inserter(
+    CircuitSetFiltersMixin,
     FiltersMixin,
     StackSizeMixin,
     CircuitReadHandMixin,
@@ -35,259 +40,229 @@ class Inserter(
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):
     """
-    An entity that can move items between machines.
+    An entity with a swinging arm that can move items between machines.
+    """
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return inserters
+
+    # =========================================================================
+
+    @property
+    def pickup_position(self) -> Vector:
+        """
+        Gets the current position in world space that this inserter will grab
+        items from.
+
+        This value is the sum of this entity's :py:attr:`.global_position`, it's
+        :py:attr:`.prototype` ``"pickup_position"``, and any custom
+        :py:attr:`.pickup_position_offset`. If this entity has no known
+        prototype or pickup offset, then both default to ``(0, 0)``.
+        """
+        try:
+            direction_matrix = {
+                Direction.NORTH: lambda p: p,
+                Direction.EAST: lambda p: (-p[1], p[0]),
+                Direction.SOUTH: lambda p: (-p[0], -p[1]),
+                Direction.WEST: lambda p: (p[1], -p[0]),
+            }
+            pickup_position = direction_matrix[self.direction](
+                self.prototype["pickup_position"]
+            )
+        except KeyError:  # Unknown entity/direction case
+            pickup_position = (0, 0)
+        return self.global_position + pickup_position + self.pickup_position_offset
+
+    # =========================================================================
+
+    @property
+    def drop_position(self) -> Vector:
+        """
+        Gets the current position in world space that this inserter will drop
+        items to.
+
+        This value is the sum of this entity's :py:attr:`.global_position`, it's
+        :py:attr:`.prototype` ``"pickup_position"``, and any custom
+        :py:attr:`.pickup_position_offset`. If this entity has no known
+        prototype or pickup offset, then both default to ``(0, 0)``.
+        """
+        try:
+            direction_matrix = {
+                Direction.NORTH: lambda p: p,
+                Direction.EAST: lambda p: (-p[1], p[0]),
+                Direction.SOUTH: lambda p: (-p[0], -p[1]),
+                Direction.WEST: lambda p: (p[1], -p[0]),
+            }
+            drop_position = direction_matrix[self.direction](
+                self.prototype["insert_position"]
+            )
+        except KeyError:  # Unknown entity/direction case
+            drop_position = (0, 0)
+        return self.global_position + drop_position + self.drop_position_offset
+
+    # =========================================================================
+
+    pickup_position_offset: Optional[Vector] = attrs.field(
+        factory=lambda: Vector(0, 0),
+        converter=Vector.from_other,
+        validator=instance_of(Optional[Vector]),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The configured pickup position "offset" used for when inserters have custom 
+    pickup/dropoff locations (think adjustable inserter mods).
+
+    The value is specified as an X/Y coordinate offset from where the position
+    would "normally" be. This offset coordinate is defined in world axes, so
+    a offset position of ``(0, 1)`` will always shift the inserter's hand 
+    position 1 tile southward.
 
     .. NOTE::
 
-        In Factorio, the ``Inserter`` prototype includes both regular and filter
-        inserters. In Draftsman, inserters are split into two different classes,
-        :py:class:`~.Inserter` and :py:class:`~.FilterInserter`
+        Only inserters with the ``"allow_custom_vectors"`` key set to ``True`` 
+        in their :py:attr:`.prototype` definition will actually allow setting
+        these values to have an effect in game. In other words, only modded 
+        inserters (or vanilla inserters which have been tweaked with mods) can
+        actually change this behavior.
     """
 
-    class Format(
-        FiltersMixin.Format,
-        StackSizeMixin.Format,
-        CircuitReadHandMixin.Format,
-        InserterModeOfOperationMixin.Format,
-        CircuitConditionMixin.Format,
-        LogisticConditionMixin.Format,
-        CircuitEnableMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            StackSizeMixin.ControlFormat,
-            CircuitReadHandMixin.ControlFormat,
-            InserterModeOfOperationMixin.ControlFormat,
-            CircuitConditionMixin.ControlFormat,
-            LogisticConditionMixin.ControlFormat,
-            CircuitEnableMixin.ControlFormat,
-            DraftsmanBaseModel,
-        ):
-            circuit_set_filters: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not inputs from the circuit network should determine 
-                item filters.
-                """,
-            )
+    # =========================================================================
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
+    drop_position_offset: Optional[Vector] = attrs.field(
+        factory=lambda: Vector(0, 0),
+        converter=Vector.from_other,
+        validator=instance_of(Optional[Vector]),
+    )
+    """
+    .. serialized::
 
-        pickup_position: Optional[list[float]] = Field(
-            None,
-            description="""
-            The pickup position to use. Not configurable in vanilla, but 
-            settable via script or mods.
-            """,
-        )
-        drop_position: Optional[list[float]] = Field(
-            None,
-            description="""
-            The drop position to use. Not configurable in vanilla, but settable 
-            via script or mods.
-            """,
-        )
-        filter_mode: Optional[Literal["whitelist", "blacklist"]] = Field(
-            "whitelist",
-            description="""
-            Whether or not to treat the item filters associated with this 
-            inserter as a list of items to allow or a list of items to disallow.
-            """,
-        )
-        spoil_priority: Optional[Literal["spoiled-first", "fresh-first"]] = Field(
-            None,
-            description="""
-            Whether to prefer grabbing the most spoiled or most fresh items from 
-            an inventory.
-            """,
-        )
+        This attribute is imported/exported from blueprint strings.
 
-        model_config = ConfigDict(title="Inserter")
+    The configured drop position "offset" used for when inserters have custom 
+    pickup/dropoff locations (think adjustable inserter mods).
 
-    def __init__(
-        self,
-        name: Optional[str] = get_first(inserters),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        pickup_position: Optional[list[float]] = None,
-        drop_position: Optional[list[float]] = None,
-        filter_mode: Literal["whitelist", "blacklist"] = "whitelist",
-        spoil_priority: Literal["spoiled-first", "fresh-first", None] = None,
-        override_stack_size: uint8 = None,
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        super().__init__(
-            name,
-            inserters,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            override_stack_size=override_stack_size,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
+    The value is specified as an X/Y coordinate offset from where the position
+    would "normally" be. This offset coordinate is defined in world axes, so
+    a offset position of ``(0, 1)`` will always shift the inserter's hand 
+    position 1 tile southward.
 
-        self.pickup_position = pickup_position  # TODO: defaults
-        self.drop_position = drop_position  # TODO: defaults
+    .. NOTE::
 
-        self.filter_mode = filter_mode
-
-        self.spoil_priority = spoil_priority
-
-        self.validate_assignment = validate_assignment
+        Only inserters with the ``"allow_custom_vectors"`` key set to ``True`` 
+        in their :py:attr:`.prototype` definition will actually allow setting
+        these values to have an effect in game. In other words, only modded 
+        inserters (or vanilla inserters which have been tweaked with mods) can
+        actually change this behavior.
+    """
 
     # =========================================================================
 
-    @property
-    def pickup_position(self) -> Optional[list[float]]:
-        """
-        The pickup position of the inserter.
+    filter_mode: Literal["whitelist", "blacklist"] = attrs.field(
+        default="whitelist", validator=one_of("whitelist", "blacklist")
+    )
+    """
+    .. serialized::
 
-        TODO
-        """
-        return self._root.pickup_position
+        This attribute is imported/exported from blueprint strings.
 
-    @pickup_position.setter
-    def pickup_position(self, value: Optional[list[float]]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format,
-                self._root,
-                "pickup_position",
-                value,
-            )
-            self._root.pickup_position = result
-        else:
-            self._root.pickup_position = value
+    The mode that the given filter should operate under, if the inserter is 
+    configured to operate with filters.
+    """
 
     # =========================================================================
 
-    @property
-    def drop_position(self) -> Optional[list[float]]:
-        """
-        The pickup position of the inserter.
+    spoil_priority: Literal["spoiled-first", "fresh-first", None] = attrs.field(
+        default=None,
+        validator=one_of("spoiled-first", "fresh-first", None),
+    )
+    """
+    .. serialized::
 
-        TODO
-        """
-        return self._root.drop_position
+        This attribute is imported/exported from blueprint strings.
 
-    @drop_position.setter
-    def drop_position(self, value: Optional[list[float]]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format,
-                self._root,
-                "drop_position",
-                value,
-            )
-            self._root.drop_position = result
-        else:
-            self._root.drop_position = value
-
-    # =========================================================================
-
-    @property
-    def filter_mode(self) -> Literal["whitelist", "blacklist", None]:
-        """
-        The mode that the filter is set to. Can be either ``"whitelist"`` or
-        ``"blacklist"``.
-
-        :getter: Gets the filter mode.
-        :setter: Sets the filter mode.
-
-        :exception ValueError: If set to a ``str`` that is neither ``"whitelist"``
-            nor ``"blacklist"``.
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
-        """
-        return self._root.filter_mode
-
-    @filter_mode.setter
-    def filter_mode(self, value: Literal["whitelist", "blacklist", None]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "filter_mode", value
-            )
-            self._root.filter_mode = result
-        else:
-            self._root.filter_mode = value
-
-    # =========================================================================
-
-    @property
-    def spoil_priority(self) -> Literal["spoiled-first", "fresh-first", None]:
-        """
-        Whether or not this inserter should prefer most fresh or most spoiled
-        items when grabbing from an inventory.
-
-        TODO
-        """
-        return self._root.spoil_priority
-
-    @spoil_priority.setter
-    def spoil_priority(
-        self, value: Literal["spoiled-first", "fresh-first", None]
-    ) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "spoil_priority", value
-            )
-            self._root.spoil_priority = result
-        else:
-            self._root.spoil_priority = value
-
-    # =========================================================================
-
-    @property
-    def circuit_set_filters(self) -> Optional[bool]:
-        """
-        Whether or not the inserter should have its filters determined via
-        signals on connected circuit networks.
-
-        TODO
-        """
-        return self.control_behavior.circuit_set_filters
-
-    @circuit_set_filters.setter
-    def circuit_set_filters(
-        self, value: Literal["spoiled-first", "fresh-first", None]
-    ) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_set_filters",
-                value,
-            )
-            self.control_behavior.circuit_set_filters = result
-        else:
-            self.control_behavior.circuit_set_filters = value
+    Whether or not this inserter should prefer most fresh or most spoiled
+    items when grabbing from an inventory. If set to ``None``, this inserter
+    will ignore the spoiled value of items from it's pickup logic entirely.
+    """
 
     # =========================================================================
 
     def merge(self, other: "Inserter"):
         super().merge(other)
 
-        self.pickup_position = other.pickup_position
-        self.drop_position = other.drop_position
+        self.circuit_set_filters = other.circuit_set_filters
+        self.pickup_position_offset = other.pickup_position_offset
+        self.drop_position_offset = other.drop_position_offset
         self.filter_mode = other.filter_mode
+        self.spoil_priority = other.spoil_priority
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+@attrs.define
+class _Export:
+    pickup_position_offset: list[float] = [0, 0]
+    drop_position_offset: list[float] = [0, 0]
+
+
+_export_fields = attrs.fields(_Export)
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    Inserter,
+    lambda fields: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": fields.pickup_position_offset.name,
+        "drop_position": fields.drop_position_offset.name,
+        "filter_mode": fields.filter_mode.name,
+        None: fields.spoil_priority.name,
+    },
+    lambda fields, _: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": (
+            _export_fields.pickup_position_offset,
+            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+        ),
+        "drop_position": (
+            _export_fields.drop_position_offset,
+            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+        ),
+        "filter_mode": fields.filter_mode.name,
+        None: fields.spoil_priority.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    Inserter,
+    lambda fields: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": fields.pickup_position_offset.name,
+        "drop_position": fields.drop_position_offset.name,
+        "filter_mode": fields.filter_mode.name,
+        "spoil_priority": fields.spoil_priority.name,
+    },
+    lambda fields, _: {
+        ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
+        "pickup_position": (
+            _export_fields.pickup_position_offset,
+            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+        ),
+        "drop_position": (
+            _export_fields.drop_position_offset,
+            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+        ),
+        "filter_mode": fields.filter_mode.name,
+        "spoil_priority": fields.spoil_priority.name,
+    },
+)

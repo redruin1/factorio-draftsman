@@ -40,9 +40,27 @@ menu_simulations.big_defense = {}
 menu_simulations.brutal_defeat = {}
 menu_simulations.spider_ponds = {}
 
+-- In Factorio 2.0, the `feature_flags` global indicates whether or not the 
+-- player has access to DLC - presumably these are hardcoded somewhere in the 
+-- executable.
+-- Mods can query these values during their load process in order to handle 
+-- cases where some people have the DLC and others don't.
+-- For now, I *believe* the best course of action is to simply assert the 
+-- Draftsman owns all the DLC features, which is probably true for 99% of 
+-- Factorio players.
+feature_flags = {
+    quality=true,
+    rail_bridges=true,
+    space_travel=true,
+    spoiling=true,
+    freezing=true,
+    segmented_units=true,
+    expansion_shaders=true,
+}
+
 -- math.pow deprecated in Lua > 5.3; Factorio uses 5.2. Simple to fix:
--- (Deprecated, but retained to help bridge compatibility if the user cant get a 
--- copy of 5.2)
+-- (Deprecated since we now explicitly ask for Lua 5.2, but retained to help 
+-- bridge compatibility if the user somehow cant get a copy of 5.2)
 math.pow = math.pow or function(value, power)
     return value ^ power
 end

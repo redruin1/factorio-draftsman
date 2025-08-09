@@ -1,20 +1,30 @@
 # test_simple_entity_with_owner.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, LegacyDirection
 from draftsman.entity import SimpleEntityWithOwner, simple_entities_with_owner
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 import pytest
 
 
+@pytest.fixture
+def valid_simple_entity_with_owner():
+    return SimpleEntityWithOwner(
+        "simple-entity-with-owner",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        variation=13,
+        tags={"blah": "blah"},
+    )
+
+
 class TestSimpleEntityWithOwner:
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         entity = SimpleEntityWithOwner(variation=13)
         assert entity.name == simple_entities_with_owner[0]
         assert entity.variation == 13
-
-        with pytest.warns(UnknownKeywordWarning):
-            SimpleEntityWithOwner(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             SimpleEntityWithOwner("this is not correct").validate().reissue_all()
@@ -22,23 +32,35 @@ class TestSimpleEntityWithOwner:
     def test_to_dict(self):
         entity = SimpleEntityWithOwner("simple-entity-with-owner")
         assert entity.variation == 1
-        assert entity.to_dict(exclude_defaults=False) == {
+        assert entity.to_dict() == {
+            "name": "simple-entity-with-owner",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+        assert entity.to_dict(version=(1, 0), exclude_defaults=False) == {
+            "name": "simple-entity-with-owner",
+            "position": {"x": 0.5, "y": 0.5},
+            "direction": LegacyDirection.NORTH,  # Default
+            "items": {},  # Default
+            "variation": 1,  # Default
+            "tags": {},  # Default
+        }
+        assert entity.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "simple-entity-with-owner",
             "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
             "direction": Direction.NORTH,  # Default
+            "items": [],  # Default
+            "mirror": False,  # Default,
             "variation": 1,  # Default
             "tags": {},  # Default
         }
 
-        entity.variation = None
-        assert entity.variation == None
-        assert entity.to_dict(exclude_defaults=False) == {
+        entity.variation = 10
+        assert entity.variation == 10
+        assert entity.to_dict() == {
             "name": "simple-entity-with-owner",
-            "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
-            "direction": Direction.NORTH,  # Default
-            "tags": {},  # Default
+            "variation": 10,
         }
 
     def test_power_and_circuit_flags(self):

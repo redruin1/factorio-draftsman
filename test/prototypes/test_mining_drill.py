@@ -1,19 +1,65 @@
 # test_mining_drill.py
 
-from draftsman.constants import MiningDrillReadMode, ValidationMode
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.constants import (
+    Direction,
+    MiningDrillReadMode,
+    ValidationMode,
+    InventoryType,
+)
+from draftsman.data import mods
 from draftsman.entity import MiningDrill, mining_drills, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import ItemRequest
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
+    Condition,
+)
+import draftsman.validators
 from draftsman.warning import (
     ModuleCapacityWarning,
     ItemLimitationWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_mining_drill():
+    return MiningDrill(
+        "electric-mining-drill",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_resources=False,
+        read_mode=MiningDrillReadMode.TOTAL_PATCH,
+        item_requests=[
+            BlueprintInsertPlan(
+                id="speed-module-3",
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=1,
+                        )
+                    ]
+                ),
+            )
+        ],
+        tags={"blah": "blah"},
+    )
 
 
 class TestMiningDrill:
@@ -27,10 +73,6 @@ class TestMiningDrill:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            MiningDrill(unused_keyword="whatever").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            MiningDrill(control_behavior={"unused": "keyword"}).validate().reissue_all()
         # with pytest.warns(ModuleCapacityWarning): # TODO
         #     drill = MiningDrill("electric-mining-drill")
         #     drill.validate().reissue_all()
@@ -39,14 +81,49 @@ class TestMiningDrill:
 
         # Errors
         with pytest.raises(DataFormatError):
-            MiningDrill(items="incorrect").validate().reissue_all()
+            MiningDrill(item_requests="incorrect").validate().reissue_all()
         with pytest.raises(DataFormatError):
-            MiningDrill(control_behavior="incorrect").validate().reissue_all()
+            MiningDrill(tags="incorrect").validate().reissue_all()
+
+    def test_allowed_effects(self):
+        furnace = MiningDrill("burner-mining-drill")
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert furnace.allowed_effects == set()
+        else:
+            assert furnace.allowed_effects == set()
+
+        furnace = MiningDrill("electric-mining-drill")
+        # if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+        #     assert furnace.allowed_effects == {
+        #         "speed",
+        #         "productivity",
+        #         "pollution",
+        #         "consumption",
+        #     }
+        # else:
+        assert furnace.allowed_effects == {
+            "speed",
+            "productivity",
+            "quality",
+            "pollution",
+            "consumption",
+        }
+
+        with pytest.warns(UnknownEntityWarning):
+            furnace = MiningDrill("unknown-mining-drill")
+        assert furnace.allowed_effects == None
 
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
-        mining_drill.set_item_request("speed-module-3", 3)
-        assert mining_drill.to_dict() == {
+        mining_drill.set_item_request(
+            "speed-module-3", 3, inventory=InventoryType.MINING_DRILL_MODULES
+        )
+        assert mining_drill.to_dict(version=(1, 0)) == {
+            "name": "electric-mining-drill",
+            "position": {"x": 1.5, "y": 1.5},
+            "items": {"speed-module-3": 3},
+        }
+        assert mining_drill.to_dict(version=(2, 0)) == {
             "name": "electric-mining-drill",
             "position": {"x": 1.5, "y": 1.5},
             "items": [
@@ -55,7 +132,7 @@ class TestMiningDrill:
                     "items": {
                         "in_inventory": [
                             {
-                                "inventory": 1,
+                                "inventory": 2,
                                 "stack": 0,
                                 "count": 3,
                             }
@@ -86,55 +163,111 @@ class TestMiningDrill:
         # with pytest.warns(UnknownItemWarning):
         #     mining_drill.set_item_request("incorrect", 2)
 
+    def test_set_modules(self):
+        mining_drill = MiningDrill("electric-mining-drill")
+
+        mining_drill.request_modules("speed-module-3", 0)
+        assert mining_drill.item_requests == [
+            BlueprintInsertPlan(
+                id={"name": "speed-module-3"},
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=0,
+                            count=1,
+                        ),
+                    ],
+                ),
+            )
+        ]
+
+        mining_drill.request_modules("speed-module-3", (1, 2))
+        assert mining_drill.item_requests == [
+            BlueprintInsertPlan(
+                id={"name": "speed-module-3"},
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=0,
+                            count=1,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=1,
+                            count=1,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=2,
+                            count=1,
+                        ),
+                    ],
+                ),
+            )
+        ]
+
+        mining_drill.request_modules("productivity-module-3", range(3), "legendary")
+        assert mining_drill.item_requests == [
+            BlueprintInsertPlan(
+                id={"name": "productivity-module-3", "quality": "legendary"},
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=0,
+                            count=1,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=1,
+                            count=1,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.MINING_DRILL_MODULES,
+                            stack=2,
+                            count=1,
+                        ),
+                    ],
+                ),
+            )
+        ]
+
     def test_set_read_resources(self):
         mining_drill = MiningDrill("burner-mining-drill")
-        mining_drill.read_resources = True
         assert mining_drill.read_resources == True
 
-        mining_drill.read_resources = None
-        assert mining_drill.read_resources == None
+        mining_drill.read_resources = False
+        assert mining_drill.read_resources == False
 
         with pytest.raises(DataFormatError):
             mining_drill.read_resources = "incorrect"
 
-        mining_drill.validate_assignment = "none"
-        assert mining_drill.validate_assignment == ValidationMode.NONE
-
-        mining_drill.read_resources = "incorrect"
-        assert mining_drill.read_resources == "incorrect"
-        assert mining_drill.to_dict() == {
-            "name": "burner-mining-drill",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"circuit_read_resources": "incorrect"},
-        }
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            mining_drill.read_resources = "incorrect"
+            assert mining_drill.read_resources == "incorrect"
+            assert mining_drill.to_dict() == {
+                "name": "burner-mining-drill",
+                "position": {"x": 1, "y": 1},
+                "control_behavior": {"circuit_read_resources": "incorrect"},
+            }
 
     def test_set_read_mode(self):
         mining_drill = MiningDrill("burner-mining-drill")
-        mining_drill.read_mode = MiningDrillReadMode.UNDER_DRILL
         assert mining_drill.read_mode == MiningDrillReadMode.UNDER_DRILL
 
-        mining_drill.read_mode = None
-        assert mining_drill.read_mode == None
+        mining_drill.read_mode = MiningDrillReadMode.TOTAL_PATCH
+        assert mining_drill.read_mode == MiningDrillReadMode.TOTAL_PATCH
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(ValueError):
             mining_drill.read_mode = "incorrect"
-
-        mining_drill.validate_assignment = "none"
-        assert mining_drill.validate_assignment == ValidationMode.NONE
-
-        mining_drill.read_mode = "incorrect"
-        assert mining_drill.read_mode == "incorrect"
-        assert mining_drill.to_dict() == {
-            "name": "burner-mining-drill",
-            "position": {"x": 1, "y": 1},
-            "control_behavior": {"circuit_resource_read_mode": "incorrect"},
-        }
 
     def test_mergable_with(self):
         drill1 = MiningDrill("electric-mining-drill")
         drill2 = MiningDrill(
             "electric-mining-drill",
-            items={"productivity-module": 1, "productivity-module-2": 1},
+            # items={"productivity-module": 1, "productivity-module-2": 1},
             tags={"some": "stuff"},
         )
 
@@ -148,58 +281,43 @@ class TestMiningDrill:
 
     def test_merge(self):
         drill1 = MiningDrill("electric-mining-drill")
-        assert drill1.total_module_slots == 3
-        assert drill1.module_slots_occupied == 0
-        assert drill1.allowed_modules == {
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "productivity-module",
-            "productivity-module-2",
-            "productivity-module-3",
-            "quality-module",
-            "quality-module-2",
-            "quality-module-3",
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-        }
         drill2 = MiningDrill(
             "electric-mining-drill",
-            items=[
+            item_requests=[
                 {
                     "id": {"name": "productivity-module"},
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 0, "count": 1}]
                     },
                 },
                 {
                     "id": {"name": "productivity-module-2"},
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 1, "count": 1}]
                     },
                 },
             ],
             tags={"some": "stuff"},
         )
+        assert drill2.module_slots_occupied == 2
 
         drill1.merge(drill2)
         del drill2
 
-        assert drill1.items == [
-            ItemRequest(
+        assert drill1.item_requests == [
+            BlueprintInsertPlan(
                 **{
                     "id": "productivity-module",
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 0, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 0, "count": 1}]
                     },
                 }
             ),
-            ItemRequest(
+            BlueprintInsertPlan(
                 **{
                     "id": "productivity-module-2",
                     "items": {
-                        "in_inventory": [{"inventory": 1, "stack": 1, "count": 1}]
+                        "in_inventory": [{"inventory": 2, "stack": 1, "count": 1}]
                     },
                 }
             ),

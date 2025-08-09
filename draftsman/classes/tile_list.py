@@ -4,55 +4,60 @@ from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashM
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
-from draftsman.data import tiles
-from draftsman.error import DataFormatError, InvalidTileError
-from draftsman.signatures import DraftsmanBaseModel
+from draftsman.error import DataFormatError
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import get_mode
 
+import attrs
 from collections.abc import MutableSequence
 from copy import deepcopy
-from pydantic import ConfigDict, ValidationError
 from typing import (
-    Any,
     Callable,
     Iterator,
-    List,
-    Literal,
     Optional,
     Union,
     TYPE_CHECKING,
 )
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.collection import TileCollection
+    from draftsman.classes.collection import Collection
 
 
+@attrs.define
 class TileList(Exportable, MutableSequence):
     """
-    TODO
+    A list which exclusively contains Factorio tiles.
     """
 
-    class Format(DraftsmanBaseModel):
-        _root: List[Tile.Format]  # TODO: TileLike?
+    # FIXME: I would like to annotate this, but cattrs cannot find the location of `Collection`
+    _parent = attrs.field(
+        default=None,
+        init=False,
+        repr=False,
+        eq=False,
+        # metadata={"deepcopy_func": lambda value, memo: None},
+    )
 
-        root: List[Any]  # TODO: there should be a way to validate this
+    data: list[Tile] = attrs.field(
+        factory=list,
+        init=False,
+    )
 
-        model_config = ConfigDict(revalidate_instances="always")
+    # spatial_map: SpatialDataStructure = attrs.field(
+    #     factory=SpatialHashMap,
+    #     init=False,
+    #     repr=False
+    # )
 
-    def __init__(
+    def __init__(  # TODO: rely on attrs generated one
         self,
-        parent: "TileCollection",
+        parent: "Collection",
         initlist: Optional[list[Tile]] = None,
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
     ) -> None:
-        """
-        TODO
-        """
         # Init Exportable
         super().__init__()
 
-        self._root = []
+        self.data = []
 
         self.spatial_map: SpatialDataStructure = SpatialHashMap()
 
@@ -70,15 +75,23 @@ class TileList(Exportable, MutableSequence):
                         "TileList only takes either Tile or dict entries"
                     )
 
-        self.validate_assignment = validate_assignment
-
     def append(
         self, name: Union[str, Tile], copy: bool = True, merge: bool = False, **kwargs
     ) -> None:
         """
         Appends the Tile to the end of the sequence.
 
-        TODO
+        :param name: The string name of the tile, or an already existing
+            :py:class:`.Tile` instance.
+        :param copy: Whether or not to create a deepcopy of the given tile
+            instance and add that to the list. If ``name`` was a string instead,
+            then this parameter does nothing since a new tile instance is always
+            created.
+        :param merge: Whether or not tiles with the same name and position
+            should combine into one entity. If not, Draftsman will issue
+            :py:class:`.OverlappingObjectWarning` s in these cases.
+        :param kwargs: Any other keyword arguments that should be passed to the
+            newly created tile instance, if creating from a string ``name``.
         """
         self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
@@ -88,19 +101,28 @@ class TileList(Exportable, MutableSequence):
         name: Union[str, Tile],
         copy: bool = True,
         merge: bool = False,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Inserts an element into the TileList.
 
-        TODO
+        :param idx: The numeric index to insert this tile into the parent list.
+        :param name: The string name of the tile, or an already existing
+            :py:class:`.Tile` instance.
+        :param copy: Whether or not to create a deepcopy of the given tile
+            instance and add that to the list. If ``name`` was a string instead,
+            then this parameter does nothing since a new tile instance is always
+            created.
+        :param merge: Whether or not tiles with the same name and position
+            should combine into one entity. If not, Draftsman will issue
+            :py:class:`.OverlappingObjectWarning` s in these cases.
+        :param kwargs: Any other keyword arguments that should be passed to the
+            newly created tile instance, if creating from a string ``name``.
         """
         # Convert to new Tile if constructed via string keyword
         new = False
         if isinstance(name, str):
             tile = new_tile(name, **kwargs)
-            if tile is None:
-                return
             new = True
         else:
             tile = name
@@ -125,10 +147,10 @@ class TileList(Exportable, MutableSequence):
         if not isinstance(tile, Tile):
             raise TypeError("Entry in TileList must be a Tile")
 
-        # Handle overlapping and merging
-        if self.validate_assignment:
-            tile.validate(mode=self.validate_assignment).reissue_all()
-            self.spatial_map.validate_insert(tile, merge=merge)
+        tile.validate(mode=get_mode()).reissue_all()
+        self.spatial_map.validate_insert(
+            tile, merge=merge
+        )  # TODO: remove this and integrate it into `add()`
 
         # Add to tile map
         tile = self.spatial_map.add(tile, merge=merge)
@@ -137,66 +159,39 @@ class TileList(Exportable, MutableSequence):
             return  # Don't add this tile to the list
 
         # Manage TileList
-        self._root.insert(idx, tile)
+        self.data.insert(idx, tile)
 
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
 
-    def clear(self) -> None:
-        del self._root[:]
-        self.spatial_map.clear()
-
     def validate(
-        self, mode: ValidationMode = ValidationMode.STRICT, force: bool = False
+        self, mode: ValidationMode = ValidationMode.STRICT
     ) -> ValidationResult:
         mode = ValidationMode(mode)
-
         output = ValidationResult([], [])
 
-        if mode is ValidationMode.NONE and not force:  # (self.is_valid and not force):
+        if mode is ValidationMode.DISABLED:
             return output
 
-        context: dict[str, Any] = {
-            "mode": mode,
-            "object": self,
-            "warning_list": [],
-            "assignment": False,
-        }
-
-        try:
-            result = self.Format.model_validate(
-                {"root": self._root},
-                strict=False,  # TODO: ideally this should be strict
-                context=context,
-            )
-            # Reassign private attributes
-            # Acquire the newly converted data
-            self._root = result["root"]
-        except ValidationError as e:  # pragma: no coverage
-            output.error_list.append(DataFormatError(e))
-
-        output.warning_list += context["warning_list"]
-
         for tile in self:
-            result = tile.validate(mode=mode, force=force)
-            output.error_list += result.error_list
-            output.warning_list += result.warning_list
+            output += tile.validate(mode=mode)
 
         return output
 
     def union(self, other: "TileList") -> "TileList":
         """
-        TODO
+        Calculate the set union between this list and another
+        :py:class:`.TileList`.
         """
         new_tile_list = TileList(None)
 
-        for tile in self._root:
+        for tile in self.data:
             new_tile_list.append(tile)
             new_tile_list[-1]._parent = None
 
-        for other_tile in other._root:
+        for other_tile in other.data:
             already_in = False
-            for tile in self._root:
+            for tile in self.data:
                 if tile == other_tile:
                     already_in = True
                     break
@@ -207,13 +202,14 @@ class TileList(Exportable, MutableSequence):
 
     def intersection(self, other: "TileList") -> "TileList":
         """
-        TODO
+        Calculate the set intersection between this list and another
+        :py:class:`.TileList`.
         """
         new_tile_list = TileList(None)
 
-        for tile in self._root:
+        for tile in self.data:
             in_both = False
-            for other_tile in other._root:
+            for other_tile in other.data:
                 if other_tile == tile:
                     in_both = True
                     break
@@ -224,13 +220,14 @@ class TileList(Exportable, MutableSequence):
 
     def difference(self, other: "TileList") -> "TileList":
         """
-        TODO
+        Calculate the set difference between this list and another
+        :py:class:`.TileList`.
         """
         new_tile_list = TileList(None)
 
-        for tile in self._root:
+        for tile in self.data:
             different = True
-            for other_tile in other._root:
+            for other_tile in other.data:
                 if other_tile == tile:
                     different = False
                     break
@@ -240,25 +237,26 @@ class TileList(Exportable, MutableSequence):
         return new_tile_list
 
     def __getitem__(self, idx: Union[int, slice]) -> Union[Tile, list[Tile]]:
-        return self._root[idx]
+        return self.data[idx]
 
     def __setitem__(self, idx: int, value: Tile) -> None:
         # TODO: handle slices
 
         # Check tile
-        if not isinstance(value, Tile):
-            raise TypeError("Entry in TileList must be a Tile")
+        if get_mode():
+            if not isinstance(value, Tile):
+                raise TypeError("Entry in TileList must be a Tile")
 
-        self.spatial_map.remove(self._root[idx])
+        self.spatial_map.remove(self.data[idx])
 
-        if self.validate_assignment:
-            value.validate(mode=self.validate_assignment).reissue_all()
+        if get_mode():
+            # value.validate(mode=self.validate_assignment).reissue_all()
             self.spatial_map.validate_insert(value, merge=False)
 
         self.spatial_map.add(value, merge=False)
 
         # Manage the TileList
-        self._root[idx] = value
+        self.data[idx] = value
 
         # Add a reference to the container in the object
         value._parent = self._parent
@@ -269,15 +267,15 @@ class TileList(Exportable, MutableSequence):
             start, stop, step = idx.indices(len(self))
             for i in range(start, stop, step):
                 # Remove from parent
-                self.spatial_map.remove(self._root[i])
+                self.spatial_map.remove(self.data[i])
         else:
-            self.spatial_map.remove(self._root[idx])
+            self.spatial_map.remove(self.data[idx])
 
         # Remove from self
-        del self._root[idx]
+        del self.data[idx]
 
     def __len__(self) -> int:
-        return len(self._root)
+        return len(self.data)
 
     __iter__: Callable[..., Iterator[Tile]]
 
@@ -303,24 +301,31 @@ class TileList(Exportable, MutableSequence):
     #     self.difference(other)
 
     def __eq__(self, other: "TileList") -> bool:
-        # TODO: not implmented
         if not isinstance(other, TileList):
-            return False
-        # if len(self.data) != len(other.data):
-        #     return False
-        # for i in range(len(self.data)):
-        #     if self.data[i] != other.data[i]:
-        #         return False
-        # return True
-        return self._root == other._root
+            return NotImplemented
+        return self.data == other.data
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<TileList>{}".format(self._root)
+        return "TileList({})".format(self.data)
 
-    # @classmethod
-    # def __get_pydantic_core_schema__(
-    #     cls, _source_type: Any, handler: GetCoreSchemaHandler
-    # ) -> CoreSchema:
-    #     return core_schema.no_info_after_validator_function(
-    #         cls, handler(list[Tile])
-    #     )  # TODO: correct annotation
+    def __deepcopy__(self, memo: dict) -> "TileList":
+        # TODO: I think we want to delete this function
+        parent = memo.get("new_parent", self._parent)
+        new = TileList(parent)
+
+        for tile in self.data:
+            new.append(memo.get(id(tile), deepcopy(tile, memo)))
+
+        # TODO: could maybe copy `spatial_map` verbatim
+
+        return new
+
+
+draftsman_converters.register_structure_hook(
+    TileList,
+    # This does work even though parent is None; this is on_setattr correctly
+    # handles the cases where we pass a new entity list
+    # It is inefficient since we construct 2 TileList objects, but...
+    # TODO replace
+    lambda d, _: TileList(None, d),
+)

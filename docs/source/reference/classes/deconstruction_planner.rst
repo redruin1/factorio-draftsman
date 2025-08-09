@@ -5,10 +5,6 @@
 ===================================================
 
 .. automodule:: draftsman.classes.deconstruction_planner
-    :noindex:
-
-.. autoclass:: DeconstructionPlanner
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

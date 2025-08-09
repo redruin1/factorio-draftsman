@@ -1,9 +1,8 @@
 # blueprint.py
 
-from draftsman._factorio_version import __factorio_version__, __factorio_version_info__
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.blueprintable import Blueprint, get_blueprintable_from_string
-from draftsman.classes.association import Association
-from draftsman.classes.blueprint import TileList
+from draftsman.classes.collection import CollectionList
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
@@ -11,6 +10,7 @@ from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
 from draftsman.classes.schedule import Schedule, WaitCondition
 from draftsman.classes.schedule_list import ScheduleList
+from draftsman.classes.tile_list import TileList
 from draftsman.classes.train_configuration import TrainConfiguration
 from draftsman.classes.vector import Vector
 from draftsman.constants import (
@@ -19,6 +19,7 @@ from draftsman.constants import (
     WaitConditionType,
     ValidationMode,
 )
+from draftsman.data import mods
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.tile import Tile, new_tile
 from draftsman.error import (
@@ -33,19 +34,19 @@ from draftsman.error import (
     EntityNotCircuitConnectableError,
     DataFormatError,
     InvalidAssociationError,
-    InvalidSignalError,
-    InvalidEntityError,
-    InvalidTileError,
+    IncompleteSignalError,
+    DuplicateIDError,
 )
-from draftsman.signatures import Color, Icon
-from draftsman.utils import encode_version, AABB
+from draftsman.signatures import Color, Icon, StockConnection
+from draftsman.utils import AABB, encode_version, version_tuple_to_string
+import draftsman.validators
 from draftsman.warning import (
     DraftsmanWarning,
     GridAlignmentWarning,
-    TooManyConnectionsWarning,
     UnknownEntityWarning,
     UnknownSignalWarning,
     UnknownTileWarning,
+    OverlappingObjectsWarning,
 )
 
 import pytest
@@ -64,45 +65,24 @@ class TestBlueprint:
         blueprint = Blueprint()
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
-
-        # String
-        blueprint = Blueprint(
-            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
-        )
-        # self.assertEqual(
-        #     blueprint.to_dict()["blueprint"],
-        #     {"item": "blueprint", "version": encode_version(1, 1, 54, 0)},
-        # )
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "version": encode_version(1, 1, 54, 0),
-        }
-        # This doesn't work on Python 2 (I believe) because the order is not guaranteed
-        # self.assertEqual(
-        #     blueprint.to_string(),
-        #     "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
-        # )
 
         # Dict
         example = {
             "blueprint": {"item": "blueprint", "version": encode_version(1, 1, 54, 0)}
         }
-        blueprint = Blueprint(example)
+        blueprint = Blueprint.from_dict(example)
         assert blueprint.to_dict() == example
 
         broken_example = {"blueprint": {"item": "blueprint", "version": "incorrect"}}
 
-        blueprint = Blueprint(broken_example, validate="none")
-        assert blueprint.to_dict() == broken_example
-
         with pytest.raises(DataFormatError):
-            blueprint.validate().reissue_all()
+            blueprint = Blueprint.from_dict(broken_example)
 
         # Valid format, but incorrect type
         with pytest.raises(IncorrectBlueprintTypeError):
-            blueprint = Blueprint(
+            blueprint = Blueprint.from_string(
                 "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
             )
 
@@ -110,17 +90,14 @@ class TestBlueprint:
         with pytest.raises(MalformedBlueprintStringError):
             blueprint = get_blueprintable_from_string("0lmaothisiswrong")
 
-        ### Complex blueprint ###
-        # TODO
-
     # =========================================================================
 
-    def test_load_from_string(self):
+    def test_from_string(self):
         ### Simple blueprint ###
         blueprint = Blueprint()
 
         # Valid format
-        blueprint.load_from_string(
+        blueprint = Blueprint.from_string(
             "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3sTQ1MTc1rq0FAHmyE1c="
         )
         assert blueprint.to_dict()["blueprint"] == {
@@ -128,65 +105,74 @@ class TestBlueprint:
             "version": encode_version(1, 1, 50, 1),
         }
 
-        # # Valid format, but blueprint book string
-        # with self.assertRaises(IncorrectBlueprintTypeError):
-        #     blueprint = Blueprint(
-        #         "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
-        #     )
-
-        # # Invalid format
-        # with self.assertRaises(MalformedBlueprintStringError):
-        #     blueprint = get_blueprintable_from_string("0lmaothisiswrong")
-
-    # =========================================================================
-
-    def test_setup(self):
-        blueprint = Blueprint()
-        blueprint.setup(
-            label="something",
-            label_color={"r": 1.0, "g": 0.0, "b": 0.0},
-            icons=[
-                {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
-                {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
-            ],
-            snapping_grid_size=(32, 32),
-            snapping_grid_position=(16, 16),
-            position_relative_to_grid=(-5, -7),
-            absolute_snapping=True,
-            entities=[],
-            tiles=[],
-            schedules=[],
+        # Valid format, but missing version
+        blueprint = Blueprint.from_string(
+            "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEqutBQDZSgyK"
         )
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "label": "something",
-            "label_color": {"r": 1.0, "g": 0.0, "b": 0.0},
-            "icons": [
-                {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
-                {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
-            ],
-            "snap-to-grid": {"x": 32, "y": 32},
-            "position-relative-to-grid": {"x": -5, "y": -7},
-            # "absolute-snapping": True, # Default
-            "version": encode_version(*__factorio_version_info__),
-        }
-        example_dict = {
-            "snap-to-grid": {"x": 32, "y": 32},
-            "absolute-snapping": True,
-            "position-relative-to-grid": {"x": -5, "y": -7},
-        }
-        blueprint.setup(**example_dict)
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "snap-to-grid": {"x": 32, "y": 32},
-            # "absolute-snapping": True, # Default
-            "position-relative-to-grid": {"x": -5, "y": -7},
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
-        with pytest.warns(DraftsmanWarning):
-            blueprint.setup(unused="whatever")
-            blueprint.validate().reissue_all()
+        # Valid format, but blueprint book string
+        with pytest.raises(IncorrectBlueprintTypeError):
+            blueprint = Blueprint.from_string(
+                "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTSxNTcxNjWtrAVWjHQY="
+            )
+
+        # Invalid format
+        with pytest.raises(MalformedBlueprintStringError):
+            blueprint = Blueprint.from_string("0lmaothisiswrong")
+
+    # =========================================================================
+
+    # def test_setup(self):
+    #     blueprint = Blueprint()
+    #     blueprint.setup(
+    #         label="something",
+    #         label_color={"r": 1.0, "g": 0.0, "b": 0.0},
+    #         icons=[
+    #             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
+    #             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
+    #         ],
+    #         snapping_grid_size=(32, 32),
+    #         snapping_grid_position=(16, 16),
+    #         position_relative_to_grid=(-5, -7),
+    #         absolute_snapping=True,
+    #         entities=[],
+    #         tiles=[],
+    #         schedules=[],
+    #     )
+    #     assert blueprint.to_dict()["blueprint"] == {
+    #         "item": "blueprint",
+    #         "label": "something",
+    #         "label_color": {"r": 1.0, "g": 0.0, "b": 0.0},
+    #         "icons": [
+    #             {"index": 1, "signal": {"name": "signal-A", "type": "virtual"}},
+    #             {"index": 2, "signal": {"name": "signal-B", "type": "virtual"}},
+    #         ],
+    #         "snap-to-grid": {"x": 32, "y": 32},
+    #         "position-relative-to-grid": {"x": -5, "y": -7},
+    #         # "absolute-snapping": True, # Default
+    #         "version": encode_version(*mods.versions["base"]),
+    #     }
+    #     example_dict = {
+    #         "snap-to-grid": {"x": 32, "y": 32},
+    #         "absolute-snapping": True,
+    #         "position-relative-to-grid": {"x": -5, "y": -7},
+    #     }
+    #     blueprint.setup(**example_dict)
+    #     assert blueprint.to_dict()["blueprint"] == {
+    #         "item": "blueprint",
+    #         "snap-to-grid": {"x": 32, "y": 32},
+    #         # "absolute-snapping": True, # Default
+    #         "position-relative-to-grid": {"x": -5, "y": -7},
+    #         "version": encode_version(*mods.versions["base"]),
+    #     }
+
+    #     with pytest.warns(DraftsmanWarning):
+    #         blueprint.setup(unused="whatever")
+    #         blueprint.validate().reissue_all()
 
     # =========================================================================
 
@@ -207,6 +193,11 @@ class TestBlueprint:
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
         }
+
+        # Warn if label exceeds 200 bytes
+        with pytest.warns(DraftsmanWarning):
+            blueprint.label = "A" * 500
+        assert blueprint.label == "A" * 500
 
     # =========================================================================
 
@@ -248,7 +239,7 @@ class TestBlueprint:
 
         # Valid None
         blueprint.label_color = None
-        assert blueprint.label_color == None
+        assert blueprint.label_color is None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(1, 1, 54, 0),
@@ -257,24 +248,9 @@ class TestBlueprint:
         # Invalid Data
         with pytest.raises(DataFormatError):
             blueprint.label_color = "wrong"
-
-        # Turn off validation
-        blueprint.validate_assignment = "none"
-        assert blueprint.validate_assignment is ValidationMode.NONE
-
-        # Incorrect Data now works
-        blueprint.label_color = "wrong"
-        assert blueprint.label_color == "wrong"
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "label_color": "wrong",
-            "version": encode_version(1, 1, 54, 0),
-        }
-
-        # We can set label color to anything
-        blueprint.label_color = ("red", blueprint, 5)
-        # But we can't always serialize it
-        blueprint.to_dict()
+        with pytest.raises(ValueError):
+            blueprint.label_color = Color(0, 0, 0, 1)
+            blueprint.label_color.a = 1000
 
     # =========================================================================
 
@@ -283,45 +259,42 @@ class TestBlueprint:
         # Single Icon
         blueprint.icons = ["signal-A"]
         assert blueprint.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
-        ]
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0})
         ]
         # Multiple Icon
         blueprint.icons = ("signal-A", "signal-B", "signal-C")
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+        assert blueprint.icons == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 2}),
         ]
 
         # Raw signal dicts:
 
-        blueprint.icons = [{"signal": "signal-A", "index": 2}]
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 2})
+        blueprint.icons = [Icon(**{"signal": "signal-A", "index": 1})]
+        assert blueprint.icons == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
         ]
 
         # Unrecognized dict
         with pytest.warns(UnknownSignalWarning):
             blueprint.icons = [
-                {"signal": {"name": "some-signal", "type": "item"}, "index": 1}
+                Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 0})
             ]
-        assert blueprint["blueprint"]["icons"] == [
-            Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 1})
-        ]
+            assert blueprint.icons == [
+                Icon(**{"signal": {"name": "some-signal", "type": "item"}, "index": 0})
+            ]
 
         # None
-        blueprint.icons = None
-        assert blueprint.icons == None
+        blueprint.icons = []
+        assert blueprint.icons == []
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Incorrect Signal Name
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             blueprint.icons = ["wrong!"]
 
         # Incorrect Signal dict format
@@ -331,19 +304,6 @@ class TestBlueprint:
         with pytest.raises(DataFormatError):
             blueprint.icons = "incorrect"
 
-        blueprint.validate_assignment = "none"
-        assert blueprint.validate_assignment == ValidationMode.NONE
-
-        blueprint.icons = "incorrect"
-        assert blueprint.icons == "incorrect"
-        assert blueprint.to_dict() == {
-            "blueprint": {
-                "item": "blueprint",
-                "version": encode_version(*__factorio_version_info__),
-                "icons": "incorrect",
-            }
-        }
-
     # =========================================================================
 
     def test_set_description(self):
@@ -351,7 +311,12 @@ class TestBlueprint:
         blueprint.description = "An example description."
         assert blueprint.description == "An example description."
         blueprint.description = None
-        assert blueprint.description == None
+        assert blueprint.description == ""
+
+        # Warn if description exceeds 500 bytes
+        with pytest.warns(DraftsmanWarning):
+            blueprint.description = "A" * 1000
+        assert blueprint.description == "A" * 1000
 
     # =========================================================================
 
@@ -364,20 +329,7 @@ class TestBlueprint:
         blueprint.version = (1, 0, 40, 0)
         assert blueprint.version == 281474979332096
 
-        blueprint.version = None
-        assert blueprint.version == None
-        assert blueprint.to_dict()["blueprint"] == {"item": "blueprint"}
-
-        blueprint.validate_assignment = "none"
-        blueprint.version = "wrong"
-        assert blueprint.version == "wrong"
-        assert blueprint.to_dict()["blueprint"] == {
-            "item": "blueprint",
-            "version": "wrong",
-        }
-
         with pytest.raises(DataFormatError):
-            blueprint.validate_assignment = "strict"
             blueprint.version = "wrong"
 
     # =========================================================================
@@ -386,16 +338,20 @@ class TestBlueprint:
         blueprint = Blueprint()
         blueprint.snapping_grid_size = (10, 10)
         assert blueprint.snapping_grid_size == Vector(10, 10)
-        # assert blueprint["blueprint"]["snap-to-grid"] == Vector(10, 10) # TODO
-
-        blueprint.snapping_grid_size = None
-        assert blueprint.snapping_grid_size == Vector(0, 0)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "snap-to-grid": {"x": 10, "y": 10},
+            "version": encode_version(*mods.versions["base"]),
         }
 
-        with pytest.raises(TypeError):
+        blueprint.snapping_grid_size = None
+        assert blueprint.snapping_grid_size is None
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "version": encode_version(*mods.versions["base"]),
+        }
+
+        with pytest.raises(DataFormatError):
             blueprint.snapping_grid_size = TypeError
 
     # =========================================================================
@@ -405,22 +361,25 @@ class TestBlueprint:
         blueprint.snapping_grid_position = (1, 2)
         assert blueprint.snapping_grid_position == Vector(1, 2)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint.snapping_grid_position = TypeError
 
     # =========================================================================
 
     def test_set_absolute_snapping(self):
         blueprint = Blueprint()
-        blueprint.absolute_snapping = True
         assert blueprint.absolute_snapping == True
-        assert blueprint["blueprint"]["absolute-snapping"] == True
-
-        blueprint.absolute_snapping = None
-        assert blueprint.absolute_snapping == None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
+        }
+
+        blueprint.absolute_snapping = False
+        assert blueprint.absolute_snapping == False
+        assert blueprint.to_dict()["blueprint"] == {
+            "item": "blueprint",
+            "absolute-snapping": False,
+            "version": encode_version(*mods.versions["base"]),
         }
 
         with pytest.raises(DataFormatError):
@@ -434,14 +393,15 @@ class TestBlueprint:
         assert blueprint.position_relative_to_grid == Vector(1, 2)
         # assert blueprint["blueprint"]["position-relative-to-grid"] == Vector(1, 2) # TODO
 
-        blueprint.position_relative_to_grid = None
-        assert blueprint.position_relative_to_grid == Vector(0, 0)
+        blueprint.position_relative_to_grid = Vector(10, 10)
+        assert blueprint.position_relative_to_grid == Vector(10, 10)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "position-relative-to-grid": {"x": 10.0, "y": 10.0},
+            "version": encode_version(*mods.versions["base"]),
         }
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             blueprint.position_relative_to_grid = TypeError
 
     # =========================================================================
@@ -480,7 +440,7 @@ class TestBlueprint:
 
         blueprint.entities = None
         assert isinstance(blueprint.entities, EntityList)
-        assert blueprint.entities._root == []
+        assert blueprint.entities.data == []
 
         # Set by EntityList
         blueprint.entities.append("wooden-chest")
@@ -512,20 +472,20 @@ class TestBlueprint:
         assert blueprint.entities[-1].position.to_dict() == {"x": 0.5, "y": 0.5}
 
         # Warn unknown entity (list)
-        blueprint.validate_assignment = "none"
-        blueprint.entities = [new_entity("undocumented-entity")]  # No warning
-        with pytest.warns(UnknownEntityWarning):
-            blueprint.validate_assignment = "strict"
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            # No warning
             blueprint.entities = [new_entity("undocumented-entity")]
-            blueprint.validate().reissue_all()  # Warning
+        with pytest.warns(UnknownEntityWarning):
+            blueprint.entities = [new_entity("undocumented-entity")]
+            blueprint.entities.validate().reissue_all()  # Warning
 
         # Warn unknown entity (individual)
-        blueprint.entities.validate_assignment = "none"
-        blueprint.entities[-1] = new_entity("undocumented-entity")  # No warning
-        with pytest.warns(UnknownEntityWarning):
-            blueprint.validate_assignment = "strict"
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            # No warning
             blueprint.entities[-1] = new_entity("undocumented-entity")
-            blueprint.validate().reissue_all()  # Warning
+        with pytest.warns(UnknownEntityWarning):
+            blueprint.entities[-1] = new_entity("undocumented-entity")
+            blueprint.entities.validate().reissue_all()  # Warning
 
         # Format error
         with pytest.raises(TypeError):
@@ -540,7 +500,7 @@ class TestBlueprint:
 
         blueprint.tiles = None
         assert isinstance(blueprint.tiles, TileList)
-        assert blueprint.tiles._root == []
+        assert blueprint.tiles.data == []
 
         # Set by TileList
         blueprint.tiles.append("landfill")
@@ -574,21 +534,23 @@ class TestBlueprint:
         # assert blueprint.tiles[-1].name == "landfill"
         # assert blueprint.tiles[-1].position.to_dict() == {"x": 1, "y": 1}
 
-        # Warn unknown entity (list)
-        blueprint.tiles.validate_assignment = "none"
-        blueprint.tiles = [new_tile("undocumented-tile")]  # No warning
         with pytest.warns(UnknownTileWarning):
-            blueprint.tiles.validate_assignment = "strict"
-            blueprint.tiles = [new_tile("undocumented-tile")]
-            blueprint.tiles.validate().reissue_all()  # Warning
+            test_tile = new_tile("undocumented-tile")
 
-        # Warn unknown entity (individual)
-        blueprint.tiles.validate_assignment = "minimum"
-        blueprint.tiles[-1] = new_tile("undocumented-tile")  # No warning
-        with pytest.warns(UnknownTileWarning):
-            blueprint.tiles.validate_assignment = "strict"
-            blueprint.tiles[-1] = new_tile("undocumented-tile")
-            # blueprint.validate().reissue_all() # Warning
+        # # Warn unknown entity (list)
+        # blueprint.tiles = [test_tile]  # No warning
+        # with pytest.warns(UnknownTileWarning):
+        #     blueprint.tiles.validate_assignment = "strict"
+        #     blueprint.tiles = [test_tile]
+        #     blueprint.tiles.validate().reissue_all()  # Warning
+
+        # # Warn unknown entity (individual)
+        # blueprint.tiles.validate_assignment = "minimum"
+        # blueprint.tiles[-1] = test_tile  # No warning
+        # with pytest.warns(UnknownTileWarning):
+        #     blueprint.tiles.validate_assignment = "strict"
+        #     blueprint.tiles[-1] = test_tile
+        #     # blueprint.validate().reissue_all() # Warning
 
         # Format error
         with pytest.raises(DataFormatError):
@@ -613,12 +575,40 @@ class TestBlueprint:
         blueprint.schedules = ScheduleList([schedule])
         assert isinstance(blueprint.schedules, ScheduleList)
         assert blueprint.schedules[0].locomotives[0]() is blueprint.entities[0]
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(1, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
                     "name": "locomotive",
-                    "position": {"x": 1.0, "y": 3.0},
+                    "position": {"x": 0.0, "y": 0.0},
+                    "entity_number": 1,
+                }
+            ],
+            "schedules": [
+                {
+                    "locomotives": [1],
+                    "schedule": [
+                        {
+                            "station": "station_name",
+                            "wait_conditions": [
+                                {
+                                    "type": "inactivity",
+                                    # "compare_type": "or",
+                                    "ticks": 600,
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ],
+            "version": encode_version(*mods.versions["base"]),
+        }
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "name": "locomotive",
+                    "position": {"x": 0.0, "y": 0.0},
                     "entity_number": 1,
                 }
             ],
@@ -641,7 +631,7 @@ class TestBlueprint:
                     },
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # None
@@ -655,6 +645,63 @@ class TestBlueprint:
 
         with pytest.raises(DataFormatError):
             blueprint.schedules = ["incorrect", "format"]
+
+    def test_stock_connections(self):
+        blueprint = Blueprint()
+
+        blueprint.entities.append(
+            "locomotive", id="loco", orientation=0.75, tile_position=(0, 4)
+        )
+        blueprint.entities.append(
+            "cargo-wagon", id="wagon", orientation=0.75, tile_position=(7, 4)
+        )
+        blueprint.stock_connections = [
+            StockConnection(stock=blueprint.entities["loco"]),
+            StockConnection(
+                stock=blueprint.entities["wagon"],
+                front=blueprint.entities["loco"],
+                # Malformed, but just for testing code coverage
+                back=blueprint.entities["loco"],
+            ),
+        ]
+
+        assert blueprint.to_dict(version=(1, 0))["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "entity_number": 1,
+                    "name": "locomotive",
+                    "position": {"x": 0.0, "y": 4.0},
+                    "orientation": 0.75,
+                },
+                {
+                    "entity_number": 2,
+                    "name": "cargo-wagon",
+                    "position": {"x": 7, "y": 4},
+                    "orientation": 0.75,
+                },
+            ],
+            "version": encode_version(*mods.versions["base"]),
+        }
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
+            "item": "blueprint",
+            "entities": [
+                {
+                    "entity_number": 1,
+                    "name": "locomotive",
+                    "position": {"x": 0.0, "y": 4.0},
+                    "orientation": 0.75,
+                },
+                {
+                    "entity_number": 2,
+                    "name": "cargo-wagon",
+                    "position": {"x": 7, "y": 4},
+                    "orientation": 0.75,
+                },
+            ],
+            "stock_connections": [{"stock": 1}, {"stock": 2, "front": 1, "back": 1}],
+            "version": encode_version(*mods.versions["base"]),
+        }
 
     # =========================================================================
 
@@ -670,18 +717,31 @@ class TestBlueprint:
             "position": {"x": 1.0, "y": 1.0},
         }
 
-        # Test broadphase positive, but narrowphase negative
-        # TODO: catch warnings
+        # Test attempted merge, but failed
+        with pytest.warns(OverlappingObjectsWarning):
+            blueprint.entities.append("accumulator", tile_position=(1, 0), merge=True)
+        assert len(blueprint.entities) == 2
+        assert blueprint.entities[0].to_dict() == {
+            "name": "accumulator",
+            "position": {"x": 1.0, "y": 1.0},
+        }
+        assert blueprint.entities[1].to_dict() == {
+            "name": "accumulator",
+            "position": {"x": 2.0, "y": 1.0},
+        }
+
         blueprint = Blueprint()
         blueprint.entities.append("rail-chain-signal")
-        blueprint.entities.append("straight-rail", direction=Direction.SOUTHEAST)
+        with pytest.warns(OverlappingObjectsWarning):
+            blueprint.entities.append("straight-rail", direction=Direction.NORTHWEST)
 
-        # Unreasonable size
+        # Test broadphase positive, but narrowphase negative
         blueprint = Blueprint()
-        blueprint.entities.append("inserter")
-        # TODO: reimplement
-        # with pytest.raises(UnreasonablySizedBlueprintError):
-        #     blueprint.entities.append("inserter", tile_position=(0, 100000))
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            blueprint.entities.append("curved-rail")
+        else:
+            blueprint.entities.append("legacy-curved-rail")
+        blueprint.entities.append("wooden-chest", tile_position=(0, 4))
 
     def test_change_entity_id(self):
         blueprint = Blueprint()
@@ -717,8 +777,9 @@ class TestBlueprint:
 
         blueprint.tiles.append("landfill")
 
-        with pytest.raises(DraftsmanError):
-            blueprint.tiles[0].position = (100, 100)
+        # TODO: think about
+        # with pytest.raises(DraftsmanError):
+        #     blueprint.tiles[0].position = (100, 100)
 
     def test_rotate_entity(self):
         blueprint = Blueprint()
@@ -776,9 +837,126 @@ class TestBlueprint:
 
     # =========================================================================
 
+    def test_add_group(self):
+        blueprint = Blueprint()
+        assert blueprint.groups == CollectionList(parent=blueprint)
+
+        # Can't add a non-group to `groups`
+        with pytest.raises(TypeError):
+            blueprint.groups.append(TypeError)
+        assert blueprint.groups.data == []
+        with pytest.raises(TypeError):
+            blueprint.groups.append(new_entity("decider-combinator"))
+        assert blueprint.groups.data == []
+
+        group = Group()
+        group.entities.append("decider-combinator")
+        for y in range(2):
+            for x in range(2):
+                group.tiles.append("concrete", position=(x, y))
+
+        # Correct spacing
+        blueprint.groups.append(group, id="group_1")
+        blueprint.groups.append(group, id="group_2", position=(2, 0))
+        assert group.parent is None
+
+        # Test __setitem__
+        blueprint.groups["group_1"] = group  # Aha. This doesn't copy. Thus:
+        assert group.parent is blueprint
+
+        assert len(blueprint.groups) == 2
+        assert blueprint.groups[0].id == None
+        assert blueprint.groups[1].id == "group_2"
+
+        new_group = Group(id="new_group")
+        blueprint.groups[0] = new_group
+
+        # New group should have blueprint as parent
+        assert new_group.parent is blueprint
+        # And old group should have its parent removed
+        assert group.parent is None
+
+        assert len(blueprint.groups) == 2
+        assert blueprint.groups[0].id == "new_group"
+        assert blueprint.groups[1].id == "group_2"
+
+        # TODO: handle slices
+
+        # Test __delitem__
+        del blueprint.groups["new_group"]
+        assert len(blueprint.groups) == 1
+        assert blueprint.groups[0].id == "group_2"
+
+        # TODO: handle slices
+
+        # Overlapping spacing
+        blueprint = Blueprint()
+        blueprint.groups.append(group)
+        with pytest.warns(OverlappingObjectsWarning):
+            blueprint.groups.append(group, position=(1, 0))
+        assert len(blueprint.groups) == 2
+
+        # Overlapping spacing, but with validation disabled
+        del blueprint.groups[-1]
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            blueprint.groups.append(group, position=(1, 0))
+        assert len(blueprint.groups) == 2
+
+        # Test DuplicateID
+        blueprint.groups = []
+        assert len(blueprint.groups) == 0
+        group.id = "something"
+
+        blueprint.groups.append(group)
+        with pytest.raises(DuplicateIDError):
+            blueprint.groups.append(group, position=(2, 0))
+        assert len(blueprint.groups) == 1
+
+        blueprint.groups.append(new_group, position=(10, 10))
+        with pytest.raises(DuplicateIDError):
+            group.position = (10, 10)
+            blueprint.groups[-1] = group
+        assert len(blueprint.groups) == 2
+        assert blueprint.groups[0].id == "something"
+        assert blueprint.groups[1].id == "new_group"
+
+        # Test tile merging and double nested groups
+        blueprint = Blueprint()
+
+        tile_square = Group()
+        for y in range(2):
+            for x in range(2):
+                tile_square.tiles.append("concrete", position=(x, y))
+
+        parent_group = Group()
+        parent_group.groups.append(tile_square)
+        assert parent_group.groups[-1].tiles.spatial_map
+        parent_group.groups.append(tile_square, position=(1, 0), merge=True)
+        assert parent_group.groups[-1].tiles.spatial_map
+
+        assert len(parent_group.groups[0].tiles) == 4
+        assert len(parent_group.groups[1].tiles) == 2
+
+        blueprint.groups.append(parent_group)
+        assert len(blueprint.groups) == 1
+        assert len(blueprint.groups[0].groups) == 2
+
+        # Test set via another CollectionList
+        blueprint2 = Blueprint()
+        blueprint2.groups = blueprint.groups
+        assert blueprint.groups == blueprint2.groups
+        assert blueprint.groups is not blueprint2.groups
+
+        # Test set to None
+        blueprint.groups = None
+        assert isinstance(blueprint.groups, CollectionList)
+        assert blueprint.groups.data == []
+
+    # =========================================================================
+
     def test_version_tuple(self):
         blueprint = Blueprint()
-        assert blueprint.version_tuple() == __factorio_version_info__
+        assert blueprint.version_tuple() == mods.versions["base"]
         blueprint.version = 0
         assert blueprint.version_tuple() == (0, 0, 0, 0)
 
@@ -786,7 +964,9 @@ class TestBlueprint:
 
     def test_version_string(self):
         blueprint = Blueprint()
-        assert blueprint.version_string() == __factorio_version__
+        assert blueprint.version_string() == version_tuple_to_string(
+            mods.versions["base"]
+        )
         blueprint.version = (0, 0, 0, 0)
         assert blueprint.version_string() == "0.0.0.0"
 
@@ -825,12 +1005,12 @@ class TestBlueprint:
         blueprint = Blueprint()
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
         # TODO: fix, ideally
-        # assert blueprint.entities is blueprint._root["blueprint"]["entities"]
-        # assert blueprint.tiles is blueprint._root["blueprint"]["tiles"]
-        # assert blueprint.schedules is blueprint._root["blueprint"]["schedules"]
+        # assert blueprint.entities is blueprint.data["blueprint"]["entities"]
+        # assert blueprint.tiles is blueprint.data["blueprint"]["tiles"]
+        # assert blueprint.schedules is blueprint.data["blueprint"]["schedules"]
 
         # Copper wire connection case
         blueprint.entities.append("power-switch", id="a")
@@ -838,7 +1018,6 @@ class TestBlueprint:
         blueprint.add_power_connection("a", "b", side_1="input")
         blueprint.tiles.append("landfill")
         blueprint.snapping_grid_position = (-1, -1)  # also test this
-        self.maxDiff = None
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
@@ -855,15 +1034,15 @@ class TestBlueprint:
             ],
             "wires": [[1, 5, 2, 5]],
             "tiles": [{"name": "landfill", "position": {"x": 1, "y": 1}}],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Non-string id connection case
         example_string = "0eNqVkMFugzAQRP9lz0uETUyAX4lQROi2XckYZDuhEfK/dwFVPTRS1Is1tmbermeBq73R5NlFaBbgfnQBmvMCgT9cZ9c31w0EDUzjTD4LM8f+ExICuzf6gkalFoFc5Mi0J7fL4+Juw5W8GPCHEIbO2ows9dFzn02jJUDhBsmObh0lvGNeHAzCQ4Kn6mBSwj9E/U+iyl8RC3z6yyfLVTuoyqWB3XUJsYsSfe9soLWMmf3WxFmhQo2qRVFGlBElJxZYtuLjSINM/O0f4U4+bNNMqetjXRujTVloldI3iaSImA=="
-        blueprint.load_from_string(example_string)
+        blueprint = Blueprint.from_string(example_string)
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "icons": [{"index": 1, "signal": {"name": "power-switch"}}],
+            "icons": [{"index": 1, "signal": {"name": "power-switch", "type": "item"}}],
             "entities": [
                 {
                     "name": "small-electric-pole",
@@ -888,7 +1067,7 @@ class TestBlueprint:
 
         # Numeric Locomotive case
         bp_string = "0eNqVk92OgjAQhV/FzHU1iKDC7V7uE2w2hlSYhYnQkrbqEsO77xT8izEbDTedduY7Z+j0BNt6j60h5SA9AeVaWUi/T2CpVLL2e0o2CCkYSTX0AkgV+AvpvBdPkmqd60Y7OuBdathvBKBy5AhH+BB0mdo3WzTMEtd6LGXeTa1jtbJy00FUQKstF2vllRgYBbGAjuvWK1YpyGA+nkbe1AM8fBu+eh2+EE86f4Jc3yFRyW2NWa1Lso5ymx0r4rjRB1IlpD+ytihAG2ItOVKCWRg/UY/ebi15vbX4Xfh8/jp8eYV7qGK2bv9DJg9IAfbybwD8eNm8wmJfn+frdhk+XtydezJjtCnOY37FfBj03Wk1+ZxNvqTKK2nY0lGSy/hVFIOxsYjhrTSYua71LWifd147avwA8L3urDceBP2Gv8Gi0/nOo9TYxsUA7/Ig+Qxy2DDj9iIFHNDYwV+8DJMoSeI4jJeLcN73fwrmQGw="
-        blueprint.load_from_string(bp_string)  # TODO
+        blueprint = Blueprint.from_string(bp_string)  # TODO
         # assert blueprint.to_dict()["blueprint"] == {
         #     "icons": [
         #         {"signal": {"type": "item", "name": "rail"}, "index": 1},
@@ -970,7 +1149,7 @@ class TestBlueprint:
                 }
             ],
             "tiles": [{"name": "refined-concrete", "position": {"x": 0, "y": 0}}],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Incorrect to_dict return for custom EntityLike
@@ -1022,10 +1201,16 @@ class TestBlueprint:
             def merge(self, other):  # pragma: no coverage
                 return self
 
-            def validate(self, mode):
+            def validate(self, mode):  # pragma: no coverage
                 return ValidationResult([], [])
 
-            def to_dict(self):  # pragma: no coverage
+            def to_dict(
+                self,
+                version=None,
+                exclude_none=True,
+                exclude_defaults=True,
+                entity_number=None,
+            ):  # pragma: no coverage
                 return "incorrect"
 
         test = TestClass()
@@ -1035,24 +1220,24 @@ class TestBlueprint:
 
     # =========================================================================
 
-    def test_getitem(self):
-        blueprint = Blueprint()
-        blueprint.label = "testing"
-        assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
+    # def test_getitem(self):
+    #     blueprint = Blueprint()
+    #     blueprint.label = "testing"
+    #     assert blueprint["blueprint"]["label"] is blueprint.data["blueprint"]["label"]
 
     # =========================================================================
 
-    def test_setitem(self):
-        blueprint = Blueprint()
-        blueprint["blueprint"]["label"] = "testing"
-        assert blueprint["blueprint"]["label"] is blueprint._root["blueprint"]["label"]
+    # def test_setitem(self):
+    #     blueprint = Blueprint()
+    #     blueprint["blueprint"]["label"] = "testing"
+    #     assert blueprint["blueprint"]["label"] is blueprint.data["blueprint"]["label"]
 
     # =========================================================================
 
-    def test_contains(self):
-        blueprint = Blueprint()
-        blueprint["label"] = "testing"
-        assert ("label" in blueprint["blueprint"]) == True
+    # def test_contains(self):
+    #     blueprint = Blueprint()
+    #     blueprint["label"] = "testing"
+    #     assert ("label" in blueprint["blueprint"]) == True
 
     def test_deepcopy(self):
         blueprint = Blueprint()
@@ -1066,20 +1251,20 @@ class TestBlueprint:
         group.add_power_connection(0, 1)
         group.position = (0, 1)
 
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         blueprint.add_circuit_connection("green", "test container", ("powerlines", 0))
 
         # Entities
-        assert blueprint.entities[0].parent is blueprint
+        assert blueprint.groups[0].parent is blueprint
         assert (
-            blueprint.entities[("powerlines", 0)].parent
-            is blueprint.entities["powerlines"]
+            blueprint.groups["powerlines"].entities[0].parent
+            is blueprint.groups["powerlines"]
         )
         assert (
-            blueprint.entities[("powerlines", 1)].parent
-            is blueprint.entities["powerlines"]
+            blueprint.groups["powerlines"].entities[1].parent
+            is blueprint.groups["powerlines"]
         )
-        assert blueprint.entities["powerlines"].parent is blueprint
+        assert blueprint.groups["powerlines"].parent is blueprint
         # Outcome
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
@@ -1101,7 +1286,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 2, 2, 2], [2, 1, 3, 1], [2, 5, 3, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Create a deepcopy of blueprint
@@ -1111,14 +1296,14 @@ class TestBlueprint:
         # Entities
         assert blueprint_copy.entities[0].parent is blueprint_copy
         assert (
-            blueprint_copy.entities[("powerlines", 0)].parent
-            is blueprint_copy.entities["powerlines"]
+            blueprint_copy.groups["powerlines"].entities[0].parent
+            is blueprint_copy.groups["powerlines"]
         )
         assert (
-            blueprint_copy.entities[("powerlines", 1)].parent
-            is blueprint_copy.entities["powerlines"]
+            blueprint_copy.groups["powerlines"].entities[1].parent
+            is blueprint_copy.groups["powerlines"]
         )
-        assert blueprint_copy.entities["powerlines"].parent is blueprint_copy
+        assert blueprint_copy.groups["powerlines"].parent is blueprint_copy
 
         # Outcome
         assert blueprint_copy.to_dict()["blueprint"] == {
@@ -1141,7 +1326,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 2, 2, 2], [2, 1, 3, 1], [2, 5, 3, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -1164,13 +1349,13 @@ class TestBlueprint:
         # Group search case
         group = Group("test", position=(-5, -5))
         group.entities.append("wooden-chest", tile_position=(-5, -5))
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         # Incorrect
         found_entity = blueprint.find_entity("wooden-chest", (-4.5, -4.5))
         assert found_entity is None
         # Correct
         found_entity = blueprint.find_entity("wooden-chest", (-9.5, -9.5))
-        assert found_entity is blueprint.entities[("test", 0)]
+        assert found_entity is blueprint.groups["test"].entities[0]
 
     # =========================================================================
 
@@ -1187,13 +1372,13 @@ class TestBlueprint:
         # Group search case
         group = Group("test", position=(-5, -5))
         group.entities.append("wooden-chest", tile_position=(-5, -5))
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         # Incorrect
         found_entity = blueprint.find_entity_at_position((-4.5, -4.5))
         assert found_entity is None
         # Correct
         found_entity = blueprint.find_entity_at_position((-9.5, -9.5))
-        assert found_entity is blueprint.entities[("test", 0)]
+        assert found_entity is blueprint.groups["test"].entities[0]
 
     def test_find_entities(self):
         blueprint = Blueprint()
@@ -1202,7 +1387,7 @@ class TestBlueprint:
         blueprint.entities.append("steel-chest", tile_position=(10, 10))
 
         found_entities = blueprint.find_entities()
-        assert found_entities == blueprint.entities._root
+        assert found_entities == blueprint.entities.data
 
         # Explicit AABB
         found_entities = blueprint.find_entities(AABB(0, 0, 6, 6))
@@ -1214,16 +1399,16 @@ class TestBlueprint:
         # Group search case
         group = Group("test", position=(-5, -5))
         group.entities.append("wooden-chest", tile_position=(-5, -5))
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         # Unchanged
         found_entities = blueprint.find_entities()
-        assert found_entities == blueprint.entities._root
+        assert found_entities == blueprint.entities.data
         # Unchanged
         found_entities = blueprint.find_entities([0, 0, 6, 6])
         assert found_entities == [blueprint.entities[0], blueprint.entities[1]]
         # Entity group
         found_entities = blueprint.find_entities([-10, -10, 0, 0])
-        assert found_entities == [blueprint.entities[("test", 0)]]
+        assert found_entities == [blueprint.groups["test"].entities[0]]
 
     # =========================================================================
 
@@ -1240,7 +1425,7 @@ class TestBlueprint:
 
         # Return all
         found = blueprint.find_entities_filtered()
-        assert found == blueprint.entities._root
+        assert found == blueprint.entities.data
 
         # Limit
         found = blueprint.find_entities_filtered(limit=2)
@@ -1284,7 +1469,7 @@ class TestBlueprint:
         found = blueprint.find_entities_filtered(
             type={"container", "decider-combinator", "arithmetic-combinator"}
         )
-        assert found == blueprint.entities._root
+        assert found == blueprint.entities.data
 
         # Direction
         found = blueprint.find_entities_filtered(direction=Direction.NORTH)
@@ -1335,7 +1520,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 5, 2, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_power_connection("2", "1")
@@ -1353,7 +1538,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test direct references
@@ -1377,7 +1562,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 5, 2, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
         blueprint.remove_power_connection(substationB, substationA)
         assert blueprint.to_dict()["blueprint"] == {
@@ -1394,7 +1579,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test entity not in blueprint
@@ -1413,7 +1598,9 @@ class TestBlueprint:
         blueprint.entities.append("power-switch", tile_position=(10, 10), id="p")
 
         with pytest.raises(InvalidConnectionSideError):
-            blueprint.add_power_connection("1", "p", 3)
+            blueprint.add_power_connection("1", "p", "wrong")
+        with pytest.raises(InvalidConnectionSideError):
+            blueprint.add_power_connection("1", "p", "input", "wrong")
 
         blueprint.entities.append("radar", tile_position=(0, 6), id="3")
 
@@ -1480,7 +1667,7 @@ class TestBlueprint:
                     },
                 ],
                 "wires": [[2, 5, 3, 5], [4, 5, 2, 5], [4, 6, 3, 5]],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint.remove_power_connections()
@@ -1514,7 +1701,7 @@ class TestBlueprint:
                         "entity_number": 5,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -1524,7 +1711,7 @@ class TestBlueprint:
         group.entities.append("small-electric-pole")
         group.entities.append("small-electric-pole", tile_position=(1, 1))
         group.add_power_connection(0, 1)
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         blueprint.entities.append(
             "small-electric-pole", tile_position=(2, 2), id="root"
         )
@@ -1535,21 +1722,21 @@ class TestBlueprint:
                 {
                     "entity_number": 1,
                     "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
+                    "position": {"x": 2.5, "y": 2.5},
                 },
                 {
                     "entity_number": 2,
                     "name": "small-electric-pole",
-                    "position": {"x": 1.5, "y": 1.5},
+                    "position": {"x": 0.5, "y": 0.5},
                 },
                 {
                     "entity_number": 3,
                     "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 2.5},
+                    "position": {"x": 1.5, "y": 1.5},
                 },
             ],
-            "wires": [[3, 5, 2, 5], [1, 5, 2, 5]],
-            "version": encode_version(*__factorio_version_info__),
+            "wires": [[1, 5, 3, 5], [2, 5, 3, 5]],
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_power_connections()
@@ -1560,20 +1747,20 @@ class TestBlueprint:
                 {
                     "entity_number": 1,
                     "name": "small-electric-pole",
-                    "position": {"x": 0.5, "y": 0.5},
+                    "position": {"x": 2.5, "y": 2.5},
                 },
                 {
                     "entity_number": 2,
                     "name": "small-electric-pole",
-                    "position": {"x": 1.5, "y": 1.5},
+                    "position": {"x": 0.5, "y": 0.5},
                 },
                 {
                     "entity_number": 3,
                     "name": "small-electric-pole",
-                    "position": {"x": 2.5, "y": 2.5},
+                    "position": {"x": 1.5, "y": 1.5},
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -1583,7 +1770,7 @@ class TestBlueprint:
         assert blueprint.to_dict() == {
             "blueprint": {
                 "item": "blueprint",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Null case
@@ -1591,7 +1778,7 @@ class TestBlueprint:
         assert blueprint.to_dict() == {
             "blueprint": {
                 "item": "blueprint",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Normal case
@@ -1632,7 +1819,7 @@ class TestBlueprint:
                         "entity_number": 5,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint.generate_power_connections()
@@ -1674,21 +1861,11 @@ class TestBlueprint:
                     [2, 5, 3, 5],
                     [2, 5, 5, 5],
                     [2, 5, 4, 5],
-                    [2, 5, 1, 5],
-                    [3, 5, 2, 5],
                     [3, 5, 5, 5],
                     [3, 5, 4, 5],
-                    [3, 5, 1, 5],
-                    [4, 5, 1, 5],
                     [4, 5, 5, 5],
-                    [4, 5, 3, 5],
-                    [4, 5, 2, 5],
-                    [5, 5, 4, 5],
-                    [5, 5, 3, 5],
-                    [5, 5, 2, 5],
-                    [5, 5, 1, 5],
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Test only_axis
@@ -1728,47 +1905,46 @@ class TestBlueprint:
                     [1, 5, 3, 5],
                     [1, 5, 2, 5],
                     [2, 5, 4, 5],
-                    [2, 5, 1, 5],
                     [3, 5, 4, 5],
-                    [3, 5, 1, 5],
-                    [4, 5, 3, 5],
-                    [4, 5, 2, 5],
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         # Test prefer_axis
-        # blueprint.entities = None
-        # blueprint.entities.append("medium-electric-pole")
-        # blueprint.entities.append("medium-electric-pole", tile_position=(5, 0))
-        # blueprint.entities.append("medium-electric-pole", tile_position=(1, 1))
-        # blueprint.generate_power_connections(prefer_axis=False)
-        # assert blueprint.to_dict() == {
-        #     "blueprint": {
-        #         "item": "blueprint",
-        #         "entities": [
-        #             {
-        #                 "name": "medium-electric-pole",
-        #                 "position": {"x": 0.5, "y": 0.5},
-        #                 "neighbours": [2, 3],
-        #                 "entity_number": 1,
-        #             },
-        #             {
-        #                 "name": "medium-electric-pole",
-        #                 "position": {"x": 5.5, "y": 0.5},
-        #                 "neighbours": [1, 3],
-        #                 "entity_number": 2,
-        #             },
-        #             {
-        #                 "name": "medium-electric-pole",
-        #                 "position": {"x": 1.5, "y": 1.5},
-        #                 "neighbours": [1, 2],
-        #                 "entity_number": 3,
-        #             },
-        #         ],
-        #         "version": encode_version(*__factorio_version_info__),
-        #     }
-        # }
+        blueprint.entities = None
+        blueprint.wires = None
+        blueprint.entities.append("medium-electric-pole")
+        blueprint.entities.append("medium-electric-pole", tile_position=(5, 0))
+        blueprint.entities.append("medium-electric-pole", tile_position=(1, 1))
+        blueprint.generate_power_connections(prefer_axis=False)
+        assert blueprint.to_dict() == {
+            "blueprint": {
+                "item": "blueprint",
+                "entities": [
+                    {
+                        "name": "medium-electric-pole",
+                        "position": {"x": 0.5, "y": 0.5},
+                        "entity_number": 1,
+                    },
+                    {
+                        "name": "medium-electric-pole",
+                        "position": {"x": 5.5, "y": 0.5},
+                        "entity_number": 2,
+                    },
+                    {
+                        "name": "medium-electric-pole",
+                        "position": {"x": 1.5, "y": 1.5},
+                        "entity_number": 3,
+                    },
+                ],
+                "wires": [
+                    [1, 5, 2, 5],
+                    [1, 5, 3, 5],
+                    [2, 5, 3, 5],
+                ],
+                "version": encode_version(*mods.versions["base"]),
+            },
+        }
 
         # Test too many power connections
         # blueprint.entities = None
@@ -1802,7 +1978,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 1, 2, 1]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_circuit_connection("red", "2", "1")
@@ -1820,7 +1996,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test direct references
@@ -1844,7 +2020,7 @@ class TestBlueprint:
                 },
             ],
             "wires": [[1, 2, 2, 2]],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
         blueprint.remove_circuit_connection("green", substationB, substationA)
         assert blueprint.to_dict()["blueprint"] == {
@@ -1861,7 +2037,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test entity not in blueprint
@@ -1879,8 +2055,17 @@ class TestBlueprint:
         # Test adjacent gate warning
         # TODO
 
+        with pytest.raises(InvalidConnectionSideError):
+            blueprint.remove_circuit_connection(
+                "red", substationA, substationB, "incorrect"
+            )
+        with pytest.raises(InvalidConnectionSideError):
+            blueprint.remove_circuit_connection(
+                "red", substationA, substationB, side_2="incorrect"
+            )
+
         # Errors
-        blueprint.entities.append("lightning-attractor", tile_position=(0, 6), id="3")
+        blueprint.entities.append("gate", tile_position=(0, 6), id="3")
 
         with pytest.raises(EntityNotCircuitConnectableError):
             blueprint.add_circuit_connection("green", "3", "1")
@@ -1925,7 +2110,7 @@ class TestBlueprint:
                     },
                 ],
                 "wires": [[2, 1, 3, 1], [2, 2, 3, 4]],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
         blueprint.remove_circuit_connections()
@@ -1954,7 +2139,7 @@ class TestBlueprint:
                         "entity_number": 4,
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -1964,30 +2149,32 @@ class TestBlueprint:
         group.entities.append("transport-belt")
         group.entities.append("transport-belt", tile_position=(1, 1))
         group.add_circuit_connection("red", 0, 1)
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         blueprint.entities.append("transport-belt", tile_position=(2, 2), id="root")
         blueprint.add_circuit_connection("green", "root", ("group", 1))
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "entities": [
+                # Flat entities are traversed first (in order)
                 {
                     "entity_number": 1,
+                    "name": "transport-belt",
+                    "position": {"x": 2.5, "y": 2.5},
+                },
+                # Followed by groups (in order)
+                {
+                    "entity_number": 2,
                     "name": "transport-belt",
                     "position": {"x": 0.5, "y": 0.5},
                 },
                 {
-                    "entity_number": 2,
+                    "entity_number": 3,
                     "name": "transport-belt",
                     "position": {"x": 1.5, "y": 1.5},
                 },
-                {
-                    "entity_number": 3,
-                    "name": "transport-belt",
-                    "position": {"x": 2.5, "y": 2.5},
-                },
             ],
-            "wires": [[3, 2, 2, 2], [1, 1, 2, 1]],
-            "version": encode_version(*__factorio_version_info__),
+            "wires": [[1, 2, 3, 2], [2, 1, 3, 1]],
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.remove_circuit_connections()
@@ -1998,20 +2185,20 @@ class TestBlueprint:
                 {
                     "entity_number": 1,
                     "name": "transport-belt",
-                    "position": {"x": 0.5, "y": 0.5},
+                    "position": {"x": 2.5, "y": 2.5},
                 },
                 {
                     "entity_number": 2,
                     "name": "transport-belt",
-                    "position": {"x": 1.5, "y": 1.5},
+                    "position": {"x": 0.5, "y": 0.5},
                 },
                 {
                     "entity_number": 3,
                     "name": "transport-belt",
-                    "position": {"x": 2.5, "y": 2.5},
+                    "position": {"x": 1.5, "y": 1.5},
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
     # =========================================================================
@@ -2045,7 +2232,7 @@ class TestBlueprint:
                     "entity_number": 2,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # With schedule
@@ -2059,7 +2246,7 @@ class TestBlueprint:
         )
 
         assert len(blueprint.entities) == 4
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -2114,7 +2301,7 @@ class TestBlueprint:
                     },
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Ensure new trains with same schedule dont create duplicate schedules
@@ -2122,7 +2309,7 @@ class TestBlueprint:
             config=config, position=(0, 4), direction=Direction.EAST, schedule=schedule
         )
         assert len(blueprint.entities) == 6
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [3, 5],
                 "schedule": {
@@ -2159,7 +2346,7 @@ class TestBlueprint:
             config=config, position=(0, 6), direction=Direction.EAST, schedule=schedule
         )
         assert len(blueprint.entities) == 8
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [3, 5],
                 "schedule": {
@@ -2227,7 +2414,7 @@ class TestBlueprint:
         blueprint.add_train_at_station(config=config, station="Station 1")
 
         assert len(blueprint.entities) == 3
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -2250,7 +2437,7 @@ class TestBlueprint:
                     "entity_number": 3,
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # With schedule
@@ -2272,7 +2459,7 @@ class TestBlueprint:
         )
 
         assert len(blueprint.entities) == 6
-        assert blueprint.to_dict()["blueprint"] == {
+        assert blueprint.to_dict(version=(2, 0))["blueprint"] == {
             "item": "blueprint",
             "entities": [
                 {
@@ -2341,7 +2528,7 @@ class TestBlueprint:
                     },
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Ensure new trains with same schedule dont create duplicate schedules
@@ -2356,7 +2543,7 @@ class TestBlueprint:
             config=config, station=blueprint.entities[-1], schedule=schedule
         )
         assert len(blueprint.entities) == 9
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [5, 8],
                 "schedule": {
@@ -2400,7 +2587,7 @@ class TestBlueprint:
             config=config, station=blueprint.entities[-1], schedule=schedule
         )
         assert len(blueprint.entities) == 12
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [5, 8],
                 "schedule": {
@@ -2465,7 +2652,7 @@ class TestBlueprint:
     def test_set_train_schedule(self):
         # 2 trains with 2 different schedules
         test_string = "0eNq1lM1ugzAQhN9lz1ZU/tLCuYcee24VIQMLsWpsZJukKOLdaxuS0CqHoLY3e7T+dtYa+wQF77FTTBjITsBKKTRk7yfQrBGUO03QFiEDRRmHkQATFX5CFozkRhGXpWylYQdclIbjjgAKwwzDCe43Qy76tkBlWeTGeQKd1PaIFI5vMXEcERgsLgg2cfSYjA5KC445lw3ThpU6P+6Z3bfywEQDWU25RgJSMduQTqiHTeKc/3AQ3ukg/TcH0co7ePpzB/HKO/itAxsKXe6x6vmcimtbtw9ItKhw3RWWUlVzPM8keEFaWZtHykxu01t5s1ORxXVUYW6Gzo0lla2b13XPbZp3PsQX1LOSnazr9TRsOzM43G50xO+DhCS+a5BXyg+o3tZ376jWKBpUeafQrszsxHU1svxwKIHlleVV/+xqJd3Dj6Z78Gp4UeOFamNXUH9oIcZn0b9wZrC1bq7/CQE7j/bDJdswjdM0ScJkG4XBOH4Bm4OGxA=="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
         # Also add another dummy schedule before
         # blueprint.schedules.insert(0, Schedule())
 
@@ -2530,7 +2717,36 @@ class TestBlueprint:
         blueprint.add_train_at_position(config, (20, 0), Direction.NORTH, schedule2)
         train3 = blueprint.find_train_from_wagon(blueprint.entities[-1])
 
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(1, 0))["blueprint"]["schedules"] == [
+            {
+                "locomotives": [1, 3],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "locomotives": [5],
+                "schedule": [
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                                # "compare_type": "or", # Default
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [1, 3],
                 "schedule": {
@@ -2567,7 +2783,35 @@ class TestBlueprint:
 
         blueprint.remove_train(train2)
         assert len(blueprint.entities) == 4
-        assert blueprint.to_dict()["blueprint"]["schedules"] == [
+        assert blueprint.to_dict(version=(1, 0))["blueprint"]["schedules"] == [
+            {
+                "locomotives": [1],
+                "schedule": [
+                    {
+                        "station": "Station 1",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.FULL_CARGO,
+                            }
+                        ],
+                    }
+                ],
+            },
+            {
+                "locomotives": [3],
+                "schedule": [
+                    {
+                        "station": "Station 2",
+                        "wait_conditions": [
+                            {
+                                "type": WaitConditionType.EMPTY_CARGO,
+                            }
+                        ],
+                    }
+                ],
+            },
+        ]
+        assert blueprint.to_dict(version=(2, 0))["blueprint"]["schedules"] == [
             {
                 "locomotives": [1],
                 "schedule": {
@@ -2612,7 +2856,7 @@ class TestBlueprint:
         # 1 going around a east-to-north corner, dual-headed "1-C-1"
         # 1 isolated locomotive pointing west, "1"
         test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Grab train #1 with the locomotive
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
@@ -2636,7 +2880,7 @@ class TestBlueprint:
         # Curved locomotive like above, with a fluid wagon within range of the
         # head but facing a perpendicular direction
         test_string = "0eNqNktFqwzAMRf9Fz5mRZTu28ytjjLT1iiGxi5N0KyX/PiUtZawZ7FFG99wrWVfYdVM4lZhGaK4Q9zkN0LxeYYjH1HbL23g5BWggjqGHClLbL1VpYwdzBTEdwhc0cn6rIKQxjjHc9GtxeU9TvwuFGx7KLu9zn8d4Dkw75YElOS0+jHkh0qImiV5ZU8EFGlJWICqPNRm2yyUyuL1JUKDzDqU1zpC1xlhlFeraWW59SkCPBB/dFA8vn+2RIRsRtLo5axIkV9Yv2w24esD3bTnmv+HkhbFO0n06LYWV2mm1YSOkJURSyLMjWo8aeUyl19XEdObWXBiSpq7biKT/uXFVC/Lkl63dM6nnKByPP3g9gebHxVRwDmVYe8hJbT3Z2hM6RfP8Da2auHA="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Make sure the fluid wagon is not falsely included with the train
         assert blueprint.find_train_from_wagon(blueprint.entities[0]) == [
@@ -2647,7 +2891,7 @@ class TestBlueprint:
 
         # 1 train, "2-C" pointing east
         test_string = "0eNqVkk1uhDAMha9SeZ2pZgIIJrv2Cl1WCGUgpZFCgkJgilDuXgdoi1r6t7Mjv+85tie4qF60VmoHbAJZGt0Be5ygk7XmKry5sRXAQDrRAAHNm5BZLhV4AlJX4gXYyZNfJcqUpjFODmIjpD4nILSTTorFeE7GQvfNRVgkv+tLbmtzuPLaaIS2pkMNhmiHnAONKIERWHyMkG6sRA5fCo63aRIMB3wyFmt0r1Ro+JMV3Wt1x4km3zvRZAcc/RF8yn4E46S68llUvVpH9UELOSXRpmJZ4pseHpbo5g59r1y6Ahddze4LCkEtt6JYN2cs1q3xE04LfD5v+Avv/v880bRuDMA8/Gi+Eba5QgKDsN3sQrNTnJ5pmkbpOcli718BQnHlBA=="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Grab from the cargo wagon (which is pointing the wrong way!)
         # and make sure the output is reversed so trains are at front
@@ -2664,7 +2908,7 @@ class TestBlueprint:
         # 1 isolated locomotive pointing west, "1"
         test_string = "0eNqVk9FuwyAMRf+F5xQ5BmLIr0zTlLasQqJQkaRbVOXfR9Mqm5R2yx5B9rn32nBhW9/bU3KhY/WFuV0MLatfLqx1h9D46103nCyrmevskRUsNMfrKTXOs7FgLuztJ6vL8bVgNnSuc/bWPx2Gt9AftzblgrnTx108xs6dbaadYptbYrjqZMwGJRVsYDUK5KbSpLJETC7DmlsZjMWCjSvZKHmFJRhB6i5CHEAYqHCpw0EbDSUprZBIKRIkQN4sLRyI2cG7791+89EcMuS3eGZ9PDnDd006xOdwNFyRLvGeTpacSqmleCDDS0IAFJCzA5ABCTmmkNNoXDjn0pgyJPTeP7CkVk5cEVfi25BY+ng4zmolXlQcDU6D/KcCzQpN6pz3Ng1/L01Wz5aWH//0Peofv6lgZ5vaqQB1KckgVQZBCxzHLxBxE5M="
 
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         # Return all trains:
         assert blueprint.find_trains_filtered() == [
@@ -2712,7 +2956,7 @@ class TestBlueprint:
 
         # Test continuity around corners
         test_string = "0eNqNkutqwzAMhd9Fv1PjayTnVcYYaWeKIbFLLt1KybtPSdoyaKD9KXHO0SehK+ybMZy6mAaorhAPOfVQfVyhj8dUN3NvuJwCVBCH0EIBqW7nqqtjA1MBMX2HX6jU9FlASEMcYlj9S3H5SmO7Dx0LHs4mH3Kbh3gOnHbKPVtymudwzE6XvoALVNoogY7zcxc5qV41UnDrKVo/og91d8y7n/rI4s1sISWS0u42g7ZnsAiRVcaRI+Ws9iWhm3c9sy537E1j02ygmHdRUApSpZXlncU6of06aIPIO2+kMeilIzJIfjW+BrJvAzlBVKJaFl2AvCBU0pstoJKviMobPikytLLa3e76Gsm9+QmkRWnJmjuQU88czMZ/t3xm9e+RCziHrl80mpRFrxH5eI7sNP0BD83n6g=="
-        blueprint = Blueprint(test_string)
+        blueprint = Blueprint.from_string(test_string)
 
         assert blueprint.find_trains_filtered() == [
             [
@@ -2726,7 +2970,7 @@ class TestBlueprint:
 
         # A whole bunch of trains in some hypothetical depot
         test_string = """0eNq1mcty2yAUQH8lw1rJ6AFIeNcuuuquy47HI8vYYSKDB2Gnnoz/vSA/pLRK5nKT7CzMPYAu6ID0QpbtXu6s0o7MXohqjO7I7PcL6dRG120o0/VWkhmxtWrJKSFKr+QfMstO84RI7ZRT8hzRXxwXer9dSusrJNfIVm7q5njfOY/YPLr7npSQnel8sNGhDQ8seJGQo49jhW9lpaxszv/SU/IfPI+GMzi8iIaXcDiNhgs4nMXCywwO59HwiISW0fCIhFbR8IiEimh4REKzNJZeRWQ0i16jVURKs+hFWkXkNButUtOYrXHqIKeYfMSUul62ctGajeqcarrF86Py11tzUHpDZuu67WRCjFW+sfpMSR9yNtV89DquIuZUFr2Qq5hJNazkQNUebnbvMdk/zIR019tDftZP8u5He9SaTDVVwpq6PfvL102FOTS09ev86+77ZFMVWjgCcM8E2jgAep7CJjPnIyZqMpdTkznP0MaDDC5HKw9CL9DOg9CHZd7UdmPun+uNr/uO6z6QmbC3OvgiYz1J79t2qkMMbWHIcDlawxB6ifYwhF6hRQyhC6Bu0o/Og0ndFPh9AGBwBX4fAKHj9wEQeoEWMYRO0SKG0BlWWZwB6ByrLBC9xDoDRK+wzgDRBdYZEDpNoc7IR9AvdAbNsM4ADTfHOgNEL7DOANEp7Kleio9mavKpThlWWaDBcawzQPQS6wwQvcI6A0QXcWfHT047S7HKggyOZVhlgeh53NmRl++cHa/nuW9T5zlWYOVYZoBxUKwcQXSGlSOIPizs2jrVttIe35QMFw8Z4/m488iZnAytLeq9Mwvn7SZdH+PsXk71tMRqHHQfKqzGQXSBtSaEzlOsNUH04Rmwbvdq9fYWhH/W7JjqRY51N2iMBVaeIDrFyhNEZ0ABFV+ZHo41OGiIJdbgIHqFVSiILrAK/Z8+98JrHuVq314+kw0JD9d+B0rFqE4A+mhjV5fPcBOyTMhzrdyiMXrVd+Jc01N3tZULd9yFjhvr611+r/25gJzmYaRTL1OjeXK7c8cAnJ/68TnTPIVwfR72tee+NLynPzfbX4T3nMu6/0XHxX6xra0JnyBHNcS4hpgMpLfa9FXxwKO3QJqOa4jJwGDWSyDPRuXheXotZ9dIxsc1bsW8/zKqnNz6OzV8XE3IQdquv/V+RQsqBGM540WenU5/AR24zCE="""
-        bp = Blueprint(test_string)
+        bp = Blueprint.from_string(test_string)
 
         # All trains
         trains = bp.find_trains_filtered()
@@ -2775,8 +3019,12 @@ class TestBlueprint:
 
         # Trains that follow a specific schedule
         schedule = Schedule()
-        schedule.append_stop("Station A", WaitCondition(WaitConditionType.FULL_CARGO))
-        schedule.append_stop("Station B", WaitCondition(WaitConditionType.EMPTY_CARGO))
+        schedule.append_stop(
+            "Station A", WaitCondition(WaitConditionType.FULL_CARGO, compare_type="or")
+        )
+        schedule.append_stop(
+            "Station B", WaitCondition(WaitConditionType.EMPTY_CARGO, compare_type="or")
+        )
         trains = bp.find_trains_filtered(schedule=schedule)
         assert schedule.stops == bp.schedules[0].stops
         assert len(trains) == 1
@@ -2809,7 +3057,7 @@ class TestBlueprint:
 
         # No criteria
         result = blueprint.find_tiles_filtered()
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         # Position and radius
         result = blueprint.find_tiles_filtered(position=(0, 0), radius=5)
@@ -2817,11 +3065,11 @@ class TestBlueprint:
 
         # Area (long)
         result = blueprint.find_tiles_filtered(area=AABB(0, 0, 11, 11))
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         # Area (short)
         result = blueprint.find_tiles_filtered(area=[0, 0, 11, 11])
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         # Name
         result = blueprint.find_tiles_filtered(name="refined-concrete")
@@ -2829,7 +3077,7 @@ class TestBlueprint:
 
         # Names
         result = blueprint.find_tiles_filtered(name={"refined-concrete", "landfill"})
-        assert result == blueprint.tiles._root
+        assert result == blueprint.tiles.data
 
         result = blueprint.find_tiles_filtered(name="refined-concrete", invert=True)
         assert result == [blueprint.tiles[1]]
@@ -2888,7 +3136,7 @@ class TestBlueprint:
             "steam-engine", tile_position=(5, 5), direction=Direction.EAST
         )
         blueprint.entities.append(
-            "straight-rail", position=(6, -2), direction=Direction.NORTHEAST
+            "straight-rail", position=(5, -1), direction=Direction.NORTHEAST
         )
 
         blueprint.tiles.append("refined-concrete", position=(0, 4))
@@ -2902,7 +3150,7 @@ class TestBlueprint:
         assert blueprint.entities[2].direction == Direction.NORTH
         assert blueprint.entities[3].tile_position == Vector(-10, 5)
         assert blueprint.entities[3].direction == Direction.WEST
-        assert blueprint.entities[4].position == Vector(-6, -2)
+        assert blueprint.entities[4].position == Vector(-5, -1)
         assert blueprint.entities[4].direction == Direction.NORTHWEST
         assert blueprint.tiles[0].position == Vector(-1, 4)
         assert blueprint.tiles[1].position == Vector(-5, 0)
@@ -2915,7 +3163,7 @@ class TestBlueprint:
         assert blueprint.entities[2].direction == Direction.SOUTH
         assert blueprint.entities[3].tile_position == Vector(-10, -8)
         assert blueprint.entities[3].direction == Direction.WEST
-        assert blueprint.entities[4].position == Vector(-6, 2)
+        assert blueprint.entities[4].position == Vector(-5, 1)
         assert blueprint.entities[4].direction == Direction.SOUTHWEST
         assert blueprint.tiles[0].position == Vector(-1, -5)
         assert blueprint.tiles[1].position == Vector(-5, -1)
@@ -2947,21 +3195,24 @@ class TestBlueprint:
 
         assert blueprint1 != entity
 
-    def test_json_schema(self):
-        Blueprint.json_schema()
-
     def test_unreasonable_size(self):
         blueprint = Blueprint()
+
+        # No issues
+        blueprint.validate().reissue_all()
 
         blueprint.entities.append("transport-belt")
         blueprint.entities.append("transport-belt", tile_position=(15000, 0))
         with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.validate().reissue_all()
 
+        blueprint.validate(mode=ValidationMode.DISABLED).reissue_all()
+
         blueprint.entities.clear()
 
-        # TODO: reimplement
         blueprint.tiles.append("landfill")
         blueprint.tiles.append("landfill", position=(15000, 0))
         with pytest.raises(UnreasonablySizedBlueprintError):
             blueprint.validate().reissue_all()
+
+        blueprint.validate(mode=ValidationMode.DISABLED).reissue_all()

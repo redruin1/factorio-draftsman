@@ -5,30 +5,23 @@ Enumerations of frequently used constants.
 """
 
 from draftsman.classes.vector import Vector
+from draftsman.serialization import draftsman_converters
+
 
 from datetime import timedelta
 from enum import IntEnum, Enum
+from enum_tools.documentation import document_enum
 from functools import total_ordering
 import math
-from pydantic_core import core_schema
 from typing import Literal
 
 
 class Direction(IntEnum):
     """
-    Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
-    in the range [0, 7] where north is 0 and increments clockwise. Provides a
-    number of convenience constants and functions over working with a raw int
-    value.
-
-    * ``NORTH     (0)`` (Default)
-    * ``NORTHEAST (1)``
-    * ``EAST      (2)``
-    * ``SOUTHEAST (3)``
-    * ``SOUTH     (4)``
-    * ``SOUTHWEST (5)``
-    * ``WEST      (6)``
-    * ``NORTHWEST (7)``
+    Factorio direction enum. Encompasses all 16 cardinal directions, diagonals,
+    and half-dagonals in the range [0, 15] where north is 0 and incrementing
+    clockwise. Provides a number of convenience constants and functions over
+    working with a raw int value.
     """
 
     NORTH = 0
@@ -61,7 +54,7 @@ class Direction(IntEnum):
         """
         return Direction((self.value + 8) % 16)
 
-    def next(self, four_way: bool = True) -> "Direction":
+    def next(self, eight_way: bool = False) -> "Direction":
         """
         Returns the direction one unit clockwise from the current direction.
         ``eight_way`` determines whether or not to treat the next-most direction
@@ -70,18 +63,18 @@ class Direction(IntEnum):
         .. doctest:: [constants]
 
             >>> Direction.NORTH.next(eight_way=False)
-            <Direction.EAST: 2>
+            <Direction.EAST: 4>
             >>> Direction.NORTH.next(eight_way=True)
-            <Direction.NORTHEAST: 1>
+            <Direction.NORTHEAST: 2>
 
-        :param eight_way: Whether to increment the current direction by 1 or 2
+        :param eight_way: Whether to increment the current direction by 2 or 4
             units.
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value + (4 if four_way else 1)) % 16)
+        return Direction((self.value + (4 if not eight_way else 2)) % 16)
 
-    def previous(self, four_way: bool = True) -> "Direction":
+    def previous(self, eight_way: bool = False) -> "Direction":
         """
         Returns the direction one unit counter-clockwise from the current
         direction. ``eight_way`` determines whether or not to treat the
@@ -100,7 +93,20 @@ class Direction(IntEnum):
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value - (4 if four_way else 1)) % 16)
+        return Direction((self.value - (4 if not eight_way else 2)) % 16)
+
+    def to_closest_valid_direction(self, valid_directions) -> "Direction":
+        """
+        Floor this direction to the closest valid direction. ``valid_directions``
+        must be exactly one of the constants ``FOUR_WAY_DIRECTIONS``,
+        ``EIGHT_WAY_DIRECTIONS``, or ``SIXTEEN_WAY_DIRECTIONS``.
+        """
+        if valid_directions is FOUR_WAY_DIRECTIONS:
+            return Direction((round(self.value / 4) * 4) % 16)
+        elif valid_directions is EIGHT_WAY_DIRECTIONS:
+            return Direction((math.floor(self.value / 2) * 2) % 16)
+        else:  # valid_directions is SIXTEEN_WAY_DIRECTIONS:
+            return self
 
     def flip(self, direction: Literal["horizontal", "vertical"] = "horizontal"):
         matrix = {
@@ -211,22 +217,47 @@ class Direction(IntEnum):
         }
         return mapping[self] * magnitude
 
+    def to_legacy(self) -> "LegacyDirection":
+        """
+        Converts this :py:class:`.Direction` to a :py:class:`.LegacyDirection`.
+        """
+        mapping = {
+            # fmt: off
+            Direction.NORTH:     LegacyDirection.NORTH,
+            Direction.NORTHEAST: LegacyDirection.NORTHEAST,
+            Direction.EAST:      LegacyDirection.EAST,
+            Direction.SOUTHEAST: LegacyDirection.SOUTHEAST,
+            Direction.SOUTH:     LegacyDirection.SOUTH,
+            Direction.SOUTHWEST: LegacyDirection.SOUTHWEST,
+            Direction.WEST:      LegacyDirection.WEST,
+            Direction.NORTHWEST: LegacyDirection.NORTHWEST,
+            # fmt: on
+        }
+        return mapping[self]
+
+
+FOUR_WAY_DIRECTIONS = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST}
+
+EIGHT_WAY_DIRECTIONS = {
+    Direction.NORTH,
+    Direction.NORTHEAST,
+    Direction.EAST,
+    Direction.SOUTHEAST,
+    Direction.SOUTH,
+    Direction.SOUTHWEST,
+    Direction.WEST,
+    Direction.NORTHWEST,
+}
+
+SIXTEEN_WAY_DIRECTIONS = {direction for direction in Direction}
+
 
 class LegacyDirection(IntEnum):
     """
-    Factorio direction enum. Encompasses all 8 cardinal directions and diagonals
-    in the range [0, 7] where north is 0 and increments clockwise. Provides a
-    number of convenience constants and functions over working with a raw int
-    value.
-
-    * ``NORTH     (0)`` (Default)
-    * ``NORTHEAST (1)``
-    * ``EAST      (2)``
-    * ``SOUTHEAST (3)``
-    * ``SOUTH     (4)``
-    * ``SOUTHWEST (5)``
-    * ``WEST      (6)``
-    * ``NORTHWEST (7)``
+    Old Factorio direction enum. Encompasses all 8 cardinal directions and
+    diagonals in the range [0, 7] where north is 0 and incrementing clockwise.
+    Provides a number of convenience constants and functions over working with a
+    raw int value.
     """
 
     NORTH = 0
@@ -249,7 +280,7 @@ class LegacyDirection(IntEnum):
 
         :returns: A new :py:class:`Direction`.
         """
-        return Direction((self.value + 4) % 8)
+        return LegacyDirection((self.value + 4) % 8)
 
     def next(self, eight_way: bool = False) -> "LegacyDirection":
         """
@@ -269,7 +300,7 @@ class LegacyDirection(IntEnum):
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value + 1 + (not eight_way)) % 8)
+        return LegacyDirection((self.value + 1 + (not eight_way)) % 8)
 
     def previous(self, eight_way: bool = False) -> "LegacyDirection":
         """
@@ -290,7 +321,7 @@ class LegacyDirection(IntEnum):
 
         :returns: A new :py:class:`Direction` object.
         """
-        return Direction((self.value - 1 - (not eight_way)) % 8)
+        return LegacyDirection((self.value - 1 - (not eight_way)) % 8)
 
     def to_orientation(self) -> "Orientation":
         """
@@ -306,14 +337,14 @@ class LegacyDirection(IntEnum):
         """
         mapping = {
             # fmt: off
-            Direction.NORTH:     Orientation.NORTH,
-            Direction.NORTHEAST: Orientation.NORTHEAST,
-            Direction.EAST:      Orientation.EAST,
-            Direction.SOUTHEAST: Orientation.SOUTHEAST,
-            Direction.SOUTH:     Orientation.SOUTH,
-            Direction.SOUTHWEST: Orientation.SOUTHWEST,
-            Direction.WEST:      Orientation.WEST,
-            Direction.NORTHWEST: Orientation.NORTHWEST,
+            LegacyDirection.NORTH:     Orientation.NORTH,
+            LegacyDirection.NORTHEAST: Orientation.NORTHEAST,
+            LegacyDirection.EAST:      Orientation.EAST,
+            LegacyDirection.SOUTHEAST: Orientation.SOUTHEAST,
+            LegacyDirection.SOUTH:     Orientation.SOUTH,
+            LegacyDirection.SOUTHWEST: Orientation.SOUTHWEST,
+            LegacyDirection.WEST:      Orientation.WEST,
+            LegacyDirection.NORTHWEST: Orientation.NORTHWEST,
             # fmt: on
         }
         return mapping[self]
@@ -340,38 +371,43 @@ class LegacyDirection(IntEnum):
         srt2 = 2 ** (-1 / 2)
         mapping = {
             # fmt: off
-            Direction.NORTH:     Vector(0, -1),
-            Direction.NORTHEAST: Vector(srt2, -srt2),
-            Direction.EAST:      Vector(1, 0),
-            Direction.SOUTHEAST: Vector(srt2, srt2),
-            Direction.SOUTH:     Vector(0, 1),
-            Direction.SOUTHWEST: Vector(-srt2, srt2),
-            Direction.WEST:      Vector(-1, 0),
-            Direction.NORTHWEST: Vector(-srt2, -srt2),
+            LegacyDirection.NORTH:     Vector(0, -1),
+            LegacyDirection.NORTHEAST: Vector(srt2, -srt2),
+            LegacyDirection.EAST:      Vector(1, 0),
+            LegacyDirection.SOUTHEAST: Vector(srt2, srt2),
+            LegacyDirection.SOUTH:     Vector(0, 1),
+            LegacyDirection.SOUTHWEST: Vector(-srt2, srt2),
+            LegacyDirection.WEST:      Vector(-1, 0),
+            LegacyDirection.NORTHWEST: Vector(-srt2, -srt2),
             # fmt: on
         }
         return mapping[self] * magnitude
 
+    def to_modern(self) -> Direction:
+        """
+        Converts this :py:class:`.LegacyDirection` to a :py:class:`.Direction`.
+        """
+        mapping = {
+            # fmt: off
+            LegacyDirection.NORTH:     Direction.NORTH,
+            LegacyDirection.NORTHEAST: Direction.NORTHEAST,
+            LegacyDirection.EAST:      Direction.EAST,
+            LegacyDirection.SOUTHEAST: Direction.SOUTHEAST,
+            LegacyDirection.SOUTH:     Direction.SOUTH,
+            LegacyDirection.SOUTHWEST: Direction.SOUTHWEST,
+            LegacyDirection.WEST:      Direction.WEST,
+            LegacyDirection.NORTHWEST: Direction.NORTHWEST,
+            # fmt: on
+        }
+        return mapping[self]
 
-# class OrientationMeta(type):
-#     _mapping = {
-#         "NORTH": 0.0,
-#         "NORTHEAST": 0.125,
-#         "EAST": 0.25,
-#         "SOUTHEAST": 0.375,
-#         "SOUTH": 0.5,
-#         "SOUTHWEST": 0.625,
-#         "WEST": 0.75,
-#         "NORTHWEST": 0.875,
-#     }
 
-#     def __getattr__(cls, name):
-#         if name in cls._mapping:
-#             return Orientation(cls._mapping[name])
-#         else:
-#             super().__getattr__(name)
-
-#     # NORTH = Orientation(0.0)
+draftsman_converters.get_version((1, 0)).register_structure_hook(
+    Direction, lambda d, _: LegacyDirection(d).to_modern()
+)
+draftsman_converters.get_version((1, 0)).register_unstructure_hook(
+    Direction, lambda inst: inst.to_legacy()
+)
 
 
 @total_ordering
@@ -387,15 +423,6 @@ class Orientation(float):
         Currently only supports addition and subtraction. If you want to perform
         more complex operations, it's best to convert it to a float and then
         convert it back to an Orientation when complete.
-
-    * ``NORTH     (0.000)`` (Default)
-    * ``NORTHEAST (0.125)``
-    * ``EAST      (0.250)``
-    * ``SOUTHEAST (0.375)``
-    * ``SOUTH     (0.500)``
-    * ``SOUTHWEST (0.625)``
-    * ``WEST      (0.750)``
-    * ``NORTHWEST (0.875)``
     """
 
     # Note: These are overwritten with Orientation() instances after definition
@@ -548,10 +575,6 @@ class Orientation(float):
             special_name = ""
         return "<%s%s: %r>" % (self.__class__.__name__, special_name, self._value_)
 
-    @classmethod
-    def __get_pydantic_core_schema__(cls, a, b):
-        return core_schema.float_schema()
-
 
 # Note: this is a bit scuffed
 # Ideally Orientation would be the same as an Enum, but with no restriction on
@@ -568,171 +591,210 @@ Orientation.WEST = Orientation(0.75)
 Orientation.NORTHWEST = Orientation(0.875)
 
 
+@document_enum
 class BeltReadMode(IntEnum):
     """
-    Determines what manner belts should send their contents signal.
-
-    * ``PULSE (0)``
-        Pulse the signal for one tick when first detected. (Default)
-    * ``HOLD (1)``
-        Hold the signal for as long as the item is present.
-    * ``HOLD_ALL_BELTS (2)``
-        Hold the signal for all items on all contiguous connected belt segments.
+    Determines what manner belts should send their contents as signals.
     """
 
     PULSE = 0
+    """
+    Pulse the signal for one tick when first detected.
+    """
     HOLD = 1
+    """
+    Hold the signal for as long as the item is present.
+    """
     HOLD_ALL_BELTS = 2
+    """
+    Hold the signal for all items on all contiguous connected belt segments.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
 
+@document_enum
 class InserterReadMode(IntEnum):
     """
     Determines what manner inserters should send their contents signal.
-
-    * ``PULSE (0)``
-        Pulse the signal for one tick when first detected. (Default)
-    * ``HOLD (1)``
-        Hold the signal for as long as the item is present.
     """
 
     PULSE = 0
+    """
+    Pulse the signal for one tick when first detected.
+    """
     HOLD = 1
+    """
+    Hold the signal for as long as the item is present.
+    """
 
 
+@document_enum
 class MiningDrillReadMode(IntEnum):
     """
     Used to specify whether the mining drill will read just the resources
     accessible to it or the entire resource patch.
-
-    * ``UNDER_DRILL (0)``
-        Only return the resources directly minable by this drill. (Default)
-    * ``TOTAL_PATCH (1)``
-        Return the entire contents of the ore patches the drill is over.
     """
 
     UNDER_DRILL = 0
+    """
+    Only return the resources directly minable by this drill.
+    """
     TOTAL_PATCH = 1
+    """
+    Return the entire contents of the ore patches the drill is over.
+    """
 
 
+@document_enum
 class SiloReadMode(IntEnum):
     """
     Determines how rocket silos should interact with the circuit network.
-
-    * ``NONE (0)``
-        Do nothing.
-    * ``READ_CONTENTS (1)``
-        Send the contents of the currently loaded rocket. (Default)
-    * ``READ_ORBITAL_REQUESTS (2)``
-        Send the set of items desired by any space platforms in orbit.
     """
 
     NONE = 0
+    """
+    Do nothing.
+    """
     READ_CONTENTS = 1
+    """
+    Send the contents of the currently loaded rocket.
+    """
     READ_ORBITAL_REQUESTS = 2
+    """
+    Send the set of items desired by all space platforms in orbit.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
 
+@document_enum
 class InserterModeOfOperation(IntEnum):
     """
+    .. deprecated:: 3.0.0 (Factorio 2.0)
+
+        In modern Factorio, each of these operations can be controlled
+        individually as opposed to this "master" mode.
+
     Inserter circuit control constants. Determines how the Entity should behave
     when connected to a circuit network.
-
-    * ``ENABLE_DISABLE (0)``
-        Turns the inserter on or off depending on the circuit condition.
-        (Default)
-    * ``SET_FILTERS (1)``
-        Sets the inserter's filter signals based on read signals.
-    * ``READ_HAND_CONTENTS (2)``
-        Reads the contents of the inserter's hand and sends it to the connected
-        wire(s).
-    * ``NONE (3)``
-        Does nothing.
-    * ``SET_STACK_SIZE (4)``
-        Sets the stack size override to the value of an input signal.
     """
 
     ENABLE_DISABLE = 0
+    """
+    Turns the inserter on or off depending on the circuit condition.
+    """
     SET_FILTERS = 1
+    """
+    Sets the inserter's filter signals based on read signals.
+    """
     READ_HAND_CONTENTS = 2
+    """
+    Reads the contents of the inserter's hand and sends it to the connected
+    wire(s).
+    """
     NONE = 3
+    """
+    Does nothing. Ignores any connected circuit network signal.
+    """
     SET_STACK_SIZE = 4
+    """
+    Sets the stack size override to the value of an input signal.
+    """
 
 
+@document_enum
 class LampColorMode(IntEnum):
     """
-    TODO
+    In what manner should circuit signals sent to a Lamp be interpreted when
+    determining that Lamp's color.
     """
 
     COLOR_MAPPING = 0
+    """
+    The given signal type broadcasts that particular color, so providing the 
+    signal ``"signal-red"`` will display the color red. If multiple color 
+    signals are provided, the first one according to sort order is displayed.
+    """
     COMPONENTS = 1
+    """
+    Three signals are used, where the value of each one corresponds to the 8-bit 
+    red, green, and blue values of the final color.
+    """
     PACKED_RGB = 2
+    """
+    One signal is used, where each color component is pulled from a specific
+    8-bits of the input signal.
+    """
 
 
+@document_enum
 class LogisticModeOfOperation(IntEnum):
     """
     Logistics container circuit control constants. Determines how the Entity
     should behave when connected to a circuit network.
-
-    * ``SEND_CONTENTS (0)``
-        Reads the inventory of the container and sends it to the connected
-        circuit network. (Default)
-    * ``SET_REQUESTS (1)``
-        Sets the item requests based on the input signals to the container.
-    * ``NONE (2)``
-        Does nothing with a connected circuit network.
     """
 
     SEND_CONTENTS = 0
+    """
+    Reads the inventory of the container and sends it to the connected circuit 
+    network.
+    """
     SET_REQUESTS = 1
+    """
+    Sets the item requests based on the input signals to the container.
+    """
     NONE = 2
+    """
+    Does nothing with the connected circuit network.
+    """
 
 
+@document_enum
 class FilterMode(IntEnum):
     """
-    Filter mode constant.
-
-    * ``WHITELIST (0)``
-        Include only the listed items. (Default)
-    * ``BLACKLIST (1)``
-        Exclude only the listed items.
+    In what manner should this filter be treated.
     """
 
     WHITELIST = 0
+    """
+    Include only the listed items.
+    """
     BLACKLIST = 1
+    """
+    Exclude only the listed items.
+    """
 
 
+@document_enum
 class TileSelectionMode(IntEnum):
     """
     Tile selection mode for :py:class:`.UpgradePlanner`.
-
-    * ``NORMAL (0)``
-        Constructed tiles are only removed if there are no entities in the
-        selected area. (Default)
-    * ``ALWAYS (1)``
-        Constructed tiles are always scheduled for deconstruction, regardless of
-        selection contents.
-    * ``NEVER (2)``
-        Constructed tiles are never scheduled for deconstruction, regardless of
-        selection contents.
-    * ``ONLY (3)``
-        Only tiles are selected for deconstruction; entities are completely
-        ignored when using this mode.
     """
 
     NORMAL = 0
+    """
+    Tiles are only selected if there are no entities in the selected area.
+    """
     ALWAYS = 1
+    """
+    Tiles are always selected regardless of selection contents.
+    """
     NEVER = 2
+    """
+    Tiles are never selected regardless of selection contents.
+    """
     ONLY = 3
+    """
+    Only tiles are selected and entities are completely ignored.
+    """
 
 
+@document_enum
 class Ticks(int, Enum):
     """
     Constant values that correspond to the number of Factorio ticks for that
     measure of time at normal game-speed.
-
-    * ``SECOND``: 60
-    * ``MINUTE``: 60 * ``SECOND``
-    * ``HOUR``  : 60 * ``MINUTE``
-    * ``DAY``   : 24 * ``HOUR``
     """
 
     SECOND = 60
@@ -757,7 +819,8 @@ class Ticks(int, Enum):
             >>> Ticks.from_timedelta(td)
             15780
 
-        :param timedelta: The difference in time between two points.
+        :param td: The difference in time between two points.
+
         :returns: The equivalent number of ticks representing this difference,
             rounded to the nearest tick.
         """
@@ -768,113 +831,188 @@ class Ticks(int, Enum):
         )
 
 
+@document_enum
 class WaitConditionType(str, Enum):
     """
-    All valid string identifiers for the type of a train's
-    :py:class:`WaitCondition` object.
-
-    * ``TIME_PASSED``
-        Triggered when a certain number of ticks has passed.
-    * ``INACTIVITY``
-        Triggered when the state of the train currently at the station is
-        unaltered for a number of ticks.
-    * ``FULL_CARGO``
-        Triggered when there is no more room for any new cargo in any of the
-        stopped train's wagons.
-    * ``EMPTY_CARGO``
-        Triggered when there is no more cargo in any of the stopped train's
-        wagons.
-    * ``ITEM_COUNT``
-        Triggered when the count of some loaded item passes some specified
-        condition.
-    * ``FLUID_COUNT``
-        Triggered when the count of some loaded fluid passes some specified
-        condition.
-    * ``CIRCUIT_CONDITION``
-        Triggered when a circuit signal passed to the train stop passes some
-        specified condition.
-    * ``PASSENGER_PRESENT``
-        Triggered if a player is inside any of the stopped train's wagons.
-    * ``PASSENGER_NOT_PRESENT``
-        Triggered if a player is not inside any of the stopped train's wagons.
+    All valid string identifiers for the type of a train's or space platform's
+    :py:class:`.WaitCondition` object.
     """
 
-    TIME_PASSED = "time"
-    INACTIVITY = "inactivity"
-    FULL_CARGO = "full"
-    EMPTY_CARGO = "empty"
-    ITEM_COUNT = "item_count"
-    FLUID_COUNT = "fluid_count"
+    ALL_REQUESTS_STATISFIED = "all_requests_satisfied"
+    """
+    Trigger if all of the logistics requests at this particular planet are 
+    satisfied.
+    """
+    ANY_PLANET_IMPORT_ZERO = "any_planet_import_zero"
+    """
+    Trigger if any of the logistics requests for any planet are zero.
+    """
+    ANY_REQUEST_NOT_SATISFIED = "any_request_not_satisfied"
+    """
+    Trigger if any logistics request on the space platform is below satisfaction.
+    """
+    ANY_REQUEST_ZERO = "any_request_zero"
+    """
+    Trigger if any logistics request on the space platform is zero.
+    """
+    AT_STATION = "at_station"
+    """
+    Trigger if the vehicle is currently stopped at a particular location on it's
+    route.
+    """
     CIRCUIT_CONDITION = "circuit"
+    """
+    Trigger if a circuit condition for that stop evaluates to true.
+    """
+    DAMAGE_TAKEN = "damage_taken"
+    """
+    Trigger if the space platform has taken damage beyond a specific threshold.
+    """
+    DESTINATION_FULL_OR_NO_PATH = "destination_full_or_no_path"
+    """
+    Trigger if the locomotive has no feasible way to get to it's next stop on
+    it's schedule, either by a lack of space at the destination stop or because
+    there is no physical route to the station.
+    """
+    EMPTY_CARGO = "empty"
+    """
+    Trigger if the cargo for this entity is entirely empty.
+    """
+    FLUID_COUNT = "fluid_count"
+    """
+    Trigger if the fluid cargo in the locomotive is beyond a particular 
+    threshold.
+    """
+    FUEL_COUNT_ALL = "fuel_item_count_all"
+    """
+    Triggered if the fuel in all locomotives is beyond some threshold.
+    """
+    FUEL_COUNT_ANY = "fuel_item_count_any"
+    """
+    Triggered if the fuel in any locomotive is beyond some threshold.
+    """
+    FULL_CARGO = "full"
+    """
+    Triggered if the item cargo space is entirely occupied in this vehicle.
+    """
+    FULL_FUEL = "fuel_full"
+    """
+    Triggered when all locomotives are entirely full of fuel.
+    """
+    NOT_EMPTY = "not_empty"
+    """
+    Triggered when the vehicle is not entirely empty of cargo.
+    """
+    INACTIVITY = "inactivity"
+    """
+    Triggered after the vehicle has been inactive for a specified period of time.
+    """
+    ITEM_COUNT = "item_count"
+    """
+    Triggered when a certain number of a particular item is contained within 
+    this vehicles inventory.
+    """
+    NOT_AT_STATION = "not_at_station"
+    """
+    Triggered when a train is not located at a particular station.
+    """
     PASSENGER_PRESENT = "passenger_present"
+    """
+    Triggered when a passenger is present in the vehicle (train or space
+    platform).
+    """
     PASSENGER_NOT_PRESENT = "passenger_not_present"
+    """
+    Triggered when a passenger is not present in the vehicle (train or space
+    platform).
+    """
+    REQUEST_SATISFIED = "request_satisfied"
+    """
+    Triggered when a space platform logistic request is satisfied.
+    """
+    REQUEST_NOT_SATISFIED = "request_not_satisfied"
+    """
+    Triggered when a space platform logistic request is not satisfied.
+    """
+    SPECIFIC_DESTINATION_FULL = "specific_destination_full"
+    """
+    Triggered when a specific station name is full.
+    """
+    SPECIFIC_DESTINATION_NOT_FULL = "specific_destination_not_full"
+    """
+    Triggered when a specific station name is not full.
+    """
+    TIME_PASSED = "time"
+    """
+    Triggered when a certain number of ticks has passed.
+    """
 
 
+@document_enum
 class WaitConditionCompareType(str, Enum):
     """
     All valid string identitfiers for the type of comparison between multiple
-    :py:class:`WaitCondition` objects.
-
-    * ``AND``
-        Boolean AND this condition with the subsequent one.
-    * ``OR``
-        Boolean OR this conditions with the subsequent one.
+    :py:class:`.WaitCondition` objects.
     """
 
     AND = "and"
+    """
+    Boolean AND this condition with the subsequent one.
+    """
     OR = "or"
+    """
+    Boolean OR this conditions with the subsequent one.
+    """
 
 
+@document_enum
 class WireColor(str, Enum):
     """
     The valid wire colors for circuit connection types in Factorio, either red
     or green.
-
-    * ``RED``
-        Red wire.
-    * ``GREEN``
-        Green wire.
     """
 
     RED = "red"
     GREEN = "green"
 
 
+@document_enum
 @total_ordering
 class ValidationMode(Enum):
     """
     The manner in which to validate a given Draftsman object.
-
-    * ``NONE``
-        No validation will be performed at all. If the attribute
-        supports a shorthand format, it will *not* be converted using this mode.
-        Consider this mode a simple "passthrough" mode, where any value given
-        to Draftsman is taken verbatim.
-    * ``MINIMUM``
-        The minimum amount of validation needed in order to coerce shorthand
-        formats into their expected form, as well as validate that the structure
-        of the object conforms to what Factorio expects. Importing an object
-        that has been validated with this mode is not guaranteed to succeed, as
-        while the object might be structurally correct, the data inside of it
-        might still be malformed.
-    * ``STRICT``
-        The default mode. Includes all of the errors from ``MINIMUM``,
-        but attempts to point out and remedy issues with the objects values.
-        Also includes conceptual faults that will not result in the intended
-        effect, such as setting an assembling machine's recipe to something that
-        it cannot produce.
-    * ``PEDANTIC``
-        The most verbose option. Includes all of the previous errors and
-        warnings, in addition to more linting-like behavior.
     """
 
-    NONE = "none"
+    DISABLED = "disabled"
+    """
+    No validation will be performed at all. Shorthand conversions will still
+    take place, meaning that all values will still attempt to be coerced to
+    their internal form whenever possible.
+    """
     MINIMUM = "minimum"
+    """
+    The minimum amount of validation needed in order to validate that the
+    structure of the object conforms to what Factorio expects. Importing an
+    object that has been validated with this mode is not guaranteed to
+    succeed, as while the object might be structurally correct, the data
+    inside of it might still be malformed.
+    """
     STRICT = "strict"
+    """
+    The default mode. Includes all of the errors from ``MINIMUM``,
+    but attempts to point out and remedy issues with the objects values.
+    Also includes conceptual faults that will not result in the intended
+    effect, such as setting an assembling machine's recipe to something that
+    it cannot produce.
+    """
     PEDANTIC = "pedantic"
+    """
+    The most verbose option. Includes all of the previous errors and warnings, 
+    in addition to more linting-like behavior.
+    """
 
     def __bool__(self) -> bool:
-        return self is not ValidationMode.NONE
+        return self is not ValidationMode.DISABLED
 
     def __eq__(self, other):
         if isinstance(other, ValidationMode):
@@ -889,3 +1027,86 @@ class ValidationMode(Enum):
                 other.name
             )
         return NotImplemented
+
+
+@document_enum
+class WireConnectorID(IntEnum):
+    """
+    Constants which define which type of connection point this particular ``wire``
+    connects to.
+    """
+
+    COMBINATOR_INPUT_RED = 1
+    CIRCUIT_RED = 1
+    COMBINATOR_INPUT_GREEN = 2
+    CIRCUIT_GREEN = 2
+    COMBINATOR_OUTPUT_RED = 3
+    COMBINATOR_OUTPUT_GREEN = 4
+    POLE_COPPER = 5
+    POWER_SWITCH_LEFT_COPPER = 5
+    POWER_SWITCH_RIGHT_COPPER = 6
+
+
+@document_enum
+class InventoryType(IntEnum):  # TODO: fix docs here
+    """
+    Constants which define which internal inventories
+    :py:attr:`.Entity.item_requests` should reside in.
+
+    .. NOTE::
+
+        Due to limitations with Sphinx/autoenum, only a subset of all values are
+        documented here.
+    """
+
+    ARTILLERY_TURRET_AMMO = 1
+    ARTILLERY_WAGON_AMMO = 1
+    BEACON_MODULES = 1
+    CARGO_LANDING_PAD_MAIN = 1
+    CARGO_UNIT = 1
+    CARGO_WAGON = 1
+    CHARACTER_CORPSE = 1
+    CHARACTER_MAIN = 1
+    CHEST = 1
+    EDITOR_MAIN = 1
+    FUEL = 1
+    HUB_MAIN = 1
+    ITEM_MAIN = 1
+    ROBOPORT_ROBOT = 1
+    ROBOT_CARGO = 1
+    TURRET_AMMO = 1
+    ASSEMBLING_MACHINE_INPUT = 2
+    CAR_TRUNK = 2
+    CARGO_LANDING_PAD_TRASH = 2
+    FURNACE_SOURCE = 2
+    GOD_MAIN = 2
+    HUB_TRASH = 2
+    LAB_INPUT = 2
+    LOGISTIC_CONTAINER_TRASH = 2
+    MINING_DRILL_MODULES = 2
+    ROBOPORT_MATERIAL = 2
+    ROBOT_REPAIR = 2
+    ROCKET_SILO_INPUT = 2
+    SPIDER_TRUNK = 2
+    ASSEMBLING_MACHINE_OUTPUT = 3
+    CAR_AMMO = 3
+    CHARACTER_GUNS = 3
+    EDITOR_GUNS = 3
+    FURNACE_RESULT = 3
+    LAB_MODULES = 3
+    ROCKET_SILO_OUTPUT = 3
+    SPIDER_AMMO = 3
+    ASSEMBLING_MACHINE_MODULES = 4
+    CHARACTER_AMMO = 4
+    EDITOR_AMMO = 4
+    FURNACE_MODULES = 4
+    ROCKET_SILO_MODULES = 4
+    SPIDER_TRASH = 4
+    CHARACTER_ARMOR = 5
+    EDITOR_ARMOR = 5
+    BURNT_RESULT = 6
+    ASSEMBLING_MACHINE_DUMP = 7
+    CHARACTER_VEHICLE = 7
+    CHARACTER_TRASH = 8
+    ROCKET_SILO_ROCKET = 9
+    ROCKET_SILO_TRASH = 11

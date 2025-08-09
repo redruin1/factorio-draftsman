@@ -1,10 +1,10 @@
 # spatial_hashmap.py
 
-from draftsman.classes.collection import EntityCollection
 from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector
 from draftsman.prototypes.straight_rail import StraightRail
+from draftsman.prototypes.legacy_straight_rail import LegacyStraightRail
 from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail
 from draftsman.prototypes.gate import Gate
 from draftsman.utils import (
@@ -24,7 +24,7 @@ import warnings
 class SpatialHashMap(SpatialDataStructure):
     """
     Implementation of a :py:class:`.SpatialDataStructure` using a hash-map.
-    Accellerates spatial queries of :py:class:`~.EntityCollection`.
+    Accellerates spatial queries of :py:class:`~.Collection`.
     """
 
     def __init__(self, cell_size: int = 8) -> None:
@@ -58,27 +58,6 @@ class SpatialHashMap(SpatialDataStructure):
 
         return item
 
-    def recursive_add(
-        self, item: SpatialLike, merge: bool = False
-    ) -> Optional[SpatialLike]:
-        if isinstance(item, EntityCollection):
-            # Recurse through all subentities
-            merged_entities = []  # keep track of merged entities, if any
-            for sub_entity in item.entities:
-                result = self.recursive_add(sub_entity, merge)
-                if result is None:
-                    merged_entities.append(sub_entity)
-
-            # Remove all merged entities from the group
-            for entity in merged_entities:
-                item.entities.remove(entity)
-
-            # Note: `item` here might be a Group with NO entities in it; this is
-            # deliberate
-            return item
-        else:
-            return self.add(item, merge)
-
     def remove(self, item: SpatialLike) -> None:
         cell_coords = self._cell_coords_from_aabb(item.get_world_bounding_box())
         for cell_coord in cell_coords:
@@ -87,15 +66,8 @@ class SpatialHashMap(SpatialDataStructure):
                 cell.remove(item)
                 if not cell:
                     del self.map[cell_coord]
-            except:
+            except KeyError:
                 pass
-
-    def recursive_remove(self, item: SpatialLike) -> None:
-        if isinstance(item, EntityCollection):
-            for sub_item in item.entities:
-                self.recursive_remove(sub_item)
-        else:
-            self.remove(item)
 
     def clear(self) -> None:
         self.map.clear()
@@ -105,70 +77,65 @@ class SpatialHashMap(SpatialDataStructure):
         Issues OverlappingObjectWarnings if adding this particular ``item``
         would be unplacable in the current blueprint/group configuration.
         """
-        if isinstance(item, EntityCollection):
-            # Recurse through all subentities
-            for sub_entity in item.entities:
-                self.validate_insert(sub_entity, merge)
-        else:
-            item_region = item.get_world_bounding_box()
-            overlapping_items = self.get_in_aabb(item_region)
-            for overlapping_item in overlapping_items:
-                # If we can merge the two items and this is desired later on,
-                # don't issue any overlapping warnings for this entity
-                # (Note that the actual merge is performed later on in
-                # `recursive_add()`)
-                if merge and overlapping_item.mergable_with(item):
-                    return
+        item_region = item.get_world_bounding_box()
+        overlapping_items = self.get_in_aabb(item_region)
+        for overlapping_item in overlapping_items:
+            # If we can merge the two items and this is desired later on,
+            # don't issue any overlapping warnings for this entity
+            # (Note that the actual merge is performed later on in
+            # `recursive_add()`)
+            if merge and overlapping_item.mergable_with(item):
+                return
 
-                # If the two objects have no shared collision layers they can
-                # never intersect
-                item_layers = item.collision_mask
-                other_layers = overlapping_item.collision_mask
-                if len(other_layers.intersection(item_layers)) == 0:
+            # If the two objects have no shared collision layers they can
+            # never intersect
+            item_layers = item.collision_mask
+            other_layers = overlapping_item.collision_mask
+            if len(other_layers.intersection(item_layers)) == 0:
+                continue
+
+            # StraightRails and CurvedRails cannot collide with each other
+            # UNLESS they are the same type, face the same direction, and
+            # exist at the exact same place
+            if isinstance(item, (StraightRail, LegacyCurvedRail)) and isinstance(
+                overlapping_item, (StraightRail, LegacyCurvedRail)
+            ):
+                identical = (
+                    item.name == overlapping_item.name
+                    and item.direction == overlapping_item.direction
+                    and item.global_position == overlapping_item.global_position
+                )
+                if not identical:
                     continue
 
-                # StraightRails and CurvedRails cannot collide with each other
-                # UNLESS they are the same type, face the same direction, and
-                # exist at the exact same place
-                if isinstance(item, (StraightRail, LegacyCurvedRail)) and isinstance(
-                    overlapping_item, (StraightRail, LegacyCurvedRail)
-                ):
-                    identical = (
-                        item.name == overlapping_item.name
-                        and item.direction == overlapping_item.direction
-                        and item.global_position == overlapping_item.global_position
-                    )
-                    if not identical:
-                        continue
+            # StraightRails and Gates collide with each other ONLY IF the
+            # direction of the gate and rail are parallel
+            if (
+                isinstance(item, (StraightRail, LegacyStraightRail))
+                and isinstance(overlapping_item, Gate)
+                or isinstance(item, Gate)
+                and isinstance(overlapping_item, (StraightRail, LegacyStraightRail))
+            ):
+                parallel = (item.direction - overlapping_item.direction) % 8 == 0
+                if not parallel:
+                    continue
 
-                # StraightRails and Gates collide with each other ONLY IF the
-                # direction of the gate and rail are parallel
-                if (
-                    isinstance(item, StraightRail)
-                    and isinstance(overlapping_item, Gate)
-                    or isinstance(item, Gate)
-                    and isinstance(overlapping_item, StraightRail)
-                ):
-                    parallel = (item.direction - overlapping_item.direction) % 4 == 0
-                    if not parallel:
-                        continue
-
-                # Finally, the actual geometric collision check:
-                item_collision_set = item.get_world_collision_set()
-                overlapping_collision_set = overlapping_item.get_world_collision_set()
-                if item_collision_set.overlaps(overlapping_collision_set):
-                    warnings.warn(
-                        "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
-                            item.name,
-                            type(item).__name__,
-                            item.global_position,
-                            overlapping_item.name,
-                            type(overlapping_item).__name__,
-                            overlapping_item.global_position,
-                        ),
-                        OverlappingObjectsWarning,
-                        stacklevel=2,
-                    )
+            # Finally, the actual geometric collision check:
+            item_collision_set = item.get_world_collision_set()
+            overlapping_collision_set = overlapping_item.get_world_collision_set()
+            if item_collision_set.overlaps(overlapping_collision_set):
+                warnings.warn(
+                    "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
+                        item.name,
+                        type(item).__name__,
+                        item.global_position,
+                        overlapping_item.name,
+                        type(overlapping_item).__name__,
+                        overlapping_item.global_position,
+                    ),
+                    OverlappingObjectsWarning,
+                    stacklevel=2,
+                )
 
     def get_all_entities(self) -> list[SpatialLike]:
         items = []
@@ -250,7 +217,6 @@ class SpatialHashMap(SpatialDataStructure):
 
         :returns: ``list`` of tuples, each one a map-coordinate.
         """
-        # TODO: AABB or PrimitveAABB?
         if aabb is None:
             return []
 
@@ -273,11 +239,11 @@ class SpatialHashMap(SpatialDataStructure):
         self, radius: float, point: PrimitiveVector
     ) -> list[PrimitiveIntVector]:
         """
-        Get a list of map-coordinates that correspond to a world-space circle.
+        Get a list of map cell coordinates that correspond to a world-space
+        circle.
 
         :param radius: The radius of the circle.
-        :param pos: The position to examine; Can be specified as a sequence or
-            as a ``dict`` with ``"x"`` and ``"y"`` keys.
+        :param point: The position around which the radius is centered.
 
         :returns: A ``list`` of tuples, each one a map-coordinate.
         """

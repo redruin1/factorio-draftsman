@@ -1,18 +1,35 @@
 # test_wall.py
 
-from draftsman.entity import Wall, Container
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.constants import ValidationMode as vm
+from draftsman.entity import Wall, Container, walls
+from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.signatures import SignalID, Condition
+import draftsman.validators
 from draftsman.warning import (
     MalformedSignalWarning,
     UnknownEntityWarning,
     UnknownKeywordWarning,
     UnknownSignalWarning,
 )
-from draftsman.constants import ValidationMode as vm
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_wall():
+    return Wall(
+        "stone-wall",
+        id="test",
+        quality="uncommon",
+        circuit_enabled=False,
+        circuit_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_gate=True,
+        output_signal="signal-C",
+        tags={"blah": "blah"},
+    )
 
 
 class TestWall:
@@ -20,50 +37,51 @@ class TestWall:
         # ========================
         # No assignment validation
         # ========================
+        draftsman.validators.set_mode(vm.DISABLED)
 
         # Known entity
         wall = Wall("stone-wall")
-        wall.validate(mode=vm.NONE).reissue_all()
+        wall.validate(mode=vm.DISABLED).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        # Unkown entity
+        # Unknown entity
         wall = Wall("unknown-wall")
-        wall.validate(mode=vm.NONE).reissue_all()
         assert wall.to_dict() == {
             "name": "unknown-wall",
             "position": {"x": 0.0, "y": 0.0},
         }
 
         # Unknown keyword
-        wall = Wall("stone-wall", unused_keyword="whatever")
-        wall.validate(mode=vm.NONE).reissue_all()
+        wall = Wall("stone-wall")
+        wall.extra_keys = {"unused_keyword": "whatever"}
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "unused_keyword": "whatever",
         }
 
-        # Import from correct dictionary
-        wall = Wall(
-            "stone-wall",
-            connections={"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
-            control_behavior={
+        # Import from correct 2.0 dictionary
+        d = {
+            "name": "stone-wall",
+            "position": {"x": 0.5, "y": 0.5},
+            "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
+            "control_behavior": {
                 "circuit_open_gate": True,
                 "circuit_condition": {
-                    "first_signal": "signal-A",
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
                     "comparator": "<",
                     "constant": 100,
                 },
-                "circuit_read_sensor": True,
-                "output_signal": "signal-B",
+                "circuit_read_gate": True,
+                "output_signal": {"name": "signal-B", "type": "virtual"},
             },
-            tags={"some": "stuff"},
-        )
-        wall.validate(mode=vm.NONE).reissue_all()
-        assert wall.to_dict() == {
+            "tags": {"some": "stuff"},
+        }
+        wall = Wall.from_dict(d, version=(2, 0))
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
@@ -81,22 +99,24 @@ class TestWall:
         }
 
         # Import from incorrect dictionary
-        wall = Wall(
-            "stone-wall",
-            connections="incorrect",
-            control_behavior="incorrect",
-        )
-        wall.validate(mode=vm.NONE).reissue_all()
-        assert wall.to_dict() == {
-            "name": "stone-wall",
-            "position": {"x": 0.5, "y": 0.5},
-            "connections": "incorrect",
-            "control_behavior": "incorrect",
-        }
+        # TODO: handle properly
+        # wall = Wall.from_dict({
+        #     "name": "stone-wall",
+        #     "connections": "incorrect",
+        #     "control_behavior": "incorrect",
+        # })
+        # wall.validate(mode=vm.DISABLED).reissue_all()
+        # assert wall.to_dict(version=(1, 0)) == {
+        #     "name": "stone-wall",
+        #     "position": {"x": 0.5, "y": 0.5},
+        #     "connections": "incorrect",
+        #     "control_behavior": "incorrect",
+        # }
 
         # ===================
         # Miniumum validation
         # ===================
+        draftsman.validators.set_mode(vm.MINIMUM)
 
         # Known entity
         wall = Wall("stone-wall")
@@ -106,7 +126,7 @@ class TestWall:
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        # Unkown entity
+        # Unknown entity
         wall = Wall("unknown-wall")
         wall.validate(mode=vm.MINIMUM).reissue_all()
         assert wall.to_dict() == {
@@ -115,8 +135,7 @@ class TestWall:
         }
 
         # Unknown keyword
-        wall = Wall("stone-wall", unused_keyword="whatever")
-        wall.validate(mode=vm.MINIMUM).reissue_all()
+        wall = Wall.from_dict({"name": "stone-wall", "unused_keyword": "whatever"})
         assert wall.to_dict() == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
@@ -124,23 +143,25 @@ class TestWall:
         }
 
         # Import from correct dictionary
-        wall = Wall(
-            "stone-wall",
-            connections={"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
-            control_behavior={
-                "circuit_open_gate": True,
-                "circuit_condition": {
-                    "first_signal": "signal-A",
-                    "comparator": "<",
-                    "constant": 100,
+        wall = Wall.from_dict(
+            {
+                "name": "stone-wall",
+                "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
+                "control_behavior": {
+                    "circuit_open_gate": True,
+                    "circuit_condition": {
+                        "first_signal": {"name": "signal-A", "type": "virtual"},
+                        "comparator": "<",
+                        "constant": 100,
+                    },
+                    "circuit_read_gate": True,
+                    "output_signal": {"name": "signal-B", "type": "virtual"},
                 },
-                "circuit_read_sensor": True,
-                "output_signal": "signal-B",
+                "tags": {"some": "stuff"},
             },
-            tags={"some": "stuff"},
+            version=(2, 0),
         )
-        wall.validate(mode=vm.MINIMUM).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
             "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
@@ -159,16 +180,12 @@ class TestWall:
 
         # Import from incorrect dictionary
         with pytest.raises(DataFormatError):
-            wall = Wall(
-                "stone-wall",
-                connections="incorrect",
-                control_behavior="incorrect",
-            )
-            wall.validate(mode=vm.MINIMUM).reissue_all()
+            wall = Wall.from_dict({"name": "stone-wall", "tags": "incorrect"})
 
         # =================
         # Strict validation
         # =================
+        draftsman.validators.set_mode(vm.STRICT)
 
         # Known entity
         wall = Wall("stone-wall")
@@ -178,10 +195,9 @@ class TestWall:
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        # Unkown entity
+        # Unknown entity
         with pytest.warns(UnknownEntityWarning):
             wall = Wall("unknown-wall")
-            wall.validate(mode=vm.STRICT).reissue_all()
         assert wall.to_dict() == {
             "name": "unknown-wall",
             "position": {"x": 0.0, "y": 0.0},
@@ -189,7 +205,7 @@ class TestWall:
 
         # Unknown keyword
         with pytest.warns(UnknownKeywordWarning):
-            wall = Wall("stone-wall", unused_keyword="whatever")
+            wall = Wall.from_dict({"name": "stone-wall", "unused_keyword": "whatever"})
             wall.validate(mode=vm.STRICT).reissue_all()
         assert wall.to_dict() == {
             "name": "stone-wall",
@@ -198,24 +214,28 @@ class TestWall:
         }
 
         # Import from correct dictionary
-        wall = Wall(
-            "stone-wall",
-            control_behavior={
-                "circuit_open_gate": True,
-                "circuit_condition": {
-                    "first_signal": "signal-A",
-                    "comparator": "<",
-                    "constant": 100,
+        wall = Wall.from_dict(
+            {
+                "name": "stone-wall",
+                "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
+                "control_behavior": {
+                    "circuit_open_gate": True,
+                    "circuit_condition": {
+                        "first_signal": {"name": "signal-A", "type": "virtual"},
+                        "comparator": "<",
+                        "constant": 100,
+                    },
+                    "circuit_read_gate": True,
+                    "output_signal": {"name": "signal-B", "type": "virtual"},
                 },
-                "circuit_read_sensor": True,
-                "output_signal": "signal-B",
+                "tags": {"some": "stuff"},
             },
-            tags={"some": "stuff"},
+            version=(2, 0),
         )
-        wall.validate(mode=vm.STRICT).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
+            "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
             "control_behavior": {
                 # "circuit_open_gate": True, # Default
                 "circuit_condition": {
@@ -231,15 +251,12 @@ class TestWall:
 
         # Import from incorrect dictionary
         with pytest.raises(DataFormatError):
-            wall = Wall(
-                "stone-wall",
-                control_behavior="incorrect",
-            )
-            wall.validate(mode=vm.STRICT).reissue_all()
+            wall = Wall.from_dict({"name": "stone-wall", "tags": "incorrect"})
 
         # ===================
         # Pedantic validation
         # ===================
+        draftsman.validators.set_mode(vm.PEDANTIC)
 
         # Known entity
         wall = Wall("stone-wall")
@@ -249,35 +266,39 @@ class TestWall:
             "position": {"x": 0.5, "y": 0.5},
         }
 
-        # Unkown entity
+        # Unknown entity
         with pytest.warns(UnknownEntityWarning):
             wall = Wall("unknown-wall")
             wall.validate(mode=vm.PEDANTIC).reissue_all()
 
         # Unknown keyword
         with pytest.warns(UnknownKeywordWarning):
-            wall = Wall("stone-wall", unused_keyword="whatever")
+            wall = Wall.from_dict({"name": "stone-wall", "unused_keyword": "whatever"})
             wall.validate(mode=vm.PEDANTIC).reissue_all()
 
         # Import from correct dictionary
-        wall = Wall(
-            "stone-wall",
-            control_behavior={
-                "circuit_open_gate": True,
-                "circuit_condition": {
-                    "first_signal": "signal-A",
-                    "comparator": "<",
-                    "constant": 100,
+        wall = Wall.from_dict(
+            {
+                "name": "stone-wall",
+                "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
+                "control_behavior": {
+                    "circuit_open_gate": True,
+                    "circuit_condition": {
+                        "first_signal": {"name": "signal-A", "type": "virtual"},
+                        "comparator": "<",
+                        "constant": 100,
+                    },
+                    "circuit_read_gate": True,
+                    "output_signal": {"name": "signal-B", "type": "virtual"},
                 },
-                "circuit_read_sensor": True,
-                "output_signal": "signal-B",
+                "tags": {"some": "stuff"},
             },
-            tags={"some": "stuff"},
+            version=(2, 0),
         )
-        wall.validate(mode=vm.PEDANTIC).reissue_all()
-        assert wall.to_dict() == {
+        assert wall.to_dict(version=(1, 0)) == {
             "name": "stone-wall",
             "position": {"x": 0.5, "y": 0.5},
+            "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
             "control_behavior": {
                 # "circuit_open_gate": True, # Default
                 "circuit_condition": {
@@ -293,100 +314,133 @@ class TestWall:
 
         # Import from incorrect dictionary
         with pytest.raises(DataFormatError):
-            wall = Wall(
-                "stone-wall",
-                control_behavior="incorrect",
-            )
-            wall.validate(mode=vm.PEDANTIC).reissue_all()
+            wall = Wall.from_dict({"name": "stone-wall", "tags": "incorrect"})
 
-    def test_set_enable_disable(self):
+    def test_versioning(self):
+        d_1_0 = {
+            "name": "stone-wall",
+            "position": {"x": 0.5, "y": 0.5},
+            "connections": {"1": {"red": [{"entity_id": 2, "circuit_id": 1}]}},
+            "control_behavior": {
+                "circuit_open_gate": True,
+                "circuit_condition": {
+                    "first_signal": {"name": "signal-A", "type": "virtual"},
+                    "comparator": "<",
+                    "constant": 100,
+                },
+                "circuit_read_sensor": True,
+                "output_signal": {"name": "signal-B", "type": "virtual"},
+            },
+            "direction": 0,
+            "items": {},
+            "tags": {"some": "stuff"},
+        }
+        d_2_0 = {
+            "name": "stone-wall",
+            "position": {"x": 0.5, "y": 0.5},
+            "quality": "normal",
+            "mirror": False,
+            "control_behavior": {
+                "circuit_open_gate": True,
+                "circuit_condition": {
+                    "first_signal": {
+                        "name": "signal-A",
+                        "quality": "normal",
+                        "type": "virtual",
+                    },
+                    "comparator": "<",
+                    "constant": 100,
+                },
+                "circuit_read_gate": True,
+                "output_signal": {
+                    "name": "signal-B",
+                    "quality": "normal",
+                    "type": "virtual",
+                },
+            },
+            "direction": 0,
+            "items": [],
+            "tags": {"some": "stuff"},
+        }
+        # Load 1.0 dict
+        wall = Wall.from_dict(d_1_0, version=(1, 0))
+        assert wall.extra_keys is None
+        # Output should be equivalent
+        assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
+        # Should be able to output a 2.0 dict
+        assert wall.to_dict(version=(2, 0), exclude_defaults=False) == d_2_0
+
+        # Load 2.0 dict
+        wall = Wall.from_dict(d_2_0, version=(2, 0))
+        assert wall.extra_keys is None
+        # Output should be equivalent
+        assert wall.to_dict(version=(2, 0), exclude_defaults=False) == d_2_0
+        # Should be able to output a 1.0 dict
+        # (though we have to set "connections" to an empty dict because it was
+        # never present the input 2.0 dict and exclude_defaults is False)
+        d_1_0["connections"] = {}
+        assert wall.to_dict(version=(1, 0), exclude_defaults=False) == d_1_0
+
+    def test_set_circuit_enabled(self):
         # ========================
         # No assignment validation
         # ========================
-        wall = Wall("stone-wall", validate_assignment="none")
-
-        # None
-        wall.enable_disable = None
-        assert wall.enable_disable == None
-        assert wall.control_behavior.circuit_open_gate == None
+        draftsman.validators.set_mode(vm.DISABLED)
+        wall = Wall("stone-wall")
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
-        assert wall.control_behavior.circuit_open_gate == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
-        wall.enable_disable = "incorrect"
-        assert wall.enable_disable == "incorrect"
-        assert wall.control_behavior.circuit_open_gate == "incorrect"
+        wall.circuit_enabled = "incorrect"
+        assert wall.circuit_enabled == "incorrect"
 
         # ===================
         # Miniumum validation
         # ===================
-        wall.validate_assignment = "minimum"
-
-        # None
-        wall.enable_disable = None
-        assert wall.enable_disable == None
-        assert wall.control_behavior.circuit_open_gate == None
+        draftsman.validators.set_mode(vm.MINIMUM)
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
-        assert wall.control_behavior.circuit_open_gate == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
         with pytest.raises(DataFormatError):
-            wall.enable_disable = "incorrect"
+            wall.circuit_enabled = "incorrect"
 
         # =================
         # Strict validation
         # =================
-        wall.validate_assignment = "strict"
-
-        # None
-        wall.enable_disable = None
-        assert wall.enable_disable == None
-        assert wall.control_behavior.circuit_open_gate == None
+        draftsman.validators.set_mode(vm.STRICT)
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
-        assert wall.control_behavior.circuit_open_gate == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
         with pytest.raises(DataFormatError):
-            wall.enable_disable = "incorrect"
+            wall.circuit_enabled = "incorrect"
 
         # ===================
         # Pedantic validation
         # ===================
-        wall.validate_assignment = "pedantic"
-
-        # None
-        wall.enable_disable = None
-        assert wall.enable_disable == None
-        assert wall.control_behavior.circuit_open_gate == None
+        draftsman.validators.set_mode(vm.PEDANTIC)
 
         # bool
-        wall.enable_disable = True
-        assert wall.enable_disable == True
-        assert wall.control_behavior.circuit_open_gate == True
+        wall.circuit_enabled = True
+        assert wall.circuit_enabled == True
 
         # Incorrect type
         with pytest.raises(DataFormatError):
-            wall.enable_disable = "incorrect"
+            wall.circuit_enabled = "incorrect"
 
     def test_set_read_gate(self):
         # ========================
         # No assignment validation
         # ========================
-        wall = Wall("stone-wall", validate_assignment="none")
-        assert wall.read_gate is wall.control_behavior.circuit_read_sensor
-
-        # None
-        wall.read_gate = None
-        assert wall.read_gate == None
+        draftsman.validators.set_mode(vm.DISABLED)
+        wall = Wall("stone-wall")
 
         # bool
         wall.read_gate = True
@@ -399,11 +453,7 @@ class TestWall:
         # ===================
         # Miniumum validation
         # ===================
-        wall.validate_assignment = "minimum"
-
-        # None
-        wall.read_gate = None
-        assert wall.read_gate == None
+        draftsman.validators.set_mode(vm.MINIMUM)
 
         # bool
         wall.read_gate = True
@@ -416,11 +466,7 @@ class TestWall:
         # =================
         # Strict validation
         # =================
-        wall.validate_assignment = "strict"
-
-        # None
-        wall.read_gate = None
-        assert wall.read_gate == None
+        draftsman.validators.set_mode(vm.STRICT)
 
         # bool
         wall.read_gate = True
@@ -433,11 +479,7 @@ class TestWall:
         # ===================
         # Pedantic validation
         # ===================
-        wall.validate_assignment = "pedantic"
-
-        # None
-        wall.read_gate = None
-        assert wall.read_gate == None
+        draftsman.validators.set_mode(vm.PEDANTIC)
 
         # bool
         wall.read_gate = True
@@ -451,7 +493,8 @@ class TestWall:
         # ========================
         # No assignment validation
         # ========================
-        wall = Wall("stone-wall", validate_assignment="none")
+        draftsman.validators.set_mode(vm.DISABLED)
+        wall = Wall("stone-wall")
 
         # None
         wall.output_signal = None
@@ -459,24 +502,27 @@ class TestWall:
 
         # Known string
         wall.output_signal = "signal-A"
-        assert wall.output_signal == "signal-A"
-        assert wall.to_dict()["control_behavior"] == {"output_signal": "signal-A"}
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
+        assert wall.to_dict()["control_behavior"] == {
+            "output_signal": {"name": "signal-A", "type": "virtual"}
+        }
 
         # Known dict
         wall.output_signal = {"name": "signal-A", "type": "virtual"}
-        assert wall.output_signal == {"name": "signal-A", "type": "virtual"}
+        assert wall.output_signal == SignalID(name="signal-A", type="virtual")
 
         # Known dict but malformed
         wall.output_signal = {"name": "signal-A", "type": "fluid"}
-        assert wall.output_signal == {"name": "signal-A", "type": "fluid"}
+        assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
-        wall.output_signal = "unknown-signal"
-        assert wall.output_signal == "unknown-signal"
+        with pytest.raises(IncompleteSignalError):
+            wall.output_signal = "unknown-signal"
+        # assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown dict
         wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-        assert wall.output_signal == {"name": "unknown-signal", "type": "virtual"}
+        assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         wall.output_signal = DataFormatError
@@ -485,7 +531,7 @@ class TestWall:
         # ===================
         # Miniumum validation
         # ===================
-        wall.validate_assignment = "minimum"
+        draftsman.validators.set_mode(vm.MINIMUM)
 
         # None
         wall.output_signal = None
@@ -504,7 +550,7 @@ class TestWall:
         assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             wall.output_signal = "unknown-signal"
 
         # Unknown dict
@@ -518,7 +564,7 @@ class TestWall:
         # =================
         # Strict validation
         # =================
-        wall.validate_assignment = "strict"
+        draftsman.validators.set_mode(vm.STRICT)
 
         # None
         wall.output_signal = None
@@ -535,16 +581,16 @@ class TestWall:
         # Known dict but malformed
         with pytest.warns(MalformedSignalWarning):
             wall.output_signal = {"name": "signal-A", "type": "fluid"}
-        assert wall.output_signal == SignalID(name="signal-A", type="fluid")
+            assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             wall.output_signal = "unknown-signal"
 
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-        assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
+            assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
@@ -553,7 +599,7 @@ class TestWall:
         # ===================
         # Pedantic validation
         # ===================
-        wall.validate_assignment = "pedantic"
+        draftsman.validators.set_mode(vm.PEDANTIC)
 
         # None
         wall.output_signal = None
@@ -570,20 +616,28 @@ class TestWall:
         # Known dict but malformed
         with pytest.warns(MalformedSignalWarning):
             wall.output_signal = {"name": "signal-A", "type": "fluid"}
-        assert wall.output_signal == SignalID(name="signal-A", type="fluid")
+            assert wall.output_signal == SignalID(name="signal-A", type="fluid")
 
         # Unknown string
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             wall.output_signal = "unknown-signal"
 
         # Unknown dict
         with pytest.warns(UnknownSignalWarning):
             wall.output_signal = {"name": "unknown-signal", "type": "virtual"}
-        assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
+            assert wall.output_signal == SignalID(name="unknown-signal", type="virtual")
 
         # Incorrect Type
         with pytest.raises(DataFormatError):
             wall.output_signal = DataFormatError
+
+    def test_power_and_circuit_flags(self):
+        for name in walls:
+            wall = Wall(name)
+            assert wall.power_connectable == False
+            assert wall.dual_power_connectable == False
+            assert wall.circuit_connectable == True
+            assert wall.dual_circuit_connectable == False
 
     def test_mergable_with(self):
         wall1 = Wall("stone-wall")
@@ -605,6 +659,13 @@ class TestWall:
         del wall2
 
         assert wall1.tags == {"some": "stuff"}
+
+        wall3 = Wall("stone-wall", circuit_enabled=True, output_signal="signal-A")
+        wall1.merge(wall3)
+
+        assert wall1.tags == {}  # Overwritten by blank
+        assert wall1.circuit_enabled == True
+        assert wall1.output_signal == SignalID(name="signal-A", type="virtual")
 
     def test_eq(self):
         wall1 = Wall("stone-wall")

@@ -1,179 +1,222 @@
 # lamp.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
+    ColorMixin,
+    LogisticConditionMixin,
     CircuitConditionMixin,
+    CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode, LampColorMode
-from draftsman.signatures import Color, Connections, DraftsmanBaseModel
-from draftsman.utils import get_first
+from draftsman.constants import LampColorMode
+from draftsman.serialization import (
+    draftsman_converters,
+)
+from draftsman.signatures import Color, SignalID
+from draftsman.validators import instance_of, try_convert
 
+from draftsman.data import mods
 from draftsman.data.entities import lamps
 
-from pydantic import ConfigDict, Field
-from typing import Any, Literal, Optional, Union
+import attrs
+from typing import Optional
 
 
+@attrs.define
 class Lamp(
-    CircuitConditionMixin, ControlBehaviorMixin, CircuitConnectableMixin, Entity
+    ColorMixin,
+    LogisticConditionMixin,
+    CircuitConditionMixin,
+    CircuitEnableMixin,
+    ControlBehaviorMixin,
+    CircuitConnectableMixin,
+    EnergySourceMixin,
+    Entity,
 ):
     """
     An entity that illuminates an area.
     """
 
-    class Format(
-        CircuitConditionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(CircuitConditionMixin.ControlFormat, DraftsmanBaseModel):
-            use_colors: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not the presence of a color signal will affect the
-                light that this lamp emits, if it's circuit condition is met.
-                If multiple colors are passed to the lamp, the color with the
-                first lexographical order is emitted.
-                """,
-            )
-            color_mode: Optional[LampColorMode] = Field(
-                LampColorMode.COLOR_MAPPING,
-                description="""
-                How the lamp should interpret signals when specifying it's color.
-                """,
-            )
-
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-        color: Optional[Color] = Field(
-            Color(r=1, g=1, b=1, a=1),
-            description="""
-            The constant color of the lamp. Superceeded by any dynamic value 
-            given to the lamp, if configured as such.
-            """,
-        )
-
-        always_on: Optional[bool] = Field(
-            False, description="""Whether or not this lamp is always on."""
-        )
-
-        model_config = ConfigDict(title="Lamp")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(lamps),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        always_on: Optional[bool] = False,
-        control_behavior: Format.ControlBehavior = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
-
-        self._root: __class__.Format
-        self.control_behavior: __class__.Format.ControlBehavior
-
-        super().__init__(
-            name,
-            lamps,
-            position=position,
-            tile_position=tile_position,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
-
-        self.always_on = always_on
-
-        self.validate_assignment = validate_assignment
+    @property
+    def similar_entities(self) -> list:
+        return lamps
 
     # =========================================================================
 
-    @property
-    def use_colors(self) -> Optional[bool]:
-        """
-        Whether or not this entity should use color signals to determine it's
-        color.
+    use_colors: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-        :getter: Gets whether or not to use colors, or ``None`` if not set.
-        :setter: Sets whether or not to use colors. Removes the key if set to
-            ``None``.
+        This attribute is imported/exported from blueprint strings.
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.control_behavior.use_colors
-
-    @use_colors.setter
-    def use_colors(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "use_colors",
-                value,
-            )
-            self.control_behavior.use_colors = result
-        else:
-            self.control_behavior.use_colors = value
+    Whether or not this entity should use signals to determine it's color.
+    """
 
     # =========================================================================
 
-    @property
-    def color_mode(self) -> Optional[LampColorMode]:
-        """
-        TODO
-        """
-        return self.control_behavior.color_mode
+    color_mode: Optional[LampColorMode] = attrs.field(
+        default=LampColorMode.COLOR_MAPPING,
+        converter=try_convert(LampColorMode),
+        validator=instance_of(LampColorMode),
+    )
+    """
+    .. serialized::
 
-    @color_mode.setter
-    def color_mode(self, value: Optional[LampColorMode]) -> None:
-        self.control_behavior.color_mode = value
+        This attribute is imported/exported from blueprint strings.
 
-    # =========================================================================
+    In what way to interpret signals given to the lamp if :py:attr:`.use_colors` 
+    is ``True``.
 
-    @property
-    def always_on(self) -> Optional[bool]:
-        """
-        Whether or not this entity should always be active, regardless of the
-        current day-night cycle. This option is superceeded by any condition
-        specified.
-
-        :getter: Gets whether or not this lamp is always on, or ``None`` if not
-            set.
-        :setter: Sets whether or not the lamp is always on. Removes the key if
-            set to ``None``.
-        """
-        return self._root.always_on
-
-    @always_on.setter
-    def always_on(self, value: Optional[bool]) -> None:
-        self._root.always_on = value
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
     # =========================================================================
 
-    @property
-    def color(self) -> Optional[Color]:
-        """
-        TODO
-        """
-        return self._root.color
+    red_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-red", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+    )
+    """
+    .. serialized::
 
-    @color.setter
-    def color(self, value: Optional[Color]):
-        self._root.color = value
+        This attribute is imported/exported from blueprint strings.
+    
+    The signal to pull the red color component from, if :py:attr:`.color_mode` is
+    :py:attr:`.LampColorMode.COMPONENTS`.
+    """
+
+    # =========================================================================
+
+    green_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-green", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The signal to pull the green color component from, if :py:attr:`.color_mode` 
+    is :py:attr:`.LampColorMode.COMPONENTS`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
+    # =========================================================================
+
+    blue_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-blue", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The signal to pull the blue color component from, if :py:attr:`.color_mode` 
+    is :py:attr:`.LampColorMode.COMPONENTS`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
+    # =========================================================================
+
+    rgb_signal: Optional[SignalID] = attrs.field(
+        factory=lambda: SignalID(name="signal-white", type="virtual"),
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
+    The signal to pull the entire encoded color from, if :py:attr:`color_mode` 
+    is :py:attr:`.LampColorMode.PACKED_RGB`.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
+    # =========================================================================
+
+    always_on: Optional[bool] = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
+    Whether or not this entity should always be active, regardless of the
+    current day-night cycle. This option is superceeded by any given 
+    :py:attr:`.circuit_condition`.
+    """
+
+    # =========================================================================
+
+    color: Color = attrs.field(
+        converter=Color.converter,
+        validator=instance_of(Color),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    What (static) :py:attr:`.Color` should this lamp have. Setting the lamp's 
+    color via :py:attr:`.use_colors` and :py:attr:`.color_mode` overrides this 
+    value if either are present.
+    """
+
+    @color.default
+    def _(self):
+        if mods.versions.get("base", (2, 0)) >= (2, 0):
+            return Color(r=1.0, g=1.0, b=191 / 255, a=1.0)
+        else:  # pragma: no coverage
+            return Color(r=1.0, g=1.0, b=1.0, a=1.0)
+
+    # =========================================================================
+
+    def merge(self, other: "Lamp"):
+        super().merge(other)
+
+        self.use_colors = other.use_colors
+        self.color_mode = other.color_mode
+        self.always_on = other.always_on
+        self.color = other.color
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    Lamp,
+    lambda fields: {
+        ("control_behavior", "use_colors"): fields.use_colors.name,
+        # None: fields.color_mode.name,
+        # None: fields.red_signal.name,
+        # None: fields.green_signal.name,
+        # None: fields.blue_signal.name,
+        # None: fields.rgb_signal.name,
+        # None: fields.always_on.name,
+        "color": fields.color.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    Lamp,
+    lambda fields: {
+        ("control_behavior", "use_colors"): fields.use_colors.name,
+        ("control_behavior", "color_mode"): fields.color_mode.name,
+        ("control_behavior", "red_signal"): fields.red_signal.name,
+        ("control_behavior", "green_signal"): fields.green_signal.name,
+        ("control_behavior", "blue_signal"): fields.blue_signal.name,
+        ("control_behavior", "rgb_signal"): fields.rgb_signal.name,
+        "always_on": fields.always_on.name,
+        "color": fields.color.name,
+    },
+)

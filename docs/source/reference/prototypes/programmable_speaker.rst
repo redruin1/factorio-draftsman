@@ -6,6 +6,5 @@
 
 .. autoclass:: ProgrammableSpeaker
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

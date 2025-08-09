@@ -1,104 +1,64 @@
 # legacy_straight_rail.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
-from draftsman.classes.mixins import DoubleGridAlignedMixin, EightWayDirectionalMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.utils import AABB, Rectangle, get_first
+from draftsman.classes.mixins import DirectionalMixin
+from draftsman.classes.mixins.directional import _rotated_collision_sets
+from draftsman.data import mods
+from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
+from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
 
 from draftsman.data.entities import legacy_straight_rails
 
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
+import attrs
 
-# TODO: currently hardcoded just for straight rail
+
+# Manually specified collision sets
 eps = 0.001
 _vertical_collision = CollisionSet([AABB(-0.75, -1.0 + eps, 0.75, 1.0 - eps)])
 _horizontal_collision = _vertical_collision.rotate(4)
 _diagonal_collision = CollisionSet([Rectangle((-0.5, -0.5), 1.25, 1.40, 45)])
-_collision_set_rotation = {}
-_collision_set_rotation[Direction.NORTH] = _vertical_collision
-_collision_set_rotation[Direction.NORTHEAST] = _diagonal_collision.rotate(4)
-_collision_set_rotation[Direction.EAST] = _horizontal_collision
-_collision_set_rotation[Direction.SOUTHEAST] = _diagonal_collision.rotate(8)
-_collision_set_rotation[Direction.SOUTH] = _vertical_collision
-_collision_set_rotation[Direction.SOUTHWEST] = _diagonal_collision.rotate(-4)
-_collision_set_rotation[Direction.WEST] = _horizontal_collision
-_collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
 
-eps = 0.001
-_vertical_collision = CollisionSet([AABB(-0.75, -1.0 + eps, 0.75, 1.0 - eps)])
-_horizontal_collision = _vertical_collision.rotate(4)
-_diagonal_collision = CollisionSet([Rectangle((-0.5, -0.5), 1.25, 1.40, 45)])
-_collision_set_rotation = {}
-_collision_set_rotation[Direction.NORTH] = _vertical_collision
-_collision_set_rotation[Direction.NORTHEAST] = _diagonal_collision.rotate(4)
-_collision_set_rotation[Direction.EAST] = _horizontal_collision
-_collision_set_rotation[Direction.SOUTHEAST] = _diagonal_collision.rotate(8)
-_collision_set_rotation[Direction.SOUTH] = _vertical_collision
-_collision_set_rotation[Direction.SOUTHWEST] = _diagonal_collision.rotate(-4)
-_collision_set_rotation[Direction.WEST] = _horizontal_collision
-_collision_set_rotation[Direction.NORTHWEST] = _diagonal_collision
+if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+    _legacy_straight_rail_name = "straight-rail"
+else:
+    _legacy_straight_rail_name = "legacy-straight-rail"
+
+_rotated_collision_sets[_legacy_straight_rail_name] = {
+    Direction.NORTH: _vertical_collision,
+    Direction.NORTHEAST: _diagonal_collision.rotate(4),
+    Direction.EAST: _horizontal_collision,
+    Direction.SOUTHEAST: _diagonal_collision.rotate(8),
+    Direction.SOUTH: _vertical_collision,
+    Direction.SOUTHWEST: _diagonal_collision.rotate(-4),
+    Direction.WEST: _horizontal_collision,
+    Direction.NORTHWEST: _diagonal_collision,
+}
 
 
-class LegacyStraightRail(DoubleGridAlignedMixin, EightWayDirectionalMixin, Entity):
+@fix_incorrect_pre_init
+@attrs.define
+class LegacyStraightRail(DirectionalMixin, Entity):
     """
-    An old, 1.0 straight rail entity.
+    An old, Factorio 1.0 straight rail entity.
     """
 
-    class Format(
-        DoubleGridAlignedMixin.Format, EightWayDirectionalMixin.Format, Entity.Format
-    ):
-        model_config = ConfigDict(title="LegacyStraightRail")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(legacy_straight_rails),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
-
-        # This is kinda hacky, but necessary due to Factorio issuing dummy
-        # values for collision boxes. We have to do this before initialization
-        # of the rest of the class because certain things like tile position are
-        # dependent on this information and can be set during initialization
-        # (if we pass in arguments in **kwargs).
-
-        # We set a (private) flag to ignore the dummy collision box that
-        # Factorio provides
-        self._overwritten_collision_set = True
-
-        # We then provide a list of all the custom rotations
-        self._collision_set = _vertical_collision
-        self._collision_set_rotation = _collision_set_rotation
-
-        super().__init__(
-            name,
-            legacy_straight_rails,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            tags=tags,
-            **kwargs
-        )
-
-        self.validate_assignment = validate_assignment
+    @property
+    def similar_entities(self) -> list[str]:
+        return legacy_straight_rails
 
     # =========================================================================
 
     @property
-    def collision_set(self) -> Optional[CollisionSet]:
-        return _collision_set_rotation.get(self.direction, None)
+    def double_grid_aligned(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
+    def valid_directions(self) -> set[Direction]:
+        return EIGHT_WAY_DIRECTIONS
 
     # =========================================================================
 

@@ -69,7 +69,8 @@ def main():
             }
             blueprint.entities.append(lamp)
 
-    # Output is usually too big for the console, so we just write it to a file
+    # Output is usually too big for the console, so we either write it to clipboard
+    # (if installed) or to a file
     if pyperclip is not None:
         pyperclip.copy(blueprint.to_string())
         print("Copied to clipboard.")

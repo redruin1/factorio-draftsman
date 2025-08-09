@@ -1,0 +1,410 @@
+# validators.py
+
+from draftsman.constants import ValidationMode
+from draftsman.error import DataFormatError
+from draftsman.warning import DraftsmanWarning
+
+import attr
+import attrs
+
+import inspect
+import operator
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    Optional,
+    Union,
+    TYPE_CHECKING,
+    get_origin,
+    get_args,
+)
+import warnings
+
+if TYPE_CHECKING:  # pragma: no coverage
+    from draftsman.classes.exportable import Exportable
+
+
+_validation_mode = ValidationMode.STRICT
+
+
+def get_mode():
+    """
+    Gets the current global :py:class:`ValidationMode` that Draftsman is using.
+    """
+    global _validation_mode
+    return _validation_mode
+
+
+def set_mode(mode: ValidationMode):
+    """
+    Either set the global validation level for all subsequent statements:
+
+    .. example::
+
+        import draftsman.validators
+
+        draftsman.validators.set_mode(ValidationMode.PEDANTIC)
+
+        assert draftsman.validators.get_mode() is ValidationMode.PEDANTIC
+
+    Or set the validation level only for a specific block of code:
+
+    .. example::
+
+        assert draftsman.validators.get_mode() is ValidationMode.STRICT
+
+        with draftsman.validators.set_mode(ValidationMode.NONE):
+            assert draftsman.validators.get_mode() is ValidationMode.NONE
+
+        assert draftsman.validators.get_mode() is ValidationMode.STRICT
+
+    .. NOTE::
+
+        Explicit calls to :py:meth:`Exportable.validate` obey this value.
+    """
+    global _validation_mode
+    original_mode = _validation_mode
+    _validation_mode = ValidationMode(mode)
+
+    class ValidationContext:
+        def __enter__(self):
+            pass
+
+        def __exit__(self, typ, value, traceback):
+            global _validation_mode
+            _validation_mode = original_mode
+
+    return ValidationContext()
+
+
+def conditional(severity):
+    """
+    Only run the validator if `mode` is greater than a given severity.
+    If an ``error_list`` or ``warning_list`` is provided, mutate that instead of
+    raising/warning.
+    """
+    global _validation_mode
+
+    def decorator(meth):
+        def class_validator(
+            *args,
+            mode=None,
+            error_list: Optional[list] = None,
+            warning_list: Optional[list] = None,
+            **kwargs,
+        ):  # pragma: no coverage
+            """Validator wrapper for ``@classvalidator``."""
+            mode = mode if mode is not None else _validation_mode
+            if mode < severity:
+                return
+
+            try:
+                with warnings.catch_warnings(record=True) as ws:
+                    meth(*args)
+            except Exception as e:
+                if error_list is None:
+                    raise e
+                else:
+                    error_list.append(e)
+
+            if warning_list is None:
+                for w in ws:
+                    warnings.warn(
+                        w.message,
+                        stacklevel=(
+                            5 if inspect.stack()[1].function == "__init__" else 6
+                        ),
+                    )
+            else:
+                warning_list.extend([w.message for w in ws])
+
+        def attr_validator(
+            *args,
+            mode=None,
+            error_list: Optional[list] = None,
+            warning_list: Optional[list] = None,
+        ):
+            """Validator wrapper for regular attribute validators."""
+            mode = mode if mode is not None else _validation_mode
+            if mode < severity:
+                return
+            try:
+                with warnings.catch_warnings(record=True) as ws:
+                    meth(*args)
+            except Exception as e:
+                if error_list is None:
+                    raise e
+                else:
+                    error_list.append(e)
+
+            if warning_list is None:
+                for w in ws:
+                    warnings.warn(
+                        w.message,
+                        stacklevel=(
+                            5 if inspect.stack()[2].function == "__init__" else 6
+                        ),
+                    )
+            else:
+                warning_list.extend([w.message for w in ws])
+
+        sig = inspect.signature(meth)
+        if len(sig.parameters) == 1:
+            return class_validator
+        else:
+            return attr_validator
+
+    return decorator
+
+
+def classvalidator(func):
+    """
+    Decorator which marks the given function as a validator for this class.
+    """
+    func.__attrs_class_validator__ = True
+    return func
+
+
+class _AndValidator:
+    def __init__(self, validators):
+        self._validators = validators
+
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
+        for validator in self._validators:
+            validator(inst, attr, value, **kwargs)
+
+
+def and_(*validators):
+    vals = []
+    for validator in validators:
+        vals.extend(
+            validator._validators
+            if isinstance(validator, _AndValidator)
+            else [validator]
+        )
+
+    return _AndValidator(tuple(vals))
+
+
+# We overwrite the "official" `and_` method in attrs with our custom one; the
+# only difference being ours can handle **kwargs in the function signature.
+# This allows us to use the builtin `@attr.validator` decorator with our custom
+# function signatures without remorse, and (hopefully) without breaking compat
+# with any other library that happens to use the same attrs features.
+attr._make.and_ = and_
+
+
+class _OrValidator:
+    def __init__(self, validators):
+        self.validators = validators
+
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any, **kwargs):
+        messages = []
+        for validator in self.validators:
+            try:
+                validator(inst, attr, value, **kwargs)
+                return
+            except DataFormatError as e:
+                messages.append(str(e))
+
+        msg = "{} did not match any of {}\n\t{}".format(
+            repr(value),
+            repr(self.validators),
+            "\n\t".join(message for message in messages),
+        )
+        raise DataFormatError(msg)
+
+
+def or_(*validators):
+    return _OrValidator(validators)
+
+
+@conditional(ValidationMode.MINIMUM)
+def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any):
+    if value is not None:
+        msg = "{} was not None".format(repr(value))
+        raise DataFormatError(msg)
+
+
+class _ByteLengthValidator:
+    def __init__(self, max_len: int):
+        self.max_len = max_len
+
+    @conditional(ValidationMode.STRICT)
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: str):
+        if len(value.encode("utf-8")) > self.max_len:
+            msg = "'{}' exceeds {} bytes in length; will be truncated to this size when imported".format(
+                attr.name, self.max_len
+            )
+            warnings.warn(DraftsmanWarning(msg))
+
+
+def byte_length(max_len: int):
+    return _ByteLengthValidator(max_len)
+
+
+class _InstanceOfValidator:
+    def __init__(self, cls: type):
+        self.cls = cls
+
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, inst: "Exportable", attr: attrs.Attribute, value: Any):
+        if not isinstance(value, self.cls):
+            name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+            msg = "'{}' must be an instance of {}".format(attr.name, name)
+            raise DataFormatError(msg)
+
+
+class _ArgsAreValidator:
+    def __init__(self, cls: type):
+        self.cls = cls
+
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, _inst: "Exportable", _attr: attrs.Attribute, value: list):
+        for i, v in enumerate(value):
+            if not isinstance(v, self.cls):
+                name = self.cls if isinstance(self.cls, tuple) else self.cls.__name__
+                msg = "Element {} in list ({}) is not an instance of {}".format(
+                    i, repr(v), name
+                )
+                raise DataFormatError(msg)
+
+
+def instance_of(cls: type):
+    """
+    Ensures that a given input matches the type of the given class.
+    """
+    if get_origin(cls) is Union:
+        vs = []
+        for u in get_args(cls):
+            if u is type(None):  # schizo
+                vs.append(is_none)
+            else:
+                vs.append(instance_of(u))  # Optional annotateds
+        return _OrValidator(tuple(vs))
+    elif get_origin(cls) is list:
+        return _AndValidator(
+            (_InstanceOfValidator(get_origin(cls)), _ArgsAreValidator(get_args(cls)[0]))
+        )
+    elif get_origin(cls) is Annotated:
+        args = get_args(cls)
+        return _AndValidator((_InstanceOfValidator(args[0]), args[1]))
+    else:
+        return _InstanceOfValidator(cls)
+
+
+class _OneOfValidator:
+    def __init__(self, values):
+        self.values = values
+
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, _inst: "Exportable", _attr: attrs.Attribute, value: Any):
+        if value not in self.values:
+            msg = "value {} not one of {}".format(repr(value), self.values)
+            raise DataFormatError(msg)
+
+
+def one_of(*values):
+    """
+    Validates whether or not a given input is one of ``values``.
+    """
+    if len(values) == 1 and get_origin(values[0]) is Literal:
+        return _OneOfValidator(get_args(values[0]))
+    else:
+        return _OneOfValidator(values)
+
+
+@attrs.define(repr=False, frozen=True, slots=True)
+class _NumberValidator:
+    bound = attrs.field()
+    compare_op = attrs.field()
+    compare_func = attrs.field()
+
+    @conditional(ValidationMode.MINIMUM)
+    def __call__(self, _inst: "Exportable", attr, value, **kwargs):
+        if value is not None and not self.compare_func(value, self.bound):
+            msg = f"'{attr.name}' must be {self.compare_op} {self.bound}: {repr(value)}"
+            raise DataFormatError(msg)
+
+    def __repr__(self):  # pragma: no coverage
+        return f"<Validator for x {self.compare_op} {self.bound}>"
+
+
+def lt(val):
+    """
+    A validator that raises `ValueError` if the initializer is called with a
+    number larger or equal to *val*.
+
+    The validator uses `operator.lt` to compare the values.
+
+    Args:
+        val: Exclusive upper bound for values.
+
+    .. versionadded:: 21.3.0
+    """
+    return _NumberValidator(val, "<", operator.lt)
+
+
+# def le(val):
+#     """
+#     A validator that raises `ValueError` if the initializer is called with a
+#     number greater than *val*.
+
+#     The validator uses `operator.le` to compare the values.
+
+#     Args:
+#         val: Inclusive upper bound for values.
+
+#     .. versionadded:: 21.3.0
+#     """
+#     return _NumberValidator(val, "<=", operator.le)
+
+
+def ge(val):
+    """
+    A validator that raises `ValueError` if the initializer is called with a
+    number smaller than *val*.
+
+    The validator uses `operator.ge` to compare the values.
+
+    Args:
+        val: Inclusive lower bound for values
+
+    .. versionadded:: 21.3.0
+    """
+    return _NumberValidator(val, ">=", operator.ge)
+
+
+# def gt(val):
+#     """
+#     A validator that raises `ValueError` if the initializer is called with a
+#     number smaller or equal to *val*.
+
+#     The validator uses `operator.ge` to compare the values.
+
+#     Args:
+#        val: Exclusive lower bound for values
+
+#     .. versionadded:: 21.3.0
+#     """
+#     return _NumberValidator(val, ">", operator.gt)
+
+
+def try_convert(func):
+    """
+    Attempt to run the converter function, passing the value through unchanged
+    if it fails due to any exception. Under most circumstances, we want the
+    validators to actually issue the warnings, and we just want the converters
+    to coerce the data into a more accurate form if possible.
+    """
+
+    # @functools.wraps(func)
+    def try_func(value):
+        try:
+            return func(value)
+        except Exception:
+            return value
+
+    return try_func

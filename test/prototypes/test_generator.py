@@ -1,5 +1,6 @@
 # test_generator.py
 
+from draftsman.constants import Direction
 from draftsman.entity import Generator, generators, Container
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -7,15 +8,23 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_generator():
+    return Generator(
+        "steam-engine",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
+
+
 class TestGenerator:
     def test_constructor_init(self):
         generator = Generator("steam-engine")
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Generator(
-                "steam-engine", unused_keyword="whatever"
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Generator("not a generator").validate().reissue_all()
 

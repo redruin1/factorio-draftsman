@@ -1,10 +1,8 @@
 # Examples
 
-## [`1KiB_sector_ROM.py`](1KiB_sector_ROM.py)
-
-![1KiB_sector_ROM.png](images/1KiB_sector_ROM.png)
-
-A script for encoding arbitrary amounts of data into a particular Read-Only Memory design. Shows off a number of Draftsman features, including using IDs, using `Group`s, nested-wiring, as well as creating a custom `Group` object to help structure blueprints in meaningful ways.
+## Sub-Folders
+### [examples/entities](entities/)
+* Entity specific programs, usually for ones with complex behaviors.
 
 ## [`blueprint_operands.py`](blueprint_operands.py)
 
@@ -42,7 +40,7 @@ Showcases how to use (most of) the parameters available when filtering a bluepri
 
 ![image_converter.png](images/image_converter.png)
 
-Converts an arbitrary input image and converts it into a blueprint of placable entities and tiles. Entities and tiles are chosen based on their (vanilla) map view color. Requires `pillow`, `numpy`, and optionally `pyperclip` if you want to copy the result directly to the clipboard.
+Converts an arbitrary input image and converts it into a blueprint of place-able entities and tiles. Entities and tiles are chosen based on their (vanilla) map view color. Requires `pillow`, `numpy`, and optionally `pyperclip` if you want to copy the result directly to the clipboard.
 
 ## [`item_requester.py`](item_requester.py)
 
@@ -64,8 +62,6 @@ Generates a matrix of constant combinators where the value of each signal is tha
 
 Showcases how `Entity` can be inherited to add additional functionality on top of existing classes, which can be useful particularly when working with modded entities. Adds both the
 input and output entities associated with the train stop when added to a blueprint, and aliases them as `ltn_stop.input` and `ltn_stop.output`, meaning you can add wire connections to them very easily. By making the custom class, the boilerplate of ensuring the other entities are in the right position and orientation is abstracted away, making life much simpler. This pattern can be applied to all sorts of modded entities, as desired.
-
-Theoretically, it may be possible for the mod-authors themselves to create python classes like this and have Draftsman read them during the load process, but this is currently purely hypothetical.
 
 ## [`pumpjack_placer.py`](pumpjack_placer.py)
 

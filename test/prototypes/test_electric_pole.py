@@ -1,7 +1,9 @@
 # test_electric_pole.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
+from draftsman.data import mods
 from draftsman.entity import ElectricPole, electric_poles, Container
 from draftsman.error import DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -11,17 +13,74 @@ import sys
 import pytest
 
 
+@pytest.fixture
+def valid_electric_pole():
+    return ElectricPole(
+        "substation",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestElectricPole:
     def test_constructor_init(self):
-        electric_pole = ElectricPole("substation", position=[1, 1], neighbours=[1, 2])
+        electric_pole = ElectricPole("substation", position=(1, 1))
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            ElectricPole(
-                "small-electric-pole", unused_keyword=10
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             ElectricPole("this is not an electric pole").validate().reissue_all()
+
+    def test_from_dict(self):
+        # 1.0 dict
+        d_1_0 = {
+            "name": "small-electric-pole",
+            "position": {"x": 0.5, "y": 0.5},
+            "neighbours": [2, 3],
+            # TODO: connections
+            "entity_number": 1,
+        }
+        electric_pole = ElectricPole.from_dict(d_1_0, version=(1, 0))
+        assert electric_pole.extra_keys == None
+
+        # Since this entity is not contained within a blueprint (that we know
+        # of) we cannot modernize neighbours/connections to use blueprint.wires
+        # with associations; so we leave everything inplace
+        assert electric_pole.neighbours == [2, 3]
+        assert electric_pole.connections == {}
+
+        # Round trip should be preserved (minus entity number)
+        del d_1_0["entity_number"]
+        assert electric_pole.to_dict(version=(1, 0)) == d_1_0
+
+        # 2.0 should omit neighbours + connections even if they were originally
+        # specified
+        assert electric_pole.to_dict(version=(2, 0)) == {
+            "name": "small-electric-pole",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+
+    def test_circuit_wire_max_distance(self):
+        """
+        Ensure that circuit wire connection range is correct and that it updates
+        with pole quality.
+        """
+        pole = ElectricPole("small-electric-pole")
+        assert pole.circuit_wire_max_distance == 7.5
+
+        pole.quality = "legendary"
+        if "quality" in mods.versions:
+            assert pole.circuit_wire_max_distance == 17.5
+        else:
+            assert pole.circuit_wire_max_distance == 7.5
+
+        with pytest.warns(UnknownEntityWarning):
+            pole = ElectricPole("unknown pole")
+        assert pole.circuit_wire_max_distance is None
+
+        pole.quality = "legendary"
+        assert pole.circuit_wire_max_distance is None
 
     def test_mergable_with(self):
         group = Group()
@@ -56,14 +115,17 @@ class TestElectricPole:
         group.add_circuit_connection("green", 0, 1)
 
         blueprint = Blueprint()
-        blueprint.entities.append(group)
+        blueprint.groups.append(group)
         group.position = (2, 0)
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group, merge=True)
         blueprint.add_power_connection((0, 0), (1, 0))
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 1
+        assert len(blueprint.groups) == 2
+        assert len(blueprint.wires) == 1
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[0].wires) == 3
+        assert len(blueprint.groups[1].entities) == 1
+        assert len(blueprint.groups[1].wires) == 3
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
@@ -81,6 +143,7 @@ class TestElectricPole:
                 "position": {"x": 4.5, "y": 0.5},
             },
         ]
+        assert len(blueprint.to_dict()["blueprint"]["wires"]) == 7
         assert blueprint.to_dict()["blueprint"]["wires"] == [
             [1, 5, 3, 5],
             [1, 5, 2, 5],
@@ -99,12 +162,12 @@ class TestElectricPole:
         group.add_circuit_connection("red", 0, 1)
 
         blueprint = Blueprint()
-        blueprint.entities.append(group)
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 0
+        assert len(blueprint.entities) == 0
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[1].entities) == 0
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
@@ -127,10 +190,10 @@ class TestElectricPole:
 
         blueprint = Blueprint()
         blueprint.entities.append("small-electric-pole")
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[1].entities) == 1
+        assert len(blueprint.entities) == 1
+        assert len(blueprint.groups[0].entities) == 1
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,

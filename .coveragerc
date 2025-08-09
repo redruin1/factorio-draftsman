@@ -1,8 +1,15 @@
 # python coverage configuration file
+
 [run]
 omit = 
-    test/**
-    draftsman/env.py 
-    draftsman/environment/*
+    examples/**
+    draftsman/environment/**
+    test/test_all_factorio_versions.py
 branch = True
 command_line = -m pytest test -Werror -vv
+
+[report]
+skip_covered = True
+
+[html]
+skip_covered = True

@@ -6,6 +6,5 @@
 
 .. autoclass:: ArithmeticCombinator
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

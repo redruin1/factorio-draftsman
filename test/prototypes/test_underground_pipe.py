@@ -1,5 +1,6 @@
 # test_underground_pipe.py
 
+from draftsman.constants import Direction
 from draftsman.entity import UndergroundPipe, Container, underground_pipes
 from draftsman.error import InvalidEntityError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -8,19 +9,31 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_underground_pipe():
+    return UndergroundPipe(
+        "pipe-to-ground",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
+
+
 class TestUndergroundPipe:
     def test_constructor_init(self):
         # pipe = UndergroundPipe("pipe-to-ground")
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            pipe = UndergroundPipe("pipe-to-ground", unused_keyword=10)
-            pipe.validate().reissue_all()
+            pipe = UndergroundPipe.from_dict(
+                {"name": "pipe-to-ground", "unused_keyword": 10}
+            )
 
         # Errors
         with pytest.warns(UnknownEntityWarning):
             pipe = UndergroundPipe("this is not an underground pipe")
-            pipe.validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in underground_pipes:

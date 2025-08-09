@@ -1,96 +1,83 @@
 # circuit_read_contents.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import BeltReadMode
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import instance_of
 
-from pydantic import BaseModel, Field
-from typing import Optional
+import attrs
 
 
-class CircuitReadContentsMixin:  # (ControlBehaviorMixin)
+@attrs.define(slots=False)
+class CircuitReadContentsMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
-    Enables the Entity to read it's contents.
+    Allows the Entity to read it's contents and send it to a connected circuit
+    network.
 
     .. seealso::
 
-        | :py:class:`~draftsman.classes.mixins.circuit_read_hand.CircuitReadHandMixin`
-        | :py:class:`~draftsman.classes.mixins.circuit_read_resource.CircuitReadResourceMixin`
+        | :py:class:`.CircuitReadHandMixin`
+        | :py:class:`.CircuitReadResourceMixin`
     """
 
-    class ControlFormat(BaseModel):
-        circuit_read_hand_contents: Optional[bool] = Field(
-            None,
-            description="""
-            Whether or not to read the contents of this belt's surface.
-            """,
-        )
-        circuit_contents_read_mode: Optional[BeltReadMode] = Field(
-            None,
-            description="""
-            Whether to hold or pulse the belt's surface items, if 
-            'circuit_read_hand_contents' is true.
-            """,
-        )
+    read_contents: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-    class Format(BaseModel):
-        pass
+        This attribute is imported/exported from blueprint strings.
 
-    @property
-    def read_contents(self) -> Optional[bool]:
-        """
-        Whether or not this Entity is set to read it's contents to a circuit
-        network.
+    Whether or not this Entity is set to read it's contents to a circuit
+    network.
+    """
 
-        :getter: Gets the value of ``read_contents``, or ``None`` if not set.
-        :setter: Sets the value of ``read_contents``.
+    read_mode: BeltReadMode = attrs.field(
+        default=BeltReadMode.PULSE,
+        converter=BeltReadMode,
+        validator=instance_of(BeltReadMode),
+    )
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.circuit_read_hand_contents
+        This attribute is imported/exported from blueprint strings.
 
-    @read_contents.setter
-    def read_contents(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_read_hand_contents",
-                value,
-            )
-            self.control_behavior.circuit_read_hand_contents = result
-        else:
-            self.control_behavior.circuit_read_hand_contents = value
+    The manner in which the contents of the Entity should be read. Either
+    ``BeltReadMode.PULSE`, ``BeltReadMode.HOLD``, or 
+    ``BeltReadMode.HOLD_ALL_BELTS`` (the lattermost only being available in 
+    Factorio 2.0).
+    """
 
     # =========================================================================
 
-    @property
-    def read_mode(self) -> Optional[BeltReadMode]:
-        """
-        The mode in which the contents of the Entity should be read. Either
-        ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
+    def merge(self, other: "CircuitReadContentsMixin"):
+        super().merge(other)
+        self.read_contents = other.read_contents
+        self.read_mode = other.read_mode
 
-        :getter: Gets the value of ``read_mode``, or ``None`` if not set.
-        :setter: Sets the value of ``read_mode``.
 
-        :exception ValueError: If set to anything other than a ``ReadMode``
-            value or their ``int`` equivalent.
-        """
-        return self.control_behavior.circuit_contents_read_mode
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    CircuitReadContentsMixin,
+    lambda fields: {
+        ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,
+        ("control_behavior", "circuit_contents_read_mode"): fields.read_mode.name,
+    },
+    lambda fields, _: {
+        ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,
+        ("control_behavior", "circuit_contents_read_mode"): (
+            fields.read_mode,
+            # Prevent outputting mode HOLD_ALL_BELTS on Factorio 1.0
+            lambda inst: (
+                BeltReadMode.PULSE
+                if inst.read_mode is BeltReadMode.HOLD_ALL_BELTS
+                else inst.read_mode
+            ),
+        ),
+    },
+)
 
-    @read_mode.setter
-    def read_mode(self, value: Optional[BeltReadMode]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_contents_read_mode",
-                value,
-            )
-            self.control_behavior.circuit_contents_read_mode = result
-        else:
-            self.control_behavior.circuit_contents_read_mode = value
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    CircuitReadContentsMixin,
+    lambda fields: {
+        ("control_behavior", "circuit_read_hand_contents"): fields.read_contents.name,
+        ("control_behavior", "circuit_contents_read_mode"): fields.read_mode.name,
+    },
+)

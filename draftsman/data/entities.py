@@ -1,17 +1,28 @@
 # entities.py
 
+"""
+.. WARNING::
+
+    The data provided here is purely for illustration, and is not guaranteed
+    to remain constant across Factorio updates, Draftsman updates, mod
+    configuration changes, and so on. Always treat the values read in your own
+    environment as authoratative.
+"""
+
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.env import get_default_collision_mask
 from draftsman.utils import PrimitiveAABB, AABB
+
+from typing import Optional
 
 
 try:
-    with pkg_resources.open_binary(data, "entities.pkl") as inp:
+    source = files(data) / "entities.pkl"
+    with source.open("rb") as inp:
         _data: dict = pickle.load(inp)
 
         # Aggregation of all the the entity dicts from data.raw collected in one
@@ -124,21 +135,49 @@ try:
         walls: list[str] = of_type["wall"]
 
 
-except FileNotFoundError:
+except FileNotFoundError:  # pragma: no coverage
     raw: dict[str, dict] = {}
     of_type: dict[str, list[dict]] = {}
     flippable: dict[str, bool] = {}
     collision_sets: dict[str, CollisionSet] = {}
 
 
+ALL_EFFECTS = {"speed", "productivity", "consumption", "pollution", "quality"}
+ALL_EFFECTS_EXCEPT_QUALITY = {
+    "speed",
+    "productivity",
+    "consumption",
+    "pollution",
+    "quality",
+}
+NO_EFFECTS = set()
+
+
+def get_allowed_effects(entity_name: str, default: set[str]) -> Optional[set[str]]:
+    """
+    Returns a set of all the effects that this entity can support, either coming
+    from modules or beacons. Returns ``default`` if this entity is recognized
+    under the current environment, but has no defined key. Returns ``None`` if
+    the entity is unrecognized by the current environment.
+    """
+    # If name not known, return None
+    entity = raw.get(entity_name, None)
+    if entity is None:
+        return None
+    # If name known, but no key, then return default list
+    result = entity.get("allowed_effects", default)
+    # Normalize single string effect to a 1-length set
+    return {result} if isinstance(result, str) else set(result)
+
+
 def add_entity(
     name: str,
     type: str,
-    collision_box: PrimitiveAABB,
+    collision_box: PrimitiveAABB = ((0, 0), (0, 0)),
     collision_mask: set[str] = None,
     hidden: bool = False,
     target: tuple[dict[str, dict], dict[str, list]] = (raw, of_type),
-    **kwargs
+    **kwargs,
 ):
     """
     Adds an entity to :py:mod:`draftsman.data.entities`.
@@ -157,66 +196,6 @@ def add_entity(
     :param kwargs: Any other entity specific data that you want to populate the
         new entity with.
     """
-    # entity_map = {
-    #     "container": containers,
-    #     "storage-tank": storage_tanks,
-    #     "transport-belt": transport_belts,
-    #     "underground-belt": underground_belts,
-    #     "splitter": splitters,
-    #     "inserter": inserters,
-    #     "filter-inserter": filter_inserters,
-    #     "loader": loaders,
-    #     "electric-pole": electric_poles,
-    #     "pipe": pipes,
-    #     "pipe-to-ground": underground_pipes,
-    #     "pump": pumps,
-    #     "straight-rail": straight_rails,
-    #     "curved-rail": curved_rails,
-    #     "train-stop": train_stops,
-    #     "rail-signal": rail_signals,
-    #     "rail-chain-signal": rail_chain_signals,
-    #     "locomotive": locomotives,
-    #     "cargo-wagon": cargo_wagons,
-    #     "fluid-wagon": fluid_wagons,
-    #     "artillery-wagon": artillery_wagons,
-    #     "logistic-container": logistic_passive_containers,  # FIXME
-    #     "roboport": roboports,
-    #     "lamp": lamps,
-    #     "arithmetic-combinator": arithmetic_combinators,
-    #     "decider-combinator": decider_combinators,
-    #     "constant-combinator": constant_combinators,
-    #     "power-switch": power_switches,
-    #     "programmable-speaker": programmable_speakers,
-    #     "boiler": boilers,
-    #     "generator": generators,
-    #     "solar-panel": solar_panels,
-    #     "accumulator": accumulators,
-    #     "reactor": reactors,
-    #     "heat-pipe": heat_pipes,
-    #     "mining-drill": mining_drills,
-    #     "offshore-pump": offshore_pumps,
-    #     "furnace": furnaces,
-    #     "assembling-machine": assembling_machines,
-    #     "lab": labs,
-    #     "beacon": beacons,
-    #     "rocket-silo": rocket_silos,
-    #     "land-mine": land_mines,
-    #     "wall": walls,
-    #     "gate": gates,
-    #     "turret": turrets,  # FIXME
-    #     "radar": radars,
-    #     "electric-energy-interface": electric_energy_interfaces,
-    #     "linked-container": linked_containers,
-    #     "heat-interface": heat_interfaces,
-    #     "linked-belt": linked_belts,
-    #     "infinity-container": infinity_containers,
-    #     "infinity-pipe": infinity_pipes,
-    #     "burner-generator": burner_generators,
-    # }
-
-    # if entity_type not in entity_map:
-    #     raise ValueError("Unrecognized 'entity_type' '{}'".format(entity_type))
-
     raw, of_type = target
 
     raw[name] = {
@@ -227,9 +206,10 @@ def add_entity(
     }
 
     if collision_mask is not None:
-        raw[name]["collision_mask"] = set(collision_mask)
-    else:
-        raw[name]["collision_mask"] = get_default_collision_mask(type)
+        raw[name]["collision_mask"] = collision_mask
+        # raw[name]["collision_mask"]["layers"] = set(collision_mask["layers"])
+    # else:
+    #     raw[name]["collision_mask"] = get_default_collision_mask(type)
 
     if hidden:
         raw[name]["flags"].add("hidden")
@@ -251,5 +231,5 @@ def add_entity(
 
     if type in of_type:
         of_type[type].append(name)  # FIXME
-    else:
+    else:  # pragma: no coverage
         of_type[type] = [name]

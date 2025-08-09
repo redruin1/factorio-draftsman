@@ -7,14 +7,24 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 import pytest
 
 
+@pytest.fixture
+def valid_simple_entity_with_force():
+    return SimpleEntityWithForce(
+        "simple-entity-with-force",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        variation=13,
+        tags={"blah": "blah"},
+    )
+
+
 class TestSimpleEntityWithForce:
-    def test_contstructor_init(self):
+    def test_constructor_init(self):
         entity = SimpleEntityWithForce(variation=13)
         assert entity.name == simple_entities_with_force[0]
         assert entity.variation == 13
-
-        with pytest.warns(UnknownKeywordWarning):
-            SimpleEntityWithForce(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             SimpleEntityWithForce("this is not correct").validate().reissue_all()
@@ -22,23 +32,35 @@ class TestSimpleEntityWithForce:
     def test_to_dict(self):
         entity = SimpleEntityWithForce("simple-entity-with-force")
         assert entity.variation == 1
-        assert entity.to_dict(exclude_defaults=False) == {
+        assert entity.to_dict() == {
+            "name": "simple-entity-with-force",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+        assert entity.to_dict(version=(1, 0), exclude_defaults=False) == {
+            "name": "simple-entity-with-force",
+            "position": {"x": 0.5, "y": 0.5},
+            "direction": Direction.NORTH,  # Default
+            "items": {},  # Default
+            "variation": 1,  # Default
+            "tags": {},  # Default
+        }
+        assert entity.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "simple-entity-with-force",
             "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
             "direction": Direction.NORTH,  # Default
+            "items": [],  # Default
+            "mirror": False,  # Default
             "variation": 1,  # Default
             "tags": {},  # Default
         }
 
-        entity.variation = None
-        assert entity.variation == None
-        assert entity.to_dict(exclude_defaults=False) == {
+        entity.variation = 10
+        assert entity.variation == 10
+        assert entity.to_dict() == {
             "name": "simple-entity-with-force",
-            "quality": "normal",  # Default
             "position": {"x": 0.5, "y": 0.5},
-            "direction": Direction.NORTH,  # Default
-            "tags": {},  # Default
+            "variation": 10,
         }
 
     def test_power_and_circuit_flags(self):

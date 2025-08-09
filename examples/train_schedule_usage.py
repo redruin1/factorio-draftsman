@@ -12,13 +12,13 @@ from draftsman.constants import (
     WaitConditionType,
     WaitConditionCompareType,
 )
+from draftsman.signatures import Condition
 from draftsman.rail import Schedule, WaitConditions, WaitCondition
 
 
 def main() -> None:
-
     # Let's import a normal 2-4 train from a blueprint string:
-    blueprint = Blueprint(
+    blueprint = Blueprint.from_string(
         "0eNqtk91qhDAQRt9lrrPLGn8S8yqllKwNEogTidFWJO/e0b1ZiqAX3mWGb84JYbLA042mDxYjqAVs43EA9bHAYFvUbu3FuTegwEbTAQPU3Vo53/jORzsZSAwsfptfUFlih4ONDq2//ejW49skT58MDEYbrXn5t2L+wrF7mkDoXQCD3g80Q0fyEefGa3mvpCgZzKByKUjhgyWYfqUed16u1olaPlAGR+fWa//z8dO+7BJfftYni0t8xVmfEJf4yr3N2dM9DnU79OokvcqP6bSI28aqt5/BYDJh2DJcZoWo6VlyUZeySOkPzX4Oog=="
     )
 
@@ -76,7 +76,8 @@ def main() -> None:
     # Of course, we can also add more conditions once a `WaitConditions` object
     # is made:
     signal_condition = WaitCondition(
-        WaitConditionType.CIRCUIT_CONDITION, condition=("signal-check", ">", 0)
+        WaitConditionType.CIRCUIT_CONDITION,
+        condition=Condition(first_signal="signal-check", comparator=">", constant=0),
     )
     dropoff_conditions_extra = dropoff_conditions | signal_condition
 
@@ -103,7 +104,7 @@ def main() -> None:
     locomotives = blueprint.find_entities_filtered(type="locomotive")
     blueprint.set_train_schedule(locomotives, schedule)
 
-    # This pneumonic is also good if we wanted to say give all trains in a
+    # This mnemonic is also good if we wanted to say give all trains in a
     # blueprint the same schedule.
     # But, we also might want more fine grained control of which trains we
     # assign the schedule. So we can instead use `find_trains_filtered()` to

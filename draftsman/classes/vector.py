@@ -1,8 +1,11 @@
 # vector.py
 
 """
-TODO
+A simple Vector class with utilities for manipulating them.
 """
+
+from draftsman.error import DataFormatError
+from draftsman.serialization import draftsman_converters
 
 from typing import Union, Callable
 
@@ -11,10 +14,12 @@ PrimitiveIntVector = tuple[int, int]
 PrimitiveFloatVector = tuple[float, float]
 
 
-class Vector(object):
+class Vector:
     """
     A simple 2d vector class, used to aid in developent and user experience.
     """
+
+    __slots__ = "_data"
 
     def __init__(self, x: Union[float, int], y: Union[float, int]):
         """
@@ -58,9 +63,9 @@ class Vector(object):
 
     # =========================================================================
 
-    @staticmethod
+    @classmethod
     def from_other(
-        other: Union["Vector", PrimitiveVector], type_cast: Callable = float
+        cls, other: Union["Vector", PrimitiveVector], type_cast: Callable = float
     ) -> "Vector":
         """
         Converts a PrimitiveVector into a :py:class:`.Vector`. Also handles the
@@ -73,14 +78,18 @@ class Vector(object):
 
         :returns: A new :py:class:`.Vector` with the same position as ``point``.
         """
-        if isinstance(other, Vector):
-            return other
+        if other is None:  # TODO: this shouldn't be here
+            return None
+        elif isinstance(other, Vector):
+            return cls(type_cast(other.x), type_cast(other.y))
         elif isinstance(other, (tuple, list)):
-            return Vector(type_cast(other[0]), type_cast(other[1]))
+            return cls(type_cast(other[0]), type_cast(other[1]))
         elif isinstance(other, dict):
-            return Vector(type_cast(other["x"]), type_cast(other["y"]))
+            return cls(type_cast(other["x"]), type_cast(other["y"]))
         else:
-            raise TypeError("Could not resolve '{}' to a Vector object".format(other))
+            raise DataFormatError(
+                "Could not resolve '{}' to a Vector object".format(other)
+            )
 
     def update(self, x: Union[float, int], y: Union[float, int]) -> None:
         """
@@ -101,13 +110,15 @@ class Vector(object):
         :param type_cast: The data type to coerce the input variables towards.
         """
         if isinstance(other, Vector):
-            self.update(other.x, other.y)
+            self.update(type_cast(other.x), type_cast(other.y))
         elif isinstance(other, (tuple, list)):
             self.update(type_cast(other[0]), type_cast(other[1]))
         elif isinstance(other, dict):
             self.update(type_cast(other["x"]), type_cast(other["y"]))
         else:
-            raise TypeError("Could not resolve '{}' to a Vector object".format(other))
+            raise DataFormatError(
+                "Could not resolve '{}' to a Vector object".format(other)
+            )
 
     def to_dict(self) -> dict:
         """
@@ -118,6 +129,12 @@ class Vector(object):
         return {"x": self._data[0], "y": self._data[1]}
 
     # =========================================================================
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
 
     def __getitem__(self, index: Union[str, int]) -> Union[float, int]:
         if index == "x":
@@ -184,4 +201,8 @@ class Vector(object):
         return "({}, {})".format(self._data[0], self._data[1])
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<Vector>({}, {})".format(self._data[0], self._data[1])
+        return "Vector({}, {})".format(self._data[0], self._data[1])
+
+
+draftsman_converters.register_structure_hook(Vector, lambda d, _: Vector.from_other(d))
+draftsman_converters.register_unstructure_hook(Vector, lambda v: v.to_dict())

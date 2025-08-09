@@ -7,12 +7,21 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_land_mine():
+    return LandMine(
+        "land-mine",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestLandMine:
     def test_contstructor_init(self):
         land_mine = LandMine()
 
-        with pytest.warns(UnknownKeywordWarning):
-            LandMine(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LandMine("this is not a land mine").validate().reissue_all()
 

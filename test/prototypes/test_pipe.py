@@ -7,13 +7,22 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_pipe():
+    return Pipe(
+        "pipe",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestPipe:
     def test_constructor_init(self):
         pipe = Pipe()
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Pipe("pipe", unused_keyword=10).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Pipe("Ceci n'est pas une pipe.").validate().reissue_all()
 

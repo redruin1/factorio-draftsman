@@ -1,14 +1,15 @@
 # test_entity_list.py
 
-from draftsman._factorio_version import __factorio_version_info__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.group import Group
-from draftsman.constants import ValidationMode
+from draftsman.constants import ValidationMode, Direction, LegacyDirection
+from draftsman.data import mods
 from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
+import draftsman.validators
 from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
 
 import pytest
@@ -18,14 +19,14 @@ class TestEntityList:
     def test_constructor(self):
         blueprint = Blueprint()
         test = EntityList(blueprint)
-        assert test._root == []
+        assert test.data == []
         assert test.key_map == {}
         assert test.key_to_idx == {}
         assert test.idx_to_key == {}
 
         regular_list = []
         test = EntityList(blueprint, regular_list)
-        assert test._root == []
+        assert test.data == []
         assert test.key_map == {}
         assert test.key_to_idx == {}
         assert test.idx_to_key == {}
@@ -39,19 +40,19 @@ class TestEntityList:
             test.insert(1, "wooden-chest")
 
         test.insert(0, "substation", tile_position=(10, 10), id="other")
-        assert test._root[0].name == "substation"
-        assert test._root[1].name == "wooden-chest"
+        assert test.data[0].name == "substation"
+        assert test.data[1].name == "wooden-chest"
         assert test.key_to_idx == {"other": 0, "test": 1}
         assert test.idx_to_key == {0: "other", 1: "test"}
 
         # Test no copy
         example = Container("steel-chest", id="test2", tile_position=(1, 0))
         test.insert(0, example, copy=False)
-        assert test._root[0].name == "steel-chest"
+        assert test.data[0].name == "steel-chest"
 
         example.bar = 10
-        assert test._root[0] is example
-        assert test._root[0].bar == 10
+        assert test.data[0] is example
+        assert test.data[0].bar == 10
 
         # TODO: reimplement
         # with pytest.warns(HiddenEntityWarning):
@@ -64,8 +65,10 @@ class TestEntityList:
         with pytest.raises(ValueError):
             blueprint.entities.append(Container(), copy=False, merge=True)
 
-    def test_remove(self):
-        pass  # TODO
+    def test_extend(self):
+        blueprint = Blueprint()
+        blueprint.entities.extend([new_entity("wooden-chest")])
+        assert len(blueprint.entities) == 1
 
     def test_recursive_remove(self):
         # Test regular remove functionality
@@ -82,14 +85,14 @@ class TestEntityList:
                     "position": {"x": 0.5, "y": 0.5},
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.entities.recursive_remove(entity_to_remove)
 
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test recursion
@@ -114,7 +117,7 @@ class TestEntityList:
                     "position": {"x": 2.5, "y": 2.5},
                 },
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         blueprint.entities.recursive_remove(entity_to_remove)
@@ -128,7 +131,7 @@ class TestEntityList:
                     "position": {"x": 2.5, "y": 2.5},
                 }
             ],
-            "version": encode_version(*__factorio_version_info__),
+            "version": encode_version(*mods.versions["base"]),
         }
 
         # Test ValueError
@@ -137,19 +140,18 @@ class TestEntityList:
 
     def test_union(self):
         blueprint1 = Blueprint()
-
         blueprint1.entities.append("wooden-chest")
 
         blueprint2 = Blueprint()
-
-        blueprint2.entities.append("inserter", direction=2, tile_position=(1, 0))
+        blueprint2.entities.append(
+            "inserter", direction=Direction.EAST, tile_position=(1, 0)
+        )
 
         blueprint3 = Blueprint()
-
         blueprint3.entities = blueprint1.entities | blueprint2.entities
 
         assert len(blueprint3.entities) == 2
-        assert blueprint3.to_dict()["blueprint"]["entities"] == [
+        assert blueprint3.to_dict(version=(1, 0))["blueprint"]["entities"] == [
             {
                 "name": "wooden-chest",
                 "position": {"x": 0.5, "y": 0.5},
@@ -157,11 +159,118 @@ class TestEntityList:
             },
             {
                 "name": "inserter",
+                "direction": LegacyDirection.EAST,
                 "position": {"x": 1.5, "y": 0.5},
-                "direction": 2,
                 "entity_number": 2,
             },
         ]
+        assert blueprint3.to_dict(version=(2, 0))["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "direction": Direction.EAST,
+                "position": {"x": 1.5, "y": 0.5},
+                "entity_number": 2,
+            },
+        ]
+
+        # Test equivalent entities
+        blueprint2.entities.append("wooden-chest")
+
+        blueprint4 = Blueprint()
+        blueprint4.entities = blueprint1.entities | blueprint2.entities
+
+        assert len(blueprint4.entities) == 2
+        assert blueprint4.to_dict(version=(1, 0))["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "direction": LegacyDirection.EAST,
+                "position": {"x": 1.5, "y": 0.5},
+                "entity_number": 2,
+            },
+        ]
+        assert blueprint4.to_dict(version=(2, 0))["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+            {
+                "name": "inserter",
+                "direction": Direction.EAST,
+                "position": {"x": 1.5, "y": 0.5},
+                "entity_number": 2,
+            },
+        ]
+
+    def test_intersection(self):
+        blueprint1 = Blueprint()
+        blueprint1.entities.append("wooden-chest")
+
+        blueprint2 = Blueprint()
+        blueprint2.entities.append(
+            "inserter", direction=Direction.EAST, tile_position=(1, 0)
+        )
+
+        blueprint3 = Blueprint()
+        blueprint3.entities = blueprint1.entities & blueprint2.entities
+
+        assert len(blueprint3.entities) == 0
+        assert "entities" not in blueprint3.to_dict()["blueprint"]
+
+        # Test equivalent entities
+        blueprint2.entities.append("wooden-chest")
+
+        blueprint4 = Blueprint()
+        blueprint4.entities = blueprint1.entities & blueprint2.entities
+
+        assert len(blueprint4.entities) == 1
+        assert blueprint4.to_dict()["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            }
+        ]
+
+    def test_difference(self):
+        blueprint1 = Blueprint()
+        blueprint1.entities.append("wooden-chest")
+
+        blueprint2 = Blueprint()
+        blueprint2.entities.append(
+            "inserter", direction=Direction.EAST, tile_position=(1, 0)
+        )
+
+        blueprint3 = Blueprint()
+        blueprint3.entities = blueprint1.entities - blueprint2.entities
+
+        assert len(blueprint3.entities) == 1
+        assert blueprint3.to_dict()["blueprint"]["entities"] == [
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 1,
+            },
+        ]
+
+        # Test equivalent entities
+        blueprint2.entities.append("wooden-chest")
+
+        blueprint4 = Blueprint()
+        blueprint4.entities = blueprint1.entities - blueprint2.entities
+
+        assert len(blueprint4.entities) == 0
+        assert "entities" not in blueprint4.to_dict()["blueprint"]
 
     def test_getitem(self):
         blueprint = Blueprint()
@@ -170,9 +279,9 @@ class TestEntityList:
         test.append("wooden-chest", tile_position=(0, 0))
         test.append("wooden-chest", tile_position=(1, 0), id="something")
 
-        assert test[0] is test._root[0]
+        assert test[0] is test.data[0]
 
-        assert test[1] is test._root[1]
+        assert test[1] is test.data[1]
         assert test["something"] is test.key_map["something"]
 
         # Test tuple access
@@ -194,7 +303,7 @@ class TestEntityList:
             is test["other_group"].entities["example_group"].entities["example"]
         )
 
-        assert test[:] == [test._root[0], test._root[1], test._root[2]]
+        assert test[:] == [test.data[0], test.data[1], test.data[2]]
 
     def test_setitem(self):
         blueprint = Blueprint()
@@ -202,8 +311,8 @@ class TestEntityList:
         blueprint.entities.append("small-electric-pole", id="something")
         blueprint.entities.append("steel-chest", tile_position=(1, 1))
 
-        assert blueprint.entities["something"] == blueprint.entities._root[0]
-        assert blueprint.entities.key_map == {"something": blueprint.entities._root[0]}
+        assert blueprint.entities["something"] == blueprint.entities.data[0]
+        assert blueprint.entities.key_map == {"something": blueprint.entities.data[0]}
         assert blueprint.entities.key_to_idx == {"something": 0}
         assert blueprint.entities.idx_to_key == {0: "something"}
 
@@ -216,7 +325,7 @@ class TestEntityList:
 
         # Set index with id
         blueprint.entities[0] = Container(tile_position=(10, 10), id="new")
-        assert blueprint.entities["new"] == blueprint.entities._root[0]
+        assert blueprint.entities["new"] == blueprint.entities.data[0]
         assert blueprint.entities.key_to_idx == {"new": 0}
         assert blueprint.entities.idx_to_key == {0: "new"}
 
@@ -227,9 +336,8 @@ class TestEntityList:
             blueprint.entities[0] = new_entity("substation")
 
         # No overlapping warning
-        blueprint.entities.validate_assignment = "none"
-        assert blueprint.entities.validate_assignment == ValidationMode.NONE
-        blueprint.entities[0] = new_entity("substation")
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            blueprint.entities[0] = new_entity("substation")
 
         with pytest.raises(TypeError):
             blueprint.entities[0] = "something incorrect"
@@ -243,7 +351,7 @@ class TestEntityList:
         # Test index
         del blueprint.entities[0]
 
-        assert blueprint.entities._root == [blueprint.entities[0]]
+        assert blueprint.entities.data == [blueprint.entities[0]]
         assert blueprint.entities.key_map == {"a": blueprint.entities[0]}
         assert blueprint.entities.key_to_idx == {"a": 0}
         assert blueprint.entities.idx_to_key == {0: "a"}
@@ -251,7 +359,7 @@ class TestEntityList:
         # Test key
         del blueprint.entities["a"]
 
-        assert blueprint.entities._root == []
+        assert blueprint.entities.data == []
         assert blueprint.entities.key_map == {}
         assert blueprint.entities.key_to_idx == {}
         assert blueprint.entities.idx_to_key == {}
@@ -262,7 +370,7 @@ class TestEntityList:
 
         del blueprint.entities[:]
 
-        assert blueprint.entities._root == []
+        assert blueprint.entities.data == []
         assert blueprint.entities.key_map == {}
         assert blueprint.entities.key_to_idx == {}
         assert blueprint.entities.idx_to_key == {}
@@ -273,20 +381,27 @@ class TestEntityList:
         entityA = ElectricPole("small-electric-pole")
         entityB = ElectricPole("small-electric-pole", tile_position=(1, 0))
         entityC = Container("wooden-chest", tile_position=(2, 0))
+        entityD = Container("steel-chest", tile_position=(3, 0))  # Not contained
 
         group = Group()
         group.entities.append(entityA, copy=False)
         group.entities.append(entityB, copy=False)
 
-        blueprint.entities.append(group, copy=False)
+        blueprint.groups.append(group, copy=False)
         blueprint.entities.append(entityC, copy=False)
 
         assert entityA in group.entities
-        assert entityA in blueprint.entities
+        assert entityA not in blueprint.entities
+        assert entityA in blueprint
         assert entityB in group.entities
-        assert entityB in blueprint.entities
+        assert entityB not in blueprint.entities
+        assert entityB in blueprint
         assert entityC not in group.entities
         assert entityC in blueprint.entities
+        assert entityC in blueprint
+        assert entityD not in group.entities
+        assert entityD not in blueprint.entities
+        assert entityD not in blueprint
 
     def test_eq(self):
         blueprint1 = Blueprint()
@@ -310,4 +425,6 @@ class TestEntityList:
     def test_validate(self):
         blueprint = Blueprint()
 
-        assert blueprint.entities.validate(mode="none") == ValidationResult([], [])
+        assert blueprint.entities.validate(
+            mode=ValidationMode.DISABLED
+        ) == ValidationResult([], [])

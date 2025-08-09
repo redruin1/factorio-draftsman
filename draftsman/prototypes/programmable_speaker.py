@@ -1,17 +1,20 @@
 # programmable_speaker.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
 from draftsman.classes.mixins import (
     CircuitConditionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     CircuitEnableMixin,
+    EnergySourceMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import ValidationMode
-from draftsman.signatures import Connections, DraftsmanBaseModel, SignalID, uint32
-from draftsman.utils import get_first
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import (
+    SignalID,
+    uint32,
+)
+from draftsman.validators import conditional, instance_of, one_of
 from draftsman.warning import (
     UnknownInstrumentWarning,
     UnknownNoteWarning,
@@ -21,20 +24,18 @@ from draftsman.warning import (
 from draftsman.data.entities import programmable_speakers
 import draftsman.data.instruments as instruments_data
 
-from pydantic import (
-    ConfigDict,
-    Field,
-    ValidationInfo,
-    field_validator,
-)
-from typing import Any, Literal, Optional, Union
+import attrs
+from typing import Literal, Optional
+import warnings
 
 
+@attrs.define
 class ProgrammableSpeaker(
     CircuitConditionMixin,
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """
@@ -42,337 +43,9 @@ class ProgrammableSpeaker(
     signals.
     """
 
-    class Format(
-        CircuitConditionMixin.Format,
-        CircuitEnableMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            CircuitConditionMixin.ControlFormat,
-            CircuitEnableMixin.ControlFormat,
-            DraftsmanBaseModel,
-        ):
-            class CircuitParameters(DraftsmanBaseModel):
-                signal_value_is_pitch: Optional[bool] = Field(
-                    False,
-                    description="""
-                    Whether or not to use the value of the input signal to 
-                    index the note in the selected instrument category. A input
-                    signal value of '1' plays the first note, '2' the second,
-                    etc. For the traditional instruments, this results in the
-                    effect that higher input values will result in higher pitch
-                    notes emitted from the speaker.
-                    """,
-                )
-                instrument_id: Optional[uint32] = Field(
-                    0,
-                    description="""
-                    The index of the instrument in the available instruments, 
-                    0-based.
-                    """,
-                )
-                instrument_name: Optional[str] = Field(
-                    None,
-                    exclude=True,
-                    description="""
-                    The human-readable name of this instrument; Not exported.
-                    """,
-                )
-                note_id: Optional[uint32] = Field(
-                    0,
-                    description="""
-                    The index of the note in the currently selected instrument's
-                    notes, 0-based.
-                    """,
-                )
-                note_name: Optional[str] = Field(
-                    None,
-                    exclude=True,
-                    description="""
-                    The human-readable name of this note; Not exported.
-                    """,
-                )
-
-                @field_validator("instrument_id")
-                @classmethod
-                def ensure_instrument_id_known(
-                    cls, value: Optional[int], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
-
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
-
-                    # If we don't recognize entity.name, then we can't know that
-                    # the ID is invalid
-                    if entity.name not in instruments_data.name_of:
-                        return value
-
-                    if (
-                        value is not None
-                        and value not in instruments_data.name_of[entity.name]
-                    ):
-                        warning_list.append(
-                            UnknownInstrumentWarning(
-                                "ID '{}' is not a known instrument for this programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
-
-                    return value
-
-                @field_validator("instrument_name")
-                @classmethod
-                def ensure_instrument_name_known(
-                    cls, value: Optional[str], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
-
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
-
-                    # If we don't recognize entity.name, then we can't know that
-                    # the ID is invalid
-                    if entity.name not in instruments_data.index_of:
-                        return value
-
-                    if (
-                        value is not None
-                        and value not in instruments_data.index_of[entity.name]
-                    ):
-                        warning_list.append(
-                            UnknownInstrumentWarning(
-                                "Name '{}' is not a known instrument for this programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
-
-                    return value
-
-                @field_validator("note_id")
-                @classmethod
-                def ensure_note_id_known(
-                    cls, value: Optional[int], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
-
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
-
-                    # If we don't recognize entity.name or instrument_id, then
-                    # we can't know that the ID is invalid
-                    if entity.name not in instruments_data.name_of:
-                        return value
-                    if (
-                        entity.instrument_id
-                        not in instruments_data.name_of[entity.name]
-                    ):
-                        return value
-
-                    if (
-                        value is not None
-                        and value
-                        not in instruments_data.name_of[entity.name][
-                            entity.instrument_id
-                        ]
-                    ):
-                        warning_list.append(
-                            UnknownNoteWarning(
-                                "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
-
-                    return value
-
-                @field_validator("note_name")
-                @classmethod
-                def ensure_note_name_known(
-                    cls, value: Optional[int], info: ValidationInfo
-                ):
-                    if not info.context:
-                        return value
-                    if info.context["mode"] <= ValidationMode.MINIMUM:
-                        return value
-
-                    entity: "ProgrammableSpeaker" = info.context["object"]
-                    warning_list: list = info.context["warning_list"]
-
-                    # If we don't recognize entity.name or instrument_id, then
-                    # we can't know that the ID is invalid
-                    if entity.name not in instruments_data.index_of:
-                        return value
-                    if (
-                        entity.instrument_name
-                        not in instruments_data.index_of[entity.name]
-                    ):
-                        return value
-
-                    if (
-                        value is not None
-                        and value
-                        not in instruments_data.index_of[entity.name][
-                            entity.instrument_name
-                        ]
-                    ):
-                        warning_list.append(
-                            UnknownNoteWarning(
-                                "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
-                                    value
-                                )
-                            )
-                        )
-
-                    return value
-
-            circuit_parameters: Optional[CircuitParameters] = CircuitParameters()
-
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-        class Parameters(DraftsmanBaseModel):
-            playback_volume: Optional[float] = Field(
-                1.0,
-                description="""
-                The volume with which to broadcast all sounds emitted by this
-                programmable speaker, in the range [0.0, 1.0]. Values outside of
-                this range are clipped to it.
-                """,
-            )
-            playback_globally: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not to have the programmable speaker distribute it's
-                sound evenly across the entire surface, or only locally to the
-                area it's placed.
-                """,
-            )
-            allow_polyphony: Optional[bool] = Field(
-                False,
-                description="""
-                Allows up to 10 sounds to be played at the same time, allowing
-                for layering sounds. When false, notes will wait until their
-                entire sound has played before repeating.
-                """,
-            )
-
-            @field_validator("playback_volume")
-            @classmethod
-            def volume_in_range(cls, value: Optional[float], info: ValidationInfo):
-                if not info.context:
-                    return value
-                if info.context["mode"] is ValidationMode.MINIMUM:
-                    return value
-
-                warning_list: list = info.context["warning_list"]
-                if value is not None and not 0.0 <= value <= 1.0:
-                    issue = VolumeRangeWarning(
-                        "'playback_volume' ({}) not in range [0.0, 1.0]".format(value)
-                    )
-
-                    if info.context["mode"] is ValidationMode.PEDANTIC:
-                        raise ValueError(issue) from None
-                    else:
-                        warning_list.append(issue)
-
-                return value
-
-        parameters: Optional[Parameters] = Parameters()
-
-        class AlertParameters(DraftsmanBaseModel):
-            show_alert: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not to show any kind of alert when this speaker is
-                in operation. At minimum, enabling this feature will generate an
-                alert icon in the bottom right corner which will direct the 
-                player to the programmable speaker.
-                """,
-            )
-            show_on_map: Optional[bool] = Field(
-                True,
-                description="""
-                Whether or not to show the 'icon_signal_id' icon as a flashing
-                icon on the map surface, if 'show_alert' is true.
-                """,
-            )
-            icon_signal_id: Optional[SignalID] = Field(
-                None,
-                description="""
-                The signal icon image to broadcast the alert as, if 'show_alert'
-                is true. This is used both for the alert in the bottom right 
-                corner as well as the map view icon, if applicable.
-                """,
-            )
-            alert_message: Optional[str] = Field(
-                None,
-                description="""
-                A custom message to distribute alongside an alert, if 
-                'show_alert' is true. If no message is provided the alert will
-                simply point to the speakers location on the map.
-                """,
-            )
-
-        alert_parameters: Optional[AlertParameters] = AlertParameters()
-
-        model_config = ConfigDict(title="ProgrammableSpeaker")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(programmable_speakers),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        control_behavior: Format.ControlBehavior = {},
-        parameters: Format.Parameters = {},
-        alert_parameters: Format.AlertParameters = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        TODO
-        """
-        self._root: __class__.Format
-        self.control_behavior: __class__.Format.ControlBehavior
-
-        super().__init__(
-            name,
-            programmable_speakers,
-            position=position,
-            tile_position=tile_position,
-            control_behavior=control_behavior,
-            tags=tags,
-            **kwargs
-        )
-
-        # TODO: cache this in a module variable so no redundant data
-        self._instruments = {}
-        # print(instruments_data.raw[self.name][0])
-        for instrument in instruments_data.raw.get(self.name, {}):
-            notes = set()
-            for note in instrument["notes"]:
-                notes.add(note["name"])
-            self._instruments[instrument["name"]] = notes
-
-        self.parameters = parameters
-        self.alert_parameters = alert_parameters
-
-        self.validate_assignment = validate_assignment
+    @property
+    def similar_entities(self) -> list[str]:
+        return programmable_speakers
 
     # =========================================================================
 
@@ -381,332 +54,244 @@ class ProgrammableSpeaker(
         """
         A dict of all instrument and note names that this ``ProgrammableSpeaker``
         has. Each key is the name of the instrument, and each value a ``set`` of
-        string names of each note corresponding to that instrument. Not exported;
-        read only.
+        string names of each note corresponding to that instrument.
         """
-        return self._instruments
+        result = {}
+        for instrument in instruments_data.raw.get(self.name, {}):
+            notes = set()
+            for note in instrument["notes"]:
+                notes.add(note["name"])
+            result[instrument["name"]] = notes
+        return result
 
     # =========================================================================
 
-    @property
-    def parameters(self) -> Optional[Format.Parameters]:
-        """
-        A set of general attributes that affect this programmable speaker.
+    signal_value_is_pitch: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    .. serialized::
 
-        :getter: Gets the parameters of the speaker.
-        :setter: Sets the parameters of the speaker.
-
-        :exception DataFormatError: If set to anything that does not match the
-            :py:class:`.PARAMETERS` format.
-        """
-        return self._root.parameters
-
-    @parameters.setter
-    def parameters(self, value: Optional[Format.Parameters]):
-        test_replace_me(
-            self,
-            type(self).Format,
-            self._root,
-            "parameters",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self, type(self).Format, self._root, "parameters", value
-        #     )
-        #     self._root.parameters = result
-        # else:
-        #     self._root.parameters = value
+        This attribute is imported/exported from blueprint strings.
+    
+    Whether or not the value of the signal should indicate the particular note
+    of the instrument to play. If this attribute is ``True``, then the signal
+    that the speaker will read from is specified as the 
+    :py:attr:`~Condition.first_signal` of :py:attr:`.circuit_condition`.
+    """
 
     # =========================================================================
 
-    @property
-    def alert_parameters(self) -> Optional[Format.AlertParameters]:
-        """
-        A set of attributes that affect the alert this programmable speaker
-        makes (if it's set to do so).
+    stop_playing_sounds: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-        :getter: Gets the alert parameters of the speaker.
-        :setter: Sets the alert parameters of the speaker.
+        This attribute is imported/exported from blueprint strings.
 
-        :exception DataFormatError: If set to anything that does not match the
-            :py:class:`.ALERT_PARAMETERS` format.
-        """
-        return self._root.alert_parameters
+    Whether or not any change in the input playback signal will automatically
+    cease the currently playing sound.
 
-    @alert_parameters.setter
-    def alert_parameters(self, value: Optional[Format.AlertParameters]):
-        test_replace_me(
-            self,
-            type(self).Format,
-            self._root,
-            "alert_parameters",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self, type(self).Format, self._root, "alert_parameters", value
-        #     )
-        #     self._root.alert_parameters = result
-        # else:
-        #     self._root.alert_parameters = value
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
     # =========================================================================
 
-    @property
-    def volume(self) -> Optional[float]:
-        """
-        The volume of the programmable speaker, in the range ``[0.0, 1.0]``.
+    volume_controlled_by_signal: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    .. serialized::
 
-        Raises :py:class:`VolumeRangeWarning` if set to a value outside of the
-        range ``[0.0, 1.0]``.
+        This attribute is imported/exported from blueprint strings.
 
-        :getter: Gets the volume of the speaker, or ``None`` if not set.
-        :setter: Sets the volume of the speaker. Removes the key if set to
-            ``None``.
+    Whether or not the volume of this speaker should be dynamically controlled
+    via circuit signal, or if it should always remain the constant value 
+    specified by :py:attr:`.volume`.
 
-        :exception TypeError: If set to anything other than a ``float`` or
-            ``None``.
-        """
-        return self.parameters.playback_volume
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
-    @volume.setter
-    def volume(self, value: Optional[float]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.Parameters,
-                self._root.parameters,
-                "playback_volume",
-                value,
+    # =========================================================================
+
+    volume_signal: Optional[SignalID] = attrs.field(
+        default=None,
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    What volume signal to use when dynamically setting this speakers volume. Has
+    no effect if :py:attr:`.volume_controlled_by_signal` is ``False``.
+    """
+
+    # =========================================================================
+
+    volume: float = attrs.field(default=1.0, validator=instance_of(float))
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The volume of the programmable speaker, in the range ``[0.0, 1.0]``.
+
+    Raises :py:class:`VolumeRangeWarning` if set to a value outside of the
+    range ``[0.0, 1.0]``.
+    """
+
+    @volume.validator
+    @conditional(ValidationMode.PEDANTIC)
+    def _volume_validator(
+        self,
+        _: attrs.Attribute,
+        value: float,
+    ):
+        if not (0.0 <= value <= 1.0):
+            msg = "'volume' ({}) not in range [0.0, 1.0]; will be clamped to this range on import".format(
+                value
             )
-            self._root.parameters.playback_volume = result
-        else:
-            self._root.parameters.playback_volume = value
+            warnings.warn(VolumeRangeWarning(msg))
 
     # =========================================================================
 
-    @property
-    def global_playback(self) -> Optional[bool]:
-        """
-        Whether or not to play this sound at a constant volume regardless of
-        distance.
+    playback_mode: Literal["local", "surface", "global"] = attrs.field(
+        default="local", validator=one_of("local", "surface", "global")
+    )
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.parameters.playback_globally
+        This attribute is imported/exported from blueprint strings.
 
-    @global_playback.setter
-    def global_playback(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.Parameters,
-                self._root.parameters,
-                "playback_globally",
-                value,
-            )
-            self._root.parameters.playback_globally = result
-        else:
-            self._root.parameters.playback_globally = value
+    In what manner to broadcast the audio from this programmable speaker:
+
+    * ``"local"`` only plays the audio when physically near the speaker, 
+        attenuating volume based on distance.
+    * ``"surface"`` plays the audio at a constant volume if the player is on the 
+        same surface as the speaker.
+    * ``"global"`` plays the audio at a constant volume across all surfaces.
+
+    .. NOTE::
+
+        In Factorio 1.0, only modes ``"local"`` and ``"surface"`` are permitted.
+    """
 
     # =========================================================================
 
-    @property
-    def show_alert(self) -> Optional[bool]:
-        """
-        Whether or not to show an alert to the player(s) if a sound is played.
+    show_alert: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.alert_parameters.show_alert
+        This attribute is imported/exported from blueprint strings.
 
-    @show_alert.setter
-    def show_alert(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.AlertParameters,
-                self._root.alert_parameters,
-                "show_alert",
-                value,
-            )
-            self._root.alert_parameters.show_alert = result
-        else:
-            self._root.alert_parameters.show_alert = value
+    Whether or not to show an alert to the player(s) if a sound is played.
+    """
 
     # =========================================================================
 
-    @property
-    def allow_polyphony(self) -> Optional[bool]:
-        """
-        Whether or not to allow the speaker to play multiple notes at once.
+    allow_polyphony: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.parameters.allow_polyphony
+        This attribute is imported/exported from blueprint strings.
 
-    @allow_polyphony.setter
-    def allow_polyphony(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.Parameters,
-                self._root.parameters,
-                "allow_polyphony",
-                value,
-            )
-            self._root.parameters.allow_polyphony = result
-        else:
-            self._root.parameters.allow_polyphony = value
+    Whether or not to allow the speaker to play multiple notes at once.
+    """
 
     # =========================================================================
 
-    @property
-    def show_alert_on_map(self) -> Optional[bool]:
-        """
-        Whether or not to show the alert on the map where the speaker lives.
+    show_alert_on_map: bool = attrs.field(default=True, validator=instance_of(bool))
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
-        return self.alert_parameters.show_on_map
+        This attribute is imported/exported from blueprint strings.
 
-    @show_alert_on_map.setter
-    def show_alert_on_map(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.AlertParameters,
-                self._root.alert_parameters,
-                "show_on_map",
-                value,
-            )
-            self._root.alert_parameters.show_on_map = result
-        else:
-            self._root.alert_parameters.show_on_map = value
+    Whether or not to show the alert on the map where the speaker lives.
+    """
 
     # =========================================================================
 
-    @property
-    def alert_icon(self) -> Optional[SignalID]:
-        """
-        What icon to show to the player(s) and on the map if the speaker makes a
-        sound (and alerts are enabled).
+    alert_icon: Optional[SignalID] = attrs.field(
+        default=None,
+        converter=SignalID.converter,
+        validator=instance_of(Optional[SignalID]),
+        metadata={"never_null": True},
+    )
+    """
+    .. serialized::
 
-        :exception InvalidSignalError: If set to a ``str`` that is not a valid
-            signal ID.
-        :exception DataFormatError: If set to a ``dict`` that does not match
-            :py:class:`.SIGNAL_ID`.
-        """
-        return self.alert_parameters.get("icon_signal_id", None)
-
-    @alert_icon.setter
-    def alert_icon(self, value: Union[str, SignalID, None]):  # TODO: SignalStr
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.AlertParameters,
-                self._root.alert_parameters,
-                "icon_signal_id",
-                value,
-            )
-            self.alert_parameters["icon_signal_id"] = result
-        else:
-            self.alert_parameters["icon_signal_id"] = value
+        This attribute is imported/exported from blueprint strings.
+        
+    What icon to show to the player(s) and on the map if the speaker makes a
+    sound (and alerts are enabled).
+    """
 
     # =========================================================================
 
-    @property
-    def alert_message(self) -> Optional[str]:
-        """
-        What message to show to the player(s) if the speaker makes a sound (and
-        alerts are enabled).
+    alert_message: str = attrs.field(
+        default="",
+        converter=lambda v: "" if v is None else v,
+        validator=instance_of(str),
+    )
+    """
+    .. serialized::
 
-        :exception InvalidSignalError: If set to a ``str`` that is not a valid
-            signal ID.
-        :exception DataFormatError: If set to a ``dict`` that does not match
-            :py:class:`.SIGNAL_ID`.
-        """
-        return self.alert_parameters.get("alert_message", None)
+        This attribute is imported/exported from blueprint strings.
 
-    @alert_message.setter
-    def alert_message(self, value: Optional[str]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.AlertParameters,
-                self.alert_parameters,
-                "alert_message",
-                value,
-            )
-            self._root.alert_parameters.alert_message = result
-        else:
-            self._root.alert_parameters.alert_message = value
+    What message to show to the player(s) if the speaker makes a sound (and
+    alerts are enabled).
+    """
 
     # =========================================================================
 
-    @property
-    def signal_value_is_pitch(self) -> Optional[bool]:
-        """
-        Whether or not the value of a signal determines the pitch of the note to
-        play.
+    signal_value_is_pitch: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or ``None``.
-        """
+        This attribute is imported/exported from blueprint strings.
 
-        return self.control_behavior.circuit_parameters.signal_value_is_pitch
-
-    @signal_value_is_pitch.setter
-    def signal_value_is_pitch(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.CircuitParameters,
-                self.control_behavior.circuit_parameters,
-                "signal_value_is_pitch",
-                value,
-            )
-            self.control_behavior.circuit_parameters.signal_value_is_pitch = result
-        else:
-            self.control_behavior.circuit_parameters.signal_value_is_pitch = value
+    Whether or not the value of a signal determines the pitch of the note to
+    play.
+    """
 
     # =========================================================================
 
-    @property
-    def instrument_id(self) -> Optional[int]:
+    instrument_id: Optional[uint32] = attrs.field(
+        default=0,
+        validator=instance_of(Optional[uint32]),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Numeric index of the instrument. Updated in tandem with 
+    :py:attr:`.instrument_name`.
+    """
+
+    @instrument_id.validator
+    @conditional(ValidationMode.STRICT)
+    def _instrument_id_validator(
+        self,
+        _: attrs.Attribute,
+        value: Optional[uint32],
+    ):
         """
-        Numeric index of the instrument. Updated in tandem with
-        ``instrument_name``.
-
-        :getter: Gets the number of the current instrument, or ``None`` if not
-            set.
-        :setter: Sets the number of the current instrument. Removes the key if
-            set to ``None``.
-
-        :exception InvalidInstrumentID: If set to a number that is not
-            recognized as a valid instrument index for this speaker.
-        :exception TypeError: If set to anything other than an ``int`` or ``None``.
+        Ensure that this ``instrument_id`` is valid for this entity.
         """
-        return self.control_behavior["circuit_parameters"]["instrument_id"]
+        # If we don't recognize entity.name, then we can't know that
+        # the ID is invalid
+        if self.name not in instruments_data.name_of:
+            return value
 
-    @instrument_id.setter
-    def instrument_id(self, value: Optional[int]):
-        if self.validate_assignment:
-            value = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.CircuitParameters,
-                self.control_behavior.circuit_parameters,
-                "instrument_id",
-                value,
+        if value is not None and value not in instruments_data.name_of[self.name]:
+            msg = "ID '{}' is not a known instrument for this programmable speaker".format(
+                value
             )
-            self.control_behavior.circuit_parameters.instrument_id = value
-        else:
-            self.control_behavior.circuit_parameters.instrument_id = value
-
-        # new_name = self._instrument_names.get(value, {"self": None})["self"]
-        # self.control_behavior.circuit_parameters.instrument_name = new_name
+            warnings.warn(UnknownInstrumentWarning(msg))
 
     # =========================================================================
 
@@ -724,7 +309,8 @@ class ProgrammableSpeaker(
 
         :exception InvalidInstrumentID: If set to a name that is not recognized
             as a valid instrument index for this speaker.
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception DataFormatError: If set to anything other than a ``str`` or
+            ``None``.
         """
         return (
             instruments_data.name_of.get(self.name, {})
@@ -734,70 +320,70 @@ class ProgrammableSpeaker(
 
     @instrument_name.setter
     def instrument_name(self, value: Optional[str]):
-        if self.validate_assignment:
-            value = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.CircuitParameters,
-                self.control_behavior.circuit_parameters,
-                "instrument_name",
-                value,
-            )
-
         if value is None:
-            self.control_behavior.circuit_parameters.instrument_id = None
+            self.instrument_id = None
         else:
             new_id = (
                 instruments_data.index_of.get(self.name, {})
                 .get(value, {})
                 .get("self", None)
             )
-            self.control_behavior.circuit_parameters.instrument_id = new_id
+            if new_id is None:
+                msg = "Name '{}' is not a known instrument for this programmable speaker".format(
+                    value
+                )
+                warnings.warn(UnknownInstrumentWarning(msg))
+            self.instrument_id = new_id
 
     # =========================================================================
 
-    @property
-    def note_id(self) -> Optional[int]:
+    note_id: Optional[uint32] = attrs.field(
+        default=0, validator=instance_of(Optional[uint32])
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Numeric index of the note. Updated in tandem with :py:attr:`.note_name`.
+    """
+
+    @note_id.validator
+    @conditional(ValidationMode.STRICT)
+    def _note_id_validator(
+        self,
+        _: attrs.Attribute,
+        value: Optional[uint32],
+    ):
         """
-        Numeric index of the note. Updated in tandem with ``note_name``.
-
-        :getter: Gets the number of the current note, or ``None`` if not set.
-        :setter: Sets the number of the current note. Removes the key if set to
-            ``None``.
-
-        :exception InvalidInstrumentID: If set to a number that is not
-            recognized as a valid note index for this speaker.
-        :exception TypeError: If set to anything other than an ``int`` or ``None``.
+        Ensure that this ``note_id`` is valid for this entity.
         """
-        return self.control_behavior.circuit_parameters.note_id
+        # If we don't recognize entity.name or instrument_id, then
+        # we can't know that the ID is invalid
+        if self.name not in instruments_data.name_of:
+            return
+        if self.instrument_id not in instruments_data.name_of[self.name]:
+            return
 
-    @note_id.setter
-    def note_id(self, value: Optional[int]):
-        if self.validate_assignment:
-            value = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.CircuitParameters,
-                self.control_behavior.circuit_parameters,
-                "note_id",
-                value,
+        if (
+            value is not None
+            and value not in instruments_data.name_of[self.name][self.instrument_id]
+        ):
+            msg = "ID '{}' is not a known note for this instrument and/or programmable speaker".format(
+                value
             )
-            self.control_behavior.circuit_parameters.note_id = value
-        else:
-            self.control_behavior.circuit_parameters.note_id = value
+            warnings.warn(UnknownNoteWarning(msg))
 
     # =========================================================================
 
     @property
-    def note_name(self) -> str:
+    def note_name(self) -> Optional[str]:
         """
-        Name of the note. Updated in tandem with ``note_id``. Not exported.
+        Name of the note. Derived from :py:attr:`.note_id`, but can be set via
+        this attribute as well.
 
-        :getter: Gets the name of the current instrument, or ``None`` if not set.
-        :setter: Sets the name of the current instrument. Removes the key if set
-            to ``None``.
-
-        :exception InvalidInstrumentID: If set to a name that is not recognized
-            as a valid instrument name for this speaker.
-        :exception TypeError: If set to anything other than a ``str`` or ``None``.
+        :exception DataFormatError: If set to anything other than a ``str`` or
+            ``None``.
         """
         return (
             instruments_data.name_of.get(self.name, {})
@@ -807,44 +393,136 @@ class ProgrammableSpeaker(
 
     @note_name.setter
     def note_name(self, value: Optional[str]):
-        if self.validate_assignment:
-            value = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.CircuitParameters,
-                self.control_behavior.circuit_parameters,
-                "note_name",
-                value,
-            )
-
-        # We could do:
-        # self.control_behavior.circuit_parameters.note_name = value
-        # And then just return that in the getter...
-
         if value is None:
-            self.control_behavior.circuit_parameters.note_id = None
+            self.note_id = None
         else:
             new_id = (
                 instruments_data.index_of.get(self.name, {})
                 .get(self.instrument_name, {})
                 .get(value, None)
             )
-            self.control_behavior.circuit_parameters.note_id = new_id
+            if new_id is None:
+                msg = "Name '{}' is not a known note for this instrument and/or programmable speaker".format(
+                    value
+                )
+                warnings.warn(UnknownNoteWarning(msg))
+            self.note_id = new_id
 
     # =========================================================================
 
     def merge(self, other: "ProgrammableSpeaker"):
         super().merge(other)
 
-        self.parameters = other.parameters
-        self.alert_parameters = other.alert_parameters
+        # Control behavior
+        self.signal_value_is_pitch = other.signal_value_is_pitch
+        self.stop_playing_sounds = other.stop_playing_sounds
+        self.instrument_id = other.instrument_id
+        self.note_id = other.note_id
+        # Parameters
+        self.volume = other.volume
+        self.playback_mode = other.playback_mode
+        self.allow_polyphony = other.allow_polyphony
+        self.volume_controlled_by_signal = other.volume_controlled_by_signal
+        self.volume_signal = other.volume_signal
+        # Alert Parameters
+        self.show_alert = other.show_alert
+        self.show_alert_on_map = other.show_alert_on_map
+        self.alert_icon = other.alert_icon
+        self.alert_message = other.alert_message
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
-        return (
-            super().__eq__(other)
-            and self.parameters == other.parameters
-            and self.alert_parameters == other.alert_parameters
-        )
+
+@attrs.define
+class _Export:
+    playback_globally: bool = False
+
+
+_export_fields = attrs.fields(_Export)
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    ProgrammableSpeaker,
+    lambda fields: {
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "signal_value_is_pitch",
+        ): fields.signal_value_is_pitch.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "instrument_id",
+        ): fields.instrument_id.name,
+        ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
+        ("parameters", "playback_volume"): fields.volume.name,
+        ("parameters", "playback_globally"): (
+            fields.playback_mode.name,
+            lambda v, _: "surface" if v else "local",
+        ),
+        ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        ("alert_parameters", "show_alert"): fields.show_alert.name,
+        ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
+        ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,
+        ("alert_parameters", "alert_message"): fields.alert_message.name,
+    },
+    lambda fields, _: {
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "signal_value_is_pitch",
+        ): fields.signal_value_is_pitch.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "instrument_id",
+        ): fields.instrument_id.name,
+        ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
+        ("parameters", "playback_volume"): fields.volume.name,
+        ("parameters", "playback_globally"): (
+            _export_fields.playback_globally,
+            lambda inst: True if inst.playback_mode == "surface" else False,
+        ),
+        ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        ("alert_parameters", "show_alert"): fields.show_alert.name,
+        ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
+        ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,
+        ("alert_parameters", "alert_message"): fields.alert_message.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    ProgrammableSpeaker,
+    lambda fields: {
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "signal_value_is_pitch",
+        ): fields.signal_value_is_pitch.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "stop_playing_sounds",
+        ): fields.stop_playing_sounds.name,
+        (
+            "control_behavior",
+            "circuit_parameters",
+            "instrument_id",
+        ): fields.instrument_id.name,
+        ("control_behavior", "circuit_parameters", "note_id"): fields.note_id.name,
+        ("parameters", "playback_volume"): fields.volume.name,
+        ("parameters", "playback_mode"): fields.playback_mode.name,
+        ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
+        (
+            "parameters",
+            "volume_controlled_by_signal",
+        ): fields.volume_controlled_by_signal.name,
+        ("parameters", "volume_signal_id"): fields.volume_signal.name,
+        ("alert_parameters", "show_alert"): fields.show_alert.name,
+        ("alert_parameters", "show_on_map"): fields.show_alert_on_map.name,
+        ("alert_parameters", "icon_signal_id"): fields.alert_icon.name,
+        ("alert_parameters", "alert_message"): fields.alert_message.name,
+    },
+)

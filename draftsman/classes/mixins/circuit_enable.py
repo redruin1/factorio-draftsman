@@ -1,59 +1,39 @@
 # circuit_enable.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import Exportable
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import instance_of
 
-from pydantic import BaseModel, Field
-from typing import Optional
+import attrs
 
 
-class CircuitEnableMixin:  # (ControlBehaviorMixin)
+@attrs.define(slots=False)
+class CircuitEnableMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Allows the entity to control whether or not it's circuit condition affects
     its operation.
     """
 
-    class ControlFormat(BaseModel):
-        circuit_enabled: Optional[bool] = Field(
-            False,
-            description="""
-            Whether or not this machine will be toggled by some circuit 
-            network. Many machines reuse this parameter name, but others have
-            unique ones specific to their types.
-            """,  # TODO: examples of different keys
-        )
+    circuit_enabled: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-    class Format(BaseModel):
-        pass
+        This attribute is imported/exported from blueprint strings.
 
-    @property
-    def circuit_enabled(self) -> Optional[bool]:
-        """
-        Whether or not the machine enables its operation based on a circuit
-        condition. Only used on entities that have multiple operation states,
-        including (but not limited to) a inserters, belts, train-stops,
-        power-switches, etc.
+    Whether or not the machine enables its operation based on a circuit
+    condition. Certain entities lack this attribute despite still having a 
+    :py:attr:`~.CircuitConditionMixin.circuit_condition`; in those cases, being 
+    circuit enabled is implied by being connected to a circuit network at all.
+    """
 
-        :getter: Gets the value of ``circuit_enable``, or ``None`` if not set.
-        :setter: Sets the value of ``circuit_enable``. Removes the attribute if
-            set to ``None``.
+    def merge(self, other: "CircuitEnableMixin"):
+        super().merge(other)
+        self.circuit_enabled = other.circuit_enabled
 
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.circuit_enable
 
-    @circuit_enabled.setter
-    def circuit_enabled(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_enable",
-                value,
-            )
-            self.control_behavior.circuit_enable = result
-        else:
-            self.control_behavior.circuit_enable = value
+draftsman_converters.add_hook_fns(
+    CircuitEnableMixin,
+    lambda fields: {
+        ("control_behavior", "circuit_enabled"): fields.circuit_enabled.name
+    },
+)

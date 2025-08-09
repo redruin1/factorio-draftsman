@@ -7,10 +7,11 @@ a numeric value directly into a unique signal type. This is particularly
 useful when creating data-dense memory cells, as this allows you to write, read,
 and store many thousands of signals on a single wire.
 
+
 The combinator is populated with all user-selectable signals as well as many
 hidden signals. Certain signals can have different types: `transport-belt` can
 have a  type of `item`, `entity`, or `recipe`, and each one of these is
-considred a  different signal by the circuit network. Each one of those signal
+considered a  different signal by the circuit network. Each one of those signal
 types is also multiplexed by the number of quality levels available, which is 6
 if you include the special quality `quality-unknown` (which this script uses).
 
@@ -37,7 +38,6 @@ except ImportError:
 
 
 def main():
-
     # If we have any signals that we want to exclude (because we want those
     # signals to be reserved for other circuitry), we add them here in the form
     # of `(name, type, quality)`
@@ -95,7 +95,7 @@ def main():
     blueprint.label = "Signal Index Dictionary"
     blueprint.label_color = (1.0, 0.0, 1.0, 1.0)
     # blueprint.icons = ["signal-I", "signal-D"]
-    blueprint.set_icons("signal-I", "signal-D")
+    blueprint.icons = ["signal-I", "signal-D"]
     blueprint.description = "A dictionary of unique signals to unique index."
 
     combinator = ConstantCombinator("constant-combinator", direction=Direction.SOUTH)

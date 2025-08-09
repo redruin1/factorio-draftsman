@@ -1,15 +1,14 @@
 # extras.py
 
-from draftsman.classes.collection import EntityCollection
+from draftsman.classes.collection import Collection
 from draftsman.classes.entity_like import EntityLike
 from draftsman.entity import TransportBelt, UndergroundBelt, Splitter
-from draftsman.constants import Direction
 
 from typing import Union
 from typing import cast as typing_cast
 
 
-def reverse_belts(blueprint: EntityCollection) -> None:
+def reverse_belts(collection: Collection) -> None:
     """
     Modifies the passed in blueprint or group in-place to swap the direction of
     all belts. Instead of just inverting the direction of each belt, this
@@ -25,7 +24,7 @@ def reverse_belts(blueprint: EntityCollection) -> None:
     # The positional offset to check against when seeing if a belt points to
     # another
     belt_types = {"transport-belt", "underground-belt", "splitter"}
-    for i, entity in enumerate(blueprint.entities):
+    for i, entity in enumerate(collection.entities):
         # If not a belt, ignore it
         if entity.type not in belt_types:
             continue
@@ -38,12 +37,12 @@ def reverse_belts(blueprint: EntityCollection) -> None:
 
         if entity.type == "transport-belt":
             entity: TransportBelt
-            pointed = blueprint.find_entity_at_position(
+            pointed = collection.find_entity_at_position(
                 entity.position + entity.direction.to_vector()
             )
             if pointed and pointed.type in belt_types:
                 # Update the pointed entity
-                j = blueprint.entities.index(pointed)
+                j = collection.entities.index(pointed)
                 if j not in direction_map:
                     direction_map[j] = {
                         "direction": pointed.direction,
@@ -54,12 +53,12 @@ def reverse_belts(blueprint: EntityCollection) -> None:
             entity: UndergroundBelt
             # Underground belt outputs affect curves
             if entity.io_type == "output":
-                pointed = blueprint.find_entity_at_position(
+                pointed = collection.find_entity_at_position(
                     entity.position + entity.direction.to_vector()
                 )
                 if pointed:
                     # Update the pointed entity
-                    j = blueprint.entities.index(pointed)
+                    j = collection.entities.index(pointed)
                     if j not in direction_map:
                         direction_map[j] = {
                             "direction": pointed.direction,
@@ -73,10 +72,10 @@ def reverse_belts(blueprint: EntityCollection) -> None:
             bbox = entity.get_world_collision_set().shapes[0]  # FIXME: this sucks
             bbox.position += entity.direction.to_vector()  # FIXME: this sucks
             bbox = bbox.get_bounding_box()  # FIXME: this sucks
-            pointed_list = blueprint.find_entities_filtered(area=bbox, type=belt_types)
+            pointed_list = collection.find_entities_filtered(area=bbox, type=belt_types)
             for pointed in pointed_list:
                 # Update the pointed entity
-                j = blueprint.entities.index(pointed)
+                j = collection.entities.index(pointed)
                 if j not in direction_map:
                     direction_map[j] = {
                         "direction": pointed.direction,
@@ -86,7 +85,7 @@ def reverse_belts(blueprint: EntityCollection) -> None:
 
     # Then we iterate over once more and fix their directions, taking into
     # account
-    for i, entity in enumerate(blueprint.entities):
+    for i, entity in enumerate(collection.entities):
         entity: EntityLike
         if entity.type == "transport-belt":
             entity: TransportBelt

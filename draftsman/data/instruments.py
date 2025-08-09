@@ -2,7 +2,7 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 from draftsman.data.entities import of_type
@@ -10,11 +10,18 @@ from draftsman.data.entities import of_type
 # from draftsman.data.entities import programmable_speakers
 
 
-with pkg_resources.open_binary(data, "instruments.pkl") as inp:
-    _data: list = pickle.load(inp)
-    raw: dict[str, list[dict]] = _data[0]
-    index_of: dict[str, dict[str, dict[str, int]]] = _data[1]
-    name_of: dict[str, dict[int, dict[int, str]]] = _data[2]
+try:
+    source = files(data) / "instruments.pkl"
+    with source.open("rb") as inp:
+        _data: list = pickle.load(inp)
+        raw: dict[str, list[dict]] = _data[0]
+        index_of: dict[str, dict[str, dict[str, int]]] = _data[1]
+        name_of: dict[str, dict[int, dict[int, str]]] = _data[2]
+
+except FileNotFoundError:  # pragma: no coverage
+    raw = {}
+    index_of = {}
+    name_of = {}
 
 
 def add_instrument(
@@ -24,7 +31,8 @@ def add_instrument(
     entity_name: str = "programmable-speaker",
 ):
     """
-    TODO
+    Adds a new instrument to Draftsman's environment, which persists until the
+    end of the session.
     """
     if entity_name not in of_type["programmable-speaker"]:
         raise TypeError(

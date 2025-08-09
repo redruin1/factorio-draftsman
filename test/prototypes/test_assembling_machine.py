@@ -1,12 +1,21 @@
 # test_assembling_machine.py
 
-from draftsman.constants import Direction
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.constants import Direction, InventoryType
+from draftsman.data import mods
 from draftsman.entity import AssemblingMachine, assembling_machines, Container
 from draftsman.error import (
     InvalidEntityError,
     InvalidRecipeError,
     InvalidItemError,
     DataFormatError,
+)
+from draftsman.signatures import (
+    Condition,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
 )
 from draftsman.warning import (
     ModuleCapacityWarning,
@@ -25,6 +34,41 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_assembling_machine():
+    return AssemblingMachine(
+        "assembling-machine-1",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        recipe="iron-gear-wheel",
+        recipe_quality="uncommon",
+        circuit_enabled=True,
+        circuit_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        item_requests=[
+            BlueprintInsertPlan(
+                id={"name": "iron-plate", "quality": "uncommon"},
+                items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
+            )
+        ],
+        circuit_set_recipe=True,
+        read_contents=True,
+        include_in_crafting=False,
+        read_recipe_finished=True,
+        recipe_finished_signal="signal-C",
+        read_working=True,
+        working_signal="signal-D",
+        tags={"blah": "blah"},
+    )
+
+
 class TestAssemblingMachine:
     def test_constructor_init(self):
         assembler = AssemblingMachine("assembling-machine-1", recipe="iron-gear-wheel")
@@ -40,8 +84,6 @@ class TestAssemblingMachine:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            AssemblingMachine(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownRecipeWarning):
             AssemblingMachine(recipe="incorrect").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
@@ -51,75 +93,220 @@ class TestAssemblingMachine:
         with pytest.raises(DataFormatError):
             AssemblingMachine(recipe=100).validate().reissue_all()
 
+    def test_1_0_serialization(self):
+        assembler = AssemblingMachine(
+            "assembling-machine-1", recipe="iron-gear-wheel", recipe_quality="legendary"
+        )
+        assert assembler.to_dict(version=(2, 0)) == {
+            "name": "assembling-machine-1",
+            "position": {"x": 1.5, "y": 1.5},
+            "recipe": "iron-gear-wheel",
+            "recipe_quality": "legendary",
+        }
+        assert assembler.to_dict(version=(1, 0)) == {
+            "name": "assembling-machine-1",
+            "position": {"x": 1.5, "y": 1.5},
+            "recipe": "iron-gear-wheel",
+        }
+
     def test_power_and_circuit_flags(self):
+        # TODO: what about different versions?
         for name in assembling_machines:
-            combinator = AssemblingMachine(name)
-            assert combinator.power_connectable == False
-            assert combinator.dual_power_connectable == False
-            assert combinator.circuit_connectable == True
-            assert combinator.dual_circuit_connectable == False
+            assembling_machine = AssemblingMachine(name)
+            assert assembling_machine.power_connectable == False
+            assert assembling_machine.dual_power_connectable == False
+            assert assembling_machine.circuit_connectable == True
+            assert assembling_machine.dual_circuit_connectable == False
 
     def test_set_recipe(self):
         machine = AssemblingMachine("assembling-machine-3")
-        assert machine.allowed_modules == {
-            "speed-module",
-            "speed-module-2",
-            "speed-module-3",
-            "efficiency-module",
-            "efficiency-module-2",
-            "efficiency-module-3",
-            "productivity-module",
-            "productivity-module-2",
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+            }
+        else:
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+                "quality-module",
+                "quality-module-2",
+                "quality-module-3",
+            }
+
+        machine.set_item_request(
             "productivity-module-3",
-            "quality-module",
-            "quality-module-2",
-            "quality-module-3",
-        }
-        # machine.set_item_request("productivity-module-3", 2)
+            1,
+            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
+            slot=0,
+        )
+        machine.set_item_request(
+            "productivity-module-3",
+            1,
+            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
+            slot=1,
+        )
+        # TODO: make a `set_module_request()` method
 
-        # machine.recipe = "iron-gear-wheel"
-        # assert machine.recipe == "iron-gear-wheel"
-        # assert machine.allowed_modules == {
-        #     "speed-module",
-        #     "speed-module-2",
-        #     "speed-module-3",
-        #     "effectivity-module",
-        #     "effectivity-module-2",
-        #     "effectivity-module-3",
-        #     "productivity-module",
-        #     "productivity-module-2",
-        #     "productivity-module-3",
-        # }
+        machine.recipe = "iron-gear-wheel"
+        assert machine.recipe == "iron-gear-wheel"
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+            }
+        else:
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "productivity-module",
+                "productivity-module-2",
+                "productivity-module-3",
+                "quality-module",
+                "quality-module-2",
+                "quality-module-3",
+            }
 
-        # with pytest.warns(ItemLimitationWarning):
-        #     machine.recipe = "wooden-chest"
-        # assert machine.allowed_modules == {
-        #     "speed-module",
-        #     "speed-module-2",
-        #     "speed-module-3",
-        #     "effectivity-module",
-        #     "effectivity-module-2",
-        #     "effectivity-module-3",
-        # }
+        with pytest.warns(ItemLimitationWarning):
+            machine.recipe = "wooden-chest"
+        assert machine.recipe == "wooden-chest"
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "effectivity-module",
+                "effectivity-module-2",
+                "effectivity-module-3",
+            }
+        else:
+            assert machine.allowed_modules == {
+                "speed-module",
+                "speed-module-2",
+                "speed-module-3",
+                "efficiency-module",
+                "efficiency-module-2",
+                "efficiency-module-3",
+                "quality-module",
+                "quality-module-2",
+                "quality-module-3",
+            }
 
         # machine.items = None
         # with pytest.warns(ModuleCapacityWarning):
-        #     machine.set_item_request("speed-module-3", 10)
-        # # with pytest.warns(ModuleLimitationWarning):
-        # #     machine.recipe = "iron-chest"
+        #     machine.set_item_request("speed-module-3", 10, inventory=InventoryType.ASSEMBLING_MACHINE_MODULES)
+        # with pytest.warns(ModuleLimitationWarning):
+        #     machine.recipe = "iron-chest"
 
-        # # particular recipe not allowed in machine
-        # with pytest.warns(RecipeLimitationWarning):
-        #     machine.recipe = "sulfur"
-        # assert machine.recipe == "sulfur"
+        # particular recipe not allowed in machine
+        with pytest.warns(RecipeLimitationWarning):
+            machine.recipe = "sulfur"
+        assert machine.recipe == "sulfur"
 
-        # # Unknown recipe in an unknown machine
-        # machine = AssemblingMachine("unknown", validate="none")
-        # with pytest.warns(UnknownRecipeWarning):
-        #     machine.recipe = "unknown"
+        # Unknown recipe in an known machine
+        machine = AssemblingMachine("assembling-machine-3")
+        with pytest.warns(UnknownRecipeWarning):
+            machine.recipe = "unknown"
 
-        # # Known recipe in an unknown machine
-        # machine.recipe = "sulfur"
+        # Known recipe in an unknown machine
+        with pytest.warns(UnknownEntityWarning):
+            machine = AssemblingMachine("unknown")
+        machine.recipe = "sulfur"
+
+    def test_ingredient_items(self):
+        machine = AssemblingMachine("assembling-machine-3")
+        machine.recipe = "wooden-chest"
+        assert machine.allowed_input_ingredients == {"wood"}
+        machine.set_item_request(
+            "wood", 20, inventory=InventoryType.ASSEMBLING_MACHINE_INPUT
+        )
+        assert machine.ingredient_items == [
+            BlueprintInsertPlan(
+                id={"name": "wood"},
+                items={"in_inventory": [{"inventory": 2, "stack": 0, "count": 20}]},
+            )
+        ]
+
+    def test_allowed_effects(self):
+        machine = AssemblingMachine("assembling-machine-3")
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert machine.allowed_effects == {
+                "pollution",
+                "productivity",
+                "speed",
+                "consumption",
+            }
+        else:
+            assert machine.allowed_effects == {
+                "pollution",
+                "productivity",
+                "speed",
+                "consumption",
+                "quality",
+            }
+
+        with pytest.warns(UnknownEntityWarning):
+            machine = AssemblingMachine("unknown-machine")
+        assert machine.allowed_effects is None
+
+    def test_request_modules(self):
+        machine = AssemblingMachine("assembling-machine-3")
+        assert machine.module_slots_occupied == 0
+
+        machine.request_modules("productivity-module-3", (0, 1, 2, 3), "legendary")
+        assert machine.item_requests == [
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
+                            stack=0,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
+                            stack=1,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
+                            stack=2,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
+                            stack=3,
+                        ),
+                    ]
+                ),
+            )
+        ]
+        assert machine.module_slots_occupied == 4
+
+        # TODO: warn if exceeds module slots
 
     # def test_set_item_request(self): # TODO: reimplement
     #     machine = AssemblingMachine("assembling-machine-3")

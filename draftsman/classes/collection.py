@@ -2,80 +2,392 @@
 
 from draftsman.classes.association import Association
 from draftsman.classes.entity_like import EntityLike
+from draftsman.classes.entity_list import EntityList
 from draftsman.classes.train_configuration import TrainConfiguration
-from draftsman.classes.schedule import Schedule, WaitCondition, WaitConditions
+from draftsman.classes.schedule import Schedule
 from draftsman.classes.schedule_list import ScheduleList
-from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.tile import Tile
+from draftsman.classes.tile_list import TileList
 from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, Orientation
+from draftsman.constants import Direction, Orientation, WireConnectorID
+from draftsman.signatures import StockConnection
 from draftsman.error import (
-    DraftsmanError,
+    DuplicateIDError,
     EntityNotPowerConnectableError,
     InvalidWireTypeError,
     InvalidConnectionSideError,
     InvalidAssociationError,
     EntityNotCircuitConnectableError,
 )
-from draftsman.signatures import Connections
 from draftsman.types import RollingStock
 from draftsman.warning import (
     ConnectionSideWarning,
     ConnectionDistanceWarning,
-    TooManyConnectionsWarning,
 )
-from draftsman.utils import AABB, PrimitiveAABB, flatten_entities, distance
+from draftsman.utils import (
+    AABB,
+    PrimitiveAABB,
+    distance,
+    flatten_entities,
+    reissue_warnings,
+)
+from draftsman.validators import get_mode
 
-from abc import ABCMeta, abstractmethod
+import attrs
+from abc import ABCMeta
+
+# from collections import UserList
+from collections.abc import MutableSequence
+from copy import deepcopy
 import math
-from typing import Literal, Optional, Sequence, Type, Union, TYPE_CHECKING
+from typing import Any, Iterator, Literal, Optional, Sequence, Union
 import warnings
 
-# TODO: move this
-from draftsman.entity import Locomotive, CargoWagon, FluidWagon, ArtilleryWagon
-
-RollingStock = Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity_list import EntityList
-    from draftsman.classes.tile_list import TileList
+    from draftsman.entity import Locomotive
 
 
-class EntityCollection(metaclass=ABCMeta):
+class Collection:
+    pass
+
+
+class CollectionList(MutableSequence):
+    def __init__(
+        self,
+        initlist: Optional[list[Collection]] = None,
+        parent: Optional[Collection] = None,
+    ):
+        self.data = []
+        self.key_map = {}
+        self.key_to_idx = {}
+        self.idx_to_key = {}
+
+        self._parent: "Collection" = parent
+
+        if initlist is not None:
+            for elem in initlist:
+                self.append(elem)
+
+    @reissue_warnings
+    def append(self, group, copy=True, merge=False, **kwargs):
+        return self.insert(idx=len(self), group=group, copy=copy, merge=merge, **kwargs)
+
+    @reissue_warnings
+    def insert(
+        self,
+        idx: int,
+        group: Collection,
+        copy: bool = True,
+        merge: bool = False,
+        **kwargs,
+    ) -> Collection:
+        # First, make sure that group is actually a Collection
+        if not issubclass(type(group), Collection):
+            raise TypeError("'groups' can only contain Collections")
+
+        if copy:
+            group = deepcopy(group)
+            # Overwrite any user keywords if specified in the function signature
+            for k, v in kwargs.items():
+                setattr(group, k, v)
+
+        # First, check if Group being added is valid
+        # if get_mode():
+        #     group.validate(mode=get_mode())
+
+        # Add this group's entities/tiles (plus any subgroups as well) to the
+        # spatial registry, stripping Group of any merged entities/tiles
+        self.add_collection_to_map(group, merge)
+
+        if group.id in self.key_map:
+            raise DuplicateIDError("'{}'".format(group.id))
+
+        # Now actually add the group and keep ID indexes up-to-date
+        self.data.insert(idx, group)
+        self._shift_key_indices(idx, 1)
+        if group.id:
+            self._set_key(group.id, group)
+
+        # Set the group's parent to the correct value
+        group._parent = self._parent
+
+        return group
+
+    def get_pair(self, item: Union[int, str]) -> tuple[int, str]:
+        """
+        Takes either an index or a key, finds the converse entry associated with
+        it, and returns them both as a pair.
+
+        :param item: Either an integer index or a string key.
+
+        :returns: A tuple of the format ``(index, key)``.
+
+        :exception KeyError: If key ``item`` is not found in the key mapping
+            dictionaries in the ``EntityList``.
+        """
+        if isinstance(item, str):
+            return (self.key_to_idx[item], item)
+        else:
+            return (item, self.idx_to_key.get(item, None))
+
+    def add_collection_to_map(self, collection: Collection, merge: bool):
+        validation_mode = get_mode()
+
+        merged_entities = []
+        for entity in collection.entities:
+            # Validate the addition
+            if validation_mode:
+                self._parent.entities.spatial_map.validate_insert(entity, merge=merge)
+            # Perform the add/merge
+            result = self._parent.entities.spatial_map.add(entity, merge=merge)
+            if result is None:
+                merged_entities.append(entity)
+        for entity in merged_entities:
+            collection.entities.remove(entity)
+
+        merged_tiles = []
+        for tile in collection.tiles:
+            # Validate the addition
+            if validation_mode:
+                self._parent.tiles.spatial_map.validate_insert(tile, merge=merge)
+            # Perform the add/merge
+            result = self._parent.tiles.spatial_map.add(tile, merge=merge)
+            if result is None:
+                merged_tiles.append(tile)
+        for tile in merged_tiles:
+            collection.tiles.remove(tile)
+
+        for sub_group in collection.groups:
+            self.add_collection_to_map(sub_group, merge=merge)
+
+    def remove_collection_from_map(self, collection: Collection):
+        for entity in collection.entities:
+            self._parent.entities.spatial_map.remove(entity)
+        for tile in collection.tiles:
+            self._parent.tiles.spatial_map.remove(tile)
+        for sub_group in collection.groups:
+            self.remove_collection_from_map(sub_group)
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+    def __iter__(self) -> Iterator["Collection"]:
+        return iter(self.data)
+
+    def __eq__(self, other: "CollectionList") -> bool:
+        return self.data == other.data
+
+    def __getitem__(
+        self, item: Union[int, str, slice, tuple]
+    ) -> Union["Collection", list["Collection"]]:
+        if isinstance(item, (int, slice)):
+            return self.data[item]  # Raises IndexError
+        else:
+            return self.key_map[item]  # Raises KeyError
+
+    def __setitem__(self, item: Union[int, str], value: "Collection"):
+        # TODO: handle slices
+
+        # Get the key and index of the item
+        idx, key = self.get_pair(item)
+
+        # TODO: validate that value is a `Collection`
+
+        # Make sure newly added item doesn't have a duplicate ID
+        if value.id in self.key_map:
+            raise DuplicateIDError("'{}'".format(value.id))
+
+        # Remove all entities/tiles contained within the group from the spatial
+        # maps
+        self.remove_collection_from_map(self.data[idx])
+
+        # Wipe the parent reference from the item that we're about to replace
+        self.data[idx]._parent = None
+
+        # Add all the new entities/tiles contained within the new collection to
+        # the spatial maps
+        self.add_collection_to_map(value, merge=False)
+
+        # Set the new data association in the list side
+        self.data[idx] = value
+
+        # If the element has a new id, set it to that
+        if key:
+            self._remove_key(key)
+        if value.id:
+            # key = getattr(value, "id")
+            self._set_key(value.id, value)
+
+        # Add a reference to the parent in the object
+        value._parent = self._parent
+
+    def __delitem__(self, item: Union[int, str, slice]):
+        # TODO: handle slices
+        # if isinstance(item, slice):
+        #     # Get slice parameters
+        #     start, stop, step = item.indices(len(self))
+        #     for i in range(start, stop, step):
+        #         # Get pair
+        #         idx, key = self.get_pair(i)
+
+        #         # Remove the group from maps
+        #         self.remove_collection_from_map(self.data[idx])
+
+        #         # Remove key pair
+        #         self._remove_key(key)
+
+        #     for i in range(start, stop, step):
+        #         # Shift elements above down by 1 for the item immediately removed
+        #         self._shift_key_indices(i, -1)
+
+        #     # Delete all entries in the main list
+        #     del self.data[item]
+        # else:
+
+        # Get pair
+        if isinstance(item, int):
+            item %= len(self.data)
+        idx, key = self.get_pair(item)
+
+        # Remove the entity and its children
+        self.remove_collection_from_map(self.data[idx])
+
+        # Delete from list
+        del self.data[idx]
+
+        # Remove key pair
+        self._remove_key(key)
+
+        # Shift all entries above down by one
+        self._shift_key_indices(idx, -1)
+
+    # =========================================================================
+    # Internal Functions
+    # =========================================================================
+
+    def _remove_key(self, key: str):
+        """
+        Shorthand to remove ``key`` from the key mapping dictionaries. Does
+        nothing if key is ``None``.
+
+        :param key: The string to remove.
+
+        :exception KeyError: If attempting to remove a key that does not exist
+            in the ``EntityList``.
+        """
+        if key is not None:
+            idx = self.key_to_idx[key]
+            del self.key_map[key]
+            del self.key_to_idx[key]
+            del self.idx_to_key[idx]
+
+    def _set_key(self, key: str, value: "EntityLike"):
+        """
+        Shorthand to set ``key`` in the key mapping dictionaries to point to
+        ``value``.
+
+        :param key: A ``str`` to associate with ``value``.
+        :param value: An ``EntityLike`` instance to associate with ``key``.
+
+        :exception DuplicateIDError: If ``key`` already exists within the
+            ``EntityList``.
+        :exception IndexError: If ``value`` is not found within the
+            ``EntityList``.
+        """
+        idx = self.data.index(value)
+        self.key_map[key] = value
+        self.key_to_idx[key] = idx
+        self.idx_to_key[idx] = key
+
+    def _shift_key_indices(self, idx: int, amt: int):
+        """
+        Shifts all of the key mappings above or equal to ``idx`` by ``amt``.
+        Used when inserting or removing elements before the end, which moves
+        what index each key should point to.
+        """
+
+        # Shift the indices for key_to_idx
+        self.key_to_idx = {
+            key: old_idx + amt if old_idx >= idx else old_idx
+            for key, old_idx in self.key_to_idx.items()
+        }
+
+        # Reconstruct idx_to_key
+        self.idx_to_key = {value: key for key, value in self.key_to_idx.items()}
+
+    def __deepcopy__(self, memo: dict):
+        parent = memo.get("new_parent", self._parent)
+        new = CollectionList(parent=parent)
+
+        for group in self.data:
+            group_copy = memo.get(id(group), deepcopy(group, memo))
+            new.append(group_copy, copy=False)
+            memo[id(group)] = group_copy
+
+        return new
+
+
+@attrs.define(slots=False)
+class Collection(metaclass=ABCMeta):
     """
     Abstract class used to describe an object that can contain a list of
-    :py:class:`~draftsman.classes.entitylike.EntityLike` instances.
+    :py:class:`.EntityLike` and :py:class:`.Tile` instances.
     """
+
+    # TODO: maybe it would be better to just have one spatial map which stores
+    # 2 different maps inside of it? Interactions with it would then have to
+    # specifiy which one they wanted to modify
+    # Merging both maps together is off the table since it generates far more
+    # hash collisions than necessary for 2 types of objects which almost never
+    # have actual collisions
+
+    # _entity_map: SpatialDataStructure = attrs.field(
+    #     factory=SpatialHashMap, init=False, repr=False, eq=False, kw_only=True
+    # )
+
+    # _tile_map: SpatialDataStructure = attrs.field(
+    #     factory=SpatialHashMap, init=False, repr=False, eq=False, kw_only=True
+    # )
+
+    # @property
+    # def spatial_map(self):
+    #     """
+    #     Accelleration structure for speeding up regional queries. Not intended
+    #     for direct manipulation; it is instead modified when adding/removing/
+    #     changing entries inside of :py:attr:`.entities`, :py:attr:`.tiles`, and
+    #     :py:attr:`.groups`. Read only; not exported.
+    #     """
+    #     return self._spatial_map
+
+    def __attrs_post_init__(self):
+        """
+        When initializing from a raw JSON dictionary, convert all numeric IDs
+        to use Associations.
+        """
+
+        for wire in self.wires:
+            entity1 = self.entities[wire[0] - 1]
+            wire[0] = Association(entity1)
+            entity2 = self.entities[wire[2] - 1]
+            wire[2] = Association(entity2)
+
+        for schedule in self.schedules:
+            for i, locomotive in enumerate(schedule.locomotives):
+                entity = self.entities[locomotive - 1]
+                schedule.locomotives[i] = Association(entity)
+
+        for connection in self.stock_connections:
+            connection.stock = Association(self.entities[connection.stock - 1])
+            if isinstance(connection.front, int):
+                connection.front = Association(self.entities[connection.front - 1])
+            if isinstance(connection.back, int):
+                connection.back = Association(self.entities[connection.back - 1])
 
     # =========================================================================
     # Properties
     # =========================================================================
-
-    @property
-    @abstractmethod
-    def entities(self) -> "EntityList":  # pragma: no coverage
-        """
-        Object that holds the ``EntityLikes``, usually a :py:class:`.EntityList`.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def schedules(self) -> ScheduleList:  # pragma: no coverage
-        """
-        Object that holds any :py:class:`Schedule` objects within the collection,
-        usually a :py:class:`ScheduleList`.
-        """
-        pass
-
-    @property
-    @abstractmethod
-    def wires(self) -> list[list[int]]:
-        """
-        Object that holds any wire connections between entities within the
-        collection.
-        """
-        pass
 
     @property
     def rotatable(self) -> bool:
@@ -93,6 +405,7 @@ class EntityCollection(metaclass=ABCMeta):
         by whether or not any of the entities contained can be flipped or not.
         Read only.
         """
+        # TODO: no longer accurate
         for entity in self.entities:
             if not entity.flippable:
                 return False
@@ -100,43 +413,215 @@ class EntityCollection(metaclass=ABCMeta):
         return True
 
     # =========================================================================
-    # Custom edge functions for EntityList interaction
+    # Attributes
     # =========================================================================
 
-    # def on_entity_insert(
-    #     self, entitylike: EntityLike, merge: bool
-    # ) -> Optional[EntityLike]:  # pragma: no coverage
-    #     """
-    #     Function called when an :py:class:`.EntityLike` is inserted into this
-    #     object's :py:attr:`entities` list (assuming that the ``entities`` list
-    #     is a :py:class:`.EntityList`). By default, this function does nothing,
-    #     but any child class can customize it's functionality by overriding it.
-    #     """
-    #     pass
+    def _set_entities(self, _: attrs.Attribute, value: Any):
+        if value is None:
+            return EntityList(self)
+        elif isinstance(value, EntityList):
+            return EntityList(self, value.data)
+        else:
+            return EntityList(self, value)
 
-    # def on_entity_set(
-    #     self, old_entitylike: EntityLike, new_entitylike: EntityLike
-    # ) -> None:  # pragma: no coverage
-    #     """
-    #     Function called when an :py:class:`.EntityLike` is replaced with another
-    #     in this object's :py:attr:`entities` list (assuming that the ``entities``
-    #     list is a :py:class:`.EntityList`). By default, this function does
-    #     nothing, but any child class can customize it's functionality by
-    #     overriding it.
-    #     """
-    #     pass
+    entities: EntityList = attrs.field(
+        on_setattr=_set_entities,
+        kw_only=True,
+    )
+    """
+    .. serialized::
 
-    # def on_entity_remove(self, entitylike: EntityLike) -> None:  # pragma: no coverage
-    #     """
-    #     Function called when an :py:class:`.EntityLike` is removed from this
-    #     object's :py:attr:`entities` list (assuming that the ``entities`` list
-    #     is a :py:class:`.EntityList`). By default, this function does nothing,
-    #     but any child class can customize it's functionality by overriding it.
-    #     """
-    #     pass
+        This attribute is imported/exported from blueprint strings.
+
+    The list containing this collection's entities.
+
+    Supports inserting/appending new entities via a string name, as well as any
+    keyword arguments to pass to that entity's constructor:
+
+    .. code-block::
+
+        blueprint.entities.append("wooden-chest", bar=10)
+        assert type(blueprint.entities[-1]) is Container
+        assert blueprint.entities[-1].name == "wooden-chest"
+        assert blueprint.entities[-1].bar == 10
+
+    In addition to indexing by integer location, :py:class:`.EntityList` also 
+    supports indexing via string, corresponding to the :py:attr:`~.Entity.id` of 
+    the entity:
+
+    .. code-block::
+
+        blueprint.entities.insert(0, "wooden-chest", id="example")
+        assert blueprint.entities["example"] is blueprint.entities[0]
+    """
+
+    @entities.default
+    def _(self) -> EntityList:
+        return EntityList(self)
 
     # =========================================================================
-    # Entity Queries
+
+    def _set_tiles(self, _: attrs.Attribute, value: Any):
+        if value is None:
+            return TileList(self)
+        elif isinstance(value, TileList):
+            return TileList(self, value.data)
+        else:
+            return TileList(self, value)
+
+    tiles: TileList = attrs.field(
+        on_setattr=_set_tiles,
+        kw_only=True,
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    The list containing this collection's tiles.
+
+    Supports inserting/appending new tiles via a string name, as well as any
+    keyword arguments to pass to that entity's constructor:
+
+    .. code-block::
+
+        blueprint.tiles.append("landfill")
+        assert type(blueprint.tiles[-1]) is Tile
+        assert blueprint.tiles[-1].name == "landfill"
+    """
+
+    @tiles.default
+    def get_tiles_default(self):
+        return TileList(self)
+
+    # =========================================================================
+
+    # `groups` has to live above `schedules`/`wires`/`stock_connections` because
+    # group entities/tiles need to be copied before any Associations are
+    # resolved
+
+    def _set_groups(self, _: attrs.Attribute, value: Any):
+        # Remove all spatial entries from the this instance's entities/tiles
+        # spatial maps:
+        for group in self.groups:
+            self.groups.remove_collection_from_map(group)
+
+        if value is None:
+            return CollectionList(parent=self)
+        elif isinstance(value, CollectionList):
+            return CollectionList(value.data, parent=self)
+        else:
+            return CollectionList(value, parent=self)
+
+    groups: CollectionList = attrs.field(
+        on_setattr=_set_groups,
+        kw_only=True,
+    )
+    """
+    A list of child :py:class:`.Group` objects that this collection contains.
+
+    Like :py:class:`.EntityList`, Groups added to this list with populated IDs
+    can be accessed via those IDs:
+        
+    .. doctest::
+
+        >>> blueprint = Blueprint()
+        >>> new_group = Group(id="something")
+        >>> blueprint.groups.append(new_group)
+        >>> assert blueprint.groups["something"] == new_group
+
+    This attribute is not exported. Instead, all entities/tiles that are 
+    contained within it are "flattened" to the root-most entity/tile lists, with
+    their positions and associations preserved.
+
+    .. versionadded:: 3.0.0
+    """
+
+    @groups.default
+    def _(self) -> CollectionList:
+        return CollectionList(parent=self)
+
+    # =========================================================================
+
+    def _set_schedules(self, _: attrs.Attribute, value: Any):
+        # TODO: this needs to be more complex. What about associations already
+        # set to one blueprint being copied over to another? Should probably
+        # wipe the locomotives of each schedule when doing so
+        if value is None:
+            return ScheduleList()
+        elif isinstance(value, ScheduleList):
+            return value
+        else:
+            return ScheduleList(value)
+
+    schedules: ScheduleList = attrs.field(
+        on_setattr=_set_schedules,
+        kw_only=True,
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    A list of the Collections's :py:class:`.Schedule` s.
+    """
+
+    @schedules.default
+    def _(self) -> ScheduleList:
+        return ScheduleList()
+
+    # =========================================================================
+
+    wires: list[list[Association, WireConnectorID, Association, WireConnectorID]] = (
+        attrs.field(
+            factory=list,
+            converter=lambda v: list() if v is None else v,
+            # TODO: validators
+            kw_only=True,
+        )
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+    
+    A list of all the wire connections in this blueprint.
+
+    Wires are specified as two pairs of :py:class:`.Association` and 
+    :py:class:`.WireType`; the first pair represents the first entity, and the 
+    second pair represents the second entity. The association points to the 
+    corresponding entity in this collection, and the wire type enum indicates
+    what type of connection it is.
+
+    When exported to JSON, the associations and enums in each wire are resolved 
+    to integers corresponding to the given ``entity_number`` in the resulting
+    ``entities`` list.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
+    # =========================================================================
+
+    stock_connections: list[StockConnection] = attrs.field(
+        factory=list,
+        # TODO: validators
+        kw_only=True,
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    A list of connections between train cars, documenting exactly which ones
+    are connected to what. Prior to Factorio 2.0, train car connections were 
+    inferred and automatically generated on blueprint import; this field allows
+    for manual control over this behavior.
+
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
+    # =========================================================================
+    # Entities
     # =========================================================================
 
     def find_entity(
@@ -272,7 +757,7 @@ class EntityCollection(metaclass=ABCMeta):
         :param radius: The radius of the circle centered around ``position`` to
             search. Must be defined alongside ``position`` in order to search in
             a circular area.
-        :param aabb: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
+        :param area: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
         :param name: Either a ``str``, or a ``set[str]`` where each entry is a
             name of an entity to be returned.
         :param type: Either a ``str``, or a ``set[str]`` where each entry is a
@@ -305,7 +790,7 @@ class EntityCollection(metaclass=ABCMeta):
             search_region = self.entities.spatial_map.get_in_aabb(area)
         else:
             # Search all entities, but make sure it's a 1D list
-            search_region = flatten_entities(self.entities)
+            search_region = flatten_entities(self)
 
         # Normalize inputs
         if isinstance(name, str):
@@ -343,7 +828,121 @@ class EntityCollection(metaclass=ABCMeta):
             return list(filter(lambda entity: test(entity), search_region))[:limit]
 
     # =========================================================================
-    # Connections
+    # Tiles
+    # =========================================================================
+
+    def find_tile(self, position: Union[Vector, PrimitiveVector]) -> list[Tile]:
+        """
+        Returns a list containing all the tiles at the tile coordinate
+        ``position``. If there are no tiles at that position, an empty list is
+        returned.
+
+        :param position: The position to search, either a ``PrimitiveVector`` or
+            a :py:class:`.Vector`.
+
+        :returns: A list of all tiles at ``position``.
+        """
+        return self.tiles.spatial_map.get_on_point(Vector(0.5, 0.5) + position)
+
+    def find_tiles_filtered(
+        self,
+        position: Union[Vector, PrimitiveVector, None] = None,
+        radius: Optional[float] = None,
+        area: Union[AABB, PrimitiveAABB, None] = None,
+        name: Optional[str] = None,
+        invert: bool = False,
+        limit: Optional[int] = None,
+    ) -> list[Tile]:
+        """
+        Returns a filtered list of tiles within the blueprint. Works
+        similarly to
+        `LuaSurface.find_tiles_filtered <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_tiles_filtered>`_.
+
+        Keywords are organized into two main categrories: **region** and
+        **criteria**:
+
+        .. list-table:: Region keywords
+            :header-rows: 1
+
+            * - Name
+              - Type
+              - Description
+            * - ``position``
+              - ``Vector`` or ``PrimitiveVector``
+              - Grid position to search.
+            * - ``radius``
+              - ``float``
+              - Radius of the circle around position to search.
+            * - ``area``
+              - ``AABB`` or ``PrimitiveAABB``
+              - AABB to search in.
+
+        .. list-table:: Criteria keywords
+            :header-rows: 1
+
+            * - Name
+              - Type
+              - Description
+            * - ``name``
+              - ``str`` or ``set{str}``
+              - The name(s) of the entities that you want to search for.
+            * - ``limit``
+              - ``int``
+              - | Limit the maximum size of the returned list to this amount.
+                | Unlimited by default.
+            * - ``invert``
+              - ``bool``
+              - | Whether or not to return the inverse of the search. ``False``
+                | by default.
+
+        :param position: The global position to search the source Collection.
+            Can be used in conjunction with ``radius`` to search a circle
+            instead of a single point. Takes precedence over ``area``.
+        :param radius: The radius of the circle centered around ``position`` to
+            search. Must be defined alongside ``position`` in order to search in
+            a circular area.
+        :param area: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
+        :param name: Either a ``str``, or a ``set[str]`` where each entry is a
+            name of an entity to be returned.
+        :param invert: Whether or not to return the inversion of the search
+            criteria.
+        :param limit: The total number of matching entities to return. Unlimited
+            by default.
+
+        :returns: A list of Tile references inside the searched collection that
+            match the specified criteria.
+        """
+
+        if position is not None and radius is not None:
+            # Intersect entities with circle
+            search_region = self.tiles.spatial_map.get_in_radius(radius, position)
+        elif area is not None:
+            # Intersect entities with area
+            area = AABB.from_other(area)
+            search_region = self.tiles.spatial_map.get_in_aabb(area)
+        else:
+            search_region = self.tiles
+
+        if isinstance(name, str):
+            names = {name}
+        else:
+            names = name
+
+        # Keep track of how many
+        limit = len(search_region) if limit is None else limit
+
+        def test(tile):
+            if names is not None and tile.name not in names:
+                return False
+            return True
+
+        if invert:
+            return list(filter(lambda tile: not test(tile), search_region))[:limit]
+        else:
+            return list(filter(lambda tile: test(tile), search_region))[:limit]
+
+    # =========================================================================
+    # Wires
     # =========================================================================
 
     def add_power_connection(
@@ -366,17 +965,17 @@ class EntityCollection(metaclass=ABCMeta):
         """
         Adds a copper wire power connection between two entities. Each entity
         can be either a reference to the original entity to connect, the index
-        of the entity in the ``entities`` list, or it's string ID. Tuples of
-        strings and ints mean to recursively search through
-        :py:class:`EntityCollection` instances in the base level, following the
-        logic of :py:meth:`.EntityList.__getitem__`. For example:
+        of the entity in the :py:attr:`.entities` list, or it's string ID.
+        Tuples of strings and ints mean to recursively search through the
+        :py:class:`Collection` 's :py:class:`.groups` for an entity at that tree
+        "path". For example:
 
         .. code-block:: python
 
             blueprint.entities.append("small-electric-pole")
-            group = Group("group") # Type of EntityCollection
+            group = Group("group") # A type of `Collection`
             group.entities.append("small-electric-pole", tile_position=(5, 0))
-            blueprint.entities.append(group)
+            blueprint.groups.append(group)
 
             # Add a connection between the first power pole and the first entity
             # in the group
@@ -394,36 +993,36 @@ class EntityCollection(metaclass=ABCMeta):
         either of the power poles exceed 5 connections when this connection is
         added.
 
-        :param location_1: EntityLike, ID, or index of the first entity to join.
-        :param location_2: EntityLike, ID or index of the second entity to join.
+        :param entity_1: EntityLike, ID, or index of the first entity to join.
+        :param entity_2: EntityLike, ID or index of the second entity to join.
+        :param side_1: Which side of ``entity_1`` to connect power to. Only
+            necessary to specify for entities that are
+            :py:attr:`.Entity.dual_power_connectable`.
+        :param side_2: Which side of ``entity_2`` to connect power to. Only
+            necessary to specify for entities that are
+            :py:attr:`.Entity.dual_power_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
             invalid ID's or indices to the parent Collection.
         :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
             are not inside the parent Collection.
-        :exception InvalidConnectionSideError: If ``side`` is neither ``1`` nor
-            ``2``.
         :exception EntityNotPowerConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be copper wire connected.
         :exception DraftsmanError: If both `entity_1` and `entity_2` are
             dual-power-connectable, of which a connection is forbidden.
         """
-        # Normalize to tuple form
-        # if not isinstance(location_1, tuple):
-        #     location_1 = (location_1, "input")
-        # if not isinstance(location_2, tuple):
-        #     location_2 = (location_2, "input")
-
         if not isinstance(entity_1, EntityLike):
-            entity_1 = self.entities[entity_1]
+            # entity_1 = self.entities[entity_1]
+            entity_1 = self._get_entity_from_path(entity_1)
         if not isinstance(entity_2, EntityLike):
-            entity_2 = self.entities[entity_2]
+            # entity_2 = self.entities[entity_2]
+            entity_2 = self._get_entity_from_path(entity_2)
 
-        if entity_1 not in self.entities:
+        if entity_1 not in self:
             raise InvalidAssociationError(
                 "entity_1 ({}) not contained within this collection".format(entity_1)
             )
-        if entity_2 not in self.entities:
+        if entity_2 not in self:
             raise InvalidAssociationError(
                 "entity_2 ({}) not contained within this collection".format(entity_2)
             )
@@ -456,8 +1055,6 @@ class EntityCollection(metaclass=ABCMeta):
         # power connections
         # NOTE: only relevant in 1.0
         # if len(entity_1.neighbours) >= 5:
-        #     print(entity_1)
-        #     print(len(entity_1.neighbours))
         #     warnings.warn(
         #         "'entity_1' ({}) has more than 5 connections".format(entity_1.name),
         #         TooManyConnectionsWarning,
@@ -470,46 +1067,27 @@ class EntityCollection(metaclass=ABCMeta):
         #         stacklevel=2,
         #     )
 
-        # 1.0 code
-        # # Only worried about entity_1
-        # if entity_1.dual_power_connectable:  # power switch
-        #     # Add copper circuit connection
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_1.connections[str_side] is None:
-        #         entity_1.connections[str_side] = []
-
-        #     entry = {"entity_id": Association(entity_2), "wire_id": 0}
-        #     if entry not in entity_1.connections[str_side]:
-        #         entity_1.connections[str_side].append(entry)
-        # else:  # electric pole
-        #     if not entity_2.dual_power_connectable:
-        #         if Association(entity_2) not in entity_1.neighbours:
-        #             entity_1.neighbours.append(Association(entity_2))
-
-        # # Only worried about entity_2
-        # if entity_2.dual_power_connectable:  # power switch
-        #     # Add copper circuit connection
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_2.connections[str_side] is None:
-        #         entity_2.connections[str_side] = []
-
-        #     entry = {"entity_id": Association(entity_1), "wire_id": 0}
-        #     if entry not in entity_2.connections[str_side]:
-        #         entity_2.connections[str_side].append(entry)
-        # else:  # electric pole
-        #     if not entity_1.dual_power_connectable:
-        #         if Association(entity_1) not in entity_2.neighbours:
-        #             entity_2.neighbours.append(Association(entity_1))
-
-        # 2.0 code
         dir_value = {"input": 5, "output": 6}
 
         wire_type_1 = dir_value[side_1]
         wire_type_2 = dir_value[side_2]
 
-        self.wires.append(
-            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
-        )
+        # Make sure connection (nor its reverse) already exists in the wires list
+        # TODO: just make this a dict, dammit; WE HAVE THE POWER
+        if [
+            Association(entity_1),
+            wire_type_1,
+            Association(entity_2),
+            wire_type_2,
+        ] not in self.wires and [
+            Association(entity_2),
+            wire_type_2,
+            Association(entity_1),
+            wire_type_1,
+        ] not in self.wires:
+            self.wires.append(
+                [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+            )
 
     def remove_power_connection(
         self,
@@ -540,22 +1118,18 @@ class EntityCollection(metaclass=ABCMeta):
             the connection to.
         :param entity_2: EntityLike, ID or index of the second entity to remove
             the connection to.
-        :param side: Which side of a dual-power-connectable entity to remove the
-            connection from, where ``1`` is "input" and ``2`` is "output". Only
-            used when disjoining a dual-power-connectable entity. Defaults to
-            ``1``.
+        :param side_1: Which side of ``entity_1`` to remove a power connection
+            from. Only necessary to specify for entities that are
+            :py:attr:`.Entity.dual_power_connectable`.
+        :param side_2: Which side of ``entity_2`` to remove a power connection
+            from. Only necessary to specify for entities that are
+            :py:attr:`.Entity.dual_power_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
             invalid ID's or indices to the parent Collection.
         :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
             are not inside the parent Collection.
         """
-        # Normalize to tuple form
-        # if not isinstance(location_1, tuple):
-        #     location_1 = (location_1, "input")
-        # if not isinstance(location_2, tuple):
-        #     location_2 = (location_2, "input")
-
         if not isinstance(entity_1, EntityLike):
             entity_1 = self.entities[entity_1]
         if not isinstance(entity_2, EntityLike):
@@ -570,42 +1144,6 @@ class EntityCollection(metaclass=ABCMeta):
                 "entity_2 ({}) not contained within this collection".format(entity_2)
             )
 
-        # 1.0 code
-        # # Only worried about self
-        # if entity_1.dual_power_connectable:  # power switch
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_1.connections[str_side] is not None:
-        #         entry = {"entity_id": Association(entity_2), "wire_id": 0}
-        #         if entry in entity_1.connections[str_side]:
-        #             entity_1.connections[str_side].remove(entry)
-        #         if len(entity_1.connections[str_side]) == 0:
-        #             # del entity_1.connections[str_side]
-        #             entity_1.connections[str_side] = None
-        # else:  # electric pole
-        #     if not entity_2.dual_power_connectable:
-        #         try:
-        #             entity_1.neighbours.remove(Association(entity_2))
-        #         except ValueError:
-        #             pass
-
-        # # Only worried about target
-        # if entity_2.dual_power_connectable:  # power switch
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_2.connections[str_side] is not None:
-        #         entry = {"entity_id": Association(entity_1), "wire_id": 0}
-        #         if entry in entity_2.connections[str_side]:
-        #             entity_2.connections[str_side].remove(entry)
-        #         if len(entity_2.connections[str_side]) == 0:
-        #             # del entity_2.connections[str_side]
-        #             entity_2.connections[str_side] = None
-        # else:  # electric pole
-        #     if not entity_1.dual_power_connectable:
-        #         try:
-        #             entity_2.neighbours.remove(Association(entity_1))
-        #         except ValueError:
-        #             pass
-
-        # 2.0 code
         dir_value = {"input": 5, "output": 6}
 
         wire_type_1 = dir_value[side_1]
@@ -631,27 +1169,9 @@ class EntityCollection(metaclass=ABCMeta):
         removes power connections from them as well. Does nothing if there are
         no power connections in the Collection.
         """
-        # 1.0 code
-        # for entity in self.entities:
-        #     if isinstance(entity, EntityCollection):
-        #         # Recursively remove connections from subgroups
-        #         entity.remove_power_connections()
-        #     else:
-        #         # Remove the connections for this particular entity
-        #         if hasattr(entity, "neighbours"):
-        #             entity.neighbours = []
-        #         if hasattr(entity, "connections"):
-        #             # if "Cu0" in entity.connections:
-        #             #     del entity.connections["Cu0"]
-        #             # if "Cu1" in entity.connections:
-        #             #     del entity.connections["Cu1"]
-        #             entity.connections["Cu0"] = None
-        #             entity.connections["Cu1"] = None
+        for group in self.groups:
+            group.remove_power_connections()
 
-        # 2.0 code
-        for entity in self.entities:
-            if isinstance(entity, EntityCollection):
-                entity.remove_power_connections()
         self.wires[:] = [wire for wire in self.wires if wire[1] not in {5, 6}]
 
     def generate_power_connections(
@@ -769,14 +1289,14 @@ class EntityCollection(metaclass=ABCMeta):
 
         :param color: Color of the wire to make the connection with. Must be
             either ``"red"`` or ``"green"``.
-        :param id1: ID or index of the first entity to join.
-        :param id2: ID or index of the second entity to join.
-        :param side1: Which side of the first dual-circuit-entity to connect to,
-            where ``1`` is "input" and ``2`` is "output". Only used when the
-            first entity is dual-circuit-connectable. Defaults to ``1``.
-        :param side2: Which side of the second dual-circuit-entity to connect
-            to, where ``1`` is "input" and ``2`` is "output". Only used when the
-            second entity is dual-circuit-connectable. Defaults to ``1``.
+        :param entity_1: ID or index of the first entity to join.
+        :param entity_2: ID or index of the second entity to join.
+        :param side_1: Which side of ``entity_1`` to connect to. Only necessary
+            to specify for entities that are
+            :py:attr:`.Entity.dual_circuit_connectable`.
+        :param side_2: Which side of ``entity_2`` to connect to. Only necessary
+            to specify for entities that are
+            :py:attr:`.Entity.dual_circuit_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are invalid
             ID's or indices to the parent Collection.
@@ -784,8 +1304,8 @@ class EntityCollection(metaclass=ABCMeta):
             are not inside the parent Collection.
         :exception InvalidWireTypeError: If ``color`` is neither ``"red"`` nor
             ``"green"``.
-        :exception InvalidConnectionSideError: If ``side1`` or ``side2`` are
-            neither ``1`` nor ``2``.
+        :exception InvalidConnectionSideError: If ``side_1`` or ``side_2`` are
+            neither ``"input"`` nor ``"output"``.
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
@@ -803,7 +1323,8 @@ class EntityCollection(metaclass=ABCMeta):
                     )
                 )
         else:
-            entity_1 = self.entities[entity_1]
+            # entity_1 = self.entities[entity_1]
+            entity_1 = self._get_entity_from_path(entity_1)
 
         if isinstance(entity_2, EntityLike):
             if entity_2 not in self.entities:
@@ -813,7 +1334,8 @@ class EntityCollection(metaclass=ABCMeta):
                     )
                 )
         else:
-            entity_2 = self.entities[entity_2]
+            # entity_2 = self.entities[entity_2]
+            entity_2 = self._get_entity_from_path(entity_2)
 
         if color not in {"red", "green"}:
             raise InvalidWireTypeError(color)
@@ -829,14 +1351,14 @@ class EntityCollection(metaclass=ABCMeta):
 
         if side_1 == "output" and not entity_1.dual_circuit_connectable:
             warnings.warn(
-                "'side1' was specified as 2, but entity '{}' is not"
+                "'side_1' was specified as 'output', but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_1).__name__),
                 ConnectionSideWarning,
                 stacklevel=2,
             )
         if side_2 == "output" and not entity_2.dual_circuit_connectable:
             warnings.warn(
-                "'side2' was specified as 2, but entity '{}' is not"
+                "'side_2' was specified as 'output', but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_2).__name__),
                 ConnectionSideWarning,
                 stacklevel=2,
@@ -859,50 +1381,6 @@ class EntityCollection(metaclass=ABCMeta):
                 stacklevel=2,
             )
 
-        # 1.0 code
-        # # Add entity_2 to entity_1.connections
-
-        # # if entity_1.connections[str(side1)] is None:
-        # #     entity_1.connections[str(side1)] = Connections.CircuitConnections()
-        # current_side = entity_1.connections[str(side_1)]
-
-        # # if color not in current_side:
-        # if current_side[color] is None:
-        #     current_side[color] = []
-        # current_color = current_side[color]
-
-        # # If dual circuit connectable specify the target side
-        # if entity_2.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_2)}
-
-        # if entry not in current_color:
-        #     current_color.append(entry)
-
-        # # Add entity_1 to entity_2.connections
-
-        # # if entity_2.connections[str(side2)] is None:
-        # #     entity_2.connections[str(side2)] = Connections.CircuitConnections()
-        # current_side = entity_2.connections[str(side_2)]
-
-        # # if color not in current_side:
-        # if current_side[color] is None:
-        #     current_side[color] = []
-        # current_color = current_side[color]
-
-        # # If dual circuit connectable specify the target side
-        # if entity_1.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_1)}
-
-        # if entry not in current_color:
-        #     current_color.append(entry)
-
-        # 2.0 code
         color_value = {"red": 1, "green": 2}
         dir_value = {"input": 0, "output": 2}
 
@@ -910,7 +1388,12 @@ class EntityCollection(metaclass=ABCMeta):
         wire_type_2 = color_value[color] + dir_value[side_2]
 
         self.wires.append(
-            [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+            [
+                Association(entity_1),
+                WireConnectorID(wire_type_1),
+                Association(entity_2),
+                WireConnectorID(wire_type_2),
+            ]
         )
 
     def remove_circuit_connection(
@@ -944,16 +1427,14 @@ class EntityCollection(metaclass=ABCMeta):
             ``"green"``.
         :param entity_1: ID or index of the first entity to remove the
             connection to.
-        :param entity_@: ID or index of the second entity to remove the
+        :param entity_2: ID or index of the second entity to remove the
             connection to.
-        :param side1: Which side of the first dual-circuit-connectable entity to
-            remove the connection from, where ``1`` is "input" and ``2`` is
-            "output". Only used when disjoining a dual-circuit-connectable
-            entity. Defaults to ``1``.
-        :param side2: Which side of the second dual-circuit-connectable entity
-            to remove the connection from, where ``1`` is "input" and ``2`` is
-            "output". Only used when disjoining a dual-circuit-connectable
-            entity. Defaults to ``1``.
+        :param side_1: Which side of ``entity_1`` to remove the connection from.
+            Only necessary to specify for entities that are
+            :py:attr:`.Entity.dual_circuit_connectable`.
+        :param side_2: Which side of ``entity_2`` to remove the connection from.
+            Only necessary to specify for entities that are
+            :py:attr:`.Entity.dual_circuit_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
             invalid ID's or indices to the parent Collection.
@@ -987,45 +1468,6 @@ class EntityCollection(metaclass=ABCMeta):
         if side_2 not in {"input", "output"}:
             raise InvalidConnectionSideError("'{}'".format(side_2))
 
-        # 1.0 code
-        # # Remove from source
-        # if entity_2.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_2), "circuit_id": side_2}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_2)}
-
-        # try:
-        #     current_side = entity_1.connections[str(side_1)]
-        #     current_color = current_side[color]
-        #     current_color.remove(entry)
-        #     # Remove redundant structures from source if applicable
-        #     if len(current_color) == 0:
-        #         entity_1.connections[str(side_1)][color] = None
-        #     # if len(current_side) == 0:
-        #     #     del entity_1.connections[str(side1)]
-        # except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
-        #     pass
-
-        # # Remove from target
-        # if entity_1.dual_circuit_connectable:
-        #     entry = {"entity_id": Association(entity_1), "circuit_id": side_1}
-        # else:
-        #     # However, for most entities you dont need a target side
-        #     entry = {"entity_id": Association(entity_1)}
-
-        # try:
-        #     current_side = entity_2.connections[str(side_2)]
-        #     current_color = current_side[color]
-        #     current_color.remove(entry)
-        #     # Remove redundant structures from target if applicable
-        #     if len(current_color) == 0:
-        #         entity_2.connections[str(side_2)][color] = None
-        #     # if len(current_side) == 0:
-        #     #     del entity_2.connections[str(side2)]
-        # except (TypeError, KeyError, ValueError, AttributeError):  # TODO: fix
-        #     pass
-
         # 2.0 code
         color_value = {"red": 1, "green": 2}
         dir_value = {"input": 0, "output": 2}
@@ -1035,13 +1477,23 @@ class EntityCollection(metaclass=ABCMeta):
 
         try:
             self.wires.remove(
-                [Association(entity_1), wire_type_1, Association(entity_2), wire_type_2]
+                [
+                    Association(entity_1),
+                    WireConnectorID(wire_type_1),
+                    Association(entity_2),
+                    WireConnectorID(wire_type_2),
+                ]
             )
         except ValueError:
             pass
         try:
             self.wires.remove(
-                [Association(entity_2), wire_type_2, Association(entity_1), wire_type_1]
+                [
+                    Association(entity_2),
+                    WireConnectorID(wire_type_2),
+                    Association(entity_1),
+                    WireConnectorID(wire_type_1),
+                ]
             )
         except ValueError:
             pass
@@ -1050,28 +1502,22 @@ class EntityCollection(metaclass=ABCMeta):
         """
         Remove all circuit connections in the Collection. Recurses through all
         subgroups and removes circuit connections from them as well. Does
-        nothing if there are no circuit connections in the Collection.
+        nothing if there are no circuit connections in the Collection to remove.
         """
-        # 1.0 code
-        # for entity in self.entities:
-        #     if isinstance(entity, EntityCollection):
-        #         # Recursively remove connections from subgroups
-        #         entity.remove_circuit_connections()
-        #     else:
-        #         # Remove the connections from this particular entity
-        #         if hasattr(entity, "connections"):
-        #             # if entity.connections["1"] is not None:
-        #             #     entity.connections["1"] = None
-        #             # if entity.connections["2"] is not None:
-        #             #     entity.connections["2"] = None
-        #             entity.connections["1"] = Connections.CircuitConnections()
-        #             entity.connections["2"] = Connections.CircuitConnections()
+        for group in self.groups:
+            group.remove_circuit_connections()
 
-        # 2.0 code
-        for entity in self.entities:
-            if isinstance(entity, EntityCollection):
-                entity.remove_circuit_connections()
-        self.wires[:] = [wire for wire in self.wires if wire[1] not in {1, 2, 3, 4}]
+        self.wires[:] = [
+            wire
+            for wire in self.wires
+            if wire[1]
+            not in {  # No need to check the other side
+                WireConnectorID.COMBINATOR_INPUT_RED,
+                WireConnectorID.COMBINATOR_INPUT_GREEN,
+                WireConnectorID.COMBINATOR_OUTPUT_RED,
+                WireConnectorID.COMBINATOR_OUTPUT_GREEN,
+            }
+        ]
 
     # =========================================================================
     # Trains
@@ -1218,7 +1664,7 @@ class EntityCollection(metaclass=ABCMeta):
 
     def set_train_schedule(
         self,
-        train_cars: Union[Locomotive, list[RollingStock]],
+        train_cars: Union["Locomotive", list[RollingStock]],
         schedule: Optional[Schedule],
     ) -> None:
         """
@@ -1282,7 +1728,7 @@ class EntityCollection(metaclass=ABCMeta):
         corresponding :py:class:`Schedule` object(s). Does nothing if ``cars``
         is empty.
 
-        :param cars: A ``list`` of references to :py:class:`EntityLike`s within
+        :param cars: A ``list`` of references to :py:class:`EntityLike` s within
             the collection.
 
         :raises KeyError: If the specified entities within the list do not exist
@@ -1354,8 +1800,6 @@ class EntityCollection(metaclass=ABCMeta):
             """
             nonlocal all_locos_backwards
 
-            # print(wagon.type)
-            # print(backwards)
             if wagon.type == "locomotive" and not backwards:
                 all_locos_backwards = False
 
@@ -1364,7 +1808,6 @@ class EntityCollection(metaclass=ABCMeta):
                 radius=7.5,  # Average distance is less than 7 tiles
                 type={"locomotive", "cargo-wagon", "fluid-wagon", "artillery-wagon"},
             )
-            # print(len(neighbours))
             for neighbour in neighbours:
                 # Check to make sure we haven't already added this wagon to a
                 # train
@@ -1436,8 +1879,6 @@ class EntityCollection(metaclass=ABCMeta):
         if all_locos_backwards:
             train.reverse()
 
-        # print("Final train:", train)
-
         return train
 
     def find_trains_filtered(
@@ -1507,7 +1948,7 @@ class EntityCollection(metaclass=ABCMeta):
             criteria.
         :param limit: A maximum number of unique trains to return.
 
-        :returns: A ``list`` of ``list``s, where each sub-list represents a
+        :returns: A ``list`` of ``list`` s, where each sub-list represents a
             contiguous train. Trains are ordered such that the first index is
             the "front" of the train, as chosen by the orientation of the first
             found wagon in that group.
@@ -1534,9 +1975,6 @@ class EntityCollection(metaclass=ABCMeta):
                 used_wagons.add(train_car)
 
             trains.append(train)
-
-        # for train in trains:
-        #     print("\t", train)
 
         def normalize_range(value: int | Sequence) -> tuple[int, int]:
             """
@@ -1568,7 +2006,7 @@ class EntityCollection(metaclass=ABCMeta):
 
         def equivalent_cars(car1, car2):
             """
-            Need this function because checking for equiality between cars also
+            Need this function because checking for equality between cars also
             includes things like orientation and position, which we don't want
             to consider in this case since a train configuration's position and
             orientation are dummy values until they're actually added to a BP.
@@ -1585,7 +2023,7 @@ class EntityCollection(metaclass=ABCMeta):
             # Get the position and orientation of where the stop should be if it
             # exists:
             forward = train[0].orientation.to_direction()
-            right = forward.next(four_way=True)
+            right = forward.next()
             pos = train[0].position + forward.to_vector(3) + right.to_vector(2)
             for stop in stops:
                 if stop.position == pos and stop.direction == forward:
@@ -1654,170 +2092,87 @@ class EntityCollection(metaclass=ABCMeta):
         else:
             return list(filter(lambda train: test(train), trains))[:limit]
 
-
-# =============================================================================
-
-
-class TileCollection(metaclass=ABCMeta):
-    """
-    Abstract class used to describe an object that can contain a list of
-    :py:class:`.Tile` instances.
-    """
-
-    @property
-    @abstractmethod
-    def tiles(self) -> "TileList":  # pragma: no coverage
-        """
-        Object that holds the ``Tiles``, usually a
-        :py:class:`~draftsman.classes.tilelist.TileList`.
-        """
-        pass
-
     # =========================================================================
-    # Custom edge functions for TileList interaction
+    # Internal methods
     # =========================================================================
 
-    def on_tile_insert(
-        self, tile: Tile, merge: bool
-    ) -> Optional[Tile]:  # pragma: no coverage
+    def _get_entity_from_path(self, path: int | str | tuple[Union[int, str], ...]):
         """
-        Function called when an :py:class:`.Tile` is inserted into this object's
-        :py:attr:`tiles` list (assuming that the ``tiles`` list is a
-        :py:class:`.TileList`). By default, this function does nothing, but any
-        child class can customize it's functionality by overriding it.
+        TODO
         """
-        pass
-
-    def on_tile_set(
-        self, old_tile: Tile, new_tile: Tile
-    ) -> None:  # pragma: no coverage
-        """
-        Function called when an :py:class:`.Tile` is replaced with another in
-        this object's :py:attr:`tiles` list (assuming that the ``tiles`` list is
-        a :py:class:`.TileList`). By default, this function does nothing, but
-        any child class can customize it's functionality by overriding it.
-        """
-        pass
-
-    def on_tile_remove(self, tile: Tile) -> None:  # pragma: no coverage
-        """
-        Function called when an :py:class:`.Tile` is removed from this object's
-        :py:attr:`tiles` list (assuming that the ``entities`` list is a
-        :py:class:`.TileList`). By default, this function does nothing, but any
-        child class can customize it's functionality by overriding it.
-        """
-        pass
-
-    # =========================================================================
-    # Queries
-    # =========================================================================
-
-    def find_tile(self, position: Union[Vector, PrimitiveVector]) -> list[Tile]:
-        """
-        Returns a list containing all the tiles at the tile coordinate
-        ``position``. If there are no tiles at that position, an empty list is
-        returned.
-
-        :param position: The position to search, either a ``PrimitiveVector`` or
-            a :py:class:`.Vector`.
-
-        :returns: A list of all tiles at ``position``.
-        """
-        return self.tiles.spatial_map.get_on_point(Vector(0.5, 0.5) + position)
-
-    def find_tiles_filtered(
-        self,
-        position: Union[Vector, PrimitiveVector, None] = None,
-        radius: Optional[float] = None,
-        area: Union[AABB, PrimitiveAABB, None] = None,
-        name: Optional[str] = None,
-        invert: bool = False,
-        limit: Optional[int] = None,
-    ) -> list[Tile]:
-        """
-        Returns a filtered list of tiles within the blueprint. Works
-        similarly to
-        `LuaSurface.find_tiles_filtered <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_tiles_filtered>`_.
-
-        Keywords are organized into two main categrories: **region** and
-        **criteria**:
-
-        .. list-table:: Region keywords
-            :header-rows: 1
-
-            * - Name
-              - Type
-              - Description
-            * - ``position``
-              - ``Vector`` or ``PrimitiveVector``
-              - Grid position to search.
-            * - ``radius``
-              - ``float``
-              - Radius of the circle around position to search.
-            * - ``area``
-              - ``AABB`` or ``PrimitiveAABB``
-              - AABB to search in.
-
-        .. list-table:: Criteria keywords
-            :header-rows: 1
-
-            * - Name
-              - Type
-              - Description
-            * - ``name``
-              - ``str`` or ``set{str}``
-              - The name(s) of the entities that you want to search for.
-            * - ``limit``
-              - ``int``
-              - | Limit the maximum size of the returned list to this amount.
-                | Unlimited by default.
-            * - ``invert``
-              - ``bool``
-              - | Whether or not to return the inverse of the search. ``False``
-                | by default.
-
-        :param position: The global position to search the source Collection.
-            Can be used in conjunction with ``radius`` to search a circle
-            instead of a single point. Takes precedence over ``area``.
-        :param radius: The radius of the circle centered around ``position`` to
-            search. Must be defined alongside ``position`` in order to search in
-            a circular area.
-        :param aabb: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
-        :param name: Either a ``str``, or a ``set[str]`` where each entry is a
-            name of an entity to be returned.
-        :param invert: Whether or not to return the inversion of the search
-            criteria.
-        :param limit: The total number of matching entities to return. Unlimited
-            by default.
-
-        :returns: A list of Tile references inside the searched collection that
-            match the specified criteria.
-        """
-
-        if position is not None and radius is not None:
-            # Intersect entities with circle
-            search_region = self.tiles.spatial_map.get_in_radius(radius, position)
-        elif area is not None:
-            # Intersect entities with area
-            area = AABB.from_other(area)
-            search_region = self.tiles.spatial_map.get_in_aabb(area)
+        if isinstance(path, tuple):
+            collection: Collection = self.groups[path[0]]
+            path = path[1:]
+            return collection._get_entity_from_path(path[0] if len(path) == 1 else path)
         else:
-            search_region = self.tiles
+            return self.entities[path]
 
-        if isinstance(name, str):
-            names = {name}
-        else:
-            names = name
-
-        # Keep track of how many
-        limit = len(search_region) if limit is None else limit
-
-        def test(tile):
-            if names is not None and tile.name not in names:
-                return False
+    def __contains__(self, item: EntityLike) -> bool:
+        # Check to see if an entity is within this Collection's entities, or in
+        # any subgroup inside of it
+        # TODO: could probably be abstracted for any item: tiles, schedules, etc.
+        if item in self.entities:
             return True
+        else:  # Check every subgroup
+            for group in self.groups:
+                if item in group:
+                    return True
+        # Nothing was found
+        return False
 
-        if invert:
-            return list(filter(lambda tile: not test(tile), search_region))[:limit]
-        else:
-            return list(filter(lambda tile: test(tile), search_region))[:limit]
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+
+        def swap_association(original_association):
+            """
+            Take an association which points to some entity in `self` and return
+            a new association which points to the equivalent entity in `result`.
+            """
+            original_entity = original_association()
+            copied_entity = memo[id(original_entity)]
+            return Association(copied_entity)
+
+        memo["new_parent"] = result  # TODO: this should really be fixed
+        for attr in attrs.fields(cls):
+            if attr.name == "_parent":
+                # When copying a Collection, wipe it's parent attribute (if it
+                # has one); If this needs to be set, it's set when the newly
+                # created collection is assigned to its parent
+                object.__setattr__(result, attr.name, None)
+
+            # Handle associations
+            elif attr.name == "wires":
+                new_wires = deepcopy(getattr(self, attr.name), memo)
+                for wire in new_wires:
+                    wire[0] = swap_association(wire[0])
+                    wire[2] = swap_association(wire[2])
+                object.__setattr__(result, attr.name, new_wires)
+
+            elif attr.name == "schedules":
+                new_schedules: ScheduleList = deepcopy(getattr(self, attr.name), memo)
+                for schedule in new_schedules:
+                    schedule.locomotives = [
+                        swap_association(loco) for loco in schedule.locomotives
+                    ]
+                object.__setattr__(result, attr.name, new_schedules)
+
+            elif attr.name == "stock_connections":  # special
+                new_connections: list[StockConnection] = deepcopy(
+                    getattr(self, attr.name), memo
+                )
+                for connection in new_connections:
+                    connection.stock = swap_association(connection.stock)
+                    if connection.front is not None:
+                        connection.front = swap_association(connection.front)
+                    if connection.back is not None:
+                        connection.back = swap_association(connection.back)
+                object.__setattr__(result, attr.name, new_connections)
+
+            else:
+                object.__setattr__(
+                    result, attr.name, deepcopy(getattr(self, attr.name), memo)
+                )
+
+        return result

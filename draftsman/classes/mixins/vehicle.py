@@ -1,93 +1,128 @@
 # vehicle.py
 
-from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.signatures import uint32
+from draftsman.classes.exportable import Exportable
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import Inventory, OneIndexed, uint16, uint32
+from draftsman.validators import and_, instance_of
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from draftsman.data import entities, qualities
+
+import attrs
+import math
+from typing import Annotated, Optional
 
 
-class VehicleMixin:
+def _trunk_inventory_size(entity) -> Optional[uint16]:
     """
-    Enables the entity to have an equipment grid.
+    Number of trunk inventory slots that this vehicle has. Returns ``None``
+    if this entity is not recognized by Draftsman.
+    """
+    inventory_size = entities.raw.get(entity.name, {"inventory_size": None})[
+        "inventory_size"
+    ]
+    if inventory_size is None:
+        return None
+    modifier = 0.3 * qualities.raw.get(entity.quality, {"level": 0})["level"]
+    return math.floor(inventory_size + inventory_size * modifier)
+
+
+def _ammo_inventory_size(entity) -> Optional[uint16]:
+    """
+    Number of ammo slots that this vehicle has. Returns ``None`` if this
+    entity is not recognized by Draftsman.
+    """
+    guns = entities.raw.get(entity.name, {"guns": None})["guns"]
+    return len(guns) if guns is not None else guns
+
+
+@attrs.define(slots=False)
+class VehicleMixin(Exportable):
+    """
+    A number of common properties that all vehicles have.
     """
 
-    class Format(BaseModel):
-        trunk_inventory: None = None  # TODO: what is this?
-        ammo_inventory: None = None  # TODO: what is this?
-        driver_is_main_gunner: Optional[bool] = Field(  # TODO: optional?
-            True,
-            description="Whether or not the driver controls this entity's weapons.",
-        )
-        selected_gun_index: Optional[uint32] = Field(  # TODO: size, optional?
-            1,
-            description="Which gun is currently selected, if there are multiple guns to select from. 1-indexed.",
-        )
+    trunk_inventory: Optional[Inventory] = attrs.field(
+        # converter=Inventory.converter,
+        validator=and_(
+            instance_of(Optional[Inventory]),
+            lambda self, _, value: value._set_parent(
+                self, self.ammo_inventory, _trunk_inventory_size
+            ),
+        ),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Inventory object which encodes slot filters for the main inventory of the
+    vehicle.
+    """
+
+    @trunk_inventory.default
+    def _(self):
+        return Inventory()._set_parent(self, None, _trunk_inventory_size)
 
     # =========================================================================
 
-    def __init__(self, name: str, similar_entities: list[str], **kwargs):
-        self._root: __class__.Format
+    ammo_inventory: Optional[Inventory] = attrs.field(
+        # factory=FilteredInventory,
+        # converter=FilteredInventory.converter,
+        validator=and_(
+            instance_of(Optional[Inventory]),
+            lambda self, _, value: value._set_parent(
+                self, self.ammo_inventory, _ammo_inventory_size
+            ),
+        ),
+    )
+    """
+    .. serialized::
 
-        super().__init__(name, similar_entities, **kwargs)
+        This attribute is imported/exported from blueprint strings.
 
-        # self.trunk_inventory = kwargs.get("trunk_inventory", None)
-        # self.ammo_inventory = kwargs.get("ammo_inventory", None)
-        self.driver_is_main_gunner = kwargs.get("driver_is_main_gunner", None)
-        self.selected_gun_index = kwargs.get("selected_gun_index", None)
+    Inventory object which encodes slot filters for the ammunition slots of the
+    vehicle. Setting the :py:attr:`~.Inventory.bar` of this inventory 
+    has no effect.
+    """
 
-    # =========================================================================
-
-    @property
-    def trunk_inventory(self) -> None:
-        """
-        TODO
-        """
-        return self._root.trunk_inventory
-
-    # =========================================================================
-
-    @property
-    def ammo_inventory(self) -> None:
-        """
-        TODO
-        """
-        return self._root.trunk_inventory
+    @ammo_inventory.default
+    def _(self):
+        return Inventory()._set_parent(self, None, _ammo_inventory_size)
 
     # =========================================================================
 
-    @property
-    def driver_is_main_gunner(self) -> Optional[bool]:
-        """
-        TODO
-        """
-        return self._root.driver_is_main_gunner
+    driver_is_main_gunner: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    .. serialized::
 
-    @driver_is_main_gunner.setter
-    def driver_is_main_gunner(self, value: Optional[bool]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "driver_is_main_gunner", value
-            )
-            self._root.driver_is_main_gunner = result
-        else:
-            self._root.driver_is_main_gunner = value
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not the driver or the passenger has control of the vehicle's 
+    weapons.
+    """
 
     # =========================================================================
 
-    @property
-    def selected_gun_index(self) -> Optional[uint32]:
-        """
-        TODO
-        """
-        return self._root.selected_gun_index
+    selected_gun_index: Annotated[uint32, OneIndexed] = attrs.field(
+        default=0, validator=instance_of(uint32)
+    )
+    """
+    .. serialized::
 
-    @selected_gun_index.setter
-    def selected_gun_index(self, value: Optional[uint32]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self, type(self).Format, self._root, "selected_gun_index", value
-            )
-            self._root.selected_gun_index = result
-        else:
-            self._root.selected_gun_index = value
+        This attribute is imported/exported from blueprint strings.
+
+    Which gun is currently selected to fire by the gunner.
+    """
+
+
+draftsman_converters.add_hook_fns(
+    VehicleMixin,
+    lambda fields: {
+        "trunk_inventory": fields.trunk_inventory.name,
+        "ammo_inventory": fields.ammo_inventory.name,
+        "driver_is_main_gunner": fields.driver_is_main_gunner.name,
+        "selected_gun_index": fields.selected_gun_index.name,
+    },
+)

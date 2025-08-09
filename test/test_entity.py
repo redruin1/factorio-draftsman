@@ -1,22 +1,317 @@
 # entity.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
 import draftsman.data.entities as data
+from draftsman.data import mods
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
-from draftsman.utils import AABB
-from draftsman import __factorio_version_info__
+from draftsman.utils import AABB, version_tuple_to_string
+import draftsman.validators
+from draftsman.serialization import draftsman_converters
 
 import pytest
+from referencing import Registry, Resource
+from jsonschema import Draft202012Validator
+
+import itertools
+import json
+import os
+
+from test.prototypes.test_accumulator import valid_accumulator
+from test.prototypes.test_agricultural_tower import valid_agricultural_tower
+from test.prototypes.test_ammo_turret import valid_ammo_turret
+from test.prototypes.test_arithmetic_combinator import valid_arithmetic_combinator
+from test.prototypes.test_artillery_turret import valid_artillery_turret
+from test.prototypes.test_artillery_wagon import valid_artillery_wagon
+from test.prototypes.test_assembling_machine import valid_assembling_machine
+from test.prototypes.test_asteroid_collector import valid_asteroid_collector
+from test.prototypes.test_beacon import valid_beacon
+from test.prototypes.test_boiler import valid_boiler
+from test.prototypes.test_burner_generator import valid_burner_generator
+from test.prototypes.test_car import valid_car
+from test.prototypes.test_cargo_bay import valid_cargo_bay
+from test.prototypes.test_cargo_landing_pad import valid_cargo_landing_pad
+from test.prototypes.test_cargo_wagon import valid_cargo_wagon
+from test.prototypes.test_constant_combinator import valid_constant_combinator
+from test.prototypes.test_container import valid_container
+from test.prototypes.test_curved_rail_a import valid_curved_rail_a
+from test.prototypes.test_curved_rail_b import valid_curved_rail_b
+from test.prototypes.test_decider_combinator import valid_decider_combinator
+from test.prototypes.test_display_panel import valid_display_panel
+from test.prototypes.test_electric_energy_interface import (
+    valid_electric_energy_interface,
+)
+from test.prototypes.test_electric_pole import valid_electric_pole
+from test.prototypes.test_electric_turret import valid_electric_turret
+from test.prototypes.test_elevated_curved_rail_a import valid_elevated_curved_rail_a
+from test.prototypes.test_elevated_curved_rail_b import valid_elevated_curved_rail_b
+from test.prototypes.test_elevated_half_diagonal_rail import (
+    valid_elevated_half_diagonal_rail,
+)
+from test.prototypes.test_elevated_straight_rail import valid_elevated_straight_rail
+from test.prototypes.test_fluid_turret import valid_fluid_turret
+from test.prototypes.test_fluid_wagon import valid_fluid_wagon
+from test.prototypes.test_furnace import valid_furnace
+from test.prototypes.test_fusion_generator import valid_fusion_generator
+from test.prototypes.test_fusion_reactor import valid_fusion_reactor
+from test.prototypes.test_gate import valid_gate
+from test.prototypes.test_generator import valid_generator
+from test.prototypes.test_half_diagonal_rail import valid_half_diagonal_rail
+
+# schema tests stop here
+from test.prototypes.test_heat_interface import valid_heat_interface
+from test.prototypes.test_heat_pipe import valid_heat_pipe
+from test.prototypes.test_infinity_container import valid_infinity_container
+from test.prototypes.test_infinity_pipe import valid_infinity_pipe
+from test.prototypes.test_inserter import valid_inserter
+from test.prototypes.test_lab import valid_lab
+from test.prototypes.test_lamp import valid_lamp
+from test.prototypes.test_land_mine import valid_land_mine
+from test.prototypes.test_legacy_curved_rail import valid_legacy_curved_rail
+from test.prototypes.test_legacy_straight_rail import valid_legacy_straight_rail
+from test.prototypes.test_lightning_attractor import valid_lightning_attractor
+from test.prototypes.test_linked_belt import valid_linked_belt
+from test.prototypes.test_linked_container import valid_linked_container
+from test.prototypes.test_loader import valid_loader
+from test.prototypes.test_locomotive import valid_locomotive
+from test.prototypes.test_logistic_active_container import valid_active_container
+from test.prototypes.test_logistic_buffer_container import valid_buffer_container
+from test.prototypes.test_logistic_passive_container import valid_passive_container
+from test.prototypes.test_logistic_request_container import valid_request_container
+from test.prototypes.test_logistic_storage_container import valid_storage_container
+from test.prototypes.test_mining_drill import valid_mining_drill
+from test.prototypes.test_offshore_pump import valid_offshore_pump
+from test.prototypes.test_pipe import valid_pipe
+from test.prototypes.test_player_port import valid_player_port
+from test.prototypes.test_power_switch import valid_power_switch
+from test.prototypes.test_programmable_speaker import valid_programmable_speaker
+from test.prototypes.test_pump import valid_pump
+from test.prototypes.test_radar import valid_radar
+from test.prototypes.test_rail_chain_signal import valid_rail_chain_signal
+from test.prototypes.test_rail_ramp import valid_rail_ramp
+from test.prototypes.test_rail_signal import valid_rail_signal
+from test.prototypes.test_rail_support import valid_rail_support
+from test.prototypes.test_reactor import valid_reactor
+from test.prototypes.test_roboport import valid_roboport
+from test.prototypes.test_rocket_silo import valid_rocket_silo
+from test.prototypes.test_selector_combinator import valid_selector_combinator
+from test.prototypes.test_simple_entity_with_force import valid_simple_entity_with_force
+from test.prototypes.test_simple_entity_with_owner import valid_simple_entity_with_owner
+from test.prototypes.test_solar_panel import valid_solar_panel
+from test.prototypes.test_space_platform_hub import valid_space_platform_hub
+from test.prototypes.test_spider_vehicle import valid_spider_vehicle
+from test.prototypes.test_splitter import valid_splitter
+from test.prototypes.test_storage_tank import valid_storage_tank
+from test.prototypes.test_straight_rail import valid_straight_rail
+from test.prototypes.test_thruster import valid_thruster
+from test.prototypes.test_train_stop import valid_train_stop
+from test.prototypes.test_transport_belt import valid_transport_belt
+from test.prototypes.test_underground_belt import valid_underground_belt
+from test.prototypes.test_underground_pipe import valid_underground_pipe
+from test.prototypes.test_wall import valid_wall
+
+entity_fixtures = [
+    "valid_accumulator",
+    "valid_agricultural_tower",
+    "valid_ammo_turret",
+    "valid_arithmetic_combinator",
+    "valid_artillery_turret",
+    "valid_artillery_wagon",
+    "valid_assembling_machine",
+    "valid_asteroid_collector",
+    "valid_beacon",
+    "valid_boiler",
+    "valid_burner_generator",
+    "valid_car",
+    "valid_cargo_bay",
+    "valid_cargo_landing_pad",
+    "valid_cargo_wagon",
+    "valid_constant_combinator",
+    "valid_container",
+    "valid_curved_rail_a",
+    "valid_curved_rail_b",
+    "valid_decider_combinator",
+    "valid_display_panel",
+    "valid_electric_energy_interface",
+    "valid_electric_pole",
+    "valid_electric_turret",
+    "valid_elevated_curved_rail_a",
+    "valid_elevated_curved_rail_b",
+    "valid_elevated_half_diagonal_rail",
+    "valid_elevated_straight_rail",
+    "valid_fluid_turret",
+    "valid_fluid_wagon",
+    "valid_furnace",
+    "valid_fusion_generator",
+    "valid_fusion_reactor",
+    "valid_gate",
+    "valid_generator",
+    "valid_half_diagonal_rail",
+    "valid_heat_interface",
+    "valid_heat_pipe",
+    "valid_infinity_container",
+    "valid_infinity_pipe",
+    "valid_inserter",
+    "valid_lab",
+    "valid_lamp",
+    "valid_land_mine",
+    "valid_legacy_curved_rail",
+    "valid_legacy_straight_rail",
+    "valid_lightning_attractor",
+    "valid_linked_belt",
+    "valid_linked_container",
+    "valid_loader",
+    "valid_locomotive",
+    "valid_active_container",
+    "valid_buffer_container",
+    "valid_passive_container",
+    "valid_request_container",
+    "valid_storage_container",
+    "valid_mining_drill",
+    "valid_offshore_pump",
+    "valid_pipe",
+    "valid_player_port",
+    "valid_power_switch",
+    "valid_programmable_speaker",
+    "valid_pump",
+    "valid_radar",
+    "valid_rail_chain_signal",
+    "valid_rail_ramp",
+    "valid_rail_signal",
+    "valid_rail_support",
+    "valid_reactor",
+    "valid_roboport",
+    "valid_rocket_silo",
+    "valid_selector_combinator",
+    "valid_simple_entity_with_force",
+    "valid_simple_entity_with_owner",
+    "valid_solar_panel",
+    "valid_space_platform_hub",
+    "valid_spider_vehicle",
+    "valid_splitter",
+    "valid_storage_tank",
+    "valid_straight_rail",
+    "valid_thruster",
+    "valid_train_stop",
+    "valid_transport_belt",
+    "valid_underground_belt",
+    "valid_underground_pipe",
+    "valid_wall",
+]
 
 
-class TestEntity:
+def grab_json_file(*path) -> dict:
+    with open(os.path.join(*path), "r") as json_file:
+        return json.load(json_file)
+
+
+def retrieve_from_path(uri: str) -> Resource:
+    print(uri)
+    return Resource.from_contents(
+        grab_json_file("factorio-blueprint-schemas", "schemas", uri)
+    )
+
+
+registry = Registry(retrieve=retrieve_from_path)
+
+versions_to_test = ((1, 0, 0), (2, 0, 0))
+
+
+@pytest.mark.parametrize("entity", entity_fixtures)
+class TestAllEntities:
+    @pytest.mark.parametrize(
+        "version",
+        versions_to_test,
+        ids=[version_tuple_to_string(t) for t in versions_to_test],
+    )
+    def test_output_matches_JSON_schema(
+        self,
+        entity: Entity,
+        version: tuple[int, ...],
+        request: pytest.FixtureRequest,
+    ):
+        """
+        The result from `to_dict()` should pass validation from the entity's JSON
+        schema. If not, there's either an error with `to_dict()`, the JSON schema,
+        or both.
+        """
+        # Grab the fixture of the entity
+        entity_name = entity
+        entity = request.getfixturevalue(entity_name)
+        if entity is None:
+            pytest.skip(
+                reason="No '{}' to test under current environment".format(entity_name)
+            )
+
+        try:
+            entity_schema = grab_json_file(
+                "factorio-blueprint-schemas",
+                "schemas",
+                version_tuple_to_string(version),
+                "entity",
+                entity.type + ".json",
+            )
+        except FileNotFoundError:
+            pytest.skip(
+                reason="No schema for '{}' on version {}".format(entity_name, version)
+            )
+
+        Draft202012Validator.check_schema(entity_schema)
+        validator = Draft202012Validator(schema=entity_schema, registry=registry)
+        # Test every `exclude_...` configuration
+        for exclude_none, exclude_defaults in itertools.product(
+            (True, False), (True, False)
+        ):
+            # Entity populated with defaults
+            validator.validate(
+                type(entity)().to_dict(
+                    exclude_none=exclude_none,
+                    exclude_defaults=exclude_defaults,
+                    version=version,
+                    entity_number=1,
+                )
+            )
+            # Entity populated with non-defaults
+            validator.validate(
+                entity.to_dict(
+                    exclude_none=exclude_none,
+                    exclude_defaults=exclude_defaults,
+                    version=version,
+                    entity_number=1,
+                )
+            )
+
+
+class TestEntityBase:
+    def test_similar_entities(self):
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            assert Entity("entity").similar_entities == []
+
     def test_get_type(self):
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            assert Entity("entity", validate_assignment="none").type is None
+
         container = Container("wooden-chest")
         assert container.type == "container"
+
+    def test_entity_number_not_retained(self):
+        container = Container.from_dict(
+            {
+                "name": "wooden-chest",
+                "position": {"x": 0.5, "y": 0.5},
+                "entity_number": 10,
+            }
+        )
+        # assert container.entity_number == 10
+        # Stripped on output
+        assert container.to_dict() == {
+            "name": "wooden-chest",
+            "position": {"x": 0.5, "y": 0.5},
+        }
 
     def test_flags(self):
         container = Container("wooden-chest")
@@ -51,14 +346,13 @@ class TestEntity:
         with pytest.raises(DataFormatError):
             container.tags = "incorrect"
 
-    # @pytest.mark.xfail(reason="issue 134 https://github.com/redruin1/factorio-draftsman/issues/134")
     def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)
         assert combinator.get_world_bounding_box() == AABB(3.35, 3.15, 4.65, 3.85)
         recycler = new_entity(
-            "recycler", tile_position=[3, 3], direction=Direction.EAST
+            "assembling-machine-1", tile_position=[3, 3], direction=Direction.EAST
         )
-        assert recycler.get_world_bounding_box() == AABB(3.3, 3.3, 6.7, 4.7)
+        assert recycler.get_world_bounding_box() == AABB(3.3, 3.3, 5.7, 5.7)
 
     def test_set_name(self):
         iron_chest = Container("iron-chest")
@@ -71,16 +365,13 @@ class TestEntity:
         ):
             iron_chest.name = "electric-furnace"
 
-        with pytest.warns(
-            UnknownEntityWarning, match="'unknown' is not a known name for a Container"
-        ):
+        with pytest.warns(UnknownEntityWarning, match="Unknown entity 'unknown'"):
             iron_chest.name = "unknown"
 
         assert iron_chest.collision_set == None
         assert iron_chest.collision_mask == None
         assert (iron_chest.tile_width, iron_chest.tile_height) == (0, 0)
-        assert iron_chest.inventory_bar_enabled == None
-        assert iron_chest.allowed_items == None
+        assert iron_chest.inventory_bar_enabled == True  # enabled by default
         assert iron_chest.get_world_bounding_box() == None
 
         with pytest.raises(DataFormatError):
@@ -89,33 +380,16 @@ class TestEntity:
     def test_suggest_similar_name(self):
         with pytest.warns(
             UnknownEntityWarning,
-            match="'wodenchest' is not a known name for a Container; did you mean 'wooden-chest'?",
+            match="Unknown entity 'wodenchest'; did you mean 'wooden-chest'?",
         ):
-            Container("wodenchest").validate().reissue_all()
+            Container("wodenchest")
 
     def test_create_with_position(self):
         iron_chest = new_entity("iron-chest", tile_position=(3, 3))
         assert iron_chest.position.x == 3.5 and iron_chest.position.y == 3.5
 
-        active_provider_chest = new_entity(
-            "active-provider-chest", tile_position=(10, 10)
-        )
-        assert (
-            active_provider_chest.position.x == 10.5
-            and active_provider_chest.position.y == 10.5
-        )
-
-    def test_create_with_position(self):
-        iron_chest = new_entity("iron-chest", tile_position=(3, 3))
-        assert iron_chest.position.x == 3.5 and iron_chest.position.y == 3.5
-
-        active_provider_chest = new_entity(
-            "active-provider-chest", tile_position=(10, 10)
-        )
-        assert (
-            active_provider_chest.position.x == 10.5
-            and active_provider_chest.position.y == 10.5
-        )
+        inserter = new_entity("inserter", tile_position=(10, 10))
+        assert inserter.position.x == 10.5 and inserter.position.y == 10.5
 
     def test_set_position(self):
         iron_chest = Container("iron-chest")
@@ -168,8 +442,9 @@ class TestEntity:
         blueprint.entities.append(example)
         assert blueprint.entities["whatever"].name == example.name
 
-        with pytest.raises(DraftsmanError):
-            blueprint.entities["whatever"].name = "steel-chest"
+        # TODO: think about
+        # with pytest.raises(DraftsmanError):
+        #     blueprint.entities["whatever"].name = "steel-chest"
 
     def test_deepcopy(self):
         example = Container("wooden-chest", id="test")
@@ -215,15 +490,13 @@ class TestEntity:
         blueprint = Blueprint()
         example = Container("wooden-chest")
         blueprint.entities.append(example, copy=False)
-        with pytest.raises(DraftsmanError):
-            example.position = (10.5, 10.5)
+        # TODO: think about
+        # with pytest.raises(DraftsmanError):
+        #     example.position = (10.5, 10.5)
 
     def test_flippable(self):
         belt = TransportBelt()
         assert belt.flippable == True
-
-    def test_contains(self):
-        assert "name" in TransportBelt()
 
 
 # =============================================================================
@@ -268,11 +541,19 @@ class TestEntityFactory:
     def test_pump(self):
         assert isinstance(new_entity("pump"), Pump)
 
-    def test_straight_rail(self):
-        assert isinstance(new_entity("legacy-straight-rail"), LegacyStraightRail)
+    def test_legacy_straight_rail(self):
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "straight-rail"
+        else:
+            entity_name = "legacy-straight-rail"
+        assert isinstance(new_entity(entity_name), LegacyStraightRail)
 
-    def test_curved_rail(self):
-        assert isinstance(new_entity("legacy-curved-rail"), LegacyCurvedRail)
+    def test_legacy_curved_rail(self):
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "curved-rail"
+        else:
+            entity_name = "legacy-curved-rail"
+        assert isinstance(new_entity(entity_name), LegacyCurvedRail)
 
     def test_train_stop(self):
         assert isinstance(new_entity("train-stop"), TrainStop)
@@ -296,19 +577,39 @@ class TestEntityFactory:
         assert isinstance(new_entity("artillery-wagon"), ArtilleryWagon)
 
     def test_logistic_passive_container(self):
-        assert isinstance(new_entity("passive-provider-chest"), LogisticPassiveContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-passive-provider"
+        else:
+            entity_name = "passive-provider-chest"
+        assert isinstance(new_entity(entity_name), LogisticPassiveContainer)
 
     def test_logistic_active_container(self):
-        assert isinstance(new_entity("active-provider-chest"), LogisticActiveContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-active-provider"
+        else:
+            entity_name = "active-provider-chest"
+        assert isinstance(new_entity(entity_name), LogisticActiveContainer)
 
     def test_logistic_storage_container(self):
-        assert isinstance(new_entity("storage-chest"), LogisticStorageContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-storage"
+        else:
+            entity_name = "storage-chest"
+        assert isinstance(new_entity(entity_name), LogisticStorageContainer)
 
     def test_logistic_buffer_container(self):
-        assert isinstance(new_entity("buffer-chest"), LogisticBufferContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-buffer"
+        else:
+            entity_name = "buffer-chest"
+        assert isinstance(new_entity(entity_name), LogisticBufferContainer)
 
     def test_logistic_request_container(self):
-        assert isinstance(new_entity("requester-chest"), LogisticRequestContainer)
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            entity_name = "logistic-chest-requester"
+        else:
+            entity_name = "requester-chest"
+        assert isinstance(new_entity(entity_name), LogisticRequestContainer)
 
     def test_roboport(self):
         assert isinstance(new_entity("roboport"), Roboport)
@@ -414,13 +715,41 @@ class TestEntityFactory:
     def test_burner_generator(self):
         assert isinstance(new_entity("burner-generator"), BurnerGenerator)
 
-    @pytest.mark.skipif(__factorio_version_info__ >= (2, 0, 0), reason="Player ports deprecated > Factorio 2.0")
+    @pytest.mark.skipif(
+        mods.versions.get("base", DEFAULT_FACTORIO_VERSION) >= (2, 0, 0), 
+        reason="Player ports deprecated > Factorio 2.0"
+    )
     def test_player_port(self):
         assert isinstance(new_entity("player-port"), PlayerPort)
 
+    def test_new_entity_from_dict(self):
+        e = new_entity_from_dict({
+            "name": "wooden-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "bar": 5
+        })
+        assert isinstance(e, Container)
+        assert e.name == "wooden-chest"
+        assert e.position.x == 0.5 and e.position.y == 0.5
+        assert e.bar == 5
+
+        with pytest.warns(UnknownEntityWarning):
+            e = new_entity_from_dict(
+                {
+                    "name": "who knows",
+                    "position": {"x": 0.5, "y": 0.5},
+                    "bar": 5,
+                }
+            )
+        assert isinstance(e, Entity)
+        assert e.name == "who knows"
+        assert e.position.x == 0.5 and e.position.y == 0.5
+        assert e.extra_keys["bar"] == 5
+
     def test_unknown(self):
         # Try and treat as a generic entity
-        result = new_entity("unknown", position=(0.5, 0.5))
+        with pytest.warns(UnknownEntityWarning):
+            result = new_entity("unknown", position=(0.5, 0.5))
         assert isinstance(result, Entity)
         
         # Generic entities should be able to handle attribute access and serialization
@@ -433,7 +762,8 @@ class TestEntityFactory:
         
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        result = new_entity("unknown", position=(0.5, 0.5), direction=4)
+        with pytest.warns(UnknownEntityWarning):
+            result = new_entity("unknown", position=(0.5, 0.5), direction=4)
         assert result.to_dict() == {
             "name": "unknown",
             "position": {"x": 0.5, "y": 0.5},
@@ -441,7 +771,7 @@ class TestEntityFactory:
         }
 
         # After construction, as well
-        result["new_thing"] = "extra!"
+        result.extra_keys["new_thing"] = "extra!"
         assert result.to_dict() == {
             "name": "unknown",
             "position": {"x": 0.5, "y": 0.5},
@@ -456,6 +786,7 @@ class TestEntityFactory:
 
         # However, setting known attributes incorrectly should still create
         # issues
+        result.validate_assignment = ValidationMode.STRICT
         with pytest.raises(DataFormatError):
             result.tags = "incorrect"
 

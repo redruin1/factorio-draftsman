@@ -1,31 +1,56 @@
 # test_rocket_silo.py
 
-from draftsman.constants import SiloReadMode
+from draftsman.constants import InventoryType, SiloReadMode
 from draftsman.entity import RocketSilo, rocket_silos, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    InventoryPosition,
+)
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_rocket_silo():
+    return RocketSilo(
+        "rocket-silo",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        auto_launch=True,
+        read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS,
+        transitional_request_index=12,
+        tags={"blah": "blah"},
+    )
+
+
 class TestRocketSilo:
     def test_constructor_init(self):
         silo = RocketSilo(
+            auto_launch=True,
             transitional_request_index=12,
-            control_behavior={"read_items_mode": SiloReadMode.READ_ORBITAL_REQUESTS},
+            read_items_mode=SiloReadMode.READ_ORBITAL_REQUESTS,
         )
-        assert silo.to_dict() == {
+        assert silo.to_dict(version=(2, 0)) == {
             "name": "rocket-silo",
             "position": {"x": 4.5, "y": 4.5},
             "control_behavior": {"read_items_mode": 2},
-            "recipe": "rocket-part",
+            # "recipe": "rocket-part", # TODO: is this important?
             "transitional_request_index": 12,
+        }
+        assert silo.to_dict(version=(1, 0)) == {
+            "name": "rocket-silo",
+            "position": {"x": 4.5, "y": 4.5},
+            # "recipe": "rocket-part", # TODO: is this important?
+            "auto_launch": True,
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            RocketSilo(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             RocketSilo("this is not a rocket silo").validate().reissue_all()
 
@@ -40,6 +65,32 @@ class TestRocketSilo:
             assert silo.dual_power_connectable == False
             assert silo.circuit_connectable == True
             assert silo.dual_circuit_connectable == False
+
+    def test_request_modules(self):
+        silo = RocketSilo("rocket-silo")
+        assert silo.module_slots_occupied == 0
+
+        silo.request_modules("productivity-module-3", (0, 1), "legendary")
+        assert silo.item_requests == [
+            BlueprintInsertPlan(
+                id=ItemID(name="productivity-module-3", quality="legendary"),
+                items=ItemInventoryPositions(
+                    in_inventory=[
+                        InventoryPosition(
+                            inventory=InventoryType.ROCKET_SILO_MODULES,
+                            stack=0,
+                        ),
+                        InventoryPosition(
+                            inventory=InventoryType.ROCKET_SILO_MODULES,
+                            stack=1,
+                        ),
+                    ]
+                ),
+            )
+        ]
+        assert silo.module_slots_occupied == 2
+
+        # TODO: warn if too many modules
 
     def test_mergable_with(self):
         silo1 = RocketSilo("rocket-silo")

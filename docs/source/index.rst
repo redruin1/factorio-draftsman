@@ -1,7 +1,7 @@
 .. factorio-draftsman documentation master file
 
 factorio-draftsman
-==============================================
+==================
 
 **factorio-draftsman** is a python module for creating Blueprint strings for the game `Factorio <https://factorio.com/>`_.
 
@@ -42,21 +42,21 @@ Draftsman is also unique in that it emulates the `Factorio data lifecycle <https
 This ensures a direct continuity between Factorio's data and Draftsman, which makes the module much easier to maintain over specific Factorio versions, as well as over time.
 By emulating the data-lifecycle in this manner, Draftsman is also the first package of this type to allow mod support *built-in*.
 
-Draftsman is cross-platform, and guaranteed to work on all versions of Python >= 3.7.
-Draftsman is also guaranteed to work with versions of Factorio 1.0 and up. 
+Draftsman is cross-platform, and guaranteed to work on all versions of Python >= 3.10.
+Draftsman is also guaranteed to work with all versions of Factorio 1.0 and up. 
 Prior to that most functionality *should* still work, but your mileage may vary.
 
 Contents
 --------
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    quickstart.rst
-   handbook/index.rst
+   concepts/index.rst
    reference/index.rst
 
-Indices and tables
-==================
+Indices and Tables
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

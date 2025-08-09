@@ -5,10 +5,6 @@ Alias module. Imports :py:class:`.Tile` under the namespace ``draftsman``.
 """
 
 from draftsman.classes.tile import Tile
-from draftsman.data import tiles
-from draftsman.error import InvalidTileError
-
-from typing import Literal
 
 
 def new_tile(name: str, **kwargs):

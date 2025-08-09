@@ -2,20 +2,30 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
-from draftsman import data
+from draftsman import data, DEFAULT_FACTORIO_VERSION
+from draftsman.data import recipes, mods
+
+from typing import Optional
 
 
-with pkg_resources.open_binary(data, "modules.pkl") as inp:
-    _data = pickle.load(inp)
-    raw: dict[str, dict] = _data[0]
-    categories: dict[str, list[str]] = _data[1]
+try:
+    source = files(data) / "modules.pkl"
+    with source.open("rb") as inp:
+        _data = pickle.load(inp)
+        raw: dict[str, dict] = _data[0]
+        categories: dict[str, list[str]] = _data[1]
+
+except FileNotFoundError:  # pragma: no coverage
+    raw = {}
+    categories = {}
 
 
 def add_module_category(name: str, order: str = ""):
     """
-    TODO
+    Creates a new category of modules in Draftsman's environment, which persists
+    until the session ends.
     """
     # TODO: insert sorted
     categories[name] = []
@@ -23,7 +33,8 @@ def add_module_category(name: str, order: str = ""):
 
 def add_module(module_name: str, category_name: str, **kwargs):
     """
-    TODO
+    Creates a module in Draftsman's environment, which persists until the
+    session ends.
     """
     if category_name not in categories:
         raise TypeError(
@@ -48,7 +59,9 @@ def add_module(module_name: str, category_name: str, **kwargs):
     categories[category_name].append(module_name)
 
 
-def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> set[str]:
+def get_modules_from_effects(
+    allowed_effects: set[str], recipe_name: str = None
+) -> Optional[set[str]]:
     """
     Given a set of string effect names, provide the set of available modules
     under the current Draftsman configuration that would fit in an entity with
@@ -57,23 +70,50 @@ def get_modules_from_effects(allowed_effects: set[str], recipe: str = None) -> s
     """
     if allowed_effects is None:
         return None
+    if recipe_name is not None:
+        recipe = recipes.raw.get(recipe_name, None)
+        if recipe is None:
+            return None
     output = set()
     for module_name, module in raw.items():
-        if recipe is not None:
+        if recipe_name is not None:
             # Skip adding this module if the recipe provided does not fit within
             # this module's limitations
-            if "limitation" in module and recipe not in module["limitation"]:
-                continue
-            elif (  # pragma: no branch
-                "limitation_blacklist" in module
-                and recipe in module["limitation_blacklist"]
-            ):
-                continue  # pragma: no coverage
+            factorio_version = mods.versions.get("base", (2, 0))
+            if factorio_version < (2, 0):  # pragma: no coverage
+                if "limitation" in module and recipe_name not in module["limitation"]:
+                    continue
+                elif (
+                    "limitation_blacklist" in module
+                    and recipe_name in module["limitation_blacklist"]
+                ):
+                    continue
+            else:
+                allowed_effects = {
+                    effect
+                    for effect, allowed in (
+                        ("consumption", recipe.get("allow_consumption", True)),
+                        ("speed", recipe.get("allow_speed", True)),
+                        ("productivity", recipe.get("allow_productivity", False)),
+                        ("pollution", recipe.get("allow_pollution", True)),
+                        ("quality", recipe.get("allow_quality", True)),
+                    )
+                    if allowed
+                }
+
         # I think the module's positive effects has to be a subset of the
         # set of allowed effects
-        positive_effects = {
-            effect for effect, value in module["effect"].items() if value > 0
-        }
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            positive_effects = {
+                effect
+                for effect, value in module["effect"].items()
+                if value["bonus"] > 0
+            }
+        else:
+            positive_effects = {
+                effect for effect, value in module["effect"].items() if value > 0
+            }
+
         if positive_effects.issubset(allowed_effects):
             output.add(module_name)
 

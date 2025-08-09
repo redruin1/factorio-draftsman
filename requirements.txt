@@ -1,16 +1,10 @@
 # Requirements
-pydantic >= 2.3.0
+attrs >= 25.3.0
+cattrs >= 24.1.3
 lupa >= 2.0
-gitpython >= 3.4.0
+GitPython >= 3.1.43
+thefuzz >= 0.20.0
+enum-tools >= 0.13.0
 # Compatibility
-typing; python_version < '3.8'
-importlib-resources; python_version < '3.7'
-enum34; python_version < '3.4'
-future; python_version < '3.0'
-# Development libraries
-pytest
-coverage
-tox
-black
-build
-guppy
+typing
+typing-extensions; python_version < '3.8'

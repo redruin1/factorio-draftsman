@@ -15,15 +15,17 @@ import json
 import math
 from functools import wraps
 
-# import six
+import attr
 from thefuzz import process
 from typing import Optional, Union, TYPE_CHECKING
 import warnings
 import zlib
 
 if TYPE_CHECKING:  # pragma: no coverage
-    from draftsman.classes.entity_like import EntityLike
+    from draftsman.classes.collection import Collection
     from draftsman.entity import Entity
+    from draftsman.tile import Tile
+    from draftsman.signatures import StockConnection
 
 # =============================================================================
 # Abstract Shape Classes
@@ -52,7 +54,6 @@ class Shape(metaclass=ABCMeta):
         pass
 
 
-# TODO: remove position attribute (less memory needed)
 class AABB(Shape):
     """
     Axis-Aligned Bounding-Box abstraction class. Contains a :py:attr:`top_left`
@@ -190,13 +191,13 @@ class AABB(Shape):
         new transformed instance.
 
         ``amt`` is expressed in increments of :py:data:`.Direction`, such that
-        ``2`` is a rotation of 90 degrees clockwise and ``-2`` is a rotation of
+        ``4`` is a rotation of 90 degrees clockwise and ``-4`` is a rotation of
         90 degrees counter-clockwise.
 
-        :raises ValueError: If ``amt`` is odd, as AABB's cannot be rotated by
-            45 degrees.
+        :raises ValueError: If ``amt`` is not % 4, as AABB's can only be rotated
+            by 90 degrees.
 
-        :param amt: The amount to rotate, expressed as an increments of 45
+        :param amt: The amount to rotate, expressed as an increments of 22.5
             degrees.
         """
         if amt % 4 != 0:
@@ -240,7 +241,7 @@ class AABB(Shape):
         return AABB(*self.top_left, *self.bot_right, self.position + other)
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<AABB>({}, {}, {}, {}) at {}".format(
+        return "AABB({}, {}, {}, {}) at {}".format(
             self.top_left[0],
             self.top_left[1],
             self.bot_right[0],
@@ -368,7 +369,7 @@ class Rectangle(Shape):
         )
 
     def __repr__(self) -> str:  # pragma: no coverage
-        return "<Rectangle>({}, {}, {}, {})".format(
+        return "Rectangle({}, {}, {}, {})".format(
             self.position, self.width, self.height, self.angle
         )
 
@@ -460,21 +461,23 @@ def decode_version(version_number: int) -> tuple[int, int, int, int]:
     return major, minor, patch, dev_ver
 
 
-def version_string_to_tuple(version_string: str) -> tuple[int, ...]:
+def version_string_to_tuple(version_string: str) -> tuple[int, int, int, int]:
     """
     Converts a version string to a tuple.
 
     Used extensively when parsing mod versions when updating the package's data,
     provided to the user for convinience. Splits a string by the dot character
-    and converts each component to an ``int``.
+    and converts each component to an ``int``. Pads the string with trailing
+    zeros in order to match the 4-component version format Factorio uses.
 
     For the inverse operation, see :py:func:`version_tuple_to_string`.
 
     :param version_string: The version string to separate.
 
-    :returns: A n-length tuple of the format ``(a, b, c)`` from ``"a.b.c"``
+    :returns: A 4-length tuple of the format ``(a, b, c, 0)`` from ``"a.b.c"``
     """
-    return tuple([int(elem) for elem in version_string.split(".")])
+    output = [int(elem) for elem in version_string.split(".")]
+    return tuple(output + [0] * (4 - len(output)))
 
 
 def version_tuple_to_string(version_tuple: tuple[int, ...]) -> str:
@@ -790,6 +793,22 @@ def aabb_to_dimensions(aabb: Optional[AABB]) -> tuple[int, int]:
 # =============================================================================
 
 
+def dict_merge(a: dict, b: dict) -> dict:
+    """
+    Merge two dictionaries together. Modifies ``a`` inplace. If keys exist in
+    both dictionaries, keys from ``b`` overwrite keys in ``a``.
+    """
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                dict_merge(a[key], b[key])
+            else:
+                a[key] = b[key]
+        else:
+            a[key] = b[key]
+    return a
+
+
 def get_first(entity_names: list[str]):
     """
     Because python has no convenient `get` equivalent for lists, we use this
@@ -808,22 +827,64 @@ def get_first(entity_names: list[str]):
         return None
 
 
-def flatten_entities(entities: "list[EntityLike | list[EntityLike]]") -> "list[Entity]":
+def flatten_entities(collection: "Collection") -> list["Entity"]:
     """
-    Iterates over a list of entities with nested structures and returns a 1D,
-    "flattened" list of those entities.
+    Iterates over a :py:class:`.Collection` with nested structures and returns a
+    1D, "flattened" list of those entities.
 
-    :param entities: The list of entities to flatten.
+    :param collection: The :py:class:`.Collection` instance to grab the entities
+        from.
 
-    :returns: A ``list`` containing all the entities in depth-first sequence.
+    :returns: A ``list`` containing all the entities in breadth-first sequence.
     """
     out = []
-    for entity in entities:
+
+    for entity in collection.entities:
         result = entity.get()
         if isinstance(result, list):
-            out.extend(flatten_entities(result))
+            out.extend(result)
         else:
             out.append(result)
+    for group in collection.groups:
+        out.extend(flatten_entities(group))
+
+    return out
+
+
+def flatten_tiles(collection: "Collection") -> list["Tile"]:
+    """
+    Iterates over a :py:class:`.Collection` with nested structures and returns a
+    1D, "flattened" list of those tiles.
+
+    :param collection: The :py:class:`.Collection` instance to grab the tiles
+        from.
+
+    :returns: A ``list`` containing all the tiles in breadth-first sequence.
+    """
+
+    out = [tile for tile in collection.tiles]
+
+    for group in collection.groups:
+        out.extend(flatten_tiles(group))
+
+    return out
+
+
+def flatten_stock_connections(collection: "Collection") -> list["StockConnection"]:
+    """
+    Iterates over a :py:class:`.Collection` with nested structures and returns a
+    1D, "flattened" list of those stock connections.
+
+    :param collection: The :py:class:`.Collection` instance to grab the entities
+        from.
+
+    :returns: A ``list`` containing all the entities in breadth-first sequence.
+    """
+    out = [connection for connection in collection.stock_connections]
+
+    for group in collection.groups:
+        out.extend(flatten_stock_connections(group))
+
     return out
 
 
@@ -863,7 +924,7 @@ def parse_energy(energy_string: str) -> int:
     }
 
     ending = energy_string[-1]
-    if not ending in {"J", "W"}:
+    if ending not in {"J", "W"}:
         raise ValueError("'{}' missing Joule or Watts specifier".format(energy_string))
 
     multiplier = 1 / 60 if ending == "W" else 1
@@ -890,12 +951,12 @@ def passes_surface_conditions(conditions: list[dict], properties: dict) -> bool:
 
     for condition in conditions:
         property_name = condition["property"]
-        if property_name in properties:
-            value = properties[property_name]
-            min_val = condition.get("min", -math.inf)
-            max_val = condition.get("max", math.inf)
-            if not (min_val <= value <= max_val):
-                return False
+        # if property_name in properties:
+        value = properties[property_name]
+        min_val = condition.get("min", -math.inf)
+        max_val = condition.get("max", math.inf)
+        if not (min_val <= value <= max_val):
+            return False
 
     return True
 
@@ -961,6 +1022,8 @@ def get_suggestion(name, choices, n=3, cutoff=60):
     :returns: A string intended to be appended to an error or warning message,
         containing the suggested alternative(s).
     """
+    # if name is None:
+    #     return ""
     suggestions = [
         suggestion[0]
         for suggestion in process.extract(name, choices, limit=n)
@@ -973,3 +1036,76 @@ def get_suggestion(name, choices, n=3, cutoff=60):
     else:
         return "; did you mean one of {}?".format(suggestions)  # pragma: no coverage
         # return "; did you mean one of {}?".format(", ".join(["or " + str(item) if i == len(suggestions) - 1 else str(item) for i, item in enumerate(suggestions)]))
+
+
+def fix_incorrect_pre_init(cls):  # pragma: no coverage
+    """
+    Attrs erroneously passes default values to `__attrs_pre_init__` even when
+    given values during init. We add a sentinel value to the pre-init call so
+    that it only runs once when we tell it to (with the actually correct args).
+    """
+    original_init = cls.__init__
+
+    @reissue_warnings
+    @wraps(original_init)
+    def new_init(self, *args, **kwargs):
+        self.__attrs_pre_init__(*args, first_call=True, **kwargs)
+        original_init(self, *args, **kwargs)
+
+    cls.__init__ = new_init
+
+    return cls
+
+
+def attrs_reuse(attribute: attr.Attribute, **field_kwargs):  # pragma: no coverage
+    """
+    Takes a frozen attribute and returns a _CountingAttr object for inheritance
+    purposes.
+    """
+    args = {
+        "validator": attribute.validator,
+        "repr": attribute.repr,
+        "cmp": None,
+        "hash": attribute.hash,
+        "init": attribute.init,
+        "converter": attribute.converter,
+        "metadata": attribute.metadata,
+        "type": attribute.type,
+        "kw_only": attribute.kw_only,
+        "eq": attribute.eq,
+        "order": attribute.order,
+        "on_setattr": attribute.on_setattr,
+        "alias": attribute.alias,
+    }
+
+    # Map the single "validator" object back down to it's aliased pair.
+    # Additionally, we help the user out a little bit by automatically
+    # overwriting the compliment `default` or `factory` function when
+    # overriding; so if a field already has a `default=3`, using
+    # `reuse(factory=lambda: 3)` won't complain about having both kinds of
+    # defaults defined.
+    if "default" not in field_kwargs and "factory" not in field_kwargs:
+        if isinstance(attribute.default, attr.Factory):
+            field_kwargs["factory"] = attribute.default.factory
+        else:
+            field_kwargs["default"] = attribute.default
+
+    args.update(field_kwargs)
+
+    # Send through attrib so we reuse the same errors + syntax sugar
+    return attr.attrib(**args)
+
+
+def calculate_occupied_slots(item_requests: list, inventory_id: int) -> int:
+    """
+    Calculates the number of slots occupied by ``item_requests`` for a
+    particular inventory ``inventory_id``.
+    """
+    return len(
+        {
+            location.stack
+            for item_request in item_requests
+            for location in item_request.items.in_inventory
+            if location.inventory == inventory_id  # <- Entity specific
+        }
+    )

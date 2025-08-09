@@ -1,13 +1,10 @@
 # train_configuration.py
 
 from draftsman.entity import new_entity
-from draftsman.prototypes.locomotive import Locomotive
-from draftsman.prototypes.cargo_wagon import CargoWagon
-from draftsman.prototypes.fluid_wagon import FluidWagon
-from draftsman.prototypes.artillery_wagon import ArtilleryWagon
+from draftsman.types import RollingStock
 
 from math import ceil
-from typing import Literal, Union
+from typing import Literal
 import re
 
 
@@ -16,7 +13,8 @@ _digit_regex = re.compile("((\\d+)([^\\d]))|((\\d+)())|(()([^\\d]))")
 
 class TrainConfiguration:
     """
-    TODO
+    A utility object which holds a set of connected rolling stock in a
+    particular order and configuration.
     """
 
     # The default kwargs that correspond to each of the string format characters
@@ -35,13 +33,8 @@ class TrainConfiguration:
         wagons: Literal["cargo", "fluid", "artillery"] = "cargo",
         mapping: dict[str, dict] = default_mapping,
     ) -> None:
-        """
-        TODO
-        """
         if format_string is None:
-            self.cars = (
-                []
-            )  # type: list[Union[Locomotive, CargoWagon, FluidWagon, ArtilleryWagon]]
+            self.cars: list[RollingStock] = []
         else:
             self.from_string(
                 format_string, direction=direction, wagons=wagons, mapping=mapping
@@ -67,7 +60,24 @@ class TrainConfiguration:
         mapping: dict[str, dict] = default_mapping,
     ) -> None:
         """
-        TODO
+        Create a list of valid connected rolling stock via a user-friendly
+        format string.
+
+        TODO: example
+
+        :param format_string: The input string to interpret. Must contain only
+            the uppercase characters, as defined in ``mapping``.
+        :param direction: Whether or not this train should define all of it's
+            locomotives facing the same direction (``forward``) or facing
+            opposite directions at each end (``dual``) if the notation is left
+            ambiguous. Dual format only works if there are only two locomotive
+            groups total.
+        :param wagons: What kind of cargo wagon should be inserted inbetween
+            locomotive groups if the notation is left ambiguous.
+        :param mapping: A dictionary mapping individual characters found in the
+            format strings to a dictionary of kwargs that get passed to
+            :py:func:`.new_entity`. For an example, see
+            :py:attr:`TrainConfiguration.default_mapping`.
         """
         # Normalize input
         format_string = format_string.upper()
@@ -80,7 +90,7 @@ class TrainConfiguration:
         if wagons not in {"cargo", "fluid", "artillery"}:
             raise ValueError(
                 "Argument 'wagons' must be one of 'cargo', 'fluid', or 'artillery'"
-            )  # TODO
+            )
 
         # Convert user-readable to explicit format
         wagon_symbols = {"cargo": "C", "fluid": "F", "artillery": "A"}
@@ -124,10 +134,10 @@ class TrainConfiguration:
                     car = match.group(9) or current_default_type
 
                 if car not in mapping:
-                    # TODO: maybe format the position of the unexpected character in
-                    # the input string?
                     raise ValueError(
-                        "Encountered unexpected character '{}'".format(car)
+                        "Encountered unexpected character '{}'\n"
+                        "\t{}\n"
+                        "\t{}".format(car, format_string, " " * i + "^")
                     )
 
                 # Construct a new string

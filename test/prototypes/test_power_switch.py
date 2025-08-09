@@ -4,10 +4,30 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.entity import PowerSwitch, power_switches, Container
 from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.signatures import Condition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_power_switch():
+    return PowerSwitch(
+        "power-switch",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        circuit_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        switch_state=True,
+        tags={"blah": "blah"},
+    )
 
 
 class TestPowerSwitch:
@@ -20,18 +40,12 @@ class TestPowerSwitch:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(unused_keyword="whatever").validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            PowerSwitch(
-                control_behavior={"unused_key": "something"}
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             PowerSwitch("this is not a power switch").validate().reissue_all()
 
         # Errors
         with pytest.raises(DataFormatError):
-            PowerSwitch(control_behavior="incorrect").validate().reissue_all()
+            PowerSwitch(tags="incorrect").validate().reissue_all()
 
     def test_power_and_circuit_flags(self):
         for name in power_switches:
@@ -46,13 +60,13 @@ class TestPowerSwitch:
 
     def test_switch_state(self):
         power_switch = PowerSwitch()
-        power_switch.switch_state = False
         assert power_switch.switch_state == False
-        power_switch.switch_state = None
-        assert power_switch.switch_state == None
-        # TODO: move to validate
-        # with pytest.raises(TypeError):
-        #     power_switch.switch_state = TypeError
+
+        power_switch.switch_state = True
+        assert power_switch.switch_state == True
+
+        with pytest.raises(DataFormatError):
+            power_switch.switch_state = TypeError
 
     def test_mergable_with(self):
         switch1 = PowerSwitch("power-switch")
@@ -90,14 +104,14 @@ class TestPowerSwitch:
         print("right wires:", group_right.wires)
 
         blueprint = Blueprint()
-        blueprint.entities.append(group_left)
-        print("added left wires:", blueprint.entities[0].wires)
-        blueprint.entities.append(group_right, merge=True)
-        print("added right wires:", blueprint.entities[1].wires)
+        blueprint.groups.append(group_left)
+        print("added left wires:", blueprint.groups[0].wires)
+        blueprint.groups.append(group_right, merge=True)
+        print("added right wires:", blueprint.groups[1].wires)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 1
+        assert len(blueprint.groups) == 2
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[1].entities) == 1
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,
@@ -124,12 +138,12 @@ class TestPowerSwitch:
         group.add_power_connection(0, 1, side_2="input")
 
         blueprint = Blueprint()
-        blueprint.entities.append(group)
-        blueprint.entities.append(group, merge=True)
+        blueprint.groups.append(group)
+        blueprint.groups.append(group, merge=True)
 
-        assert len(blueprint.entities) == 2
-        assert len(blueprint.entities[0].entities) == 2
-        assert len(blueprint.entities[1].entities) == 0
+        assert len(blueprint.groups) == 2
+        assert len(blueprint.groups[0].entities) == 2
+        assert len(blueprint.groups[1].entities) == 0
         assert blueprint.to_dict()["blueprint"]["entities"] == [
             {
                 "entity_number": 1,

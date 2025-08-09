@@ -1,9 +1,8 @@
 # association.py
 
-from pydantic import Field, WrapValidator
-from pydantic_core import core_schema
+from draftsman.serialization import draftsman_converters
 
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Any
 import weakref
 
 if TYPE_CHECKING:  # pragma: no coverage
@@ -15,18 +14,8 @@ class Association(weakref.ref):
     A loose wrapper around weakref that permits deepcopying. Used to represent
     wire and circuit connections, as well as associating train entities with
     specific schedules. Leads to better memory management, more flexibilty when
-    creating blueprints, and better visual representation.
+    creating blueprints, and a better visual representation.
     """
-
-    Format = Annotated[
-        int,
-        Field(ge=0, lt=2**64),
-        WrapValidator(
-            lambda value, handler: (
-                value if isinstance(value, Association) else handler(value)
-            )
-        ),
-    ]
 
     def __init__(self, entity: "Entity"):
         super(Association, self).__init__(entity)
@@ -61,8 +50,9 @@ class Association(weakref.ref):
 
     def __deepcopy__(self, _: dict) -> "Association":
         """
-        Deepcopying an association doesn't actually copy it; it just returns a
-        reference to the original association.
+        Deepcopying an association doesn't actually copy it; we can't do that
+        step without external information. Instead, we just returns a reference
+        to the original association to be resolved elsewhere later.
         """
         return self
 
@@ -76,6 +66,6 @@ class Association(weakref.ref):
             id(self()),
         )
 
-    # @classmethod
-    # def __get_pydantic_core_schema__(cls, _):
-    #     return core_schema.int_schema()
+
+# If something is labeled as an Association, pass the value through when structuring
+draftsman_converters.register_structure_hook(Association, lambda v, _: v)

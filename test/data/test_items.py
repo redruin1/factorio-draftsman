@@ -1,6 +1,7 @@
 # test_items.py
 
-from draftsman.data import items
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.data import items, mods
 
 import copy
 import pytest
@@ -73,17 +74,38 @@ class TestItemsData:
         del items.groups["new-item-group"]["subgroups"][0]
         del items.groups["new-item-group"]
 
-    def test_modify_existing_item(self):
-        pass
-
     def test_get_stack_size(self):
         assert items.get_stack_size("artillery-shell") == 1
         assert items.get_stack_size("nuclear-fuel") == 1
-        assert items.get_stack_size("rocket-fuel") == 20
         assert items.get_stack_size("iron-ore") == 50
         assert items.get_stack_size("iron-plate") == 100
         assert items.get_stack_size("electronic-circuit") == 200
-        assert items.get_stack_size("space-science-pack") == 200
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert items.get_stack_size("rocket-fuel") == 10
+            assert items.get_stack_size("space-science-pack") == 2_000
+        else:
+            assert items.get_stack_size("rocket-fuel") == 20
+            assert items.get_stack_size("space-science-pack") == 200
 
         # TODO: should this raise an error instead?
         assert items.get_stack_size("unknown!") == None
+
+    @pytest.mark.skipif(
+        mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0),
+        reason="Weight is a 2.0 concept",
+    )
+    def test_get_weight(self):
+        # Unrecognized
+        assert items.get_weight("unknown thingy") is None
+        # Cursor item
+        assert items.get_weight("copy-paste-tool") == 0
+        # Weight manually specified
+        assert items.get_weight("iron-ore") == 2000
+        # Item with no recipe
+        assert items.get_weight("burner-generator") == 100
+        # Item with fluid ingredients
+        assert items.get_weight("accumulator") == 20_000
+        # Not simple result
+        assert items.get_weight("stone-brick") == 2_000
+        # Floored size
+        assert items.get_weight("electronic-circuit") == 500

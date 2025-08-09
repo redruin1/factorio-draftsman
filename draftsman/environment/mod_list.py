@@ -1,23 +1,25 @@
 # mod_list.py
 
 from draftsman.utils import get_suggestion
-from draftsman._factorio_version import __factorio_version_info__
 from draftsman.error import IncorrectModFormatError, MissingModError
-from draftsman.utils import version_string_to_tuple, version_tuple_to_string
+from draftsman.utils import version_string_to_tuple
 
+import attrs
 import io
 import json
 import os
 import re
-from typing import NamedTuple
+from typing import Optional
 import zipfile
 
 
-class Dependency(NamedTuple):
+@attrs.define
+class Dependency:
     flag: str
     name: str
     operation: str
     version: str
+    reference: Optional["Mod"]
 
     def __str__(self):
         return "{} {} {} {}".format(
@@ -72,7 +74,7 @@ class Mod:
         # files: dict[str, str],
         # data: zipfile.ZipFile,
         # All other keys are free for users to write, so we collect them here
-        **kwargs
+        **kwargs,
     ):
         self.location = location
         self.stages = stages
@@ -91,9 +93,22 @@ class Mod:
             dependency = dependency.replace(" ", "")
             # Convert
             m = Mod.dependency_regex.match(dependency)
-            dependency = Dependency(flag=m[1], name=m[2], operation=m[3], version=m[4])
+            dependency = Dependency(
+                flag=m[1], name=m[2], operation=m[3], version=m[4], reference=None
+            )
             # Replace
             dependencies[i] = dependency
+
+        # For *some* reason, it seems "base" is an implicit dependency of ALL
+        # mods, regardless of whether or not it's actually specified
+        # Hence, we always add "base" as a dependency if not present in order to
+        # bring it in line with how Factorio loads it's mods
+        # I cannot figure out where this is documented, if so
+        # if "base" not in [dependency.name for dependency in dependencies]:
+        #     dependencies.insert(0, Dependency(
+        #         flag="", name="base", operation=None, version=None,
+        #     ))
+
         self.dependencies: list[Dependency] = dependencies
 
         self.feature_flags = {
@@ -121,11 +136,13 @@ class Mod:
         # self.enabled = enabled
         # self.dependencies = []
 
-    def setup_archive(self):
+    def setup_archive(self, archive, archive_folder):
         """
         Initialize the internal structure with archive data.
         """
         self.is_archive = True
+        self.archive = archive
+        self.archive_folder = archive_folder
 
     def setup_folder(self):
         """
@@ -142,8 +159,11 @@ class Mod:
     def get_depth(self):
         depth = 1
         for dependency in self.dependencies:
-            dependency: "Mod"
-            depth = max(depth, depth + dependency.get_depth())
+            # Not all dependencies matter during the load order (optionals,
+            # incompatible, etc.) so we only consider the ones that actually
+            # point to a loaded mod in the current load cycle
+            if dependency.reference is not None:
+                depth = max(depth, depth + dependency.reference.get_depth())
         return depth
 
     def get_file(self, filepath) -> str:
@@ -151,10 +171,9 @@ class Mod:
         Grabs the data from the file as a string.
         """
         if self.is_archive:
-            return archive_to_string(self.data)  # TODO
+            return archive_to_string(self.archive, self.archive_folder + "/" + filepath)
         else:
             return file_to_string(filepath=self.location + "/" + filepath)
-        pass
 
     def __lt__(self, other: "Mod") -> bool:
         return self.name < other.name
@@ -219,7 +238,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     parameter (if present).
     """
 
-    external_mod_version = None  # Optional (the version indicated by filepath)
+    # external_mod_version = None  # Optional (the version indicated by filepath)
 
     if mod_name.lower().endswith(".zip"):
         # Zip file
@@ -231,8 +250,8 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 )
             )
         folder_name = m.group(1)
-        mod_name = m.group(2).replace(" ", "")
-        external_mod_version = m.group(3)
+        mod_name = m.group(2)
+        # external_mod_version = m.group(3)
         files = zipfile.ZipFile(mod_location, mode="r")
 
         # There is no restriction on the name of the internal folder, just
@@ -287,7 +306,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 "Mod '{}' has no 'info.json' file in its root folder".format(mod_name)
             )
 
-        mod_version = mod_info["version"]
+        # mod_version = mod_info["version"]
         is_archive = True
         location = mod_location  # containing_dir + "/" + mod_name
 
@@ -301,7 +320,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
                 )
             )
         mod_name = m.group(1)
-        external_mod_version = m.group(2)
+        # external_mod_version = m.group(2)
         try:
             with open(os.path.join(mod_location, "info.json"), "r") as info_file:
                 mod_info = json.load(info_file)
@@ -311,7 +330,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
             )
 
         mod_folder = mod_location
-        mod_version = mod_info.get("version", "")  # "core" doesn't have a version
+        # mod_version = mod_info.get("version", "")  # "core" doesn't have a version
         is_archive = False
         files = None
         location = mod_location
@@ -341,8 +360,12 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     # Ensure that the mod's factorio version is correct
     # (Except for in the cases of the "base" and "core" mods, which are exempt)
     if mod_name not in ("base", "core"):
-        mod_factorio_version = version_string_to_tuple(mod_info["factorio_version"])
-        assert mod_factorio_version <= __factorio_version_info__
+        mod_factorio_version = version_string_to_tuple(  # noqa: F841
+            mod_info["factorio_version"]
+        )
+        # TODO: this check cannot happen here, has to happen after all mods are
+        # registered
+        # assert mod_factorio_version <= mods.versions["base"]
 
     mod_stages = set()
     if is_archive:
@@ -401,7 +424,7 @@ def register_mod(mod_name, mod_location, mod_list_json={"mods": {}}):
     )
 
     if is_archive:
-        current_mod.setup_archive()
+        current_mod.setup_archive(files, mod_folder)
     else:
         current_mod.setup_folder()
 
@@ -424,8 +447,10 @@ def discover_mods(
     game_path: str, mods_path: str, no_mods: bool = False
 ) -> dict[str, list[Mod]]:
     """
-    Returns an (unsorted) list of all mods detected at a specific game data
-    and mod folder location, including different versions of the same mod.
+    Returns an list of all mods detected at a specific game data and mod folder
+    location, including different versions of the same mod. If there are
+    multiples of the same mod found, the mods are sorted latest version first,
+    preferring folders if there's a tie.
 
     :param game_path: Path to the directory which houses Factorio's game data.
     :param mods_path: Path the the directory which houses the desired user mods.
@@ -446,7 +471,7 @@ def discover_mods(
         # Supply default
         mod_list_json = {"mods": {}}
 
-    # List of "mods". In Factorio parlance, a Mod is a collection of files
+    # List of "mods". In Factorio parlance, a Mod is just a collection of files
     # associated with one another, meaning that base-game components like `base`
     # and `core` are also considered "mods", and as such are returned by this
     # function.
@@ -457,7 +482,7 @@ def discover_mods(
 
     # Traverse the game-data folder to find Wube "mods", like `base` and `core`
     for game_obj in os.listdir(game_path):
-        location = game_path + "/" + game_obj  # TODO: better
+        location = os.path.join(game_path, game_obj)
 
         # In the game data folder, modules must be folders
         if not os.path.isdir(location):
@@ -470,7 +495,7 @@ def discover_mods(
             mod_list_json=mod_list_json,
         )
         if mod.name in mod_list:
-            mod_list[mod.name].append(mod)  # TODO: sorted insert
+            mod_list[mod.name].append(mod)
         else:
             mod_list[mod.name] = [mod]
 
@@ -478,7 +503,7 @@ def discover_mods(
     # and the no_mods flag is false
     if not no_mods:
         for mod_obj in os.listdir(mods_path):
-            location = mods_path + "/" + mod_obj  # TODO: better
+            location = os.path.join(mods_path, mod_obj)
 
             # Only consider folders and zipfiles
             if not os.path.isdir(location) and not zipfile.is_zipfile(location):
@@ -491,7 +516,7 @@ def discover_mods(
                 mod_list_json=mod_list_json,
             )
             if mod.name in mod_list:
-                mod_list[mod.name].append(mod)  # TODO: sorted insert
+                mod_list[mod.name].append(mod)
             else:
                 mod_list[mod.name] = [mod]
 
@@ -509,8 +534,6 @@ def discover_mods(
             reverse=True,
         )
         mod_list[mod_name] = sorted_versions
-
-    # Populate mod-dependencies.
 
     return mod_list
 
@@ -637,7 +660,7 @@ def set_mods_enabled(
         mod_list_dict = {"mods": [{"name": mod, "enabled": True} for mod in mods]}
 
     if mod_names == ["all"]:
-        mod_names = [mod for mod in mods if mod.name not in ("base", "core")]
+        mod_names = [mod for mod in mods if mod not in ("base", "core")]
     else:
         # Check to make sure that all of the mods given point to discovered mods
         for mod_name in mod_names:

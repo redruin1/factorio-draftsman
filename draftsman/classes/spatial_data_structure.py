@@ -31,40 +31,11 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def recursive_add(
-        self, item: SpatialLike, merge: bool = False
-    ) -> Optional[SpatialLike]:  # pragma: no coverage
-        """
-        Add the leaf-most entities to the hashmap.
-
-        This is used for Groups and other EntityCollections, where you need to
-        add the Group's children to the hashmap instead of the Group itself.
-        Works with as many nested Groups as desired.
-
-        :param item: The object to add, or its children (if it has any).
-        :param merge: Whether or not to attempt to merge the added item(s) with
-            any existing item(s), if possible.
-
-        :returns: The input SpatialLike if properly added, or ``None`` if the
-            input object was merged.
-        """
-        pass
-
-    @abc.abstractmethod
     def remove(self, item: SpatialLike) -> None:  # pragma: no coverage
         """
         Remove the ``SpatialLike`` instance from the ``SpatialHashMap``.
 
         :param item: The object to remove.
-        """
-        pass
-
-    @abc.abstractmethod
-    def recursive_remove(self, item: SpatialLike) -> None:  # pragma: no coverage
-        """
-        Inverse of :py:meth:`recursive_add`.
-
-        :param item: The object to remove, or its children (if it has any).
         """
         pass
 
@@ -104,8 +75,7 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         Get all the entities whose ``collision_set`` overlaps a circle.
 
         :param radius: The radius of the circle.
-        :param pos: The center of the circle; Can be specified as a sequence or
-            as a ``dict`` with ``"x"`` and ``"y"`` keys.
+        :param point: The center of the circle.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the region. Can be
@@ -120,8 +90,7 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         """
         Get all the entities whose ``collision_set`` overlaps a point.
 
-        :param point: The position to examine; Can be specified as a
-            PrimitiveVector or Vector.
+        :param point: The position to examine.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the point. Can be

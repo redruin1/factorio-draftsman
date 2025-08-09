@@ -5,12 +5,8 @@ Entity alias module. Imports the base-class :py:class:`.Entity`, as well as
 all the prototypes in :py:mod:`draftsman.prototypes`.
 """
 
-from draftsman.classes.entity import Entity
-from draftsman.constants import ValidationMode
-from draftsman.error import InvalidEntityError
-from draftsman.data.entities import of_type
-
 # fmt: off
+from draftsman.classes.entity import Entity
 from draftsman.prototypes.accumulator import Accumulator, accumulators
 from draftsman.prototypes.agricultural_tower import AgriculturalTower, agricultural_towers
 from draftsman.prototypes.ammo_turret import AmmoTurret, ammo_turrets
@@ -100,10 +96,210 @@ from draftsman.prototypes.underground_pipe import UndergroundPipe, underground_p
 from draftsman.prototypes.wall import Wall, walls
 # fmt: on
 
-from typing import Literal
+from draftsman.data.entities import raw
+
+from typing import Optional
+
+# fmt: off
+__all__ = [
+    "Entity",
+    "Accumulator", "accumulators",
+    "AgriculturalTower", "agricultural_towers",
+    "AmmoTurret", "ammo_turrets",
+    "ArithmeticCombinator", "arithmetic_combinators",
+    "ArtilleryTurret", "artillery_turrets",
+    "ArtilleryWagon", "artillery_wagons",
+    "AssemblingMachine", "assembling_machines",
+    "AsteroidCollector", "asteroid_collectors",
+    "Beacon", "beacons",
+    "Boiler", "boilers",
+    "BurnerGenerator", "burner_generators",
+    "Car", "cars",
+    "CargoBay", "cargo_bays",
+    "CargoLandingPad", "cargo_landing_pads",
+    "CargoWagon", "cargo_wagons",
+    "ConstantCombinator", "constant_combinators",
+    "Container", "containers",
+    "CurvedRailA", "curved_rails_a",
+    "CurvedRailB", "curved_rails_b",
+    "DeciderCombinator", "decider_combinators",
+    "DisplayPanel", "display_panels",
+    "ElectricEnergyInterface", "electric_energy_interfaces",
+    "ElectricPole", "electric_poles",
+    "ElectricTurret", "electric_turrets",
+    "ElevatedCurvedRailA", "elevated_curved_rails_a",
+    "ElevatedCurvedRailB", "elevated_curved_rails_b",
+    "ElevatedHalfDiagonalRail", "elevated_half_diagonal_rails",
+    "ElevatedStraightRail", "elevated_straight_rails",
+    "FluidTurret", "fluid_turrets",
+    "FluidWagon", "fluid_wagons",
+    "Furnace", "furnaces",
+    "FusionGenerator", "fusion_generators",
+    "FusionReactor", "fusion_reactors",
+    "Gate", "gates",
+    "Generator", "generators",
+    "HalfDiagonalRail", "half_diagonal_rails",
+    "HeatInterface", "heat_interfaces",
+    "HeatPipe", "heat_pipes",
+    "InfinityContainer", "infinity_containers",
+    "InfinityPipe", "infinity_pipes",
+    "Inserter", "inserters",
+    "Lab", "labs",
+    "Lamp", "lamps",
+    "LandMine", "land_mines",
+    "LegacyCurvedRail", "legacy_curved_rails",
+    "LegacyStraightRail", "legacy_straight_rails",
+    "LightningAttractor", "lightning_attractors",
+    "LinkedBelt", "linked_belts",
+    "LinkedContainer", "linked_containers",
+    "Loader", "loaders",
+    "Locomotive", "locomotives",
+    "LogisticActiveContainer", "logistic_active_containers",
+    "LogisticBufferContainer", "logistic_buffer_containers",
+    "LogisticPassiveContainer", "logistic_passive_containers",
+    "LogisticRequestContainer", "logistic_request_containers",
+    "LogisticStorageContainer", "logistic_storage_containers",
+    "MiningDrill", "mining_drills",
+    "OffshorePump", "offshore_pumps",
+    "Pipe", "pipes",
+    "PlayerPort", "player_ports",
+    "PowerSwitch", "power_switches",
+    "ProgrammableSpeaker", "programmable_speakers",
+    "Pump", "pumps",
+    "Radar", "radars",
+    "RailChainSignal", "rail_chain_signals",
+    "RailRamp", "rail_ramps",
+    "RailSignal", "rail_signals",
+    "RailSupport", "rail_supports",
+    "Reactor", "reactors",
+    "Roboport", "roboports",
+    "RocketSilo", "rocket_silos",
+    "SelectorCombinator", "selector_combinators",
+    "SimpleEntityWithForce", "simple_entities_with_force",
+    "SimpleEntityWithOwner", "simple_entities_with_owner",
+    "SolarPanel", "solar_panels",
+    "SpacePlatformHub", "space_platform_hubs",
+    "SpiderVehicle", "spider_vehicles",
+    "Splitter", "splitters",
+    "StorageTank", "storage_tanks",
+    "StraightRail", "straight_rails",
+    "Thruster", "thrusters",
+    "TrainStop", "train_stops",
+    "TransportBelt", "transport_belts",
+    "UndergroundBelt", "underground_belts",
+    "UndergroundPipe", "underground_pipes",
+    "Wall", "walls",
+    "get_entity_class",
+    "new_entity",
+    "new_entity_from_dict",
+]
+# fmt: on
 
 
-def new_entity(name: str, **kwargs):
+def get_entity_class(name: str) -> type[Entity]:
+    """
+    Deduce the Draftsman :py:class:`Entity` subclass that this entity name would
+    be an instance of. If Draftman cannot determine a subclass that this entity
+    matches, it returns the base :py:class:`Entity` class itself.
+    """
+    # If input entity is entirely unknown, just return the base class
+    if name not in raw:
+        return Entity
+    # d_type = (raw[d["name"]]["type"], raw[d["name"]].get("logistic_mode"))
+    d_type = raw[name]["type"]
+    if d_type == "logistic-container":
+        d_type = (d_type, raw[name]["logistic_mode"])
+    type_mappings = {
+        "accumulator": Accumulator,
+        "agricultural-tower": AgriculturalTower,
+        "ammo-turret": AmmoTurret,
+        "arithmetic-combinator": ArithmeticCombinator,
+        "artillery-turret": ArtilleryTurret,
+        "artillery-wagon": ArtilleryWagon,
+        "assembling-machine": AssemblingMachine,
+        "asteroid-collector": AsteroidCollector,
+        "beacon": Beacon,
+        "boiler": Boiler,
+        "burner-generator": BurnerGenerator,
+        "car": Car,
+        "cargo-bay": CargoBay,
+        "cargo-landing-pad": CargoLandingPad,
+        "cargo-wagon": CargoWagon,
+        "constant-combinator": ConstantCombinator,
+        "container": Container,
+        "curved-rail-a": CurvedRailA,
+        "curved-rail-b": CurvedRailB,
+        "decider-combinator": DeciderCombinator,
+        "display-panel": DisplayPanel,
+        "electric-energy-interface": ElectricEnergyInterface,
+        "electric-pole": ElectricPole,
+        "electric-turret": ElectricTurret,
+        "elevated-curved-rail-a": ElevatedCurvedRailA,
+        "elevated-curved-rail-b": ElevatedCurvedRailB,
+        "elevated-half-diagonal-rail": ElevatedHalfDiagonalRail,
+        "elevated-straight-rail": ElevatedStraightRail,
+        "fluid-turret": FluidTurret,
+        "fluid-wagon": FluidWagon,
+        "furnace": Furnace,
+        "fusion-generator": FusionGenerator,
+        "fusion-reactor": FusionReactor,
+        "gate": Gate,
+        "generator": Generator,
+        "half-diagonal-rail": HalfDiagonalRail,
+        "heat-interface": HeatInterface,
+        "heat-pipe": HeatPipe,
+        "infinity-container": InfinityContainer,
+        "infinity-pipe": InfinityPipe,
+        "inserter": Inserter,
+        "lab": Lab,
+        "lamp": Lamp,
+        "land-mine": LandMine,
+        "legacy-curved-rail": LegacyCurvedRail,
+        "legacy-straight-rail": LegacyStraightRail,
+        "lightning-attractor": LightningAttractor,
+        "linked-belt": LinkedBelt,
+        "linked-container": LinkedContainer,
+        "loader": Loader,
+        "locomotive": Locomotive,
+        ("logistic-container", "active-provider"): LogisticActiveContainer,
+        ("logistic-container", "buffer"): LogisticBufferContainer,
+        ("logistic-container", "passive-provider"): LogisticPassiveContainer,
+        ("logistic-container", "requester"): LogisticRequestContainer,
+        ("logistic-container", "storage"): LogisticStorageContainer,
+        "mining-drill": MiningDrill,
+        "offshore-pump": OffshorePump,
+        "pipe": Pipe,
+        "player-port": PlayerPort,
+        "power-switch": PowerSwitch,
+        "programmable-speaker": ProgrammableSpeaker,
+        "pump": Pump,
+        "radar": Radar,
+        "rail-chain-signal": RailChainSignal,
+        "rail-ramp": RailRamp,
+        "rail-signal": RailSignal,
+        "rail-support": RailSupport,
+        "reactor": Reactor,
+        "roboport": Roboport,
+        "rocket-silo": RocketSilo,
+        "selector-combinator": SelectorCombinator,
+        "simple-entity-with-force": SimpleEntityWithForce,
+        "simple-entity-with-owner": SimpleEntityWithOwner,
+        "solar-panel": SolarPanel,
+        "space-platform-hub": SpacePlatformHub,
+        "spider-vehicle": SpiderVehicle,
+        "splitter": Splitter,
+        "storage-tank": StorageTank,
+        "straight-rail": StraightRail,
+        "train-stop": TrainStop,
+        "transport-belt": TransportBelt,
+        "underground-belt": UndergroundBelt,
+        "pipe-to-ground": UndergroundPipe,
+        "wall": Wall,
+    }
+    return type_mappings.get(d_type, Entity)
+
+
+def new_entity(name: str, **kwargs) -> Entity:
     """
     Factory function for creating a new :py:class:`.Entity`. The class used will be
     based on the entity's name, so ``new_entity("wooden-chest")`` will return a
@@ -121,195 +317,32 @@ def new_entity(name: str, **kwargs):
     :param kwargs: A dict of all the keyword arguments to pass to the
         constructor.
 
-    :returns: A new :py:class:`.Entity` subclass, or an instance of
-        :py:class:`.Entity` if `name` could not be deduced under the current
+    :returns: A new instance of a :py:class:`.Entity` subclass, or an instance
+        of :py:class:`.Entity` if `name` could not be deduced under the current
         Factorio environment.
     """
-    if name in of_type["accumulator"]:
-        return Accumulator(name, **kwargs)
-    if name in of_type["agricultural-tower"]:
-        return AgriculturalTower(name, **kwargs)
-    if name in of_type["ammo-turret"]:
-        return AmmoTurret(name, **kwargs)
-    if name in of_type["arithmetic-combinator"]:
-        return ArithmeticCombinator(name, **kwargs)
-    if name in of_type["artillery-turret"]:
-        return ArtilleryTurret(name, **kwargs)
-    if name in of_type["artillery-wagon"]:
-        return ArtilleryWagon(name, **kwargs)
-    if name in of_type["assembling-machine"]:
-        return AssemblingMachine(name, **kwargs)
-    if name in of_type["beacon"]:
-        return Beacon(name, **kwargs)
-    if name in of_type["boiler"]:
-        return Boiler(name, **kwargs)
-    if name in of_type["burner-generator"]:
-        return BurnerGenerator(name, **kwargs)
-    if name in of_type["car"]:
-        return Car(name, **kwargs)
-    if name in of_type["cargo-bay"]:
-        return CargoBay(name, **kwargs)
-    if name in of_type["cargo-landing-pad"]:
-        return CargoLandingPad(name, **kwargs)
-    if name in of_type["cargo-wagon"]:
-        return CargoWagon(name, **kwargs)
-    if name in of_type["constant-combinator"]:
-        return ConstantCombinator(name, **kwargs)
-    if name in of_type["container"]:
-        return Container(name, **kwargs)
-    if name in of_type["curved-rail-a"]:
-        return CurvedRailA(name, **kwargs)
-    if name in of_type["curved-rail-b"]:
-        return CurvedRailB(name, **kwargs)
-    if name in of_type["decider-combinator"]:
-        return DeciderCombinator(name, **kwargs)
-    if name in of_type["display-panel"]:
-        return DisplayPanel(name, **kwargs)
-    if name in of_type["electric-energy-interface"]:
-        return ElectricEnergyInterface(name, **kwargs)
-    if name in of_type["electric-pole"]:
-        return ElectricPole(name, **kwargs)
-    if name in of_type["electric-turret"]:
-        return ElectricTurret(name, **kwargs)
-    if name in of_type["elevated-curved-rail-a"]:
-        return ElevatedCurvedRailA(name, **kwargs)
-    if name in of_type["elevated-curved-rail-b"]:
-        return ElevatedCurvedRailB(name, **kwargs)
-    if name in of_type["elevated-half-diagonal-rail"]:
-        return ElevatedHalfDiagonalRail(name, **kwargs)
-    if name in of_type["elevated-straight-rail"]:
-        return ElevatedStraightRail(name, **kwargs)
-    if name in of_type["fluid-turret"]:
-        return FluidTurret(name, **kwargs)
-    if name in of_type["fluid-wagon"]:
-        return FluidWagon(name, **kwargs)
-    if name in of_type["furnace"]:
-        return Furnace(name, **kwargs)
-    if name in of_type["fusion-generator"]:
-        return FusionGenerator(name, **kwargs)
-    if name in of_type["fusion-reactor"]:
-        return FusionReactor(name, **kwargs)
-    if name in of_type["gate"]:
-        return Gate(name, **kwargs)
-    if name in of_type["generator"]:
-        return Generator(name, **kwargs)
-    if name in of_type["half-diagonal-rail"]:
-        return HalfDiagonalRail(name, **kwargs)
-    if name in of_type["heat-interface"]:
-        return HeatInterface(name, **kwargs)
-    if name in of_type["heat-pipe"]:
-        return HeatPipe(name, **kwargs)
-    if name in of_type["infinity-container"]:
-        return InfinityContainer(name, **kwargs)
-    if name in of_type["infinity-pipe"]:
-        return InfinityPipe(name, **kwargs)
-    if name in of_type["inserter"]:
-        return Inserter(name, **kwargs)
-    if name in of_type["lab"]:
-        return Lab(name, **kwargs)
-    if name in of_type["lamp"]:
-        return Lamp(name, **kwargs)
-    if name in of_type["land-mine"]:
-        return LandMine(name, **kwargs)
-    if name in of_type["legacy-curved-rail"]:
-        return LegacyCurvedRail(name, **kwargs)
-    if name in of_type["legacy-straight-rail"]:
-        return LegacyStraightRail(name, **kwargs)
-    if name in of_type["lightning-attractor"]:
-        return LightningAttractor(name, **kwargs)
-    if name in of_type["linked-belt"]:
-        return LinkedBelt(name, **kwargs)
-    if name in of_type["linked-container"]:
-        return LinkedContainer(name, **kwargs)
-    if name in of_type["loader"]:
-        return Loader(name, **kwargs)
-    if name in of_type["locomotive"]:
-        return Locomotive(name, **kwargs)
-    if name in of_type["logistic-container-active"]:
-        return LogisticActiveContainer(name, **kwargs)
-    if name in of_type["logistic-container-buffer"]:
-        return LogisticBufferContainer(name, **kwargs)
-    if name in of_type["logistic-container-passive"]:
-        return LogisticPassiveContainer(name, **kwargs)
-    if name in of_type["logistic-container-request"]:
-        return LogisticRequestContainer(name, **kwargs)
-    if name in of_type["logistic-container-storage"]:
-        return LogisticStorageContainer(name, **kwargs)
-    if name in of_type["mining-drill"]:
-        return MiningDrill(name, **kwargs)
-    if name in of_type["offshore-pump"]:
-        return OffshorePump(name, **kwargs)
-    if name in of_type["pipe"]:
-        return Pipe(name, **kwargs)
-    if name in of_type["player-port"]:
-        return PlayerPort(name, **kwargs)
-    if name in of_type["power-switch"]:
-        return PowerSwitch(name, **kwargs)
-    if name in of_type["programmable-speaker"]:
-        return ProgrammableSpeaker(name, **kwargs)
-    if name in of_type["pump"]:
-        return Pump(name, **kwargs)
-    if name in of_type["radar"]:
-        return Radar(name, **kwargs)
-    if name in of_type["rail-chain-signal"]:
-        return RailChainSignal(name, **kwargs)
-    if name in of_type["rail-ramp"]:
-        return RailRamp(name, **kwargs)
-    if name in of_type["rail-signal"]:
-        return RailSignal(name, **kwargs)
-    if name in of_type["rail-support"]:
-        return RailSupport(name, **kwargs)
-    if name in of_type["reactor"]:
-        return Reactor(name, **kwargs)
-    if name in of_type["roboport"]:
-        return Roboport(name, **kwargs)
-    if name in of_type["rocket-silo"]:
-        return RocketSilo(name, **kwargs)
-    if name in of_type["selector-combinator"]:
-        return SelectorCombinator(name, **kwargs)
-    if name in of_type["simple-entity-with-force"]:
-        return SimpleEntityWithForce(name, **kwargs)
-    if name in of_type["simple-entity-with-owner"]:
-        return SimpleEntityWithOwner(name, **kwargs)
-    if name in of_type["solar-panel"]:
-        return SolarPanel(name, **kwargs)
-    if name in of_type["space-platform-hub"]:
-        return SpacePlatformHub(name, **kwargs)
-    if name in of_type["spider-vehicle"]:
-        return SpiderVehicle(name, **kwargs)
-    if name in of_type["splitter"]:
-        return Splitter(name, **kwargs)
-    if name in of_type["storage-tank"]:
-        return StorageTank(name, **kwargs)
-    if name in of_type["straight-rail"]:
-        return StraightRail(name, **kwargs)
-    if name in of_type["thruster"]:
-        return Thruster(name, **kwargs)
-    if name in of_type["train-stop"]:
-        return TrainStop(name, **kwargs)
-    if name in of_type["transport-belt"]:
-        return TransportBelt(name, **kwargs)
-    if name in of_type["underground-belt"]:
-        return UndergroundBelt(name, **kwargs)
-    if name in of_type["pipe-to-ground"]:
-        return UndergroundPipe(name, **kwargs)
-    if name in of_type["wall"]:
-        return Wall(name, **kwargs)
+    return get_entity_class(name)(name, **kwargs)
 
-    # At this point, the name is unrecognized by the current environment.
-    # We want Draftsman to at least try to parse it and serialize it, if not
-    # entirely validate it. Thus, we construct a generic instance of `Entity`
-    # and return that.
-    result = Entity(name, similar_entities=None, **kwargs)
 
-    # Mark this class as unknown format, so some validation checks are
-    # omitted
-    # TODO: is this necessary?
-    result._unknown = True
+def new_entity_from_dict(d: dict, version: Optional[tuple[int]] = None) -> Entity:
+    """
+    Factory function similar to :py:meth:`.new_entity`, but using `Entity.from_dict()`
+    as opposed to the entity's constructor. Allows you to generically construct
+    a Draftsman entity instance directly from raw JSON data, if convenient to do
+    so.
 
-    # Of course, since entity is normally a base class, we have to do a
-    # little magic to make it behave similar to all other classes
-    validate_assignment = kwargs.get("validate_assignment", ValidationMode.STRICT)
-    result.validate_assignment = validate_assignment
+    Which :py:class:`Entity` subclass instance this method returns is based off
+    of the given dictionaries ``"name"`` key. If Draftsman cannot determine
+    entity type off of this name, it returns a generic :py:class:`.Entity`
+    instance instead.
 
-    return result
+    :param d: The dictionary object to construct the new entity from.
+    :param version: The Factorio game version under which to interpret the data
+        as. If ``None``, defaults to the game version of the current environment.
+    :param validation: The validation level to run after entity construction.
+
+    :returns: A new instance of a :py:class:`.Entity` subclass, or an instance
+        of :py:class:`.Entity` if `name` could not be deduced under the current
+        Factorio environment.
+    """
+    return get_entity_class(d.get("name", None)).from_dict(d, version=version)

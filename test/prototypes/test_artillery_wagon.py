@@ -1,12 +1,55 @@
 # test_artillery_wagon.py
 
+from draftsman.constants import InventoryType, Orientation, ValidationMode
 from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
 from draftsman.error import DataFormatError
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
+    EquipmentComponent,
+)
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
+
+
+@pytest.fixture
+def valid_artillery_wagon():
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return ArtilleryWagon(
+            "artillery-wagon",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="artillery-shell",
+                    items=ItemInventoryPositions(
+                        in_inventory=[
+                            InventoryPosition(
+                                inventory=InventoryType.ARTILLERY_WAGON_AMMO,
+                                stack=0,
+                                count=1,
+                            )
+                        ]
+                    ),
+                ),
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                ),
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            enable_logistics_while_moving=False,
+            auto_target=False,
+            tags={"blah": "blah"},
+        )
 
 
 class TestArtilleryWagon:
@@ -15,8 +58,9 @@ class TestArtilleryWagon:
             "artillery-wagon",
             position={"x": 1.0, "y": 1.0},
             orientation=0.75,
+            enable_logistics_while_moving=False,
         )
-        assert artillery_wagon.to_dict() == {
+        assert artillery_wagon.to_dict(version=(2, 0)) == {
             "name": "artillery-wagon",
             "position": {"x": 1.0, "y": 1.0},
             "orientation": 0.75,
@@ -24,10 +68,6 @@ class TestArtilleryWagon:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            ArtilleryWagon(
-                "artillery-wagon", unused_keyword="whatever"
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             ArtilleryWagon("this is not an artillery wagon").validate().reissue_all()
 

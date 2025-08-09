@@ -1,8 +1,8 @@
 # test_splitter.py
 
-from draftsman.constants import Direction
+from draftsman.constants import Direction, LegacyDirection
 from draftsman.entity import Splitter, splitters, Container
-from draftsman.error import DataFormatError, InvalidItemError
+from draftsman.error import DataFormatError
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -11,6 +11,21 @@ from draftsman.warning import (
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_splitter():
+    return Splitter(
+        "splitter",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        input_priority="left",
+        output_priority="right",
+        filter="small-lamp",
+        tags={"blah": "blah"},
+    )
 
 
 class TestSplitter:
@@ -24,7 +39,15 @@ class TestSplitter:
             output_priority="right",
             filter="small-lamp",
         )
-        assert splitter.to_dict() == {
+        assert splitter.to_dict(version=(1, 0)) == {
+            "name": "splitter",
+            "position": {"x": 1.5, "y": 2.0},
+            "direction": LegacyDirection.EAST,
+            "input_priority": "left",
+            "output_priority": "right",
+            "filter": "small-lamp",
+        }
+        assert splitter.to_dict(version=(2, 0)) == {
             "name": "splitter",
             "position": {"x": 1.5, "y": 2.0},
             "direction": Direction.EAST,
@@ -35,23 +58,28 @@ class TestSplitter:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            Splitter(
-                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
-            ).validate().reissue_all()
+            Splitter.from_dict(
+                {
+                    "name": "splitter",
+                    "position": {"x": 0.5, "y": 1.0},
+                    "direction": Direction.WEST,
+                    "invalid_keyword": 5,
+                },
+                version=(2, 0),
+            )
 
         with pytest.warns(UnknownEntityWarning):
             Splitter("this is not a splitter").validate().reissue_all()
 
-        # TODO
-        # with pytest.raises(UnknownItemWarning):
-        #     Splitter("splitter", filter="wrong")
+        with pytest.warns(UnknownItemWarning):
+            Splitter("splitter", filter="wrong")
 
         # Errors
         # Raises errors when any of the associated data is incorrect
         with pytest.raises(TypeError):
             Splitter("splitter", id=25).validate().reissue_all()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Splitter("splitter", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
@@ -79,6 +107,19 @@ class TestSplitter:
             assert splitter.dual_power_connectable == False
             assert splitter.circuit_connectable == False
             assert splitter.dual_circuit_connectable == False
+
+    def test_tile_width_height(self):
+        splitter = Splitter()
+        assert splitter.tile_width == 2
+        assert splitter.tile_height == 1
+        assert splitter.static_tile_width == 2
+        assert splitter.static_tile_height == 1
+
+        splitter.direction = Direction.EAST
+        assert splitter.tile_width == 1
+        assert splitter.tile_height == 2
+        assert splitter.static_tile_width == 2
+        assert splitter.static_tile_height == 1
 
     def test_mergable_with(self):
         splitter1 = Splitter("splitter")

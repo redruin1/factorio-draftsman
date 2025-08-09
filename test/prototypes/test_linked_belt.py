@@ -1,5 +1,6 @@
 # test_linked_belt.py
 
+from draftsman.constants import Direction
 from draftsman.entity import LinkedBelt, linked_belts, Container
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
@@ -7,17 +8,31 @@ from collections.abc import Hashable
 import pytest
 
 # For compatibility with versions of Factorio prior to 1.1.6
-if len(linked_belts) == 0:
-    pytest.skip("No linked belts to test", allow_module_level=True)
+# if len(linked_belts) == 0:
+#     pytest.skip("No linked belts to test", allow_module_level=True)
 
 
+@pytest.fixture
+def valid_linked_belt():
+    if len(linked_belts) == 0:
+        return None
+    return LinkedBelt(
+        "linked-belt",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        tags={"blah": "blah"},
+    )
+
+
+# For compatibility with versions of Factorio prior to 1.1.6
+@pytest.mark.skipif(len(linked_belts) == 0, reason="No linked belts to test")
 class TestLinkedBelt:
     def test_constructor_init(self):
         linked_belt = LinkedBelt("linked-belt")
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LinkedBelt(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LinkedBelt("this is not a linked belt").validate().reissue_all()
 

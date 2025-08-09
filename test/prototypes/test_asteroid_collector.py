@@ -2,8 +2,10 @@
 
 from draftsman.prototypes.asteroid_collector import AsteroidCollector
 from draftsman.prototypes.container import Container
-from draftsman.constants import Direction
+from draftsman.constants import Direction, ValidationMode
 from draftsman.error import DataFormatError
+from draftsman.signatures import AsteroidChunkID, Condition, Inventory
+import draftsman.validators
 
 from draftsman.data.entities import asteroid_collectors
 
@@ -11,6 +13,34 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_asteroid_collector():
+    if len(asteroid_collectors) == 0:
+        return None
+    return AsteroidCollector(
+        "asteroid-collector",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        circuit_enabled=True,
+        circuit_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        result_inventory=Inventory(
+            bar=10,
+        ),
+        chunk_filter=["oxide-asteroid-chunk"],
+        circuit_set_filters=True,
+        read_contents=True,
+        read_hands=False,
+        tags={"blah": "blah"},
+    )
+
+
+@pytest.mark.skipif(
+    len(asteroid_collectors) == 0, reason="No AsteroidCollectors to test"
+)
 class TestAsteroidCollector:
     def test_constructor_init(self):
         collector = AsteroidCollector(
@@ -27,6 +57,9 @@ class TestAsteroidCollector:
                 {"index": 2, "name": "metallic-asteroid-chunk"},
             ],
         }
+
+        # Assert no issues
+        collector.validate(mode=ValidationMode.PEDANTIC).reissue_all()
 
         with pytest.raises(DataFormatError):
             AsteroidCollector(chunk_filter="wrong").validate().reissue_all()
@@ -45,56 +78,46 @@ class TestAsteroidCollector:
         # Test hybrid
         ac.chunk_filter = [
             "oxide-asteroid-chunk",
-            {"index": 2, "name": "metallic-asteroid-chunk"},
+            AsteroidChunkID(index=2, name="metallic-asteroid-chunk"),
         ]
         assert ac.to_dict()["chunk-filter"] == [
             {"index": 1, "name": "oxide-asteroid-chunk"},
             {"index": 2, "name": "metallic-asteroid-chunk"},
         ]
 
-        ac.validate_assignment = "none"
-        ac.chunk_filter = "wrong"
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            ac.chunk_filter = "wrong"
         assert ac.chunk_filter == "wrong"
 
     def test_read_contents(self):
         ac = AsteroidCollector("asteroid-collector")
+        assert ac.read_contents == False
 
         ac.read_contents = True
         assert ac.read_contents == True
 
-        ac.read_contents = None
-        assert ac.read_contents == None
-
         with pytest.raises(DataFormatError):
             ac.read_contents = "wrong"
-        assert ac.read_contents == None
+        assert ac.read_contents == True
 
-        ac.validate_assignment = "none"
-        ac.read_contents = "wrong"
-        assert ac.read_contents == "wrong"
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            ac.read_contents = "wrong"
+            assert ac.read_contents == "wrong"
 
     def test_include_hands(self):
         ac = AsteroidCollector("asteroid-collector")
+        assert ac.read_hands == True
 
-        ac.include_hands = True
-        assert ac.include_hands == True
-
-        ac.include_hands = None
-        assert ac.include_hands == None
+        ac.read_hands = False
+        assert ac.read_hands == False
 
         with pytest.raises(DataFormatError):
-            ac.include_hands = "wrong"
-        assert ac.include_hands == None
-
-        ac.validate_assignment = "none"
-        ac.include_hands = "wrong"
-        assert ac.include_hands == "wrong"
+            ac.read_hands = "wrong"
+        assert ac.read_hands == False
 
     def test_mergable_with(self):
         collector1 = AsteroidCollector("asteroid-collector")
-        collector2 = AsteroidCollector(
-            "asteroid-collector", items={"speed-module-2": 2}
-        )
+        collector2 = AsteroidCollector("asteroid-collector", tags={"some": "stuff"})
 
         assert collector1.mergable_with(collector2)
         assert collector2.mergable_with(collector1)
@@ -103,15 +126,28 @@ class TestAsteroidCollector:
         assert not collector1.mergable_with(collector2)
 
     def test_merge(self):
-        collector1 = AsteroidCollector("beacon")
-        collector2 = AsteroidCollector("beacon")
+        collector1 = AsteroidCollector("asteroid-collector")
+        collector2 = AsteroidCollector(
+            "asteroid-collector",
+            tags={"some": "stuff"},
+            chunk_filter=["oxide-asteroid-chunk"],
+            read_contents=True,
+            read_hands=False,
+        )
 
         collector1.merge(collector2)
         del collector2
 
+        assert collector1.tags == {"some": "stuff"}
+        assert collector1.chunk_filter == [
+            AsteroidChunkID(index=1, name="oxide-asteroid-chunk")
+        ]
+        assert collector1.read_contents == True
+        assert collector1.read_hands == False
+
     def test_eq(self):
-        collector1 = AsteroidCollector("beacon")
-        collector2 = AsteroidCollector("beacon")
+        collector1 = AsteroidCollector("asteroid-collector")
+        collector2 = AsteroidCollector("asteroid-collector")
 
         assert collector1 == collector2
 

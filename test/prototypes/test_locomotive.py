@@ -1,12 +1,54 @@
 # test_locomotive.py
 
+from draftsman.constants import Orientation, InventoryType, ValidationMode
 from draftsman.entity import Locomotive, locomotives, Container
 from draftsman.error import DataFormatError
-from draftsman.signatures import Color
+from draftsman.signatures import (
+    Color,
+    BlueprintInsertPlan,
+    ItemInventoryPositions,
+    InventoryPosition,
+    EquipmentComponent,
+)
+import draftsman.validators
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable
 import pytest
+
+
+@pytest.fixture
+def valid_locomotive():
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return Locomotive(
+            "locomotive",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            orientation=Orientation.EAST,
+            color=(0.5, 0.5, 0.5),
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="coal",
+                    items=ItemInventoryPositions(
+                        in_inventory=[
+                            InventoryPosition(
+                                inventory=InventoryType.FUEL, stack=0, count=50
+                            )
+                        ]
+                    ),
+                ),
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                ),
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            enable_logistics_while_moving=False,
+            tags={"blah": "blah"},
+        )
 
 
 class TestLocomotive:
@@ -25,8 +67,6 @@ class TestLocomotive:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Locomotive("locomotive", unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Locomotive("this is not a locomotive").validate().reissue_all()
         # Warn if the locomotive is not on a rail (close enough to one?)
@@ -37,6 +77,11 @@ class TestLocomotive:
             Locomotive("locomotive", orientation="wrong").validate().reissue_all()
         with pytest.raises(DataFormatError):
             Locomotive("locomotive", color="also wrong").validate().reissue_all()
+
+    def test_color(self):
+        assert Locomotive("locomotive").color == Color(
+            234 / 255, 17 / 255, 0, 127 / 255
+        )
 
     def test_mergable_with(self):
         train1 = Locomotive("locomotive")
@@ -62,7 +107,7 @@ class TestLocomotive:
 
         assert train1.to_dict() == {
             "name": "locomotive",
-            "position": {"x": 1.0, "y": 3.0},
+            "position": {"x": 0.0, "y": 0.0},
             "color": {"r": 100, "g": 100, "b": 100},
             "tags": {"some": "stuff"},
         }

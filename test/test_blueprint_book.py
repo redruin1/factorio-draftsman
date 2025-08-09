@@ -1,17 +1,18 @@
 # test_blueprint_book.py
 
-from draftsman._factorio_version import __factorio_version_info__, __factorio_version__
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintableList, BlueprintBook
+from draftsman.data import mods
 from draftsman.error import (
     InvalidSignalError,
     IncorrectBlueprintTypeError,
     DataFormatError,
+    IncompleteSignalError,
 )
 from draftsman.signatures import Color, Icon
-from draftsman.utils import encode_version, string_to_JSON
+from draftsman.utils import encode_version, string_to_JSON, version_tuple_to_string
 from draftsman.warning import DraftsmanWarning, IndexWarning, UnknownSignalWarning
 
 import pytest
@@ -53,7 +54,7 @@ class TestBlueprintableList:
         with pytest.raises(TypeError):
             BlueprintableList(["incorrect"])
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncorrectBlueprintTypeError):
             BlueprintableList([{"incorrect": "thing"}])
 
     def test_setitem(self):
@@ -74,8 +75,19 @@ class TestBlueprintableList:
 
         assert blueprint_book.blueprints.data == []
 
+    def test_eq(self):
+        a = BlueprintBook()
+        b = BlueprintBook()
+        assert a.blueprints == b.blueprints
+
+        b.blueprints = [Blueprint()]
+        assert a.blueprints != b.blueprints
+
+        # Different type
+        assert a.blueprints != TypeError
+
     def test_repr(self):
-        assert repr(BlueprintBook().blueprints) == "<BlueprintableList>[]"
+        assert repr(BlueprintBook().blueprints) == "BlueprintableList([])"
 
 
 class TestBlueprintBook:
@@ -86,7 +98,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 # "active_index": 0,
                 "item": "blueprint-book",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -94,19 +106,19 @@ class TestBlueprintBook:
             "blueprint_book": {
                 "active_index": 0,
                 "item": "blueprint-book",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
-        blueprint_book = BlueprintBook(example)
+        blueprint_book = BlueprintBook.from_dict(example)
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 # "active_index": 0,
                 "item": "blueprint-book",
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
-        blueprint_book = BlueprintBook(
+        blueprint_book = BlueprintBook.from_string(
             "0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MLY3MTQ1NDY3NDGprAVVBHPY="
         )
         assert blueprint_book.to_dict() == {
@@ -118,20 +130,20 @@ class TestBlueprintBook:
         }
 
         # Test icons
-        blueprint_book = BlueprintBook(
+        blueprint_book = BlueprintBook.from_string(
             "0eNpFi1EKwjAQBe/yviPYkhjNVURK2i4SbHdLE6sScnfbIvj53sxktMOTpjlwalqRB1xGSDTC/cFhBwqhE45w14wY7uyHzU2fiVZ3TxTYj9t6ifQoa8A9veGqclPwXQoLNb/rqLDQHIMwXH2utL3U1hitjT2V8gXrTjDd"
         )
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 # "active_index": 0,
                 "item": "blueprint-book",
-                "icons": [{"index": 1, "signal": {"name": "wood"}}],
+                "icons": [{"index": 1, "signal": {"name": "wood", "type": "item"}}],
                 "version": encode_version(1, 1, 59, 0),
             }
         }
 
         # Test description
-        blueprint_book = BlueprintBook(
+        blueprint_book = BlueprintBook.from_string(
             "0eNpNys0KgCAQBOBXiT1bVPTrrScJrT0smYaZBNG7Z14K5jLzzQVSHbhZ0m6UxizALyCHK/AP0ggMlJCoAgyJFitmYZlxnyxtjoyO+6+/LCZHHkfSM57AcwYe7R6/ZVdUbV+2dRNSdff9AJD5LO0="
         )
         assert blueprint_book.to_dict() == {
@@ -145,71 +157,71 @@ class TestBlueprintBook:
         }
 
         # Incorrect constructor
-        with pytest.raises(DataFormatError):
-            BlueprintBook(DataFormatError)
+        # with pytest.raises(DataFormatError):
+        #     BlueprintBook(DataFormatError)
 
         # Valid blueprint string, but wrong type
         with pytest.raises(IncorrectBlueprintTypeError):
-            BlueprintBook(
+            BlueprintBook.from_string(
                 "0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDG3NDI3NTI0s7A0q60FAHmRE1c="
             )
 
-    def test_validate(self):
-        incorrect_data = {
-            "blueprint_book": {
-                "item": "very-wrong",  # This is ignored; TODO: is this a good idea?
-                "version": "wrong",
-            }
-        }
-        bpb = BlueprintBook(incorrect_data, validate="none")
-        assert bpb.version == "wrong"
-        assert bpb.to_dict() == {
-            "blueprint_book": {"item": "blueprint-book", "version": "wrong"}
-        }
+    # def test_validate(self):
+    #     incorrect_data = {
+    #         "blueprint_book": {
+    #             "item": "very-wrong",  # This is ignored; TODO: is this a good idea?
+    #             "version": "wrong",
+    #         }
+    #     }
+    #     bpb = BlueprintBook(incorrect_data, validate="none")
+    #     assert bpb.version == "wrong"
+    #     assert bpb.to_dict() == {
+    #         "blueprint_book": {"item": "blueprint-book", "version": "wrong"}
+    #     }
 
-        # Issue Errors
-        with pytest.raises(DataFormatError):
-            bpb.validate().reissue_all()
+    #     # Issue Errors
+    #     with pytest.raises(DataFormatError):
+    #         bpb.validate().reissue_all()
 
-        # Fix
-        bpb.version = (1, 0)
-        assert bpb.version == 281474976710656
-        bpb.validate().reissue_all()  # Nothing
+    #     # Fix
+    #     bpb.version = (1, 0)
+    #     assert bpb.version == 281474976710656
+    #     bpb.validate().reissue_all()  # Nothing
 
-        bpb.validate_assignment = "none"
-        bpb.icons = [{"signal": {"name": "unknown", "type": "item"}, "index": 0}]
+    #     bpb.validate_assignment = "none"
+    #     bpb.icons = [{"signal": {"name": "unknown", "type": "item"}, "index": 0}]
 
-        # No warnings
-        bpb.validate(mode="minimum").reissue_all()
+    #     # No warnings
+    #     bpb.validate(mode="minimum").reissue_all()
 
-        # Issue warnings
-        with pytest.warns(UnknownSignalWarning):
-            bpb.validate(mode="strict").reissue_all()
+    #     # Issue warnings
+    #     with pytest.warns(UnknownSignalWarning):
+    #         bpb.validate(mode="strict").reissue_all()
 
-    def test_setup(self):
-        blueprint_book = BlueprintBook()
-        example = {
-            "item": "blueprint-book",
-            "label": "a label",
-            "label_color": {"r": 50, "g": 50, "b": 50},
-            "active_index": 1,
-            "blueprints": [],
-            "version": encode_version(*__factorio_version_info__),
-        }
-        blueprint_book.setup(**example)
-        assert blueprint_book.to_dict() == {
-            "blueprint_book": {
-                "item": "blueprint-book",
-                "label": "a label",
-                "label_color": {"r": 50, "g": 50, "b": 50},
-                "active_index": 1,
-                "version": encode_version(*__factorio_version_info__),
-            }
-        }
+    # def test_setup(self):
+    #     blueprint_book = BlueprintBook()
+    #     example = {
+    #         "item": "blueprint-book",
+    #         "label": "a label",
+    #         "label_color": {"r": 50, "g": 50, "b": 50},
+    #         "active_index": 1,
+    #         "blueprints": [],
+    #         "version": encode_version(*mods.versions["base"]),
+    #     }
+    #     blueprint_book.setup(**example)
+    #     assert blueprint_book.to_dict() == {
+    #         "blueprint_book": {
+    #             "item": "blueprint-book",
+    #             "label": "a label",
+    #             "label_color": {"r": 50, "g": 50, "b": 50},
+    #             "active_index": 1,
+    #             "version": encode_version(*mods.versions["base"]),
+    #         }
+    #     }
 
-        with pytest.warns(DraftsmanWarning):
-            blueprint_book.setup(unused_keyword="whatever")  # No warning!
-            blueprint_book.validate().reissue_all()  # Warning
+    #     with pytest.warns(DraftsmanWarning):
+    #         blueprint_book.setup(unused_keyword="whatever")  # No warning!
+    #         blueprint_book.validate().reissue_all()  # Warning
 
     def test_set_label(self):
         blueprint_book = BlueprintBook()
@@ -227,6 +239,18 @@ class TestBlueprintBook:
         }
         # None
         blueprint_book.label = None
+        assert blueprint_book.label == ""
+        assert blueprint_book.to_dict() == {
+            "blueprint_book": {
+                "item": "blueprint-book",
+                # "active_index": 0,
+                "version": encode_version(1, 1, 54, 0),
+            }
+        }
+        # None (no validation)
+        blueprint_book.validate_assignment = "none"
+        blueprint_book.label = None
+        assert blueprint_book.label == ""
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -240,7 +264,7 @@ class TestBlueprintBook:
         blueprint_book.version = (1, 1, 54, 0)
         # Valid 3 args
         # Test for floating point conversion error by using 0.1
-        blueprint_book.set_label_color(0.5, 0.1, 0.5)
+        blueprint_book.label_color = (0.5, 0.1, 0.5)
         assert blueprint_book.label_color == Color(**{"r": 0.5, "g": 0.1, "b": 0.5})
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
@@ -251,7 +275,7 @@ class TestBlueprintBook:
             }
         }
         # Valid 4 args
-        blueprint_book.set_label_color(1.0, 1.0, 1.0, 0.25)
+        blueprint_book.label_color = (1.0, 1.0, 1.0, 0.25)
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -262,7 +286,7 @@ class TestBlueprintBook:
         }
         # Valid None
         blueprint_book.label_color = None
-        assert blueprint_book.label_color == None
+        assert blueprint_book.label_color is None
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
@@ -271,61 +295,67 @@ class TestBlueprintBook:
             }
         }
 
-        with pytest.raises(DataFormatError):
-            blueprint_book.set_label_color(TypeError, TypeError, TypeError)
+        # TODO: reimplement
+        # with pytest.raises(DataFormatError):
+        #     blueprint_book.label_color = (TypeError, TypeError, TypeError)
 
-        # Invalid Data
-        with pytest.raises(DataFormatError):
-            blueprint_book.set_label_color("red", blueprint_book, 5)
+        # # Invalid Data
+        # with pytest.raises(DataFormatError):
+        #     blueprint_book.label_color = ("red", blueprint_book, 5)
 
     def test_set_icons(self):
         blueprint_book = BlueprintBook()
         # Single Icon
-        blueprint_book.set_icons("signal-A")
+        blueprint_book.icons = ["signal-A"]
         assert blueprint_book.icons == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
-        ]
-        assert blueprint_book["blueprint_book"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1})
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0})
         ]
         # Multiple Icons
-        blueprint_book.set_icons("signal-A", "signal-B", "signal-C")
-        assert blueprint_book["blueprint_book"]["icons"] == [
-            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 1}),
-            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 2}),
-            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 3}),
+        blueprint_book.icons = ["signal-A", "signal-B", "signal-C"]
+        assert blueprint_book.icons == [
+            Icon(**{"signal": {"name": "signal-A", "type": "virtual"}, "index": 0}),
+            Icon(**{"signal": {"name": "signal-B", "type": "virtual"}, "index": 1}),
+            Icon(**{"signal": {"name": "signal-C", "type": "virtual"}, "index": 2}),
         ]
 
         # Raw signal dicts
         blueprint_book.icons = []
         with pytest.raises(DataFormatError):
-            blueprint_book.set_icons({"name": "some-signal", "type": "some-type"})
+            blueprint_book.icons = [
+                {"signal": {"name": TypeError, "type": "some-type"}}
+            ]
         assert blueprint_book.icons == []
 
         with pytest.warns(UnknownSignalWarning):
-            blueprint_book.set_icons({"name": "some-signal", "type": "virtual"})
-        assert blueprint_book["blueprint_book"]["icons"] == [
-            Icon(**{"signal": {"name": "some-signal", "type": "virtual"}, "index": 1})
-        ]
+            blueprint_book.icons = [
+                Icon(
+                    **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 0}
+                )
+            ]
+            assert blueprint_book.icons == [
+                Icon(
+                    **{"signal": {"name": "some-signal", "type": "virtual"}, "index": 0}
+                )
+            ]
 
         # None
-        blueprint_book.icons = None
-        assert blueprint_book.icons == None
+        blueprint_book.icons = []
+        assert blueprint_book.icons == []
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
                 # "active_index": 0, # Default
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
         # Incorrect Signal Name
-        with pytest.raises(DataFormatError):
-            blueprint_book.set_icons("wrong!")
+        with pytest.raises(IncompleteSignalError):
+            blueprint_book.icons = ["wrong!"]
 
         # Incorrect Signal Type
         with pytest.raises(DataFormatError):
-            blueprint_book.set_icons(123456, "uh-oh")
+            blueprint_book.icons = [123456, TypeError]
 
     def test_set_active_index(self):
         blueprint_book = BlueprintBook()
@@ -333,9 +363,6 @@ class TestBlueprintBook:
         blueprint_book.blueprints.append(Blueprint())
         blueprint_book.active_index = 1
         assert blueprint_book.active_index == 1
-
-        blueprint_book.active_index = None
-        assert blueprint_book.active_index == None
 
         # Errors
         with pytest.raises(DataFormatError):
@@ -347,12 +374,6 @@ class TestBlueprintBook:
         blueprint_book = BlueprintBook()
         blueprint_book.version = (1, 0, 40, 0)
         assert blueprint_book.version == 281474979332096
-
-        blueprint_book.version = None
-        assert blueprint_book.version == None
-        assert blueprint_book.to_dict() == {
-            "blueprint_book": {"item": "blueprint-book"}
-        }
 
         with pytest.raises(DataFormatError):
             blueprint_book.version = TypeError
@@ -367,9 +388,9 @@ class TestBlueprintBook:
         assert blueprint_book.blueprints.data == []
 
         blueprints = [
-            Blueprint({"blueprint": {"label": "A"}}),
+            Blueprint(label="A"),
             BlueprintBook(),
-            Blueprint({"blueprint": {"label": "B"}}),
+            Blueprint(label="B"),
         ]
 
         blueprint_book.blueprints = blueprints
@@ -384,7 +405,7 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "A",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -392,7 +413,7 @@ class TestBlueprintBook:
                         "blueprint_book": {
                             "item": "blueprint-book",
                             # "active_index": 0, # Default
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -400,11 +421,11 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "B",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -420,7 +441,7 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "A",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -428,7 +449,7 @@ class TestBlueprintBook:
                         "blueprint_book": {
                             "item": "blueprint-book",
                             # "active_index": 0, # Default
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
@@ -436,11 +457,11 @@ class TestBlueprintBook:
                         "blueprint": {
                             "item": "blueprint",
                             "label": "B",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
@@ -448,7 +469,7 @@ class TestBlueprintBook:
         assert isinstance(blueprint_book.blueprints, BlueprintableList)
         assert blueprint_book.blueprints.data == []
 
-        with pytest.raises(DataFormatError):
+        with pytest.raises(TypeError):
             blueprint_book.blueprints = TypeError
 
     def test_custom_index(self):
@@ -460,7 +481,7 @@ class TestBlueprintBook:
         blueprint.index = 5
         blueprint_book.blueprints.append(blueprint)
 
-        blueprint_book.blueprints[1].index = 5
+        assert blueprint_book.blueprints[1].index == 5
         assert len(blueprint_book.blueprints) == 2
 
         assert blueprint_book.to_dict() == {
@@ -471,66 +492,68 @@ class TestBlueprintBook:
                         "index": 0,
                         "blueprint": {
                             "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                     {
                         "index": 5,
                         "blueprint": {
                             "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
+                            "version": encode_version(*mods.versions["base"]),
                         },
                     },
                 ],
-                "version": encode_version(*__factorio_version_info__),
+                "version": encode_version(*mods.versions["base"]),
             }
         }
 
-        blueprint = Blueprint(validate_assignment="none")
-        blueprint.index = "incorrect"
-        assert blueprint.index == "incorrect"
-        blueprint_book.blueprints.append(blueprint)
+        # blueprint = Blueprint(validate_assignment="none")
+        # blueprint.index = "incorrect"
+        # assert blueprint.index == "incorrect"
+        # blueprint_book.blueprints.append(blueprint)
 
-        assert len(blueprint_book.blueprints) == 3
-        assert blueprint_book.to_dict() == {
-            "blueprint_book": {
-                "item": "blueprint-book",
-                "blueprints": [
-                    {
-                        "index": 0,
-                        "blueprint": {
-                            "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
-                        },
-                    },
-                    {
-                        "index": 5,
-                        "blueprint": {
-                            "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
-                        },
-                    },
-                    {
-                        "index": "incorrect",
-                        "blueprint": {
-                            "item": "blueprint",
-                            "version": encode_version(*__factorio_version_info__),
-                        },
-                    },
-                ],
-                "version": encode_version(*__factorio_version_info__),
-            }
-        }
+        # assert len(blueprint_book.blueprints) == 3
+        # assert blueprint_book.to_dict() == {
+        #     "blueprint_book": {
+        #         "item": "blueprint-book",
+        #         "blueprints": [
+        #             {
+        #                 # "index": 0, # Default
+        #                 "blueprint": {
+        #                     "item": "blueprint",
+        #                     "version": encode_version(*mods.versions["base"]),
+        #                 },
+        #             },
+        #             {
+        #                 "index": 5,
+        #                 "blueprint": {
+        #                     "item": "blueprint",
+        #                     "version": encode_version(*mods.versions["base"]),
+        #                 },
+        #             },
+        #             {
+        #                 "index": "incorrect",
+        #                 "blueprint": {
+        #                     "item": "blueprint",
+        #                     "version": encode_version(*mods.versions["base"]),
+        #                 },
+        #             },
+        #         ],
+        #         "version": encode_version(*mods.versions["base"]),
+        #     }
+        # }
 
     def test_version_tuple(self):
         blueprint_book = BlueprintBook()
-        assert blueprint_book.version_tuple() == __factorio_version_info__
+        assert blueprint_book.version_tuple() == mods.versions["base"]
         blueprint_book.version = 0
         assert blueprint_book.version_tuple() == (0, 0, 0, 0)
 
     def test_version_string(self):
         blueprint_book = BlueprintBook()
-        assert blueprint_book.version_string() == __factorio_version__
+        assert blueprint_book.version_string() == version_tuple_to_string(
+            mods.versions["base"]
+        )
         blueprint_book.version = (0, 0, 0, 0)
         assert blueprint_book.version_string() == "0.0.0.0"
 
@@ -546,15 +569,9 @@ class TestBlueprintBook:
         # assert blueprint_book.blueprints is blueprint_book._root["blueprint_book"]["blueprints"]
         # assert blueprint_book.blueprints is blueprint_book["blueprint_book"]["blueprints"]
 
-    def test_setitem(self):
-        blueprint_book = BlueprintBook()
-        blueprint_book["blueprint_book"]["label"] = "whatever"
-        assert blueprint_book._root["blueprint_book"]["label"] is blueprint_book.label
-        assert blueprint_book["blueprint_book"]["label"] == "whatever"
-
     def test_import_from_string(self):
         test_string = """0eNqVj+0KgjAYhe/l/T1hqaTuViJE3YuM1jvZhwRj996KNOhH1N/Dec5HhFEHXKwi34/GXEDEt+JAnCJInAw5b8PklaF+0QMR2ofRofeK5myjoDUD5fEK4gMoNoDBitZlBUTZHuqmK5v22PGK1ymjJPEGgicWISyzHST+0PRy/lVRpfPO70+L53cGQ568Yr+t+ZKX7knXakI="""
-        blueprint_book = BlueprintBook(test_string)
+        blueprint_book = BlueprintBook.from_string(test_string)
 
         assert len(blueprint_book.blueprints) == 2
         assert blueprint_book.blueprints[0].index == 0

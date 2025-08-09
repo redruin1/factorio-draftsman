@@ -8,13 +8,22 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_heat_pipe():
+    return HeatPipe(
+        "heat-pipe",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestHeatPipe:
     def test_constructor_init(self):
         heat_pipe = HeatPipe()
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            HeatPipe(unused_keyword="whatever").validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             HeatPipe("not a heat pipe").validate().reissue_all()
 

@@ -1,14 +1,19 @@
 # test_inserter.py
 
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.classes.group import Group
+from draftsman.classes.vector import Vector
 from draftsman.constants import (
     Direction,
     InserterReadMode,
     ValidationMode,
     InserterModeOfOperation,
 )
+from draftsman.data import mods
 from draftsman.entity import Inserter, inserters, Container
-from draftsman.error import DataFormatError
-from draftsman.signatures import SignalID
+from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.signatures import SignalID, Condition, ItemFilter
+import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownKeywordWarning,
@@ -19,6 +24,39 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_inserter():
+    return Inserter(
+        "inserter",
+        id="test",
+        quality="uncommon",
+        direction=Direction.EAST,
+        tile_position=(1, 1),
+        mode_of_operation=InserterModeOfOperation.NONE,  # Old, legacy 1.0 parameter
+        circuit_enabled=True,
+        circuit_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        connect_to_logistic_network=True,
+        logistic_condition=Condition(
+            first_signal="signal-A", comparator="<", second_signal="signal-B"
+        ),
+        read_hand_contents=True,
+        read_mode=InserterReadMode.PULSE,
+        override_stack_size=1,
+        circuit_set_stack_size=True,
+        stack_size_control_signal="signal-A",
+        use_filters=True,
+        filters=[ItemFilter(index=0, name="iron-ore")],
+        circuit_set_filters=True,
+        pickup_position_offset=(1, 1),
+        drop_position_offset=(1, 0),
+        filter_mode="blacklist",
+        spoil_priority="spoiled-first",
+        tags={"blah": "blah"},
+    )
+
+
 class TestInserter:
     def test_constructor_init(self):
         # Valid
@@ -27,18 +65,14 @@ class TestInserter:
             direction=Direction.EAST,
             tile_position=[1, 1],
             override_stack_size=1,
-            control_behavior={
-                "circuit_set_stack_size": True,
-                "stack_control_input_signal": "signal-A",
-                "circuit_enable_disable": True,
-                "circuit_condition": {},
-                "connect_to_logistic_network": True,
-                "logistic_condition": {},
-                "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": InserterReadMode.PULSE,
-            },
+            circuit_set_stack_size=True,
+            stack_size_control_signal="signal-A",
+            circuit_enabled=True,
+            connect_to_logistic_network=True,
+            read_hand_contents=True,
+            read_mode=InserterReadMode.PULSE,
         )
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "inserter",
             "position": {"x": 1.5, "y": 1.5},
             "direction": Direction.EAST,
@@ -49,22 +83,20 @@ class TestInserter:
                     "name": "signal-A",
                     "type": "virtual",
                 },
-                "circuit_enable_disable": True,
+                "circuit_enabled": True,
                 # "circuit_condition": {}, # Default
                 "connect_to_logistic_network": True,
                 # "logistic_condition": {}, # Default
                 "circuit_read_hand_contents": True,
-                "circuit_hand_read_mode": InserterReadMode.PULSE,
+                # "circuit_hand_read_mode": InserterReadMode.PULSE,  # Default
             },
         }
 
         inserter = Inserter(
             "inserter",
-            control_behavior={
-                "stack_control_input_signal": {"name": "signal-A", "type": "virtual"}
-            },
+            stack_size_control_signal={"name": "signal-A", "type": "virtual"},
         )
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {
@@ -76,14 +108,6 @@ class TestInserter:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Inserter(
-                position=[0, 0], direction=Direction.WEST, invalid_keyword=5
-            ).validate().reissue_all()
-        with pytest.warns(UnknownKeywordWarning):
-            Inserter(
-                "inserter", control_behavior={"this is": ["also", "very", "wrong"]}
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Inserter("this is not an inserter").validate().reissue_all()
 
@@ -92,7 +116,7 @@ class TestInserter:
         with pytest.raises(TypeError):
             Inserter("inserter", id=25).validate().reissue_all()
 
-        with pytest.raises(TypeError):
+        with pytest.raises(DataFormatError):
             Inserter("inserter", position=TypeError).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
@@ -104,7 +128,130 @@ class TestInserter:
             ).validate().reissue_all()
 
         with pytest.raises(DataFormatError):
-            Inserter("inserter", control_behavior="incorrect").validate().reissue_all()
+            Inserter("inserter", tags="incorrect").validate().reissue_all()
+
+    def test_filter_count(self):
+        if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+            assert Inserter("inserter").filter_count == 0
+            assert Inserter("filter-inserter").filter_count == 5
+        else:
+            assert Inserter("inserter").filter_count == 5
+
+    def test_pickup_position(self):
+        inserter = Inserter("inserter", direction=Direction.NORTH)
+        assert inserter.pickup_position == Vector(0.5, -0.5)
+        # Test different direction
+        inserter.direction = Direction.EAST
+        assert inserter.pickup_position == Vector(1.5, 0.5)
+        # Test different position
+        inserter.tile_position = (10, 10)
+        assert inserter.pickup_position == Vector(11.5, 10.5)
+        # Test custom offset
+        inserter.pickup_position_offset = (1, 1)
+        assert inserter.pickup_position == Vector(12.5, 11.5)
+
+        # Test long-handed inserter
+        long_inserter = Inserter("long-handed-inserter", direction=Direction.NORTH)
+        assert long_inserter.pickup_position == Vector(0.5, -1.5)
+        # Test different direction
+        long_inserter.direction = Direction.EAST
+        assert long_inserter.pickup_position == Vector(2.5, 0.5)
+        # Test different position
+        long_inserter.tile_position = (10, 10)
+        assert long_inserter.pickup_position == Vector(12.5, 10.5)
+        # Test custom offset
+        long_inserter.pickup_position_offset = (1, 1)
+        assert long_inserter.pickup_position == Vector(13.5, 11.5)
+
+        # Test that Group positions are respected
+        group = Group(position=(10, 10))
+        group.entities.append(inserter, id="inserter")
+        assert group.entities["inserter"].pickup_position == Vector(22.5, 21.5)
+
+        with pytest.warns(UnknownEntityWarning):
+            assert Inserter("some unknown inserter").pickup_position == Vector(0, 0)
+
+    def test_dropoff_position(self):
+        inserter = Inserter("inserter", direction=Direction.NORTH)
+        assert inserter.drop_position == Vector(0.5, 1.7)
+        # Test different direction
+        inserter.direction = Direction.EAST
+        assert inserter.drop_position == Vector(-0.7, 0.5)
+        # Test different position
+        inserter.tile_position = (10, 10)
+        assert inserter.drop_position == Vector(9.3, 10.5)
+        # Test custom offset
+        inserter.drop_position_offset = (1, 1)
+        assert inserter.drop_position == Vector(10.3, 11.5)
+
+        # Test long-handed inserter
+        long_inserter = Inserter("long-handed-inserter", direction=Direction.NORTH)
+        assert long_inserter.drop_position == Vector(0.5, 2.7)
+        # Test different direction
+        long_inserter.direction = Direction.EAST
+        # assert long_inserter.drop_position == Vector(-1.7, 0.5)
+        assert long_inserter.drop_position._data == pytest.approx((-1.7, 0.5))
+        # Test different position
+        long_inserter.tile_position = (10, 10)
+        assert long_inserter.drop_position == Vector(8.3, 10.5)
+        # Test custom offset
+        long_inserter.drop_position_offset = (1, 1)
+        assert long_inserter.drop_position == Vector(9.3, 11.5)
+
+        # Test that Group positions are respected
+        group = Group(position=(10, 10))
+        group.entities.append(inserter, id="inserter")
+        assert group.entities["inserter"].drop_position == Vector(20.3, 21.5)
+
+        with pytest.warns(UnknownEntityWarning):
+            assert Inserter("some unknown inserter").drop_position == Vector(0, 0)
+
+    def test_set_filters(self):
+        inserter = Inserter("inserter")
+
+        with pytest.raises(DataFormatError):
+            inserter.filters = "wrong"
+
+        inserter.set_item_filter(
+            0, item="transport-belt", quality="uncommon", comparator=">="
+        )
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "transport-belt",
+                    "quality": "uncommon",
+                    "comparator": "≥",
+                }
+            ],
+        }
+
+        inserter.set_item_filter(0, item="fast-transport-belt")
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "fast-transport-belt",
+                }
+            ],
+        }
+
+        inserter.set_item_filter(1, item="express-transport-belt")
+        inserter.set_item_filter(1, item=None)
+        assert inserter.to_dict() == {
+            "name": "inserter",
+            "position": {"x": 0.5, "y": 0.5},
+            "filters": [
+                {
+                    "index": 1,
+                    "name": "fast-transport-belt",
+                }
+            ],
+        }
 
     def test_set_spoil_priority(self):
         inserter = Inserter("stack-inserter")
@@ -112,7 +259,11 @@ class TestInserter:
 
         inserter.spoil_priority = "spoiled-first"
         assert inserter.spoil_priority == "spoiled-first"
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(1, 0)) == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
             "spoil_priority": "spoiled-first",
@@ -120,7 +271,11 @@ class TestInserter:
 
         inserter.spoil_priority = "fresh-first"
         assert inserter.spoil_priority == "fresh-first"
-        assert inserter.to_dict() == {
+        assert inserter.to_dict(version=(1, 0)) == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
+        assert inserter.to_dict(version=(2, 0)) == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
             "spoil_priority": "fresh-first",
@@ -129,19 +284,18 @@ class TestInserter:
         with pytest.raises(DataFormatError):
             inserter.spoil_priority = "incorrect"
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.spoil_priority = "incorrect"
-        assert inserter.spoil_priority == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "spoil_priority": "incorrect",
-        }
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            inserter.spoil_priority = "incorrect"
+            assert inserter.spoil_priority == "incorrect"
+            assert inserter.to_dict(version=(2, 0)) == {
+                "name": "stack-inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "spoil_priority": "incorrect",
+            }
 
     def test_set_read_contents(self):
         inserter = Inserter("inserter")
-        assert inserter.read_hand_contents == None
+        assert inserter.read_hand_contents == False
         assert inserter.to_dict() == {
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
@@ -155,32 +309,22 @@ class TestInserter:
             "control_behavior": {"circuit_read_hand_contents": True},
         }
 
-        inserter.read_hand_contents = None
-        assert inserter.read_hand_contents == None
-        assert inserter.control_behavior == Inserter.Format.ControlBehavior()
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-        }
-
         with pytest.raises(DataFormatError):
             inserter.read_hand_contents = "incorrect"
-        assert inserter.read_hand_contents == None
+        assert inserter.read_hand_contents == True
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-
-        inserter.read_hand_contents = "incorrect"
-        assert inserter.read_hand_contents == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_read_hand_contents": "incorrect"},
-        }
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            inserter.read_hand_contents = "incorrect"
+            assert inserter.read_hand_contents == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_read_hand_contents": "incorrect"},
+            }
 
     def test_set_read_mode(self):
         inserter = Inserter("inserter")
-        assert inserter.read_mode == None
+        assert inserter.read_mode == InserterReadMode.PULSE
         assert inserter.to_dict() == {
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
@@ -192,28 +336,6 @@ class TestInserter:
             "name": "inserter",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {"circuit_hand_read_mode": InserterReadMode.HOLD},
-        }
-
-        inserter.read_mode = None
-        assert inserter.read_mode == None
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-        }
-
-        with pytest.raises(DataFormatError):
-            inserter.read_mode = "incorrect"
-        assert inserter.read_mode == None
-
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-
-        inserter.read_mode = "incorrect"
-        assert inserter.read_mode == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_hand_read_mode": "incorrect"},
         }
 
     # 1.0
@@ -261,6 +383,10 @@ class TestInserter:
     def test_set_circuit_filters(self):
         inserter = Inserter("stack-inserter")
         assert inserter.circuit_set_filters == False
+        assert inserter.to_dict() == {
+            "name": "stack-inserter",
+            "position": {"x": 0.5, "y": 0.5},
+        }
 
         inserter.circuit_set_filters = True
         assert inserter.circuit_set_filters == True
@@ -270,58 +396,45 @@ class TestInserter:
             "control_behavior": {"circuit_set_filters": True},
         }
 
-        inserter.circuit_set_filters = False
-        assert inserter.circuit_set_filters == False
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-        }
-
         with pytest.raises(DataFormatError):
             inserter.circuit_set_filters = "incorrect"
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.circuit_set_filters = "incorrect"
-        assert inserter.circuit_set_filters == "incorrect"
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            inserter.circuit_set_filters = "incorrect"
+            assert inserter.circuit_set_filters == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "stack-inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_set_filters": "incorrect"},
+            }
+
+    def test_set_circuit_set_stack_size(self):
+        inserter = Inserter("stack-inserter")
+        assert inserter.circuit_set_stack_size == False
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_set_filters": "incorrect"},
         }
 
-    def test_set_circuit_stack_size_enabled(self):
-        inserter = Inserter("stack-inserter")
-        assert inserter.circuit_stack_size_enabled == None
-
-        inserter.circuit_stack_size_enabled = True
-        assert inserter.circuit_stack_size_enabled == True
+        inserter.circuit_set_stack_size = True
+        assert inserter.circuit_set_stack_size == True
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
             "control_behavior": {"circuit_set_stack_size": True},
         }
 
-        inserter.circuit_stack_size_enabled = False
-        assert inserter.circuit_stack_size_enabled == False
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_set_stack_size": False},
-        }
-
         with pytest.raises(DataFormatError):
-            inserter.circuit_stack_size_enabled = "incorrect"
+            inserter.circuit_set_stack_size = "incorrect"
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.circuit_stack_size_enabled = "incorrect"
-        assert inserter.circuit_stack_size_enabled == "incorrect"
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"circuit_set_stack_size": "incorrect"},
-        }
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            inserter.circuit_set_stack_size = "incorrect"
+            assert inserter.circuit_set_stack_size == "incorrect"
+            assert inserter.to_dict() == {
+                "name": "stack-inserter",
+                "position": {"x": 0.5, "y": 0.5},
+                "control_behavior": {"circuit_set_stack_size": "incorrect"},
+            }
 
     def test_set_stack_size_control_signal(self):
         inserter = Inserter("stack-inserter")
@@ -354,7 +467,7 @@ class TestInserter:
         }
 
         # Unrecognized shorthand
-        with pytest.raises(DataFormatError):
+        with pytest.raises(IncompleteSignalError):
             inserter.stack_size_control_signal = "unknown"
         assert inserter.stack_size_control_signal == SignalID(
             name="signal-S", type="virtual"
@@ -363,35 +476,27 @@ class TestInserter:
         # Unrecognized longhand
         with pytest.warns(UnknownSignalWarning):
             inserter.stack_size_control_signal = {"name": "unknown", "type": "item"}
-        assert inserter.stack_size_control_signal == SignalID(
-            name="unknown", type="item"
-        )
+            assert inserter.stack_size_control_signal == SignalID(
+                name="unknown", type="item"
+            )
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"stack_control_input_signal": {"name": "unknown"}},
+            "control_behavior": {
+                "stack_control_input_signal": {"name": "unknown", "type": "item"}
+            },
         }
 
         with pytest.raises(DataFormatError):
             inserter.stack_size_control_signal = ["very", "wrong"]
 
-        inserter.validate_assignment = "none"
-        assert inserter.validate_assignment == ValidationMode.NONE
-        inserter.stack_size_control_signal = ["very", "wrong"]
-        assert inserter.stack_size_control_signal == ["very", "wrong"]
-        assert inserter.to_dict() == {
-            "name": "stack-inserter",
-            "position": {"x": 0.5, "y": 0.5},
-            "control_behavior": {"stack_control_input_signal": ["very", "wrong"]},
-        }
-
     def test_custom_hand_positions(self):
         inserter = Inserter("stack-inserter")
 
-        inserter.pickup_position = [0, -2]
-        assert inserter.pickup_position == [0, -2]
-        inserter.drop_position = [0, 2]
-        assert inserter.drop_position == [0, 2]
+        inserter.pickup_position_offset = [0, -2]
+        assert inserter.pickup_position_offset == Vector(0, -2)
+        inserter.drop_position_offset = [0, 2]
+        assert inserter.drop_position_offset == Vector(0, 2)
         assert inserter.to_dict() == {
             "name": "stack-inserter",
             "position": {"x": 0.5, "y": 0.5},

@@ -1,9 +1,11 @@
 # tile.py
 
+from draftsman.classes.group import Group
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
 from draftsman.error import DataFormatError, InvalidTileError
+import draftsman.validators
 from draftsman.warning import UnknownTileWarning
 
 import pytest
@@ -24,14 +26,14 @@ class TestTile:
 
         # Invalid name
         with pytest.warns(UnknownTileWarning, match="Unknown tile 'weeeeee'"):
-            tile = Tile("weeeeee").validate().reissue_all()
+            tile = Tile("weeeeee")
 
         # Invalid name with suggestion
         with pytest.warns(
             UnknownTileWarning,
             match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
-            tile = Tile("stonepath").validate().reissue_all()
+            tile = Tile("stonepath")
 
         # TODO: test closure
         # with self.assertRaises(InvalidTileError):
@@ -45,21 +47,18 @@ class TestTile:
             UnknownTileWarning,
             match="Unknown tile 'stonepath'; did you mean 'stone-path'?",
         ):
-            tile = Tile("stonepath").validate().reissue_all()
+            tile = Tile("stonepath")
 
+        # Incorrect type
         with pytest.raises(DataFormatError):
-            tile = Tile(name=100).validate().reissue_all()
+            tile = Tile(name=100)
 
-        # validation off
-        tile = Tile(name=100, validate="none")
+        # Incorrect type with validation off
+        with draftsman.validators.set_mode(ValidationMode.DISABLED):
+            tile = Tile(name=100)
         assert tile.name == 100
-
-        # TODO: test closure
-        # with self.assertRaises(InvalidTileError):
-        #     tile = Tile("incorrect")
-        #     with tile.validate() as issues:
-        #         for error in issues:
-        #             raise error
+        with pytest.raises(DataFormatError):
+            tile.validate().reissue_all()
 
     def test_set_name(self):
         tile = Tile("hazard-concrete-left")
@@ -75,20 +74,6 @@ class TestTile:
         with pytest.warns(UnknownTileWarning):
             tile.name = "weeeeee"
 
-        # TODO: test closure
-        # with self.assertRaises(InvalidTileError):
-        #     tile.name = "incorrect"
-        #     with tile.validate() as issues:
-        #         for error in issues:
-        #             raise error
-
-        # TODO: test closure
-        # with self.assertRaises(InvalidTileError):
-        #     tile.name = "incorrect"
-        #     with tile.validate() as issues:
-        #         for error in issues:
-        #             raise error
-
     def test_set_position(self):
         tile = Tile("landfill", (0, 0))
         tile.position = (-123, 123)
@@ -96,8 +81,16 @@ class TestTile:
         assert tile.position.y == 123
 
         with pytest.raises(DataFormatError):
-            tile._root.position = "incorrect"
-            tile.validate().reissue_all()
+            tile.position = "incorrect"
+
+    def test_global_position(self):
+        tile = Tile("landfill")
+        group = Group(position=(100, 100))
+        group.tiles.append(tile, copy=False)
+        assert tile.position.x == 0
+        assert tile.position.y == 0
+        assert tile.global_position.x == 100
+        assert tile.global_position.y == 100
 
     def test_to_dict(self):
         tile = Tile("landfill", position=(123, 123))
@@ -117,8 +110,9 @@ class TestTileFactory:
         assert isinstance(tile, Tile)
         assert tile.name == "landfill"
 
-        # Unknown tiles are accepted
-        tile = new_tile("unknown")
+        # Unknown tiles are accepted, but warned
+        with pytest.warns(UnknownTileWarning):
+            tile = new_tile("unknown")
         assert isinstance(tile, Tile)
 
         # Draftsman will only complain if you ask it to
@@ -132,11 +126,14 @@ class TestTileFactory:
 
         # You should also be able to set new attributes to them without Draftsman
         # complaining
-        tile = new_tile(
-            "unknown",
-            position=(1, 1),
-            unknown_attribute="value",
-        )
+        with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+            tile = Tile.from_dict(
+                {
+                    "name": "unknown",
+                    "position": {"x": 1, "y": 1},
+                    "unknown_attribute": "value",
+                }
+            )
         assert tile.to_dict() == {
             "name": "unknown",
             "position": {"x": 1, "y": 1},
@@ -144,7 +141,7 @@ class TestTileFactory:
         }
 
         # After construction, as well
-        tile["new_thing"] = "extra!"
+        tile.extra_keys["new_thing"] = "extra!"
         assert tile.to_dict() == {
             "name": "unknown",
             "position": {"x": 1, "y": 1},
@@ -157,6 +154,7 @@ class TestTileFactory:
 
         # However, setting known attributes incorrectly should still create
         # issues
+        tile.validate_assignment = ValidationMode.STRICT
         assert tile.validate_assignment is ValidationMode.STRICT
         with pytest.raises(DataFormatError):
             tile.name = 100

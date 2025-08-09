@@ -1,133 +1,26 @@
 # exportable.py
-from draftsman import __factorio_version_info__
+from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import ValidationMode
-
 from draftsman.error import DataFormatError
+from draftsman.serialization import (
+    draftsman_converters,
+    make_unstructure_function_from_schema,
+)
+from draftsman.utils import dict_merge, reissue_warnings
+from draftsman.validators import conditional
+from draftsman.warning import UnknownKeywordWarning
 
-from abc import ABCMeta, abstractmethod
-from pydantic import BaseModel, ValidationError
-from typing import Any, List, Literal, Union
+from draftsman.data import mods
+
+import attrs
+import cattrs
+from cattrs.gen._shared import find_structure_handler
+
+import copy
+from typing import Any, List, Optional
+from typing_extensions import Self
 import warnings
-import pprint  # TODO: think about
-
-
-def attempt_and_reissue(
-    object: Any, format_model: BaseModel, target: Any, name: str, value: Any, **kwargs
-):
-    """
-    Helper function that normalizes assignment validation
-    """
-    context = {
-        "mode": object.validate_assignment,
-        "object": object,
-        "warning_list": [],
-        "assignment": True,
-        "environment_version": __factorio_version_info__,
-        **kwargs,
-    }
-    if object.validate_assignment == ValidationMode.NONE:
-        context["construction"] = True
-    try:
-        result = format_model.__pydantic_validator__.validate_assignment(
-            target,
-            name,
-            value,
-            strict=False,  # TODO: disallow any weird string -> int / string -> bool conversions
-            context=context,
-        )
-    except ValidationError as e:
-        raise DataFormatError(e) from None
-    for warning in context["warning_list"]:
-        warnings.warn(warning, stacklevel=4)
-    # result = result.model_dump(warnings=False)
-    # return result[name]
-    return getattr(result, name)
-
-
-def apply_assignment(
-    object: "Exportable",
-    format_model: BaseModel,
-    target: BaseModel,
-    name: str,
-    value: Any,
-    **kwargs
-):
-    """
-    TODO
-    """
-    context = {
-        "mode": ValidationMode.NONE,
-        "object": object,
-        "warning_list": [],
-        "assignment": True,
-        "construction": True,
-        **kwargs,
-    }
-    # try:
-    result = format_model.__pydantic_validator__.validate_assignment(
-        target,
-        name,
-        value,
-        strict=True,  # TODO: disallow any weird string -> int / string -> bool conversions
-        context=context,
-    )
-    # except ValidationError as e:
-    #     raise DataFormatError(e) from None
-    # for warning in context["warning_list"]:
-    #     warnings.warn(warning, stacklevel=4)
-    return getattr(result, name)
-
-
-def test_replace_me(
-    object: "Exportable",
-    format_model: BaseModel,
-    target: BaseModel,
-    name: str,
-    value: Any,
-    mode: ValidationMode,
-    **kwargs
-):
-    """
-    Attempts to coerce a input value to a particular Pydantic model format, and
-    run validation at the same time if requested by the caller. Utility function
-    to increase code reuse.
-
-    The input value is expected to be in a standard JSON format, what you would
-    expect a regular input to look like. Any shorthand formats should be handled
-    *before* passing to this function.
-
-    If the passed in mode is `ValidationMode.NONE`, then this function attempts
-    to just coerce the input to a Pydantic BaseModel using the "construction"
-    key. Because using this key should generate no errors or warnings, the
-    original value will just be returned when it is indeterminate. Under any
-    other passed in `mode`, the validation suite is run corresponding to that
-    mode.
-    """
-    context = {
-        "mode": mode,
-        "object": object,
-        "warning_list": [],
-        "assignment": True,  # Do not revalidate the entire object; just this attr
-        "environment_version": __factorio_version_info__,
-        **kwargs,
-    }
-    # Functions check for presence, not value; so we only add it when necessary
-    if mode is ValidationMode.NONE:
-        context["construction"] = True
-
-    try:
-        result = format_model.__pydantic_validator__.validate_assignment(
-            target,
-            name,
-            value,
-            strict=True,  # TODO: disallow any weird str to int or str to bool conversions
-            context=context,
-        )
-    except ValidationError as e:
-        raise DataFormatError(e) from None
-    for warning in context["warning_list"]:
-        warnings.warn(warning, stacklevel=4)
-    target[name] = getattr(result, name)
+import pprint  # TODO: find something better
 
 
 class ValidationResult:
@@ -156,66 +49,49 @@ class ValidationResult:
             return False
         for i in range(len(self.error_list)):
             if (
-                type(self.error_list[i]) != type(other.error_list[i])
+                type(self.error_list[i]) is not type(other.error_list[i])
                 or self.error_list[i].args != other.error_list[i].args
             ):
                 return False
         for i in range(len(self.warning_list)):
             if (
-                type(self.warning_list[i]) != type(other.warning_list[i])
+                type(self.warning_list[i]) is not type(other.warning_list[i])
                 or self.warning_list[i].args != other.warning_list[i].args
             ):
                 return False
         return True
 
     def __iadd__(self, other):
-        if not isinstance(other, ValidationResult):
-            raise NotImplemented
+        if not isinstance(other, ValidationResult):  # pragma: no coverage
+            raise NotImplementedError
         self.warning_list += other.warning_list
         self.error_list += other.error_list
         return self
 
     def __str__(self):  # pragma: no coverage
-        return "ValidationResult{{\n    errors={},\n    warnings={}\n}}".format(
-            pprint.pformat(self.error_list, indent=4),
-            pprint.pformat(self.warning_list, indent=4),
+        return pprint.pformat(
+            {"error_list": self.error_list, "warning_list": self.warning_list}, indent=4
         )
 
     def __repr__(self):  # pragma: no coverage
-        return "ValidationResult{{errors={}, warnings={}}}".format(
+        return "ValidationResult(errors={}, warnings={})".format(
             repr(self.error_list), repr(self.warning_list)
         )
 
 
-class Exportable(metaclass=ABCMeta):
+@attrs.define(slots=False)
+class Exportable:
     """
-    An abstract base class representing an object that has a form within a JSON
+    An abstract base class representing an object that has a form within a
     Factorio blueprint string, such as entities, tiles, or entire blueprints
-    themselves. Posesses a ``_root`` dictionary which contains it's contents, as
-    well as validation utilities.
+    themselves.
     """
 
-    class Format(BaseModel):
-        pass
+    # def __new__(cls, *args, **kwargs):
+    #     return super().__new__(cls)
 
-    def __init__(self):
-        self._root: __class__.Format
-        # TODO: hopefully put _root initialization here
-        self._is_valid = False
-        # Validation assignment is set to "none" on construction since we might
-        # not want to validate at this point; validation is performed at the end
-        # of construction in the child-most class, if desired
-        self._validate_assignment = ValidationMode.NONE
-
-        # TODO: make this a static class property instead of an instance variable
-        # (more writing but less memory)
-        self._unknown = False
-
-    # =========================================================================
-
-    # TODO
     # @property
-    # def is_valid(self) -> bool:
+    # def is_valid(self) -> bool: # TODO
     #     """
     #     Read-only attribute that indicates whether or not this object is
     #     validated. If this attribute is true, you can assume that all component
@@ -236,58 +112,101 @@ class Exportable(metaclass=ABCMeta):
 
     # =========================================================================
 
-    @property
-    def validate_assignment(
+    extra_keys: Optional[dict[str, Any]] = attrs.field(
+        default=None, kw_only=True, metadata={"omit": True}
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Any additional keys that are not recognized by Draftsman when loading from
+    a raw JSON dictionary end up as keys in this attribute. Under normal 
+    circumstances, this field should always remain ``None``, indicating that all 
+    fields provided were properly translated into the internal Python format. 
+    
+    If there are any values in ``extra_keys`` after being imported from a raw
+    JSON dictionary, then (left alone) these values will also be exported back
+    into an output JSON dictionary in order to keep import-export cycles stable.
+    A side effect of this is that users can use this attribute to *add* 
+    additional fields that will end up in the output string, primarily for 
+    custom metadata that can be read by other tools::
+
+        >>> input_dict = {
+        ...    "name": "wooden-chest",
+        ...    "position": {"x": 0.5, "y": 0.5},
+        ...    "unknown_key": "blah"
+        ... }
+        >>> container = Container.from_dict(input_dict)
+        >>> container.extra_keys
+        {"unknown_key": "blah"}
+        >>> container.extra_keys["custom"] = "data"
+        >>> container.to_dict()
+        {
+            "name": "wooden-chest",
+            "position": {"x": 0.5, "y": 0.5},
+            "unknown_key": "blah",
+            "custom": "data"
+        }
+
+    The structure of input keys are preserved, meaning you may have to recurse
+    through keys to find the unknown data::
+
+        >>> input_dict = {
+        ...     "name": "wooden-chest",
+        ...     "position": {"x": 0.5, "y": 0.5},
+        ...     "nested": {
+        ...         "dictionary": "value"
+        ...     }
+        ... }
+        >>> container = Container.from_dict(input_dict)
+        >>> container.extra_keys
+        {"nested": {"dictionary": "value"}}
+
+    .. NOTE::
+
+        While Draftsman makes an effort to preserve keys that it doesn't 
+        recognize, Factorio itself makes no such effort - so if you create a 
+        blueprint string with custom metadata and then import it into the game, 
+        that additional data will be stripped and cannot be retrieved when 
+        exporting a new string from the game.
+    """
+
+    @extra_keys.validator
+    @conditional(ValidationMode.STRICT)
+    def _warn_unrecognized_keys(
         self,
-    ) -> Union[ValidationMode, Literal["none", "minimum", "strict", "pedantic"]]:
-        """
-        Toggleable flag that indicates whether assignments to this object should
-        be validated, and how. Can be set in the constructor of the entity or
-        changed at any point during runtime. Note that this is on a per-entity
-        basis, so multiple instances of otherwise identical entities can have
-        different validation configurations.
-
-        .. NOTE ::
-
-            Item-assignment (``entity["field"] = obj``) is *never* validated,
-            regardless of this parameter. This is mostly a side effect of how
-            things work behind the scenes, but it can be used to explicitly
-            indicate a "raw" modification that is guaranteed to be cheap and
-            will never trigger validation by itself.
-
-        :getter: Gets the assignment mode.
-        :setter: Sets the assignment mode. Raises a :py:class:`.DataFormatError`
-            if set to an invalid value.
-        """
-        return self._validate_assignment
-
-    @validate_assignment.setter
-    def validate_assignment(self, value):
-        self._validate_assignment = ValidationMode(value)
+        _: attrs.Attribute,
+        value: Optional[dict],
+    ):
+        """Warns the user if the ``extra_keys`` dict is populated."""
+        if value:
+            msg = "'{}' object has had the following unrecognized keys:\n{}".format(
+                type(self).__name__, pprint.pformat(value)
+            )
+            warnings.warn(UnknownKeywordWarning(msg))
 
     # =========================================================================
 
-    @property
-    def unknown(self) -> bool:
+    @classmethod
+    def converter(cls, value: Any):
         """
-        A read-only flag which indicates whether or not Draftsman recognizes
-        this object and thus has a full understanding of it's underlying format.
-        If this flag is ``True``, then most validation for this instance is
-        disabled, only issuing errors/warnings for issues that Draftsman has
-        sufficient information to diagnose.
+        Try to convert the given ``value`` to an instance of this particular
+        class. By default, it assumes value is a ``dict`` whose keywords map
+        to attributes of this class.
+
+        :meta private:
         """
-        return self._unknown
+        try:
+            return cls(**value)
+        except TypeError:
+            return value
 
-    # =========================================================================
-
-    @abstractmethod
-    def validate(self, mode: ValidationMode, force: bool) -> ValidationResult:
+    def validate(
+        self, mode: ValidationMode = ValidationMode.STRICT
+    ) -> ValidationResult:
         """
         Validates the called object against it's known format.
-        Method that attempts to first coerce the object into a known form, and
-        then checks the values of its attributes for correctness. If unable to
-        do so, this function raises :py:class:`.DataFormatError`. Otherwise,
-        no errors are raised and :py:attr:`.is_valid` is set to ``True``.
 
         :example:
 
@@ -295,8 +214,9 @@ class Exportable(metaclass=ABCMeta):
 
             >>> from draftsman.entity import Container
             >>> from draftsman.error import DataFormatError
-            >>> c = Container("wooden-chest", validate_assignment="none")
-            >>> c.bar = "incorrect"
+            >>> c = Container("wooden-chest")
+            >>> with draftsman.validators.set_mode(ValidationMode.NONE):
+            ...     c.bar = "incorrect"
             >>> try:
             ...     c.validate().reissue_all()
             ... except DataFormatError as e:
@@ -305,75 +225,234 @@ class Exportable(metaclass=ABCMeta):
 
         :param mode: How strict to be when valiating the object, corresponding
             to the number and type of errors and warnings returned.
-        :param force: Whether or not to ignore this entity's `is_valid` flag and
-            attempt to revalidate anyway.
 
-        :returns: A :py:class:`ValidationResult` object containing the
-            corresponding errors and warnings.
+        :returns: A :py:class:`.ValidationResult` object, which contains all
+            errors and warnings from the validation pass.
         """
-        # NOTE: Subsequent objects must implement this method and then call this
-        # parent method to cache successful validity
-        # super().__setattr__("_is_valid", True)
-        pass  # pragma: no coverage
-
-    def to_dict(self, exclude_none: bool = True, exclude_defaults: bool = True) -> dict:
-        return self._root.model_dump(
-            # Some attributes are reserved words ('type', 'from', etc.); this
-            # resolves that issue
-            by_alias=True,
-            # Trim if values are None
-            exclude_none=exclude_none,
-            # Trim if values are defaults
-            exclude_defaults=exclude_defaults,
-            # Ignore warnings because we might export a model where the keys are
-            # intentionally incorrect
-            # Plus there are things like Associations with which we want to
-            # preserve when returning this object so that a parent object can
-            # handle them
-            warnings=False,
-        )
+        mode = ValidationMode(mode)
+        res = ValidationResult([], [])
+        for a in attrs.fields(self.__class__):
+            v = a.validator
+            if v is not None:
+                v(
+                    self,
+                    a,
+                    getattr(self, a.name),
+                    mode=mode,
+                    error_list=res.error_list,
+                    warning_list=res.warning_list,
+                )
+        return res
 
     @classmethod
-    def json_schema(cls) -> dict:
+    @reissue_warnings
+    def from_dict(
+        cls,
+        d: dict,
+        version: Optional[tuple[int, ...]] = None,
+    ) -> Self:
         """
-        Returns a JSON schema object that correctly validates this object. This
-        schema can be used with any compliant JSON schema validation library to
-        check if a given blueprint string will import into Factorio.
+        Attempts to construct a new instance of this class from a Python
+        dictionary in JSON format.
 
-        .. seealso::
+        :param d: The dictionary to interpret.
+        :param version: The Factorio version that the input data is compliant
+            with.
 
-            https://json-schema.org/
+            The given version tuple will automatically attempt to grab the
+            closest applicable converter - meaning that specifying a
+            version of ``(1, 1, 96)`` will use the 1.0 converter, and a
+            version of ``(2, 0, 32)`` will use the 2.0 converter.
 
-        :returns: A modern, JSON-schema compliant dictionary with appropriate
-            types, ranges, allowed/excluded values, as well as titles and
-            descriptions.
+            If no version is provided, it will default to current environment's
+            Factorio version, or to :py:data:`draftsman.DEFAULT_FACTORIO_VERSION`
+            if unable to read the current environment.
         """
-        # TODO: should this be tested?
-        return cls.Format.model_json_schema(by_alias=True)
+        if version is None:
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
 
-    # TODO
-    # @classmethod
-    # def get_format(cls, indent: int=2) -> str:
-    #     """
-    #     Produces a pretty string representation of ``meth:json_schema``. Work in
-    #     progress.
+        version_info = draftsman_converters.get_version(version)
+        return version_info.get_converter().structure(
+            copy.deepcopy(d), cls
+        )  # TODO: remove deepcopy here, use locals in structure func instead
 
-    #     :returns: A formatted string that can be output to stdout or file.
-    #     """
-    #     return json.dumps(cls.json_schema(), indent=indent)
+    def to_dict(
+        self,
+        version: Optional[tuple[int, ...]] = None,
+        exclude_none: bool = True,
+        exclude_defaults: bool = True,
+    ) -> dict:
+        """
+        Export this object to a JSON dictionary, usually directly prior to
+        encoding into the compressed blueprint string format.
+
+        :param version: Which Factorio version format this entity should be
+            exported with. The same Draftsman object can be converted to many
+            version-specific output dictionaries, each of which may have
+            different structures.
+
+            The given version tuple will automatically attempt to grab the
+            closest applicable converter - meaning that specifying a
+            version of ``(1, 1, 96)`` will use the 1.0 converter, and a
+            version of ``(2, 0, 32)`` will use the 2.0 converter.
+
+            If no version is provided, it will default to current environment's
+            Factorio version, or to :py:data:`draftsman.DEFAULT_FACTORIO_VERSION`
+            if unable to read the current environment.
+        :param exclude_none: Whether or not ``None`` properties should be
+            omitted from the output string. For certain properties this option
+            has no effect, as they either must always be present or never
+            be present if ``None``.
+        :param exclude_defaults: Whether or not to exclude properties that are
+            equivalent to their default values. Including these values in the
+            generated output is redundant as Factorio will populate them
+            automatically, but it is useful to disable for debug/illustation
+            purposes.
+        """
+        if version is None:
+            version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
+        version_info = draftsman_converters.get_version(version)
+        converter = version_info.get_converter(exclude_none, exclude_defaults)
+        return converter.unstructure(self)
 
     # =========================================================================
 
-    # TODO
-    # def __setattr__(self, name, value):
-    #     super().__setattr__("_is_valid", False)
-    #     super().__setattr__(name, value)
+    def __deepcopy__(self, memo: Optional[dict[int, Any]] = {}):
+        # Perform the normal deepcopy
+        cls = self.__class__
+        result = cls.__new__(cls)
 
-    def __setitem__(self, key: str, value: Any):
-        self._root[key] = value
+        # Make sure we don't copy ourselves multiple times unnecessarily
+        memo[id(self)] = result
 
-    def __getitem__(self, key: str) -> Any:
-        return self._root[key]
+        for attr in attrs.fields(cls):
+            # Making the copy of an entity directly "removes" its parent, as there
+            # is no guarantee that that cloned entity will actually lie in some
+            # Collection
+            if "deepcopy_func" in attr.metadata:
+                object.__setattr__(
+                    result,
+                    attr.name,
+                    attr.metadata["deepcopy_func"](getattr(self, attr.name), memo),
+                )
+            else:
+                object.__setattr__(
+                    result, attr.name, copy.deepcopy(getattr(self, attr.name), memo)
+                )
 
-    def __contains__(self, item: str) -> bool:
-        return item in self._root
+        return result
+
+
+def make_exportable_structure_factory_func(
+    version_tuple: tuple[int, ...], exclude_none: bool, exclude_defaults: bool
+):
+    def factory(cls: type, converter: cattrs.Converter):
+        def try_pop_location(subdict, loc):
+            """
+            Traverse loc and try to pop that item, as well as any subdicts that
+            become empty in the process.
+            """
+            if loc is None:
+                return None
+            if len(loc) == 1:
+                try:
+                    return subdict.pop(loc[0], None)
+                except AttributeError:
+                    return None
+            if loc[0] not in subdict:
+                return None
+            result = try_pop_location(subdict[loc[0]], loc[1:])
+            if subdict[loc[0]] == {}:
+                subdict.pop(loc[0])
+            return result
+
+        class_attrs = attrs.fields(cls)
+        version_data = draftsman_converters.get_version(version_tuple)
+        structure_dict = version_data.get_structure_dict(cls, converter)
+
+        def structure_hook(input_dict: dict, _: type):
+            inst = cls.__new__(cls)
+
+            init_args = {}
+            for dict_loc, attr_name in structure_dict.items():
+                if attr_name is None:
+                    try_pop_location(input_dict, dict_loc)
+                    continue
+
+                if isinstance(attr_name, tuple):
+                    attr = attr_name[0]
+                    custom_handler = attr_name[1]
+                    attr_name = attr.alias if attr.alias != attr.name else attr.name
+                else:
+                    attr = getattr(class_attrs, attr_name)
+                    custom_handler = None
+                    attr_name = attr.alias if attr.alias != attr.name else attr.name
+
+                value = try_pop_location(input_dict, dict_loc)
+                if value is None:
+                    continue
+
+                handler = (
+                    custom_handler
+                    if custom_handler
+                    else find_structure_handler(attr, attr.type, converter)
+                )
+                try:
+                    if custom_handler:
+                        init_args[attr_name] = handler(value, attr.type, inst)
+                    else:
+                        init_args[attr_name] = handler(value, attr.type)
+                except Exception as e:
+                    raise DataFormatError(e)
+
+            if input_dict:
+                init_args["extra_keys"] = input_dict
+
+            inst.__init__(**init_args)
+            return inst
+
+        return structure_hook
+
+    return factory
+
+
+def make_exportable_unstructure_factory_func(
+    version_tuple: tuple[int, ...], exclude_none: bool, exclude_defaults: bool
+):
+    def factory(cls, converter):
+        version_data = draftsman_converters.get_version(version_tuple)
+        unstructure_dict = version_data.get_unstructure_dict(cls, converter)
+        parent_hook = make_unstructure_function_from_schema(
+            cls,
+            converter,
+            unstructure_dict,
+            exclude_none,
+            exclude_defaults,
+            version=version_tuple,
+        )
+
+        def unstructure_hook(inst):
+            # TODO: should be wrapped in a try block with a better error message
+            res = parent_hook(inst)
+            # We want to preserve round-trip consistency, even with keys we
+            # don't use/recognize
+            if inst.extra_keys:
+                dict_merge(res, inst.extra_keys)
+            return res
+
+        return unstructure_hook
+
+    return factory
+
+
+for version_tuple, version in draftsman_converters.versions.items():
+    for exclude_config, converter in version.converters.items():
+        # Technically don't have to do this for *every* structure, but...
+        converter.register_structure_hook_factory(
+            lambda cls: issubclass(cls, Exportable),
+            make_exportable_structure_factory_func(version_tuple, *exclude_config),
+        )
+        converter.register_unstructure_hook_factory(
+            lambda cls: issubclass(cls, Exportable),
+            make_exportable_unstructure_factory_func(version_tuple, *exclude_config),
+        )

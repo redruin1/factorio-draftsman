@@ -2,7 +2,7 @@
 .. py:currentmodule:: draftsman.classes.tile_list
 
 :py:mod:`~draftsman.classes.tile_list`
-=====================================
+======================================
 
 .. autoclass:: TileList
     :members:

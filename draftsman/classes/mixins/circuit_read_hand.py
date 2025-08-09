@@ -1,16 +1,16 @@
 # circuit_read_hand.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import Exportable
 from draftsman.constants import InserterReadMode
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import instance_of
 
-from pydantic import BaseModel, Field
-from typing import Optional
+import attrs
 
 
-class CircuitReadHandMixin:  # (ControlBehaviorMixin)
+@attrs.define(slots=False)
+class CircuitReadHandMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Enables the Entity to read it's hand's contents.
 
     .. seealso::
@@ -19,79 +19,40 @@ class CircuitReadHandMixin:  # (ControlBehaviorMixin)
         | :py:class:`~draftsman.classes.mixins.circuit_read_resource.CircuitReadResourceMixin`
     """
 
-    class ControlFormat(BaseModel):
-        circuit_read_hand_contents: Optional[bool] = Field(
-            None,  # TODO: default = False
-            description="""
-            Whether or not to read the contents of this inserter's hand.
-            """,
-        )
-        circuit_hand_read_mode: Optional[InserterReadMode] = Field(
-            None,  # TODO: default = ReadMode.PULSE
-            description="""
-            Whether to hold or pulse the inserter's held items, if 
-            'circuit_read_hand_contents' is true.
-            """,
-        )
+    read_hand_contents: bool = attrs.field(default=False, validator=instance_of(bool))
+    """
+    .. serialized::
 
-    class Format(BaseModel):
-        pass
+        This attribute is imported/exported from blueprint strings.
 
-    @property
-    def read_hand_contents(self) -> Optional[bool]:
-        """
-        Whether or not this Entity is set to read the contents of it's hand to a
-        circuit network.
-
-        :getter: Gets the value of ``read_hand_contents``, or ``None`` if not
-            set.
-        :setter: Sets the value of ``read_hand_contents``.
-
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.circuit_read_hand_contents
-
-    @read_hand_contents.setter
-    def read_hand_contents(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_read_hand_contents",
-                value,
-            )
-            self.control_behavior.circuit_read_hand_contents = result
-        else:
-            self.control_behavior.circuit_read_hand_contents = value
+    Whether or not this Entity is set to read the contents of it's hand to a
+    circuit network.
+    """
 
     # =========================================================================
 
-    @property
-    def read_mode(self) -> Optional[InserterReadMode]:
-        """
-        The mode in which the contents of the Entity should be read. Either
-        ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
+    read_mode: InserterReadMode = attrs.field(
+        default=InserterReadMode.PULSE,
+        converter=InserterReadMode,
+        validator=instance_of(InserterReadMode),
+    )
+    """
+    .. serialized::
 
-        :getter: Gets the value of ``read_mode``, or ``None`` if not set.
-        :setter: Sets the value of ``read_mode``.
+        This attribute is imported/exported from blueprint strings.
 
-        :exception ValueError: If set to anything other than a ``ReadMode``
-            value or their ``int`` equivalent.
-        """
-        return self.control_behavior.circuit_hand_read_mode
+    The mode in which the contents of the Entity should be read. Either
+    ``ReadMode.PULSE`` or ``ReadMode.HOLD``.
+    """
 
-    @read_mode.setter
-    def read_mode(self, value: Optional[InserterReadMode]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                self.Format.ControlBehavior,
-                self.control_behavior,
-                "circuit_hand_read_mode",
-                value,
-            )
-            self.control_behavior.circuit_hand_read_mode = result
-        else:
-            self.control_behavior.circuit_hand_read_mode = value
+
+draftsman_converters.add_hook_fns(
+    CircuitReadHandMixin,
+    lambda fields: {
+        (
+            "control_behavior",
+            "circuit_read_hand_contents",
+        ): fields.read_hand_contents.name,
+        ("control_behavior", "circuit_hand_read_mode"): fields.read_mode.name,
+    },
+)

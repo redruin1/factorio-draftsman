@@ -1,45 +1,35 @@
 # decider_combinator.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue
 from draftsman.classes.mixins import (
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.error import DataFormatError, DraftsmanError
+from draftsman.classes.exportable import Exportable
+from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
-    Condition,
-    Connections,
-    DraftsmanBaseModel,
-    NetworkSpecification,
+    CircuitNetworkSelection,
     SignalID,
+    Comparator,
     int32,
+    normalize_comparator,
 )
-from draftsman.utils import get_first
-from draftsman.warning import DraftsmanWarning, PureVirtualDisallowedWarning
+from draftsman.utils import fix_incorrect_pre_init
+from draftsman.validators import instance_of, one_of, try_convert
 
 from draftsman.data.entities import decider_combinators
-from draftsman.data import signals
-from draftsman.signatures import int32
-from draftsman.utils import reissue_warnings
 
-from pydantic import (
-    ConfigDict,
-    Field,
-    BaseModel,
-    ValidationInfo,
-    model_validator,
-    validate_call,
-)
-from typing import Any, Literal, Optional, Type, Union
+import attrs
+import copy
+from typing import Literal, Optional
 
 
 # Matrix of values, where keys are the name of the first_operand and
 # the values are sets of signals that cannot be set as output_signal
+# TODO: reimplement
 _signal_blacklist = {
     "signal-everything": {"signal-anything", "signal-each"},
     "signal-anything": {"signal-each"},
@@ -47,147 +37,13 @@ _signal_blacklist = {
 }
 
 
-class DeciderCondition(Condition):
-    compare_type: Optional[Literal["or", "and"]] = Field(
-        "or",
-        description="""
-        Whether or not to boolean OR or AND this condition
-        with the previous one in the list.
-        """,
-    )
-
-    model_config = ConfigDict(title="DeciderCondition")
-
-    def __or__(self, other):
-        if isinstance(other, DeciderCondition):
-            other.compare_type = "or"
-            return [self, other]
-        elif isinstance(other, list):
-            other[0].compare_type = "or"
-            return [self] + other
-        else:
-            return NotImplemented
-
-    def __ror__(self, other):
-        if isinstance(other, DeciderCondition):
-            self.compare_type = "or"
-            return [other, self]
-        elif isinstance(other, list):
-            self.compare_type = "or"
-            return other + [self]
-        else:
-            return NotImplemented
-
-    def __and__(self, other):
-        if isinstance(other, DeciderCondition):
-            other.compare_type = "and"
-            return [self, other]
-        elif isinstance(other, list):
-            other[0].compare_type = "and"
-            return [self] + other
-        else:
-            return NotImplemented
-
-    def __rand__(self, other):
-        if isinstance(other, DeciderCondition):
-            self.compare_type = "and"
-            return [other, self]
-        elif isinstance(other, list):
-            self.compare_type = "and"
-            return other + [self]
-        else:
-            return NotImplemented
-
-
-class DeciderInput:
-    def __init__(self, signal, networks: set[str] = {"red", "green"}):
-        self.signal = signal
-        self.networks = networks
-
-    def _output_condition(self, comparator, other):
-        if isinstance(other, DeciderInput):
-            return DeciderCondition(
-                first_signal=self.signal,
-                first_signal_networks=self.networks,
-                comparator=comparator,
-                second_signal=other.signal,
-                second_signal_networks=other.networks,
-            )
-        if isinstance(other, (int)):
-            return DeciderCondition(
-                first_signal=self.signal,
-                first_signal_networks=self.networks,
-                comparator=comparator,
-                constant=other,
-            )
-        else:
-            return NotImplemented
-
-    def __eq__(self, other: "DeciderInput") -> Condition:
-        return self._output_condition("=", other)
-
-    def __ne__(self, other) -> DeciderCondition:
-        return self._output_condition("!=", other)
-
-    def __gt__(self, other) -> DeciderCondition:
-        return self._output_condition(">", other)
-
-    def __lt__(self, other) -> DeciderCondition:
-        return self._output_condition("<", other)
-
-    def __ge__(self, other) -> DeciderCondition:
-        return self._output_condition(">=", other)
-
-    def __le__(self, other) -> DeciderCondition:
-        return self._output_condition("<=", other)
-
-
-class DeciderOutput(DraftsmanBaseModel):  # TODO: Exportable
-    signal: SignalID = Field(..., description="""The signal type to output.""")
-    copy_count_from_input: Optional[bool] = Field(
-        True,
-        description="""
-        Broadcasts the given input value to the output if true, or a unit
-        value if false.
-        """,
-    )
-    networks: Optional[NetworkSpecification] = Field(
-        NetworkSpecification(red=True, green=True),
-        description="""What wires this output should be broadcast to.""",
-    )
-    constant: Optional[int32] = Field(
-        1,
-        description="""
-        What value the constant output should be if "copy_count_from_input"
-        is false. Always specified as 1 in game, but can be overwritten
-        externally and will be respected.
-        """,
-    )
-
-    model_config = ConfigDict(title="DeciderOutput")
-
-
-# class DeciderConditions(DraftsmanBaseModel):
-#     conditions: list[DeciderCondition] = Field(
-#         [],
-#         description="""
-#         A list of Condition objects specifying when (and what) this
-#         decider combinator should output.""",
-#     )
-#     outputs: list[DeciderOutput] = Field(
-#         [],
-#         description="""
-#         A list of Output objects specifying what signals should be
-#         passed to the output wire when the conditions evaluate to
-#         true.
-#         """,
-#     )
-
-
+@fix_incorrect_pre_init
+@attrs.define
 class DeciderCombinator(
     PlayerDescriptionMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
     Entity,
 ):
@@ -195,164 +51,320 @@ class DeciderCombinator(
     A decider combinator. Makes comparisons based on circuit network inputs.
     """
 
-    # Alias the external objects so we can access them easily without importing
-    Input = DeciderInput
-    Condition = DeciderCondition
-    Output = DeciderOutput
-
-    # 1.0 format
-    # class Format(
-    #     PlayerDescriptionMixin.Format,
-    #     ControlBehaviorMixin.Format,
-    #     CircuitConnectableMixin.Format,
-    #     DirectionalMixin.Format,
-    #     Entity.Format,
-    # ):
-    #     class ControlBehavior(DraftsmanBaseModel):
-    #         class DeciderConditions(Condition):
-    #             output_signal: Optional[SignalID] = Field(
-    #                 None,
-    #                 description="""
-    #                 The output signal to output if the condition is met. The
-    #                 value of the output signal is determined by the
-    #                 'copy_count_from_input' key.
-    #                 """,
-    #             )
-    #             copy_count_from_input: Optional[bool] = Field(
-    #                 True,
-    #                 description="""
-    #                 Whether or not to copy the value of the selected output
-    #                 signal from the input circuit network, or to output the
-    #                 selected 'output_signal' with a value of 1.
-    #                 """,
-    #             )
-
-    #             @model_validator(mode="after")
-    #             def ensure_proper_signal_configuration(self, info: ValidationInfo):
-    #                 """
-    #                 The first signal and output signals can be pure virtual
-    #                 signals, but only in a certain configuration as determined
-    #                 by `_signal_blacklist`. If the input signal is not a pure
-    #                 virtual signal, then the output signal cannot be
-    #                 `"signal-anything"` or `"signal-each"`.
-    #                 """
-    #                 if not info.context or self.output_signal is None:
-    #                     return self
-    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
-    #                     return self
-
-    #                 warning_list: list = info.context["warning_list"]
-
-    #                 if self.first_signal is None:
-    #                     first_signal_name = None
-    #                 else:
-    #                     first_signal_name = self.first_signal.name
-
-    #                 current_blacklist = _signal_blacklist.get(
-    #                     first_signal_name, {"signal-anything", "signal-each"}
-    #                 )
-    #                 if self.output_signal.name in current_blacklist:
-    #                     warning_list.append(
-    #                         PureVirtualDisallowedWarning(
-    #                             "'{}' cannot be an output_signal when '{}' is the first operand; 'output_signal' will be removed when imported".format(
-    #                                 self.output_signal.name, first_signal_name
-    #                             ),
-    #                         )
-    #                     )
-
-    #                 return self
-
-    #             @model_validator(mode="after")
-    #             def ensure_second_signal_is_not_pure_virtual(
-    #                 self, info: ValidationInfo
-    #             ):
-    #                 if not info.context or self.second_signal is None:
-    #                     return self
-    #                 if info.context["mode"] <= ValidationMode.MINIMUM:
-    #                     return self
-
-    #                 warning_list: list = info.context["warning_list"]
-
-    #                 if self.second_signal.name in signals.pure_virtual:
-    #                     warning_list.append(
-    #                         PureVirtualDisallowedWarning(
-    #                             "'second_signal' cannot be set to pure virtual signal '{}'; will be removed when imported".format(
-    #                                 self.second_signal.name
-    #                             )
-    #                         )
-    #                     )
-
-    #                 return self
-
-    #         decider_conditions: Optional[DeciderConditions] = DeciderConditions()
-
-    #     control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-    #     model_config = ConfigDict(title="DeciderCombinator")
-
-    class Format(
-        PlayerDescriptionMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(DraftsmanBaseModel):
-            class DeciderConditions(DraftsmanBaseModel):
-                conditions: list[DeciderCondition] = Field(
-                    [],
-                    description="""
-                    A list of Condition objects specifying when (and what) this
-                    decider combinator should output.""",
-                )
-                outputs: list[DeciderOutput] = Field(
-                    [],
-                    description="""
-                    A list of Output objects specifying what signals should be
-                    passed to the output wire when the conditions evaluate to
-                    true.
-                    """,
-                )
-
-            decider_conditions: Optional[DeciderConditions] = DeciderConditions()
-
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-        model_config = ConfigDict(title="DeciderCombinator")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(decider_combinators),
-        position: Union[Vector, PrimitiveVector, None] = None,
-        tile_position: Union[Vector, PrimitiveVector, None] = (0, 0),
-        direction: Optional[Direction] = Direction.NORTH,
-        player_description: Optional[str] = None,
-        control_behavior: Optional[Format.ControlBehavior] = None,
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
+    @attrs.define
+    class Condition(Exportable):
         """
-        TODO
+        A condition object specifically for :py:class:`.DeciderCombinator`.
+        Supports the  delineation between different wire color inputs
+        (:py:attr:`.first_signal_networks` and :py:attr:`.second_signal_networks`)
+        as well as the ability to be AND-ed or OR-ed with other condition
+        objects of the same type::
+
+            condition_1 = DeciderCombinator.Condition(...)
+            condition_2 = DeciderCombinator.Condition(...)
+            condition_3 = DeciderCombinator.Condition(...)
+            decider_combinator.conditions = condition_1 & condition_2 | condition_3
+            assert len(decider_combinator.conditions) == 3
         """
 
-        self.control_behavior: __class__.Format.ControlBehavior
-
-        super().__init__(
-            name,
-            decider_combinators,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            player_description=player_description,
-            control_behavior={} if control_behavior is None else control_behavior,
-            tags=tags,
-            **kwargs
+        first_signal: Optional[SignalID] = attrs.field(
+            default=None,
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
         )
+        """
+        .. serialized::
 
-        self.validate_assignment = validate_assignment
+            This attribute is imported/exported from blueprint strings.
+
+        The left-most signal of the condition.
+        """
+
+        first_signal_networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The signal networks (red/green) to sample for the value of the left-most
+        signal.
+        """
+
+        comparator: Comparator = attrs.field(
+            default="<",
+            converter=try_convert(normalize_comparator),
+            validator=one_of(Comparator),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The comparison operation to perform between the two operands.
+        """
+
+        constant: Optional[int32] = attrs.field(
+            default=None, validator=instance_of(Optional[int32])
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        An optional constant value, which always lies on the right side of the 
+        condition.
+        """
+
+        second_signal: Optional[SignalID] = attrs.field(
+            default=None,
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The right-most signal of the condition.
+        """
+
+        second_signal_networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The signal networks (red/green) to sample for the value of the right-most
+        signal.
+        """
+
+        compare_type: Literal["or", "and"] = attrs.field(
+            default="or", validator=one_of("or", "and")
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        In what manner should this condition be compared to the condition
+        immediately preceeding it.
+        """
+
+        def __or__(self, other):
+            if isinstance(other, DeciderCombinator.Condition):
+                other.compare_type = "or"
+                return [copy.copy(self), copy.copy(other)]
+            elif isinstance(other, list):
+                other[0].compare_type = "or"
+                return [copy.copy(self)] + other
+            else:
+                return NotImplemented
+
+        def __ror__(self, other):
+            if isinstance(other, list):
+                self.compare_type = "or"
+                return other + [copy.copy(self)]
+            else:
+                return NotImplemented
+
+        def __and__(self, other):
+            if isinstance(other, DeciderCombinator.Condition):
+                other.compare_type = "and"
+                return [copy.copy(self), copy.copy(other)]
+            elif isinstance(other, list):
+                other[0].compare_type = "and"
+                return [copy.copy(self)] + other
+            else:
+                return NotImplemented
+
+        def __rand__(self, other):
+            if isinstance(other, list):
+                self.compare_type = "and"
+                return other + [copy.copy(self)]
+            else:
+                return NotImplemented
+
+    @attrs.define
+    class Input(Exportable):
+        """
+        Purely abstract helper object useful for defining complex decider
+        conditions ergonomically. Can be thought of as one "half" of a
+        :py:class:`.DeciderCombinator.Condition` object, wherupon one is created
+        by using conditional operators:
+
+        .. doctest::
+
+            >>> Input = DeciderCombinator.Input
+
+            >>> input_1 = Input(signal="signal-A", networks={"red"})
+            >>> input_2 = Input(signal="signal-B", networks={"green"})
+
+            >>> condition = input_1 < input_2
+
+            >>> assert isinstance(condition, DeciderCombinator.Condition)
+            >>> condition.first_signal.name
+            "signal-A"
+            >>> condition.comparator
+            "<"
+            >>> condition.second_signal.name
+            "signal-B"
+
+        :py:class:`.Input` objects also support comparisons against integers:
+
+        .. doctest::
+
+            >>> condition = Input("signal-C") >= 100
+
+            >>> condition.first_signal.name
+            "signal-C"
+            >>> condition.comparator
+            "≥"
+            >>> condition.constant
+            100
+
+        .. NOTE::
+
+            If you use this syntax alongside boolean combination of
+            :py:class:`~.DeciderCombinator.Condition` objects, make sure to
+            encapsulate each "condition" with parenthesis in order to maintain
+            the correct order of operations::
+
+                # Incorrect:
+                decider_combinator.conditions = input_1 < input_2 & input_3 >= 100
+                # Correct:
+                decider_combinator.conditions = (input_1 < input_2) & (input_3 >= 100)
+        """
+
+        signal: SignalID = attrs.field(
+            converter=SignalID.converter, validator=instance_of(SignalID)
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        What signal this input represents.
+        """
+        networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        Which circuit wires should this input pull its values from.
+        """
+
+        def _output_condition(self, comparator, other) -> "DeciderCombinator.Condition":
+            if isinstance(other, DeciderCombinator.Input):
+                return DeciderCombinator.Condition(
+                    first_signal=self.signal,
+                    first_signal_networks=self.networks,
+                    comparator=comparator,
+                    second_signal=other.signal,
+                    second_signal_networks=other.networks,
+                )
+            if isinstance(other, (int)):
+                return DeciderCombinator.Condition(
+                    first_signal=self.signal,
+                    first_signal_networks=self.networks,
+                    comparator=comparator,
+                    constant=other,
+                )
+            else:
+                return NotImplemented
+
+        def __eq__(
+            self, other: "DeciderCombinator.Input"
+        ) -> "DeciderCombinator.Condition":
+            return self._output_condition("=", other)
+
+        def __ne__(self, other) -> "DeciderCombinator.Condition":
+            return self._output_condition("!=", other)
+
+        def __gt__(self, other) -> "DeciderCombinator.Condition":
+            return self._output_condition(">", other)
+
+        def __lt__(self, other) -> "DeciderCombinator.Condition":
+            return self._output_condition("<", other)
+
+        def __ge__(self, other) -> "DeciderCombinator.Condition":
+            return self._output_condition(">=", other)
+
+        def __le__(self, other) -> "DeciderCombinator.Condition":
+            return self._output_condition("<=", other)
+
+    @attrs.define
+    class Output(Exportable):
+        """
+        An output object specifically for :py:class:`.DeciderCombinator`.
+        """
+
+        signal: Optional[SignalID] = attrs.field(
+            default=None,
+            converter=SignalID.converter,
+            validator=instance_of(Optional[SignalID]),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The signal to output.
+        """
+
+        copy_count_from_input: bool = attrs.field(
+            default=True, validator=instance_of(bool)
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        Whether or not to source the output signal(s) value from the input wires, or
+        to output them with constant values as specified by :py:attr:`.constant`.
+        """
+
+        networks: CircuitNetworkSelection = attrs.field(
+            factory=CircuitNetworkSelection,
+            converter=CircuitNetworkSelection.converter,
+            validator=instance_of(CircuitNetworkSelection),
+        )
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        Which wire networks to sample values from (red/green).
+        """
+
+        constant: int32 = attrs.field(default=1, validator=instance_of(int32))
+        """
+        .. serialized::
+
+            This attribute is imported/exported from blueprint strings.
+
+        The constant value to output to the network, if 
+        :py:attr:`.copy_count_from_input` is ``False``. Can be any signed 32-bit 
+        number.
+        """
+
+    # =========================================================================
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return decider_combinators
 
     # =========================================================================
 
@@ -362,329 +374,102 @@ class DeciderCombinator(
 
     # =========================================================================
 
-    @property
-    def conditions(self) -> list[Condition]:
-        return self.control_behavior.decider_conditions.conditions
+    conditions: list[Condition] = attrs.field(
+        factory=list,
+        validator=instance_of(list[Condition]),
+    )
+    """
+    .. serialized::
 
-    @conditions.setter
-    def conditions(self, value: list[Condition]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.DeciderConditions,
-                self.control_behavior.decider_conditions,
-                "conditions",
-                value,
-            )
-            self.control_behavior.decider_conditions.conditions = result
-        else:
-            self.control_behavior.decider_conditions.conditions = value
+        This attribute is imported/exported from blueprint strings.
 
-    # =========================================================================
+    The list of all circuit conditions that this decider combinator contains.
+    Each one is evaluated sequentially (in order) and is conjoined with the 
+    previous conditoin either with ``"and"`` or ``"or"``.
 
-    @property
-    def outputs(self) -> list[DeciderOutput]:
-        return self.control_behavior.decider_conditions.outputs
+    .. NOTE::
 
-    @outputs.setter
-    def outputs(self, value: Optional[list[DeciderOutput]]) -> None:
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior.DeciderConditions,
-                self.control_behavior.decider_conditions,
-                "outputs",
-                value,
-            )
-            self.control_behavior.decider_conditions.outputs = result
-        else:
-            self.control_behavior.decider_conditions.outputs = value
-
-    # @property
-    # def first_operand(self) -> Union[SignalID, None]:
-    #     """
-    #     The first operand of the ``DeciderCombinator``. Must be a signal or ``None``;
-    #     cannot be a constant. Has a number of restrictions on which of the
-    #     "special" signals can be in this position in relation to
-    #     :py:attr:`.output_signal`:
-
-    #     .. list-table::
-    #         :header-rows: 1
-
-    #         * - ``first_operand`` value
-    #           - Valid ``output_signal`` value(s)
-    #         * - All Normal Signals
-    #           - | All Normal Signals,
-    #             | ``"signal-everything"``
-    #         * - ``"signal-everything"``
-    #           - | All Normal Signals,
-    #             | ``"signal-everything"``
-    #         * - ``"signal-anything"``
-    #           - | All Normal Signals,
-    #             | ``"signal-everything"``,
-    #             | ``"signal-anything"``
-    #         * - ``"signal-each"``
-    #           - | All Normal Signals,
-    #             | ``"signal-each"``
-
-    #     If ``first_operand`` is set to something that makes ``output_signal``
-    #     fall outside of these accepted values, then ``output_signal`` is reset
-    #     to ``None``.
-
-    #     :getter: Gets the first operand of the operation, or ``None`` if not set.
-    #     :setter: Sets the first operand of the operation. Removes the key if set
-    #         to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.decider_conditions.first_signal
-
-    # @first_operand.setter
-    # def first_operand(self, value: Union[str, SignalID, None]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "first_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.first_signal = result
-    #     else:
-    #         self.control_behavior.decider_conditions.first_signal = value
+        When exporting to Factorio 1.0, only the first condition in this list 
+        will end up in the serialized result.
+    """
 
     # =========================================================================
 
-    # @property
-    # def operation(self) -> Literal[">", "<", "=", "≥", "≤", "≠", None]:
-    #     """
-    #     The operation of the ``DeciderCombinator`` Can be specified as the
-    #     single unicode character which is used by Factorio, or you can use the
-    #     Python formatted 2-character equivalents::
+    outputs: list[Output] = attrs.field(
+        factory=list,
+        validator=instance_of(list[Output]),
+    )
+    """
+    .. serialized::
 
-    #         # One of:
-    #         [">", "<", "=",  "≥",  "≤",  "≠"]
-    #         # Or, alternatively:
-    #         [">", "<", "==", ">=", "<=", "!="]
+        This attribute is imported/exported from blueprint strings.
 
-    #     or ``None``. If specified in the second format, they are converted to
-    #     and stored as the first format.
+    The list of all circuit_outputs that this decider combinator contains.
+    Each indivdiual signal or set of signals are combined together on the output
+    wire frame.
 
-    #     :getter: Gets the current operation, or ``None`` if not set.
-    #     :setter: Sets the current operation. Removes the key if set to ``None``.
+    .. NOTE::
 
-    #     :exception TypeError: If set to anything other than one of the values
-    #         specified above.
-    #     """
-    #     return self.control_behavior.decider_conditions.comparator
+        When exporting to Factorio 1.0, only the first output in this list will 
+        end up in the serialized dictionary.
+    """
 
-    # @operation.setter
-    # def operation(
-    #     self, value: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!=", None]
-    # ):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "comparator",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.comparator = result
-    #     else:
-    #         self.control_behavior.decider_conditions.comparator = value
+    def merge(self, other: "DeciderCombinator"):
+        super().merge(other)
 
-    # =========================================================================
-
-    # @property
-    # def second_operand(self) -> Union[SignalID, int32, None]:
-    #     """
-    #     The second operand of the ``DeciderCombinator``. Cannot be one of the
-    #     :py:data:`.pure_virtual` signals, which is forbidden for this operand in
-    #     combinators of this type.
-
-    #     :getter: Gets the second operand of the operation, or ``None`` if not
-    #         set.
-    #     :setter: Sets the second operand of the operation. Removes the key if
-    #         set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID``, an
-    #         ``int``, or ``None``.
-    #     :exception DraftsmanError: If set to a pure virtual signal, which is
-    #         forbidden.
-    #     """
-    #     decider_conditions = self.control_behavior.decider_conditions
-    #     if not decider_conditions:
-    #         return None
-
-    #     if decider_conditions.second_signal is not None:
-    #         return decider_conditions.second_signal
-    #     elif decider_conditions.constant is not None:
-    #         return decider_conditions.constant
-    #     else:
-    #         return None
-
-    # @second_operand.setter
-    # def second_operand(
-    #     self, value: Union[str, SignalID, int32, None]
-    # ):  # TODO: SignalName(?)
-    #     # if self.validate_assignment:
-    #     #     value = attempt_and_reissue(
-    #     #         self,
-    #     #         type(self).Format.ControlBehavior.DeciderConditions,
-    #     #         self.control_behavior.decider_conditions,
-    #     #         "second_operand",
-    #     #         value
-    #     #     )
-    #     #     self.control_behavior.decider_conditions.second_operand = result
-    #     # else:
-    #     #     self.control_behavior.decider_conditions.second_operand = value
-
-    #     if value is None:  # Default
-    #         self.control_behavior.decider_conditions.second_signal = None
-    #         self.control_behavior.decider_conditions.constant = None
-    #     elif isinstance(value, (int, float)):  # Constant
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.DeciderConditions,
-    #                 self.control_behavior.decider_conditions,
-    #                 "constant",
-    #                 value,
-    #             )
-    #         self.control_behavior.decider_conditions.constant = value
-    #         self.control_behavior.decider_conditions.second_signal = None
-    #     else:  # Signal or other
-    #         if self.validate_assignment:
-    #             value = attempt_and_reissue(
-    #                 self,
-    #                 type(self).Format.ControlBehavior.DeciderConditions,
-    #                 self.control_behavior.decider_conditions,
-    #                 "second_signal",
-    #                 value,
-    #             )
-    #         self.control_behavior.decider_conditions.second_signal = value
-    #         self.control_behavior.decider_conditions.constant = None
-
-    # =========================================================================
-
-    # @property
-    # def output_signal(self) -> Optional[SignalID]:
-    #     """
-    #     The output signal of the ``ArithmeticCombinator``.
-
-    #     :getter: Gets the output signal, or ``None`` if not set.
-    #     :setter: Sets the output signal. Removes the key if set to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``SIGNAL_ID`` or
-    #         ``None``.
-    #     :exception DraftsmanError: If set to a value which conflicts with
-    #         :py:attr:`.first_operand`; see that attribute for more information.
-    #     """
-    #     return self.control_behavior.decider_conditions.output_signal
-
-    # @output_signal.setter
-    # def output_signal(self, value: Union[str, SignalID]):  # TODO: SignalName?
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "output_signal",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.output_signal = result
-    #     else:
-    #         self.control_behavior.decider_conditions.output_signal = value
-
-    # =========================================================================
-
-    # @property
-    # def copy_count_from_input(self) -> Optional[bool]:
-    #     """
-    #     Whether or not the input value of a signal is transposed to the output
-    #     signal. If this is false, the output signal is output with a value of 1
-    #     if the condition is met. A default of ``None`` means ``True``.
-
-    #     :getter: Gets whether or not to copy the value, or ``None`` is not set.
-    #     :setter: Sets whether or not to copy the value. Removes the key if set
-    #         to ``None``.
-
-    #     :exception TypeError: If set to anything other than a ``bool`` or
-    #         ``None``.
-    #     """
-    #     return self.control_behavior.decider_conditions.copy_count_from_input
-
-    # @copy_count_from_input.setter
-    # def copy_count_from_input(self, value: Optional[bool]):
-    #     if self.validate_assignment:
-    #         result = attempt_and_reissue(
-    #             self,
-    #             type(self).Format.ControlBehavior.DeciderConditions,
-    #             self.control_behavior.decider_conditions,
-    #             "copy_count_from_input",
-    #             value,
-    #         )
-    #         self.control_behavior.decider_conditions.copy_count_from_input = result
-    #     else:
-    #         self.control_behavior.decider_conditions.copy_count_from_input = value
-
-    # =========================================================================
-
-    # @reissue_warnings
-    # def set_decider_conditions(
-    #     self,
-    #     first_operand: Union[str, SignalID, None] = None,
-    #     operation: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-    #     second_operand: Union[str, SignalID, int32, None] = 0,
-    #     output_signal: Union[str, SignalID, None] = None,
-    #     copy_count_from_input: bool = True,
-    # ):
-    #     """
-    #     Set the operation for the ``DeciderCombinator`` all at once. All of the
-    #     restrictions to the individual attributes still apply.
-
-    #     :param first_operand: The name of the first signal to set, or ``None``.
-    #     :param operation: The comparison operator to use. See :py:data:`.COMPARATOR`
-    #         for more information on valid values.
-    #     :param second_operand: The name of the second signal, some constant, or
-    #         ``None``.
-    #     :param output_signal: The name of the output signal to set, or ``None``.
-    #     :param copy_count_from_input: Whether or not to copy input signal values
-    #         to output signal values. Defaults to ``None``, which also means ``True``.
-
-    #     :exception DataFormatError: If the any of the arguments fail to match
-    #         their correct formats.
-    #     """
-    #     new_control_behavior = {
-    #         "decider_conditions": {
-    #             "first_signal": first_operand,
-    #             "comparator": operation,
-    #             "output_signal": output_signal,
-    #             "copy_count_from_input": copy_count_from_input,
-    #         }
-    #     }
-
-    #     if isinstance(second_operand, (int, float)):
-    #         new_control_behavior["decider_conditions"]["constant"] = second_operand
-    #     else:
-    #         new_control_behavior["decider_conditions"]["second_signal"] = second_operand
-
-    #     # Set
-    #     self.control_behavior = new_control_behavior
-
-    def remove_decider_conditions(self):
-        """
-        Wipes all the values from the ``"decider_conditions"`` key in this
-        entity's control behavior. Allows you to quickly clear all values
-        associated with this entity without having to manually reset each
-        attribute.
-        """
-        self.control_behavior.decider_conditions = (
-            __class__.Format.ControlBehavior.DeciderConditions()
-        )
+        self.conditions = other.conditions
+        self.outputs = other.outputs
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_hook_fns(
+    DeciderCombinator.Condition,
+    lambda fields: {
+        "first_signal": fields.first_signal.name,
+        "first_signal_networks": fields.first_signal_networks.name,
+        "comparator": fields.comparator.name,
+        "constant": fields.constant.name,
+        "second_signal": fields.second_signal.name,
+        "second_signal_networks": fields.second_signal_networks.name,
+        "compare_type": fields.compare_type.name,
+    },
+)
+
+draftsman_converters.add_hook_fns(
+    DeciderCombinator.Output,
+    lambda fields: {
+        "signal": fields.signal.name,
+        "copy_count_from_input": fields.copy_count_from_input.name,
+        "networks": fields.networks.name,
+        "constant": fields.constant.name,
+    },
+)
+
+# TODO: write something like this
+# draftsman_converters.get_version((1, 0)).add_schema(
+#     DeciderCombinator,
+#     lambda fields: {
+#         # Problem: cannot specify subkeys on the right side
+#         # Ideally we would write:
+#         ("control_behavior", "decider_conditions", "first_signal"): (fields.conditions.name, 0, "first_signal"),
+#         ("control_behavior", "decider_conditions", "comparator"): (fields.conditions.name, 0, "comparator"),
+#         ("control_behavior", "decider_conditions", "second_signal"): (fields.conditions.name, 0, "second_signal"),
+#         ("control_behavior", "decider_conditions", "output_signal"): (fields.outputs.name, 0, "signal"),
+#     }
+# )
+# Or, we write a pre hook that converts the old format into the new format, but that doesn't work both ways
+
+draftsman_converters.add_hook_fns(
+    DeciderCombinator,
+    lambda fields: {
+        (
+            "control_behavior",
+            "decider_conditions",
+            "conditions",
+        ): fields.conditions.name,
+        ("control_behavior", "decider_conditions", "outputs"): fields.outputs.name,
+    },
+)

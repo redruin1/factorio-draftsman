@@ -1,83 +1,66 @@
 # logistic_condition.py
 
-from draftsman.classes.exportable import attempt_and_reissue
-from draftsman.signatures import Condition, SignalID, int32
+from draftsman.classes.exportable import Exportable
+from draftsman.serialization import draftsman_converters
+from draftsman import signatures
+from draftsman.validators import instance_of
 
-from pydantic import BaseModel, Field
-from typing import Literal, Optional, Union
+import attrs
+from typing import Union
 
 
-class LogisticConditionMixin:  # (ControlBehaviorMixin)
+@attrs.define(slots=False)
+class LogisticConditionMixin(Exportable):
     """
-    (Implicitly inherits :py:class:`~.ControlBehaviorMixin`)
-
     Allows the Entity to have an logistic enable condition, such as when the
     amount of some item in the logistic network exceeds some constant.
     """
 
-    class ControlFormat(BaseModel):
-        connect_to_logistic_network: Optional[bool] = Field(
-            False,
-            description="""
-            Whether or not this entity will be controlled from the associated 
-            logistic condition.
-            """,
-        )
-        logistic_condition: Optional[Condition] = Field(
-            Condition(first_signal=None, comparator="<", constant=0),
-            description="""
-            The logistic condition that must be passed in order for this entity
-            to function, if 'connect_to_logistic_network' is true.
-            """,
-        )
+    connect_to_logistic_network: bool = attrs.field(
+        default=False,
+        validator=instance_of(bool),
+    )
+    """
+    .. serialized::
 
-    class Format(BaseModel):
-        pass
+        This attribute is imported/exported from blueprint strings.
 
-    @property
-    def connect_to_logistic_network(self) -> bool:
-        """
-        Whether or not this entity should use it's logistic network condition to
-        control its operation (if it has one).
+    Whether or not this entity should connect to the logistic network it resides
+    in.
+    """
 
-        :getter: Gets the value of ``connect_to_logistic_network``, or ``None``
-            if not set.
-        :setter: Sets the value of ``connect_to_logistic_network``. Removes the
-            key if set to ``None``.
+    # =========================================================================
 
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.control_behavior.connect_to_logistic_network
+    logistic_condition: signatures.Condition = attrs.field(
+        factory=lambda: signatures.Condition(
+            first_signal=None, comparator="<", constant=0
+        ),
+        converter=signatures.Condition.converter,
+        validator=instance_of(signatures.Condition),
+    )
+    """
+    .. serialized::
 
-    @connect_to_logistic_network.setter
-    def connect_to_logistic_network(self, value: bool):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.ControlBehavior,
-                self.control_behavior,
-                "connect_to_logistic_network",
-                value,
-            )
-            self.control_behavior.connect_to_logistic_network = result
-        else:
-            self.control_behavior.connect_to_logistic_network = value
+        This attribute is imported/exported from blueprint strings.
+
+    The logistic condition that must be passed in order for this entity to 
+    function, if configured to do so.
+    """
 
     # =========================================================================
 
     def set_logistic_condition(
         self,
-        a: Union[SignalID, None] = None,
-        cmp: Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="] = "<",
-        b: Union[SignalID, int32] = 0,
+        first_operand: Union[signatures.SignalID, None] = None,
+        comparator: signatures.Comparator = "<",
+        second_operand: Union[signatures.SignalID, int] = 0,  # TODO: should be int32
     ):
         """
         Sets the logistic condition of the Entity.
 
-        ``cmp`` can be specified as stored as the single unicode character which
-        is used by Factorio, or you can use the Python formatted 2-character
-        equivalents::
+        ``comparator`` can be specified as stored as the single unicode
+        character which is used by Factorio, or you can use the Python formatted
+        2-character equivalents::
 
             # One of:
             [">", "<", "=",  "≥",  "≤",  "≠"]
@@ -87,19 +70,32 @@ class LogisticConditionMixin:  # (ControlBehaviorMixin)
         If specified in the second format, they are converted to and stored as
         the first format.
 
-        :param a: The string name of the first signal.
-        :param cmp: The operation to use, as specified above.
-        :param b: The string name of the second signal, or some 32-bit constant.
+        :param first_operand: The string name of the first signal.
+        :param comparator: The operation to use, as specified above.
+        :param second_operand: The string name of the second signal, or some
+            32-bit constant.
 
-        :exception DataFormatError: If ``a`` is not a valid signal name, if
-            ``cmp`` is not a valid operation, or if ``b`` is neither a valid
-            signal name nor a constant.
+        :exception DataFormatError: If ``first_operand`` is not a valid signal
+            name, if ``comparator`` is not a valid operation, or if
+            ``second_operand`` is neither a valid signal name nor a constant.
         """
-        self._set_condition("logistic_condition", a, cmp, b)
+        self._set_condition(
+            "logistic_condition", first_operand, comparator, second_operand
+        )
 
-    def remove_logistic_condition(self):
-        """
-        Removes the logistic condition of the Entity. Does nothing if the Entity
-        has no logistic condition to remove.
-        """
-        self.control_behavior.logistic_condition = None
+    def merge(self, other: "LogisticConditionMixin"):
+        super().merge(other)
+        self.connect_to_logistic_network = other.connect_to_logistic_network
+        self.logistic_condition = other.logistic_condition
+
+
+draftsman_converters.add_hook_fns(
+    LogisticConditionMixin,
+    lambda fields: {
+        (
+            "control_behavior",
+            "connect_to_logistic_network",
+        ): fields.connect_to_logistic_network.name,
+        ("control_behavior", "logistic_condition"): fields.logistic_condition.name,
+    },
+)

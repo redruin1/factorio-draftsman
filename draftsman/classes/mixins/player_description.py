@@ -1,56 +1,45 @@
 # player_description.py
 
-from draftsman.classes.exportable import attempt_and_reissue
+from draftsman.classes.exportable import Exportable
+from draftsman.serialization import draftsman_converters
+from draftsman.validators import and_, byte_length, instance_of
 
-from pydantic import BaseModel, Field
-
-from typing import Optional
+import attrs
 
 
-class PlayerDescriptionMixin:
+@attrs.define(slots=False)
+class PlayerDescriptionMixin(Exportable):
     """
     Allows the entity to have a player-given description, similar to blueprints
     or blueprint books. Used by all combinators.
     """
 
-    class Format(BaseModel):
-        player_description: Optional[str] = Field(
-            None,
-            description="""
-            The user-facing description given to this entity. Supports rich text
-            and item icons.
-            """,
-        )
+    player_description: str = attrs.field(
+        default="",
+        converter=lambda v: "" if v is None else v,
+        validator=and_(instance_of(str), byte_length(500)),
+    )
+    """
+    .. serialized::
 
-    def __init__(self, name, similar_entities, **kwargs):
-        self._root: __class__.Format
+        This attribute is imported/exported from blueprint strings.
 
-        super().__init__(name, similar_entities, **kwargs)
+    The user-facing description given to this entity, usually for documentation 
+    purposes.
 
-        self.player_description = kwargs.get("player_description", None)
+    Has a maximum size of 200 bytes; any string longer than this will be 
+    truncated on import-export cycle
 
-    # =========================================================================
+    .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
 
-    @property
-    def player_description(self) -> Optional[str]:
-        """
-        The user-facing description given to this entity, usually for in-game
-        documentation purposes.
-        """
-        return self._root.player_description
 
-    @player_description.setter
-    def player_description(self, value: Optional[str]):
-        # TODO: validation
-        self._root.player_description = value
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format,
-                self._root,
-                "player_description",
-                value,
-            )
-            self._root.player_description = result
-        else:
-            self._root.player_description = value
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    PlayerDescriptionMixin,
+    lambda fields: {None: fields.player_description.name},
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    PlayerDescriptionMixin,
+    lambda fields: {"player_description": fields.player_description.name},
+)

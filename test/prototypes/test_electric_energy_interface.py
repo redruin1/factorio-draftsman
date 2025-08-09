@@ -12,33 +12,41 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_electric_energy_interface():
+    return ElectricEnergyInterface(
+        "electric-energy-interface",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        buffer_size=1000,
+        power_production=1000,
+        power_usage=1000,
+        tags={"blah": "blah"},
+    )
+
+
 class TestElectricEnergyInterface:
     def test_constructor_init(self):
         interface = ElectricEnergyInterface(
             "electric-energy-interface",
-            buffer_size=10000,
-            power_production=10000,
-            power_usage=100,
         )
         assert interface.to_dict() == {
             "name": "electric-energy-interface",
             "position": {"x": 1.0, "y": 1.0},
-            "buffer_size": 10000,
-            "power_production": 10000,
-            "power_usage": 100,
         }
-        assert interface.to_dict(exclude_defaults=False) == {
+        assert interface.to_dict(version=(2, 0), exclude_defaults=False) == {
             "name": "electric-energy-interface",
             "quality": "normal",
             "position": {"x": 1.0, "y": 1.0},
-            "buffer_size": 10000,
-            "power_production": 10000,
-            "power_usage": 100,
+            "direction": 0,
+            "mirror": False,
+            "buffer_size": 10000000000.0,
+            "power_production": 8333333333.0,
+            "power_usage": 0.0,
+            "items": [],
             "tags": {},
         }
-
-        with pytest.warns(UnknownKeywordWarning):
-            ElectricEnergyInterface(unused_keyword="whatever").validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             ElectricEnergyInterface(
@@ -46,29 +54,32 @@ class TestElectricEnergyInterface:
             ).validate().reissue_all()
 
     def test_set_buffer_size(self):
-        interface = ElectricEnergyInterface()
+        interface = ElectricEnergyInterface("electric-energy-interface")
+        assert interface.buffer_size == interface.default_buffer_size
+
         interface.buffer_size = 100
         assert interface.buffer_size == 100
-        interface.buffer_size = None
-        assert interface.buffer_size == None
+
         with pytest.raises(DataFormatError):
             interface.buffer_size = "incorrect"
 
     def test_set_power_production(self):
-        interface = ElectricEnergyInterface()
+        interface = ElectricEnergyInterface("electric-energy-interface")
+        assert interface.power_production == interface.default_power_production
+
         interface.power_production = 100
         assert interface.power_production == 100
-        interface.power_production = None
-        assert interface.power_production == None
+
         with pytest.raises(DataFormatError):
             interface.power_production = "incorrect"
 
     def test_set_power_usage(self):
-        interface = ElectricEnergyInterface()
+        interface = ElectricEnergyInterface("electric-energy-interface")
+        assert interface.power_usage == interface.default_power_usage
+
         interface.power_usage = 100
         assert interface.power_usage == 100
-        interface.power_usage = None
-        assert interface.power_usage == None
+
         with pytest.raises(DataFormatError):
             interface.power_usage = "incorrect"
 

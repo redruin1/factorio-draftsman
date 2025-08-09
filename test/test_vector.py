@@ -56,7 +56,12 @@ class TestVector:
         assert dict_point == Vector(1.3, 3.4)
         original_point = Vector(1, 2)
         point = Vector.from_other(original_point)
-        assert point is original_point
+        assert point == original_point
+
+    def test_update_from_other(self):
+        p = Vector(0.0, 0.0)
+        p.update_from_other({"x": 1.4, "y": 2.5})
+        assert p == Vector(1.4, 2.5)
 
     def test_to_dict(self):
         point = Vector(10, 20)

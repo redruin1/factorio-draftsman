@@ -1,190 +1,113 @@
 # infinity_container.py
 
 from draftsman.classes.entity import Entity
-from draftsman.classes.exportable import attempt_and_reissue, test_replace_me
-from draftsman.classes.mixins import RequestItemsMixin, InventoryMixin
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError
-from draftsman.signatures import DraftsmanBaseModel, ItemRequest, uint16, uint32
-from draftsman.utils import get_first
+from draftsman.classes.exportable import Exportable
+from draftsman.classes.mixins import InventoryMixin
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import ItemIDName, QualityID, uint16, uint32
+from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import infinity_containers
 from draftsman.data import items
 
+import attrs
 import copy
-from pydantic import ConfigDict, Field, ValidationError
-from typing import Any, Literal, Optional, Union
+from typing import Literal, Optional
 
 
-class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
+@attrs.define
+class InfinityContainer(InventoryMixin, Entity):
     """
     An entity used to create an infinite amount of any item.
     """
 
-    class Format(RequestItemsMixin.Format, InventoryMixin.Format, Entity.Format):
-        class InfinitySettings(DraftsmanBaseModel):
-            class InfinityFilter(DraftsmanBaseModel):
-                index: uint16 = Field(
-                    ...,
-                    description="""
-                    Where in the infinity containers GUI this filter will exist,
-                    1-based.
-                    """,
-                )
-                name: str = Field(  # TODO: ItemID
-                    ...,
-                    description="""
-                    The name of the item to create/remove.
-                    """,
-                )
-                count: Optional[uint32] = Field(
-                    0,
-                    description="""
-                    The amount of this item to keep in the entity, as dicerned
-                    by 'mode'.
-                    """,
-                )
-                mode: Optional[Literal["at-least", "at-most", "exactly"]] = Field(
-                    "at-least",
-                    description="""
-                    What manner in which to create or remove this item from the 
-                    entity. 'at-least' sets 'count' as a lower-bound, 'at-most' 
-                    sets 'count' as an upper-bound, and exactly makes the 
-                    quantity of this item match 'count' exactly.
-                    """,
-                )
-
-            filters: Optional[list[InfinityFilter]] = Field(
-                [],
-                description="""
-                The list of items to infinitely create or remove from this 
-                entity's inventory.
-                """,
-            )
-            remove_unfiltered_items: Optional[bool] = Field(
-                False,
-                description="""
-                Whether or not items not in the 'filters' object will be removed
-                from this entity's inventory.
-                """,
-            )
-
-        infinity_settings: Optional[InfinitySettings] = InfinitySettings()
-
-        model_config = ConfigDict(title="InfinityContainer")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(infinity_containers),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        bar: uint16 = None,
-        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
-        infinity_settings: Format.InfinitySettings = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
+    @attrs.define
+    class Filter(Exportable):
+        index: uint16 = attrs.field(validator=instance_of(uint16))
         """
-        TODO
+        Where in the infinity containers GUI this filter will exist,
+        1-based.
         """
 
-        self._root: __class__.Format
+        name: ItemIDName = attrs.field(validator=instance_of(ItemIDName))
+        """
+        The name of the item to create/remove.
+        """
 
-        super().__init__(
-            name,
-            infinity_containers,
-            position=position,
-            tile_position=tile_position,
-            bar=bar,
-            items=items,
-            tags=tags,
-            **kwargs
+        quality: QualityID = attrs.field(default="normal", validator=one_of(QualityID))
+        """
+        The quality of the item to create/remove.
+        """
+
+        count: uint32 = attrs.field(default=0, validator=instance_of(uint32))
+        """
+        The amount of this item to keep in the entity, as discerned
+        by 'mode'.
+        """
+
+        mode: Literal["at-least", "at-most", "exactly"] = attrs.field(
+            default="at-least", validator=one_of("at-least", "at-most", "exactly")
         )
-
-        self.infinity_settings = infinity_settings
-
-        self.validate_assignment = validate_assignment
+        """
+        What manner in which to create or remove this item from the 
+        entity. 'at-least' sets 'count' as a lower-bound, 'at-most' 
+        sets 'count' as an upper-bound, and exactly makes the 
+        quantity of this item match 'count' exactly.
+        """
 
     # =========================================================================
 
     @property
-    def infinity_settings(self) -> Optional[Format.InfinitySettings]:
-        """
-        The settings that control the manner in which items are spawned or
-        removed.
-
-        :getter: Gets the ``infinity_settings`` of the ``InfinityContainer``.
-        :setter: Sets the ``infinity_settings`` of the ``InfinityContainer``.
-            Defaults to an empty ``dict`` if set to ``None``.
-
-        :exception DataFormatError: If set to anything that does not match the
-            :py:data:`.INFINITY_CONTAINER` format.
-        """
-        return self._root.infinity_settings
-
-    @infinity_settings.setter
-    def infinity_settings(self, value: Optional[Format.InfinitySettings]):
-        test_replace_me(
-            self,
-            type(self).Format,
-            self._root,
-            "infinity_settings",
-            value,
-            self.validate_assignment,
-        )
-        # if self.validate_assignment:
-        #     result = attempt_and_reissue(
-        #         self, type(self).Format, self._root, "infinity_settings", value
-        #     )
-        #     self._root.infinity_settings = result
-        # else:
-        #     self._root.infinity_settings = value
+    def similar_entities(self) -> list[str]:
+        return infinity_containers
 
     # =========================================================================
 
-    @property
-    def remove_unfiltered_items(self) -> Optional[bool]:
-        """
-        Whether or not to remove items that exceed the amounts specified in the
-        ``InfinityContainer``'s filters.
+    filters: list[Filter] = attrs.field(
+        factory=list,
+        validator=instance_of(list[Filter]),
+    )
+    """
+    .. serialized::
 
-        :exception TypeError: If set to anything other than a ``bool`` or
-            ``None``.
-        """
-        return self.infinity_settings.remove_unfiltered_items
+        This attribute is imported/exported from blueprint strings.
 
-    @remove_unfiltered_items.setter
-    def remove_unfiltered_items(self, value: Optional[bool]):
-        if self.validate_assignment:
-            result = attempt_and_reissue(
-                self,
-                type(self).Format.InfinitySettings,
-                self.infinity_settings,
-                "remove_unfiltered_items",
-                value,
-            )
-            self.infinity_settings.remove_unfiltered_items = result
-        else:
-            self.infinity_settings.remove_unfiltered_items = value
+    The list of items to infinitely create or remove from this 
+    entity's inventory.
+
+    .. seealso::
+
+        :py:meth:`.set_infinity_filter`
+    """
+
+    # =========================================================================
+
+    remove_unfiltered_items: bool = attrs.field(
+        default=False, validator=instance_of(bool)
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Whether or not to remove items that exceed the amounts specified in 
+    :py:attr:`.filters`.
+    """
 
     # =========================================================================
 
     def set_infinity_filter(
         self,
-        index: uint16,
+        index: int,  # TODO: should be uint16
         item: Optional[str],
         mode: Literal["at-least", "at-most", "exactly", None] = "at-least",
-        count: Optional[uint32] = None,
+        count: Optional[int] = None,  # TODO: should be uint32
     ):
         """
         Sets an infinity filter.
 
         :param index: The index of the filter to set.
-        :param name: The name of the item to interact with.
+        :param item: The name of the item to filter.
         :param mode: The manner in which to set the filter. Can be one of
             ``"at-least"``, ``"at-most"``, or ``"exactly"``.
         :param count: The amount of the item to request. If set to ``None``, the
@@ -201,40 +124,66 @@ class InfinityContainer(RequestItemsMixin, InventoryMixin, Entity):
 
         # Check to see if filters already contains an entry with the same index
         existing_index = False
-        for i, filter_entry in enumerate(self.infinity_settings["filters"]):
-            if index + 1 == filter_entry["index"]:  # Index already exists in the list
+        for i, filter_entry in enumerate(self.filters):
+            if index + 1 == filter_entry.index:  # Index already exists in the list
                 if item is None:  # Delete the entry
-                    del self.infinity_settings["filters"][i]
+                    del self.filters[i]
                     return
                 else:  # Set the new value
                     existing_index = i
                 break
 
-        try:
-            new_filter = self.Format.InfinitySettings.InfinityFilter(
-                index=index + 1,
-                name=item,
-                count=count,
-                mode=mode,
-            )
-        except ValidationError as e:
-            raise DataFormatError(e) from None
+        new_filter = InfinityContainer.Filter(
+            index=index + 1,
+            name=item,
+            count=count,
+            mode=mode,
+        )
 
         if existing_index is not False:
-            self.infinity_settings["filters"][existing_index] = new_filter
+            self.filters[existing_index] = new_filter
         else:  # No entry with the same index was found
-            self.infinity_settings["filters"].append(new_filter)
+            self.filters.append(new_filter)
 
-    def merge(self, other):
+    def merge(self, other: "InfinityContainer"):
         super().merge(other)
 
-        self.infinity_settings = copy.deepcopy(other.infinity_settings)
+        self.filters = copy.deepcopy(other.filters)
+        self.remove_unfiltered_items = other.remove_unfiltered_items
 
     # =========================================================================
 
     __hash__ = Entity.__hash__
 
-    def __eq__(self, other) -> bool:
-        return (
-            super().__eq__(other) and self.infinity_settings == other.infinity_settings
-        )
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    InfinityContainer.Filter,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "count": fields.count.name,
+        "mode": fields.mode.name,
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
+    InfinityContainer.Filter,
+    lambda fields: {
+        "index": fields.index.name,
+        "name": fields.name.name,
+        "quality": fields.quality.name,
+        "count": fields.count.name,
+        "mode": fields.mode.name,
+    },
+)
+
+draftsman_converters.add_hook_fns(
+    InfinityContainer,
+    lambda fields: {
+        ("infinity_settings", "filters"): fields.filters.name,
+        (
+            "infinity_settings",
+            "remove_unfiltered_items",
+        ): fields.remove_unfiltered_items.name,
+    },
+)

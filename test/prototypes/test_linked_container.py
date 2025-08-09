@@ -7,10 +7,25 @@ from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 from collections.abc import Hashable
 import pytest
 
+
+@pytest.fixture
+def valid_linked_container():
+    if len(linked_containers) == 0:
+        return None
+    return LinkedContainer(
+        "linked-chest",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        # item_requests=[],
+        bar=10,
+        link_id=123,
+        tags={"blah": "blah"},
+    )
+
+
 # For compatibility with versions of Factorio prior to 1.0.0
-pytest.mark.skipif(len(linked_containers) == 0, "No linked containers to test")
-
-
+@pytest.mark.skipif(len(linked_containers) == 0, reason="No linked containers to test")
 class TestLinkedContainer:
     def test_constructor_init(self):
         container = LinkedContainer("linked-chest", link_id=1000)
@@ -21,10 +36,6 @@ class TestLinkedContainer:
         }
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            LinkedContainer(
-                "linked-chest", unused_keyword="whatever"
-            ).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             LinkedContainer("this is not a linked container").validate().reissue_all()
 
@@ -52,8 +63,8 @@ class TestLinkedContainer:
         container.link_id = 0xFFFF
         assert container.link_id == 0xFFFF
 
-        container.link_id = None
-        assert container.link_id == 0
+        container.link_id = 0xFFFF_FFFF_FFFF
+        assert container.link_id == 0xFFFF_FFFF
 
         with pytest.raises(DataFormatError):
             container.link_id = "incorrect"

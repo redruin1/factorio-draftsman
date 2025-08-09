@@ -1,11 +1,11 @@
 # schedulelist.py
 
 from draftsman.classes.schedule import Schedule
+from draftsman.serialization import draftsman_converters
 from draftsman.error import DataFormatError
 
-from pydantic import GetCoreSchemaHandler
-from pydantic_core import CoreSchema, core_schema
-from typing import Any, Callable, Iterator, MutableSequence
+import cattrs
+from typing import Callable, Iterator, MutableSequence
 
 
 class ScheduleList(MutableSequence):
@@ -39,9 +39,6 @@ class ScheduleList(MutableSequence):
             raise TypeError("Entry in <ScheduleList> must be an instance of <Schedule>")
 
         self.data.insert(index, schedule)
-
-    def clear(self) -> None:
-        self.data.clear()
 
     def __getitem__(self, index: int) -> Schedule:
         return self.data[index]
@@ -80,15 +77,18 @@ class ScheduleList(MutableSequence):
         return True
 
     def __repr__(self) -> str:
-        return "<ScheduleList>{}".format(repr(self.data))
+        return "ScheduleList({})".format(repr(self.data))
 
-    # def __deepcopy__(self, memo):
-    #     pass # TODO, I think
 
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls, _: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(
-            cls, handler(list[Schedule.Format])
-        )  # pragma: no coverage
+def _schedule_list_structure_factory(cls, converter: cattrs.Converter):
+    def structure_hook(input_list: list, t: type):
+        return ScheduleList(
+            [converter.structure(elem, Schedule) for elem in input_list]
+        )
+
+    return structure_hook
+
+
+draftsman_converters.register_structure_hook_factory(
+    lambda cls: issubclass(cls, ScheduleList), _schedule_list_structure_factory
+)

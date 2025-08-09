@@ -5,11 +5,10 @@
 # requires information on item groups when modifying things like entities, which
 # is annoying.
 
-from draftsman import __file__ as draftsman_root_file
+from draftsman import DEFAULT_FACTORIO_VERSION, __file__ as draftsman_root_file
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.data.entities import add_entity
 from draftsman.environment.mod_list import (
-    Dependency,
     Mod,
     file_to_string,
     archive_to_string,
@@ -25,98 +24,13 @@ from draftsman.error import (
 from draftsman.utils import AABB, version_string_to_tuple, version_tuple_to_string
 
 import git
-import git.exc
 import lupa.lua52 as lupa
 
 from collections import OrderedDict
 import json
 import os
 import pickle
-from typing import Union
-
-
-def get_default_collision_mask(entity_type):
-    """
-    Determine the default collision mask based on the string entity type.
-
-    :param entity_type: A string containing what type of entity we're getting
-        a collision mask for. (e.g. ``"container"``, ``"gate"``, ``"heat-pipe"``,
-        etc.)
-
-    :returns: A ``set()`` containing the default collision layers for that
-        object.
-    """
-    if entity_type == "gate":
-        return {
-            "item-layer",
-            "object-layer",
-            "player-layer",
-            "water-tile",
-            "train-layer",
-        }
-    elif entity_type == "heat-pipe":
-        return {"object-layer", "floor-layer", "water-tile"}
-    elif entity_type == "land-mine":
-        return {"object-layer", "water-tile"}
-    elif entity_type == "linked-belt":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "loader":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "straight-rail" or entity_type == "curved-rail":
-        return {
-            "item-layer",
-            "object-layer",
-            "rail-layer",
-            "floor-layer",
-            "water-tile",
-        }
-    elif entity_type == "rail-signal" or entity_type == "rail-chain-signal":
-        return {"floor-layer", "rail-layer", "item-layer"}
-    elif (
-        entity_type == "locomotive"
-        or entity_type == "cargo-wagon"
-        or entity_type == "fluid-wagon"
-        or entity_type == "artillery-wagon"
-    ):
-        return {"train-layer"}
-    elif entity_type == "splitter":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "transport-belt":
-        return {
-            "object-layer",
-            "floor-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    elif entity_type == "underground-belt":
-        return {
-            "object-layer",
-            "item-layer",
-            "transport-belt-layer",
-            "water-tile",
-        }
-    else:  # true default
-        return {
-            "item-layer",
-            "object-layer",
-            "player-layer",
-            "water-tile",
-        }
+from typing import Optional, Union
 
 
 def get_order(objects_to_sort, sort_objects, sort_subgroups, sort_groups):
@@ -326,8 +240,6 @@ def python_require(
     if not mod.is_archive:
         return None, "\n\tCurrent mod ({}) is not an archive".format(mod.name)
 
-    # print("\t", mod.name)
-
     # We emulate lua filepath searching
     filepaths = package_path.split(";")
     for filepath in filepaths:
@@ -337,13 +249,9 @@ def python_require(
         filepath = filepath.replace("\\", "/")
         # Make it local to the archive, replacing the global path to the local
         # internal path
-        # print("\tbefore filepath", filepath)
-        # print("mod_folder + mod.name", mod_folder + "/" + mod.name)
-        # print("mod.location", mod.location)
-        filepath = filepath.replace(mod.location, mod.internal_folder)
-        # print("\tafter filepath:", filepath)
+        filepath = filepath.replace(mod.location, mod.archive_folder)
         try:
-            string_contents = archive_to_string(mod.files, filepath)
+            string_contents = archive_to_string(mod.archive, filepath)
             fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
             return string_contents, fixed_filepath
         except KeyError:
@@ -377,6 +285,12 @@ def run_settings_stage(
     base_path: str,
     verbose: bool = False,
 ):
+    """
+    Runs all 3 settings stages (``settings.lua``, ``settings-updates.lua``,
+    ``settings-final-fixes.lua``). Afterward, the lua data is copied to the
+    correct location that the data stage expects, and any user-defined settings
+    are applied ontop of the default ones.
+    """
     stages = ("settings.lua", "settings-updates.lua", "settings-final-fixes.lua")
     for stage in stages:
         if verbose:
@@ -385,7 +299,6 @@ def run_settings_stage(
         for mod in load_order:
             # Reset the directory so we dont require from different mods
             # Well, unless we need to. Otherwise, avoid it
-            # TODO: fixme
             lua.globals().lua_set_path(base_path)
 
             if stage in mod.stages:
@@ -421,7 +334,8 @@ def run_data_stage(
     lua: lupa.LuaRuntime, load_order: list[Mod], base_path: str, verbose: bool = False
 ):
     """
-    TODO
+    Runs all 3 data stages (``data.lua``, ``data-updates.lua``,
+    ``data-final-fixes.lua``).
     """
     stages = ("data.lua", "data-updates.lua", "data-final-fixes.lua")
     for stage in stages:
@@ -431,7 +345,6 @@ def run_data_stage(
         for mod in load_order:
             # Reset the directory so we dont require from different mods
             # Well, unless we need to. Otherwise, avoid it
-            # TODO: fixme
             lua.globals().lua_set_path(base_path)
 
             if stage in mod.stages:
@@ -441,8 +354,6 @@ def run_data_stage(
                 run_mod_phase(lua, mod, stage)
 
                 # Reset the included modules
-                # TODO: probably better to just have this be a snippet of code
-                # so we don't pollute the global namespace
                 lua.globals().lua_unload_cache()
 
                 # Reset the MODS tree to an empty state
@@ -450,9 +361,8 @@ def run_data_stage(
 
 
 def run_data_lifecycle(
-    draftsman_path: str,
-    game_path: str,
-    mods_path: str,
+    game_path: str | None = None,
+    mods_path: str | None = None,
     show_logs: bool = False,
     no_mods: bool = False,
     verbose: bool = False,
@@ -463,10 +373,34 @@ def run_data_lifecycle(
     a Lua instance which contains all of the relevant data to that particular
     load cycle.
 
+    :param game_path: The path pointing to Factorio's data, where "official"
+        mods like `base` and `core` live.
+    :param mods_path: The path pointing to the user mods folder. Also the
+        location where ``mod-settings.dat`` and ``mod-list.json`` files are
+        searched for and parsed from.
+    :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
+        Does not omit any "official" mods found at ``game_path``. Useful to
+        quickly toggle modded/unmodded configurations without having to
+        respecify any paths.
+    :param verbose: Pretty-prints additional status messages and information to
+        stdout.
+    :param show_logs: If enabled, any `log()` messages created on the Lua side
+        of things will be printed to stdout. This will happen regardless of the
+        value of ``verbose``.
+
     :returns: A :py:class:`lupa.LuaRuntime` object containing all relevant Lua
         tables with corresponding data, such as `data.raw`, `mods`, etc. that
         can be parsed.
     """
+    draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
+
+    default_game_path = os.path.join(draftsman_path, "factorio-data")
+    if game_path is None:
+        game_path = default_game_path
+
+    default_mods_path = os.path.join(draftsman_path, "factorio-mods")
+    if mods_path is None:
+        mods_path = default_mods_path
 
     if verbose:
         print("Discovering mods...\n")
@@ -490,14 +424,9 @@ def run_data_lifecycle(
     mods = {name: mod_list[0] for name, mod_list in mods.items() if mod_list[0].enabled}
 
     for mod_name, mod in mods.items():
-        # Core has no dependecies, so determining it's tree is redundant
-        if mod_name == "core":
+        # core/base have no dependecies, so determining their trees is redundant
+        if mod_name == "core" or mod_name == "base":
             continue
-        # Base depends on core, though the game does not tell us this
-        elif mod_name == "base":
-            mod.dependencies = [
-                Dependency(flag=None, name="core", operation=None, version=None)
-            ]
 
         if verbose:
             print(mod_name)
@@ -556,15 +485,22 @@ def run_data_lifecycle(
                 # want it to modify the load order, so we skip that part
                 continue
 
-            # Replace the Dependency object with a reference to the actual
-            # loaded and selected Mod
-            # TODO: would be better to not do this since it's technically destructive
-            mod.dependencies[i] = mods[dependency.name]
+            # If we're here, the mod should be considered part of the load order
+            # Hence we update it's `reference` so it's counted when running
+            # `get_depth()` later.
+            dependency.reference = mods[dependency.name]
 
     # Get load order (Sort the mods by the least to most deep dependency tree
     # first and their name second)
-    load_order: list[Mod] = [
-        mod for mod in sorted(mods.values(), key=lambda x: (x.get_depth(), x.name))
+    load_order: list[Mod] = [mods["core"]] + [  # core is special
+        mod
+        for mod in sorted(
+            (mod for mod in mods.values() if mod.name != "core"),
+            key=lambda x: (
+                x.get_depth(),
+                x.name.lower(),  # Factorio doesn't distinguish between upper/lowercase
+            ),
+        )
     ]
 
     if verbose:
@@ -579,9 +515,17 @@ def run_data_lifecycle(
     # point in any of the subsequent steps.
     # This is not included in `factorio-data` and has to be manually extracted
     # (See compatibility/defines.lua for more info).
-    lua.execute(
-        file_to_string(os.path.join(draftsman_path, "compatibility", "defines.lua"))
-    )
+    if version_string_to_tuple(mods["base"].version) < (2, 0):
+        lua.execute(
+            file_to_string(
+                os.path.join(draftsman_path, "compatibility", "defines", "1.0.0.lua")
+            )
+        )
+    else:
+        # except FileNotFoundError:
+        lua.execute(
+            file_to_string(os.path.join(draftsman_path, "compatibility", "defines.lua"))
+        )
 
     # "interface.lua" houses a number of patching functions used to emulate
     # Factorio's internal load process.
@@ -605,20 +549,6 @@ def run_data_lifecycle(
 
     # Adds path to Lua `package.path`.
     lua_add_path = lua.globals()["lua_add_path"]
-    # Set Lua `package.path` to a specific value.
-    lua_set_path = lua.globals()["lua_set_path"]
-    # Unload all cached files. Lua attempts to save time when requiring files
-    # by only loading each file once, and reusing the file when requiring with
-    # the same name. This can lead to problems when two mods have the same name
-    # for a file, where Lua will load the incorrect one and create issues.
-    # To counteract this, we completly unload all files with this function,
-    # which is called at the end of every load stage.
-    lua_unload_cache = lua.globals()["lua_unload_cache"]
-    # In order to properly search archives, we need to keep track of which file
-    # and mod we're currently in. Due to a number of reasons, this needs to be
-    # done manually; this function empties the stack of mods that we've
-    # traversed through in preparation for loading the next mod's stage.
-    lua_wipe_mods = lua.globals()["lua_wipe_mods"]
 
     # Register `python_require` in lua context.
     # This function is in charge of reading a required file from a zip archive
@@ -815,6 +745,7 @@ def get_items(lua):
     add_items(data.raw["spidertron-remote"])
     add_items(data.raw["repair-tool"])  # not an item somehow
     add_items(data.raw["rail-planner"])
+    add_items(data.raw["copy-paste-tool"])
 
     # Sort everything
     for i, _ in enumerate(group_list):
@@ -862,15 +793,8 @@ def extract_mods(
     """
     Extract all the mod versions to ``mods.pkl`` in :py:mod:`draftsman.data`.
     """
-    # out_mods = {}
-    # for mod in mods:
-    #     if mod.name == "core":
-    #         continue
-    #     out_mods[mod] = version_string_to_tuple(mod.version)
-
-    # print(out_mods)
     out_mods = {
-        key: value
+        key: version_string_to_tuple(value)
         for key, value in convert_table_to_dict(lua.globals().mods).items()
         if key != "core"
     }
@@ -883,13 +807,84 @@ def extract_mods(
 
 
 def extract_entities(
-    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+    lua: lupa.LuaRuntime,
+    draftsman_path: str,
+    game_version,
+    sort_tuple,
+    verbose: bool = False,
 ) -> None:
     """
     Extracts the entities to ``entities.pkl`` in :py:mod:`draftsman.data`.
     """
 
     data = lua.globals().data
+
+    try:
+        # In modern Factorio, default collision masks are defined by the game
+        default_collision_masks = convert_table_to_dict(
+            data.raw["utility-constants"]["default"]["default_collision_masks"]
+        )
+    except TypeError:
+        # If not, we have to manually define their defaults ourselves
+        default_collision_masks = {
+            "gate": {
+                "item-layer",
+                "object-layer",
+                "player-layer",
+                "water-tile",
+                "train-layer",
+            },
+            "heat-pipe": {"object-layer", "floor-layer", "water-tile"},
+            "land-mine": {"object-layer", "water-tile"},
+            "linked-belt": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "loader": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "straight-rail": {
+                "item-layer",
+                "object-layer",
+                "rail-layer",
+                "floor-layer",
+                "water-tile",
+            },
+            "curved-rail": {
+                "item-layer",
+                "object-layer",
+                "rail-layer",
+                "floor-layer",
+                "water-tile",
+            },
+            "locomotive": {"train-layer"},
+            "cargo-wagon": {"train-layer"},
+            "fluid-wagon": {"train-layer"},
+            "artillery-wagon": {"train-layer"},
+            "splitter": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "transport-belt": {
+                "object-layer",
+                "floor-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+            "underground-belt": {
+                "object-layer",
+                "item-layer",
+                "transport-belt-layer",
+                "water-tile",
+            },
+        }
 
     entities = {}
     unordered_entities_raw = {}
@@ -976,9 +971,23 @@ def extract_entities(
 
         collision_mask = entity.get("collision_mask", None)
         if not collision_mask:
-            entity["collision_mask"] = get_default_collision_mask(entity["type"])
+            default_collision_mask = default_collision_masks.get(
+                entity["type"],
+                {  # true default
+                    "item-layer",
+                    "object-layer",
+                    "player-layer",
+                    "water-tile",
+                },
+            )
+            entity["collision_mask"] = default_collision_mask
+
+        # 2.0 Factorio has more keys than just the layers
+        if "layers" in entity["collision_mask"]:
+            entity["collision_mask"]["layers"] = set(entity["collision_mask"]["layers"])
+        # 1.0 Factorio is just a simple set
         else:
-            entity["collision_mask"] = set(collision_mask)
+            entity["collision_mask"] = set(entity["collision_mask"])
 
         # Check if an entity is flippable or not
         is_flippable[entity_name] = is_entity_flippable(entity)
@@ -996,15 +1005,18 @@ def extract_entities(
     # unordered_entities_raw = {}
     entities["of_type"] = {}
 
-    def add_entities(prototype_name: str):
-        if prototype_name not in data.raw:
+    def add_entities(prototype_name: str, source_name: str | None = None):
+        if source_name is None:
+            source_name = prototype_name
+        if source_name not in data.raw:
             # If not present, then typically it means its not present in this version
             # of the game; thus return an empty list
             entities["of_type"][prototype_name] = []
             return
-        for name, contents in convert_table_to_dict(data.raw[prototype_name]).items():
+        for name, contents in convert_table_to_dict(data.raw[source_name]).items():
             if not categorize_entity(name, contents):
                 continue
+            contents["type"] = prototype_name
             add_entity(**contents, target=(unordered_entities_raw, entities["of_type"]))
 
         sort(entities["of_type"][prototype_name])
@@ -1053,8 +1065,14 @@ def extract_entities(
     add_entities("lab")
     add_entities("lamp")
     add_entities("land-mine")
-    add_entities("legacy-straight-rail")
-    add_entities("legacy-curved-rail")
+    if game_version < (2, 0):
+        # Treat "curved-rails" as "legacy-curved-rails"
+        add_entities("legacy-curved-rail", "curved-rail")
+        # Treat "straight-rails" as "legacy-straight-rails"
+        add_entities("legacy-straight-rail", "straight-rail")
+    else:
+        add_entities("legacy-curved-rail")
+        add_entities("legacy-straight-rail")
     add_entities("lightning-attractor")  # Space Age
     add_entities("linked-belt")
     add_entities("linked-container")
@@ -1115,7 +1133,10 @@ def extract_entities(
     add_entities("spider-vehicle")  # Blueprintable in 2.0
     add_entities("splitter")
     add_entities("storage-tank")
-    add_entities("straight-rail")
+    if game_version < (2, 0):
+        entities["of_type"]["straight-rail"] = []
+    else:
+        add_entities("straight-rail")
     add_entities("thruster")  # Space Age
     add_entities("train-stop")
     add_entities("transport-belt")
@@ -1165,6 +1186,31 @@ def extract_entities(
 
     if verbose:
         print("Extracted entities...")
+
+
+# =============================================================================
+
+
+def extract_equipment(
+    lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose: bool = False
+) -> None:
+    """
+    Extracts equipment to ``equipment.pkl`` in :py:mod:`draftsman.data`.
+    """
+    data = lua.globals().data
+
+    unordered_equipment_raw = convert_table_to_dict(data.raw["equipment-grid"])
+    raw_order = get_order(unordered_equipment_raw, *sort_tuple)
+
+    equipment_raw = {}
+    for name in raw_order:
+        equipment_raw[name] = unordered_equipment_raw[name]
+
+    with open(os.path.join(draftsman_path, "data", "equipment.pkl"), "wb") as out:
+        pickle.dump((equipment_raw,), out, 4)
+
+    if verbose:
+        print("Extracted equipment...")
 
 
 # =============================================================================
@@ -1304,7 +1350,10 @@ def extract_planets(
 ) -> None:
     data = lua.globals().data
 
-    planets = convert_table_to_dict(data.raw["planet"])
+    try:
+        planets = convert_table_to_dict(data.raw["planet"])
+    except TypeError:
+        planets = {}
 
     with open(os.path.join(draftsman_path, "data", "planets.pkl"), "wb") as out:
         data = [planets]
@@ -1312,6 +1361,31 @@ def extract_planets(
 
     if verbose:
         print("Extracted planets...")
+
+
+# =============================================================================
+
+
+def extract_qualities(
+    lua: lupa.LuaRuntime,
+    draftsman_path: str,
+    sort_tuple,
+    verbose: bool = False,
+):
+
+    data = lua.globals().data
+
+    try:
+        raw_qualities = convert_table_to_dict(data.raw["quality"])
+    except TypeError:
+        raw_qualities = {}
+
+    with open(os.path.join(draftsman_path, "data", "qualities.pkl"), "wb") as out:
+        data = [raw_qualities]
+        pickle.dump(data, out, 4)
+
+    if verbose:
+        print("Extracted qualities...")
 
 
 # =============================================================================
@@ -1373,7 +1447,7 @@ def extract_signals(
     data = lua.globals().data
 
     unsorted_raw_signals = {}
-    type_of_signals: dict[str, set[str]] = {}
+    type_of_signals: dict[str, list[str]] = {}
 
     virtual_signals = []
     item_signals = []
@@ -1395,23 +1469,12 @@ def extract_signals(
         for signal_name in signal_category:
             signal_obj = signal_category[signal_name]
 
-            # if signal_name == "tank-flamethrower":
-            #     print("found: ", signal_category_name)
-            #     print(signal_category[signal_name])
-
-            # if "hidden" in signal_obj:
-            #     continue
-
             unsorted_raw_signals[signal_name] = signal_obj
 
-            # if "flags" in signal_obj and "hidden" in signal_obj["flags"]:
-            #     hidden_signals.append(signal_category[signal_name])
-            #     continue
-
             if signal_name not in type_of_signals:
-                type_of_signals[signal_name] = {signal_type}
+                type_of_signals[signal_name] = [signal_type]
             else:
-                type_of_signals[signal_name].add(signal_type)
+                type_of_signals[signal_name].append(signal_type)
 
             target_location.append(signal_category[signal_name])
 
@@ -1647,7 +1710,12 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
 
     tile_list = []
     for tile in tiles:
-        tiles[tile]["collision_mask"] = set(tiles[tile]["collision_mask"])
+        if "layers" in tiles[tile]["collision_mask"]:
+            tiles[tile]["collision_mask"]["layers"] = set(
+                tiles[tile]["collision_mask"]["layers"]
+            )
+        else:
+            tiles[tile]["collision_mask"] = set(tiles[tile]["collision_mask"])
         tile_order = tiles[tile].get("order", None)
         tile_list.append((tile_order is None, tile_order, tile))
 
@@ -1667,7 +1735,12 @@ def extract_tiles(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fal
         print("Extracted tiles...")
 
 
-def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = False):
+def extract_data(
+    lua: lupa.LuaRuntime,
+    draftsman_path: str,
+    game_version: tuple[int, ...] = DEFAULT_FACTORIO_VERSION,
+    verbose: bool = False,
+):
     # TODO: this needs to be customizable; how do we do this?
     # Ideally we would have some user-friendly pattern syntax that users could
     # specify...
@@ -1676,6 +1749,9 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fals
     # translate it into their desired form
     # That seems to make the most sense, and is essentially what we're already
     # doing on the Draftsman side.
+    # Or, perhaps more rudementarily, we could just pickle the entire data.raw
+    # unchanged, and have every attribute calculate what it needs at runtime
+    # (which would certainly be easiest to maintain...)
 
     # Preferrably as well I would like to reuse the `entity.add_entity`, etc.
     # functions to keep everything consistent for both my end and the end user's
@@ -1690,20 +1766,22 @@ def extract_data(lua: lupa.LuaRuntime, draftsman_path: str, verbose: bool = Fals
     # as necessary
     items = get_items(lua)
 
-    extract_entities(lua, draftsman_path, items, verbose)
+    extract_entities(lua, draftsman_path, game_version, items, verbose)
+    extract_equipment(lua, draftsman_path, items, verbose)
     extract_fluids(lua, draftsman_path, items, verbose)
     extract_instruments(lua, draftsman_path, verbose)
     extract_items(lua, draftsman_path, items, verbose)
     extract_modules(lua, draftsman_path, items, verbose)
     extract_planets(lua, draftsman_path, verbose)
+    extract_qualities(lua, draftsman_path, items, verbose)
     extract_recipes(lua, draftsman_path, items, verbose)
     extract_signals(lua, draftsman_path, items, verbose)
     extract_tiles(lua, draftsman_path, verbose)
 
 
 def update_draftsman_data(
-    game_path: str,
-    mods_path: str,
+    game_path: Optional[str] = None,
+    mods_path: Optional[str] = None,
     no_mods: bool = False,
     verbose: bool = False,
     show_logs: bool = False,
@@ -1719,10 +1797,12 @@ def update_draftsman_data(
     :py:meth:`.run_data_lifecycle`.
 
     :param game_path: The path pointing to Factorio's data, where "official"
-        mods like `base` and `core` live.
+        mods like `base` and `core` live. If omitted, defaults to the
+        `factorio-data` folder provided in the Draftsman installation location.
     :param mods_path: The path pointing to the user mods folder. Also the
         location where ``mod-settings.dat`` and ``mod-list.json`` files are
-        searched for and parsed from.
+        searched for and parsed from. If omitted, defaults to the `factorio-mods`
+        folder provided in the Draftsman installation location.
     :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
         Does not omit any "official" mods found at ``game_path``. Useful to
         quickly toggle modded/unmodded configurations without having to
@@ -1735,17 +1815,12 @@ def update_draftsman_data(
     """
     draftsman_path = os.path.dirname(os.path.abspath(draftsman_root_file))
 
-    lua_instance = run_data_lifecycle(
-        draftsman_path=draftsman_path,
-        game_path=game_path,
-        mods_path=mods_path,
-        show_logs=show_logs,
-        no_mods=no_mods,
-        verbose=verbose,
-    )
+    if game_path is None:
+        game_path = os.path.join(draftsman_path, "factorio-data")
+    if game_path is None:
+        mods_path = os.path.join(draftsman_path, "factorio-mods")
 
-    # Get the version of Factorio specified by the game data, and write
-    # `_factorio_version.py` with the current factorio version
+    # Get the version of Factorio specified by the game data
     with open(os.path.join(game_path, "base", "info.json")) as base_info_file:
         base_info = json.load(base_info_file)
         factorio_version = base_info["version"]
@@ -1754,24 +1829,26 @@ def update_draftsman_data(
             factorio_version += ".0"
         factorio_version_info = version_string_to_tuple(factorio_version)
 
-    with open(
-        os.path.join(draftsman_path, "_factorio_version.py"), "w"
-    ) as version_file:
-        version_file.write("# _factorio_version.py\n\n")
-        version_file.write('__factorio_version__ = "' + factorio_version + '"\n')
-        version_file.write(
-            "__factorio_version_info__ = {}\n".format(str(factorio_version_info))
-        )
-
-    data_raw = convert_table_to_dict(lua_instance.globals().data.raw)
-    # print(data_raw.keys())
+    lua_instance = run_data_lifecycle(
+        game_path=game_path,
+        mods_path=mods_path,
+        show_logs=show_logs,
+        no_mods=no_mods,
+        verbose=verbose,
+    )
 
     # At this point, `data.raw` in `lua_instance` and should(!) be properly
     # initialized. Hence, we can now extract the data we wish:
 
     if verbose:
         print()
-    extract_data(lua=lua_instance, draftsman_path=draftsman_path, verbose=verbose)
+
+    extract_data(
+        lua=lua_instance,
+        draftsman_path=draftsman_path,
+        game_version=factorio_version_info,
+        verbose=verbose,
+    )
 
     if verbose:
         print("\nUpdate finished.")  # Phew.

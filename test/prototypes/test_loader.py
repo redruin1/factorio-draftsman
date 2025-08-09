@@ -1,5 +1,6 @@
 # test_loader.py
 
+from draftsman.constants import Direction
 from draftsman.entity import Loader, loaders, Container
 from draftsman.signatures import ItemFilter
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -8,13 +9,26 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_loader():
+    return Loader(
+        "loader",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        direction=Direction.EAST,
+        io_type="output",
+        use_filters=True,
+        filters=[ItemFilter(index=1, name="iron-ore")],
+        tags={"blah": "blah"},
+    )
+
+
 class TestLoader:
     def test_constructor_init(self):
         # loader = Loader()
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Loader("loader", unused_keyword=10).validate().reissue_all()
         with pytest.warns(UnknownEntityWarning):
             Loader("this is not a loader").validate().reissue_all()
 

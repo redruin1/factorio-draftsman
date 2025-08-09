@@ -1,5 +1,6 @@
 # test_boiler.py
 
+from draftsman.constants import InventoryType
 from draftsman.entity import Boiler, boilers, Container
 from draftsman.error import InvalidEntityError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
@@ -8,14 +9,32 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_boiler():
+    return Boiler(
+        "boiler",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        item_requests=[
+            {
+                "id": {"name": "coal"},
+                "items": {
+                    "in_inventory": [
+                        {"inventory": InventoryType.FUEL, "stack": 0, "count": 50}
+                    ]
+                },
+            }
+        ],
+        tags={"blah": "blah"},
+    )
+
+
 class TestBoiler:
     def test_constructor_init(self):
         boiler = Boiler("boiler")
 
         # Warnings
-        with pytest.warns(UnknownKeywordWarning):
-            Boiler(unused_keyword="whatever").validate().reissue_all()
-
         with pytest.warns(UnknownEntityWarning):
             Boiler("not a boiler").validate().reissue_all()
 

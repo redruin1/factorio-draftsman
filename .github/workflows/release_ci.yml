@@ -1,0 +1,46 @@
+name: Release CI
+on: [release]
+jobs:
+  run:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      OS: ${{ matrix.os }}
+      PYTHON: '3.10.4'
+    steps:
+    - uses: actions/checkout@master
+      with:
+        submodules: true
+    - name: Install Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    - name: Install UV
+      uses: astral-sh/setup-uv@v6
+    - name: Install Just with pipx
+      uses: threeal/pipx-install-action@v2
+      with:
+        packages: rust-just
+    - name: Create venv and Install Draftsman
+      run: |
+        uv venv --python 3.13
+        uv pip install --group test
+        uv pip install -e .
+    - name: Run giga test and generate coverage report
+      run: just test-all
+    - name: Combine and make XML
+      run: |
+        coverage combine
+        coverage xml
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        directory: ./coverage/reports/
+        env_vars: PYTHON
+        fail_ci_if_error: true
+        files: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true

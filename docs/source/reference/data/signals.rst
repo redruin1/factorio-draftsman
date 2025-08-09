@@ -131,5 +131,3 @@
         ["signal-everything", "signal-anything", "signal-each"]
 
 .. autofunction:: get_signal_types
-
-.. autofunction:: signal_dict

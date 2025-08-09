@@ -22,7 +22,7 @@ def main():
         if "allow_quality" in recipe:
             quality_recipes[recipe_name] = recipe
         for planet_name, planet in planets.raw.items():
-            if recipes.is_usable_on(recipe, planet):
+            if recipes.is_usable_on(recipe_name, planet_name):
                 planet_recipes[planet_name][recipe_name] = recipe
 
     print("\t", productivity_recipes.keys())

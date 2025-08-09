@@ -185,7 +185,7 @@ class TestConstants:
 
     def test_validation_mode_gt(self):
         with pytest.raises(TypeError):
-            ValidationMode.NONE > TypeError
+            ValidationMode.DISABLED > TypeError
 
 
 class TestUtils:
@@ -249,24 +249,24 @@ class TestUtils:
         assert utils.version_tuple_to_string((1, 15, 2, 3)) == "1.15.2.3"
 
     def test_get_signal_types(self):
-        assert signals.get_signal_types("signal-anything") == {"virtual"}
-        assert signals.get_signal_types("water") == {"fluid"}
-        assert signals.get_signal_types("wooden-chest") == {"item", "recipe", "entity"}
+        assert signals.get_signal_types("signal-anything") == ["virtual"]
+        assert signals.get_signal_types("water") == ["fluid"]
+        assert signals.get_signal_types("wooden-chest") == ["item", "recipe", "entity"]
         with pytest.raises(InvalidSignalError):
             signals.get_signal_types("incorrect")
 
-    def test_signal_dict(self):
-        assert signals.signal_dict("signal-anything") == {
-            "name": "signal-anything",
-            "type": "virtual",
-        }
-        assert signals.signal_dict("water") == {"name": "water", "type": "fluid"}
-        assert signals.signal_dict("wooden-chest") == {
-            "name": "wooden-chest",
-            "type": "item",
-        }
-        with pytest.raises(InvalidSignalError):
-            signals.signal_dict("incorrect")
+    # def test_signal_dict(self):
+    #     assert signals.signal_dict("signal-anything") == {
+    #         "name": "signal-anything",
+    #         "type": "virtual",
+    #     }
+    #     assert signals.signal_dict("water") == {"name": "water", "type": "fluid"}
+    #     assert signals.signal_dict("wooden-chest") == {
+    #         "name": "wooden-chest",
+    #         "type": "item",
+    #     }
+    #     with pytest.raises(InvalidSignalError):
+    #         signals.signal_dict("incorrect")
 
     # def test_dist(self):
     #     self.assertAlmostEqual(

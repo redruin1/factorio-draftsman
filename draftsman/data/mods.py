@@ -2,10 +2,15 @@
 
 import pickle
 
-import importlib.resources as pkg_resources
+from importlib.resources import files
 
 from draftsman import data
 
 
-with pkg_resources.open_binary(data, "mods.pkl") as inp:
-    mod_list: dict[str, tuple] = pickle.load(inp)
+try:
+    source = files(data) / "mods.pkl"
+    with source.open("rb") as inp:
+        versions: dict[str, tuple] = pickle.load(inp)
+
+except FileNotFoundError:  # pragma: no coverage
+    versions = {}

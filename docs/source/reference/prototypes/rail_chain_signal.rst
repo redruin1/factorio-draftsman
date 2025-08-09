@@ -6,6 +6,5 @@
 
 .. autoclass:: RailChainSignal
     :members:
-    :exclude-members: Format
     :show-inheritance:
     :inherited-members:

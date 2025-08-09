@@ -2,7 +2,7 @@
 
 from draftsman.error import RotationError, FlippingError
 from draftsman.classes.vector import Vector
-from draftsman.warning import GridAlignmentWarning, FlippingWarning
+from draftsman.warning import GridAlignmentWarning
 
 from typing import Literal
 import warnings
@@ -28,7 +28,6 @@ class Transformable:
         """
         # Warn if attempting to translate by an odd amount when containing
         # double-grid-aligned entities
-        # TODO: should this be here?
         if self.double_grid_aligned and (x % 2 == 1 or y % 2 == 1):
             warnings.warn(
                 "Attempting to translate an odd number of tiles when this "
@@ -55,7 +54,7 @@ class Transformable:
             self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):  # TODO: remove
+        if hasattr(self, "tiles"):  # pragma: no branch
             for tile in self.tiles:
                 # Remove from map
                 self.tiles.spatial_map.remove(tile)
@@ -110,7 +109,6 @@ class Transformable:
             entity._parent = None
 
             # Make a (separate!) copy of the position to transform
-            # pos = [entity.position["x"], entity.position["y"]]
             pos = Vector(entity.position.x, entity.position.y)
 
             # Alter the direction
@@ -128,7 +126,7 @@ class Transformable:
             self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):
+        if hasattr(self, "tiles"):  # pragma: no branch
             for tile in self.tiles:
                 # Remove from map
                 self.tiles.spatial_map.remove(tile)
@@ -165,15 +163,6 @@ class Transformable:
         if not self.flippable:
             raise FlippingError("Blueprint cannot be flipped")
 
-        # TODO: determine what entities are modded or not
-        # if self.contains_modded_entities:
-        #     warnings.warn(
-        #         "Flipping the blueprint is not guaranteed to work when it has "
-        #         "modded entities inside it; proceed with caution",
-        #         FlippingWarning,
-        #         stacklevel=2
-        #     )
-
         if direction not in {"horizontal", "vertical"}:
             raise ValueError("'direction' must be either 'horizontal' or 'vertical'")
 
@@ -206,7 +195,7 @@ class Transformable:
             self.entities.spatial_map.add(entity)
 
         # Tiles
-        if hasattr(self, "tiles"):
+        if hasattr(self, "tiles"):  # pragma: no branch
             for tile in self.tiles:
                 # Remove from map
                 self.tiles.spatial_map.remove(tile)

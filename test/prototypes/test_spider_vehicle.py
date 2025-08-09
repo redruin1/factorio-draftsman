@@ -1,0 +1,296 @@
+# test_spider_vehicle.py
+
+from draftsman import DEFAULT_FACTORIO_VERSION
+from draftsman.constants import ValidationMode
+from draftsman.data import mods
+from draftsman.error import DataFormatError
+from draftsman.prototypes.spider_vehicle import SpiderVehicle, spider_vehicles
+from draftsman.signatures import (
+    Color,
+    EquipmentComponent,
+    EquipmentID,
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+    ManualSection,
+    SignalFilter,
+)
+import draftsman.validators
+from draftsman.warning import UnknownEntityWarning
+
+import pytest
+import copy
+
+
+@pytest.fixture
+def valid_spider_vehicle():
+    with draftsman.validators.set_mode(ValidationMode.MINIMUM):
+        return SpiderVehicle(
+            "spidertron",
+            id="test",
+            quality="uncommon",
+            tile_position=(1, 1),
+            item_requests=[
+                BlueprintInsertPlan(
+                    id="energy-shield-equipment",
+                    items=ItemInventoryPositions(grid_count=1),
+                )
+            ],
+            equipment=[
+                EquipmentComponent(equipment="energy-shield-equipment", position=(0, 0))
+            ],
+            trash_not_requested=True,
+            request_from_buffers=False,
+            requests_enabled=False,
+            sections=[
+                ManualSection(
+                    index=1,
+                    filters=[SignalFilter(index=1, name="iron-plate", count=50)],
+                )
+            ],
+            enable_logistics_while_moving=False,
+            driver_is_main_gunner=True,
+            selected_gun_index=2,
+            color=(0.5, 0.5, 0.5),
+            auto_target_without_gunner=False,
+            auto_target_with_gunner=True,
+            tags={"blah": "blah"},
+        )
+
+
+def test_constructor():
+    vehicle = SpiderVehicle(
+        "spidertron",
+        auto_target_without_gunner=False,
+        auto_target_with_gunner=True,
+    )
+    assert vehicle.to_dict(version=(2, 0)) == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "automatic_targeting_parameters": {
+            "auto_target_without_gunner": False,
+            "auto_target_with_gunner": True,
+        },
+    }
+
+    assert vehicle.to_dict(version=(2, 0), exclude_none=False) == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "automatic_targeting_parameters": {
+            "auto_target_without_gunner": False,
+            "auto_target_with_gunner": True,
+        },
+    }
+
+    assert vehicle.to_dict(version=(2, 0), exclude_defaults=False) == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "quality": "normal",
+        "automatic_targeting_parameters": {
+            "auto_target_without_gunner": False,
+            "auto_target_with_gunner": True,
+        },
+        "color": {"r": 255 / 255, "g": 127 / 255, "b": 0.0, "a": 127 / 255},
+        "driver_is_main_gunner": False,
+        "selected_gun_index": 1,
+        "enable_logistics_while_moving": True,
+        "grid": [],
+        "items": [],
+        "mirror": False,
+        "request_filters": {
+            "enabled": True,
+            "request_from_buffers": True,
+            "sections": [],
+            "trash_not_requested": False,
+        },
+        "ammo_inventory": {"filters": []},
+        "trunk_inventory": {"filters": []},
+        "tags": {},
+    }
+
+    with pytest.warns(UnknownEntityWarning):
+        SpiderVehicle("unknown vehicle")
+
+
+def test_flags():
+    for vehicle_name in spider_vehicles:
+        vehicle = SpiderVehicle(vehicle_name)
+        assert vehicle.power_connectable == False
+        assert vehicle.dual_power_connectable == False
+        assert vehicle.circuit_connectable == False
+        assert vehicle.dual_circuit_connectable == False
+
+
+def test_inventory_sizes():
+    spidertron = SpiderVehicle("spidertron")
+    assert spidertron.ammo_inventory.size == 4
+    assert spidertron.trunk_inventory.size == 80
+
+    spidertron.quality = "legendary"
+    assert spidertron.ammo_inventory.size == 4
+    if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
+        assert spidertron.trunk_inventory.size == 80
+    else:
+        assert spidertron.trunk_inventory.size == 200
+
+    with pytest.warns(UnknownEntityWarning):
+        spidertron = SpiderVehicle("unknown-spider-vehicle")
+    assert spidertron.ammo_inventory.size is None
+    assert spidertron.trunk_inventory.size is None
+
+
+@pytest.mark.skipif(
+    mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0),
+    reason="Not blueprintable before 2.0",
+)
+def test_equipment_grid():
+    """
+    Test the read-only equipment grid attribute matches the expected values and
+    parameters (as well as correctly adjusting to quality level).
+    """
+    spidertron = SpiderVehicle("spidertron")
+    assert spidertron.equipment_grid is not None
+    assert spidertron.equipment_grid.id == "spidertron-equipment-grid"
+    assert spidertron.equipment_grid.equipment_categories == ["armor"]
+    assert spidertron.equipment_grid.width == 10
+    assert spidertron.equipment_grid.height == 6
+    assert spidertron.equipment_grid.locked is False
+
+    # Test equipment grid quality
+    spidertron.quality = "legendary"
+    assert spidertron.equipment_grid is not None
+    assert spidertron.equipment_grid.id == "spidertron-equipment-grid"
+    assert spidertron.equipment_grid.equipment_categories == ["armor"]
+    assert spidertron.equipment_grid.width == 15
+    assert spidertron.equipment_grid.height == 11
+    assert spidertron.equipment_grid.locked is False
+
+
+@pytest.mark.skipif(
+    mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0),
+    reason="Not blueprintable before 2.0",
+)
+def test_equipment():
+    """
+    Using the equipment grid helper functions should bookkeep `equipment` as
+    well as `item_requests`.
+    """
+    spidertron = SpiderVehicle("spidertron")
+
+    with pytest.raises(DataFormatError):
+        spidertron.equipment = "incorrect"
+
+    spidertron.add_equipment("energy-shield-equipment", (0, 0))
+    spidertron.add_equipment("battery-equipment", (2, 0), quality="legendary")
+    spidertron.add_equipment("energy-shield-equipment", (3, 0))
+    assert spidertron.equipment == [
+        EquipmentComponent(
+            equipment=EquipmentID(name="energy-shield-equipment"), position=(0, 0)
+        ),
+        EquipmentComponent(
+            equipment=EquipmentID(name="battery-equipment", quality="legendary"),
+            position=(2, 0),
+        ),
+        EquipmentComponent(
+            equipment=EquipmentID(
+                name="energy-shield-equipment",
+            ),
+            position=(3, 0),
+        ),
+    ]
+    assert spidertron.item_requests == [
+        BlueprintInsertPlan(
+            id=ItemID(name="energy-shield-equipment"),
+            items=ItemInventoryPositions(grid_count=2),
+        ),
+        BlueprintInsertPlan(
+            id=ItemID(name="battery-equipment", quality="legendary"),
+            items=ItemInventoryPositions(grid_count=1),
+        ),
+    ]
+    assert spidertron.to_dict() == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "grid": [
+            {
+                "equipment": {
+                    "name": "energy-shield-equipment",
+                },
+                "position": {"x": 0, "y": 0},
+            },
+            {
+                "equipment": {
+                    "name": "battery-equipment",
+                    "quality": "legendary",
+                },
+                "position": {"x": 2, "y": 0},
+            },
+            {
+                "equipment": {
+                    "name": "energy-shield-equipment",
+                },
+                "position": {"x": 3, "y": 0},
+            },
+        ],
+        "items": [
+            {
+                "id": {
+                    "name": "energy-shield-equipment",
+                },
+                "items": {"grid_count": 2},
+            },
+            {
+                "id": {
+                    "name": "battery-equipment",
+                    "quality": "legendary",
+                },
+                "items": {"grid_count": 1},
+            },
+        ],
+    }
+
+    # Test remove all
+    spider_copy = copy.deepcopy(spidertron)
+    spider_copy.remove_equipment()
+    assert spider_copy.equipment == []
+    assert spider_copy.item_requests == []
+
+    # Test remove specific
+    spider_copy = copy.deepcopy(spidertron)
+    spider_copy.remove_equipment(quality="normal")
+    assert spider_copy.equipment == [
+        EquipmentComponent(
+            equipment={
+                "name": "battery-equipment",
+                "quality": "legendary",
+            },
+            position=(2, 0),
+        ),
+    ]
+    assert spider_copy.item_requests == [
+        BlueprintInsertPlan(
+            id=ItemID(name="battery-equipment", quality="legendary"),
+            items=ItemInventoryPositions(grid_count=1),
+        ),
+    ]
+
+
+def test_color():
+    vehicle = SpiderVehicle("spidertron")
+    assert vehicle.color == Color(r=255 / 255, g=127 / 255, b=0.0, a=127 / 255)
+    assert vehicle.to_dict() == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+    }
+
+    vehicle.color = (255, 0, 0)
+    assert vehicle.color == Color(255, 0, 0)
+    assert vehicle.to_dict() == {
+        "name": "spidertron",
+        "position": {"x": 1.0, "y": 1.0},
+        "color": {
+            "r": 255,
+            "g": 0,
+            "b": 0,
+        },
+    }

@@ -37,16 +37,6 @@ class DirectionWarning(DraftsmanWarning):
     pass
 
 
-class FlippingWarning(DraftsmanWarning):
-    """
-    Raised when attempting to flip an entity that may or not be able to be
-    flipped. This is only raised when flipping an :py:class:`.EntityCollection`
-    with modded entities.
-    """
-
-    pass  # TODO: remove
-
-
 class IndexWarning(DraftsmanWarning):
     """
     Raised when the index of some element is out of expected range, though not
@@ -273,6 +263,15 @@ class UnknownInstrumentWarning(UnknownElementWarning):
     pass
 
 
+class UnknownModuleWarning(UnknownElementWarning):
+    """
+    Raised if attempting to populate an entity's modules with a name that
+    Draftsman doesn't recognize.
+    """
+
+    pass
+
+
 class UnknownNoteWarning(UnknownElementWarning):
     """
     Raised if an unrecognized note for the current instrument is selected in a
@@ -362,6 +361,16 @@ class RedundantOperationWarning(DraftsmanWarning):
     noticable change, making it's execution needless. For example, setting a
     mapping in an upgrade planner to upgrade "transport-belt" to
     "transport-belt" is possible, but performs no upgrade operation when used.
+    """
+
+    pass
+
+
+class EquipmentGridWarning(DraftsmanWarning):
+    """
+    Raised when attempting to configure the equipment grid of the entity into
+    an invalid state, or when attempting to set the equipment grid of an entity
+    that doesn't have one to begin with.
     """
 
     pass

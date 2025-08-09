@@ -58,7 +58,7 @@ def main():
                 slot_count = 0
                 train_car_position += 1
 
-            cargo_wagon.set_inventory_filter(slot_count, item)
+            cargo_wagon.inventory.set_filter(slot_count, item)
             slot_count += 1
 
     # Add the last wagon if we didn't exceed the inventory

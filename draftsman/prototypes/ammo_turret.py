@@ -1,8 +1,8 @@
 # ammo_turret.py
 
+from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
-    RequestItemsMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,
@@ -10,21 +10,39 @@ from draftsman.classes.mixins import (
     CircuitEnableMixin,
     ControlBehaviorMixin,
     CircuitConnectableMixin,
+    EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Direction, ValidationMode
-from draftsman.signatures import DraftsmanBaseModel, ItemRequest
-from draftsman.utils import get_first
+from draftsman.classes.mixins.directional import _rotated_collision_sets
+from draftsman.constants import Direction
+from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
 
 from draftsman.data.entities import ammo_turrets
 
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
+import attrs
 
 
+# TODO: probably better to make AABB's rotatable into Rectangles rather than
+# hardcoding
+_vertical_collision = CollisionSet([AABB(-1.41, -1.9, 1.41, 2.1)])
+_horizontal_collision = _vertical_collision.rotate(4)
+_diagonal_collision = CollisionSet([Rectangle((0, 0), 2.82, 3.0, 45.0)])
+
+_rotated_collision_sets["railgun-turret"] = {
+    Direction.NORTH: _vertical_collision,
+    Direction.NORTHEAST: _diagonal_collision,
+    Direction.EAST: _horizontal_collision,
+    Direction.SOUTHEAST: _diagonal_collision.rotate(8),
+    Direction.SOUTH: _vertical_collision,
+    Direction.SOUTHWEST: _diagonal_collision,
+    Direction.WEST: _horizontal_collision,
+    Direction.NORTHWEST: _diagonal_collision.rotate(8),
+}
+
+
+@fix_incorrect_pre_init
+@attrs.define
 class AmmoTurret(
-    RequestItemsMixin,
     ReadAmmoMixin,
     TargetPrioritiesMixin,
     CircuitConditionMixin,
@@ -33,6 +51,7 @@ class AmmoTurret(
     ControlBehaviorMixin,
     CircuitConnectableMixin,
     DirectionalMixin,
+    EnergySourceMixin,
     Entity,
 ):
     """
@@ -40,63 +59,11 @@ class AmmoTurret(
     Consumes item-based ammunition.
     """
 
-    class Format(
-        RequestItemsMixin.Format,
-        ReadAmmoMixin.Format,
-        TargetPrioritiesMixin.Format,
-        CircuitConditionMixin.Format,
-        LogisticConditionMixin.Format,
-        CircuitEnableMixin.Format,
-        ControlBehaviorMixin.Format,
-        CircuitConnectableMixin.Format,
-        DirectionalMixin.Format,
-        Entity.Format,
-    ):
-        class ControlBehavior(
-            ReadAmmoMixin.ControlFormat,
-            TargetPrioritiesMixin.ControlFormat,
-            CircuitConditionMixin.ControlFormat,
-            LogisticConditionMixin.ControlFormat,
-            CircuitEnableMixin.ControlFormat,
-            DraftsmanBaseModel,
-        ):
-            pass
+    # TODO: validate item_requests match this particular turret type
 
-        control_behavior: Optional[ControlBehavior] = ControlBehavior()
-
-        model_config = ConfigDict(title="AmmoTurret")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(ammo_turrets),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        direction: Direction = Direction.NORTH,
-        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        """
-        Construct a new ammo turret.
-
-        TODO
-        """
-
-        super().__init__(
-            name,
-            ammo_turrets,
-            position=position,
-            tile_position=tile_position,
-            direction=direction,
-            items=items,
-            tags=tags,
-            **kwargs
-        )
-
-        self.validate_assignment = validate_assignment
+    @property
+    def similar_entities(self) -> list[str]:
+        return ammo_turrets
 
     # =========================================================================
 

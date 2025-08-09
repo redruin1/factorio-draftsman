@@ -3,25 +3,38 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import (
     EquipmentGridMixin,
-    RequestItemsMixin,
-    InventoryFilterMixin,
     OrientationMixin,
 )
-from draftsman.classes.vector import Vector, PrimitiveVector
-from draftsman.constants import Orientation, ValidationMode
-from draftsman.signatures import ItemRequest
-from draftsman.utils import get_first
+from draftsman.serialization import draftsman_converters
+from draftsman.signatures import Inventory, uint16
+from draftsman.validators import and_, instance_of
 
 from draftsman.data.entities import cargo_wagons
+from draftsman.data import entities, qualities
 
-from pydantic import ConfigDict
-from typing import Any, Literal, Optional, Union
+import attrs
+import math
+from typing import Optional
 
 
+def _cargo_wagon_inventory_size(entity: "CargoWagon") -> Optional[uint16]:
+    """
+    Gets the inventory size of this cargo wagon.
+    """
+    inventory_size = entities.raw.get(entity.name, {"inventory_size": None})[
+        "inventory_size"
+    ]
+    if inventory_size is None:
+        return None
+    if not entities.raw[entity.name].get("quality_affects_inventory_size", False):
+        return inventory_size
+    modifier = 0.3 * qualities.raw.get(entity.quality, {"level": 0})["level"]
+    return math.floor(inventory_size + inventory_size * modifier)
+
+
+@attrs.define
 class CargoWagon(
     EquipmentGridMixin,
-    RequestItemsMixin,
-    InventoryFilterMixin,
     OrientationMixin,
     Entity,
 ):
@@ -29,49 +42,49 @@ class CargoWagon(
     A train wagon that holds items as cargo.
     """
 
-    class Format(
-        EquipmentGridMixin.Format,
-        RequestItemsMixin.Format,
-        InventoryFilterMixin.Format,
-        OrientationMixin.Format,
-        Entity.Format,
-    ):
-        model_config = ConfigDict(title="CargoWagon")
-
-    def __init__(
-        self,
-        name: Optional[str] = get_first(cargo_wagons),
-        position: Union[Vector, PrimitiveVector] = None,
-        tile_position: Union[Vector, PrimitiveVector] = (0, 0),
-        orientation: Orientation = Orientation.NORTH,
-        enable_logistics_while_moving: Optional[bool] = True,
-        grid: list[Format.EquipmentComponent] = [],
-        items: Optional[list[ItemRequest]] = [],  # TODO: ItemID
-        inventory: Format.InventoryFilters = {},
-        tags: dict[str, Any] = {},
-        validate_assignment: Union[
-            ValidationMode, Literal["none", "minimum", "strict", "pedantic"]
-        ] = ValidationMode.STRICT,
-        **kwargs
-    ):
-        super().__init__(
-            name,
-            cargo_wagons,
-            position=position,
-            tile_position=tile_position,
-            orientation=orientation,
-            enable_logistics_while_moving=enable_logistics_while_moving,
-            grid=grid,
-            items=items,
-            inventory=inventory,
-            tags=tags,
-            **kwargs
-        )
-
-        self.validate_assignment = validate_assignment
-
     # TODO: check for item requests exceeding cargo capacity
+
+    @property
+    def similar_entities(self) -> list[str]:
+        return cargo_wagons
 
     # =========================================================================
 
+    inventory: Optional[Inventory] = attrs.field(
+        validator=and_(
+            instance_of(Optional[Inventory]),
+            lambda self, _, value, **kwargs: value._set_parent(
+                self, self.inventory, _cargo_wagon_inventory_size
+            ),
+        ),
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    Inventory object of this cargo wagon. Holds metadata associated with this
+    wagons inventory, such as it's size, limiting bar position, and item filters
+    (if any).
+    """
+
+    @inventory.default
+    def _(self) -> Inventory:
+        return Inventory()._set_parent(self, None, _cargo_wagon_inventory_size)
+
+    # =========================================================================
+
+    def merge(self, other: "CargoWagon"):
+        super().merge(other)
+
+        self.inventory = other.inventory
+
     __hash__ = Entity.__hash__
+
+
+draftsman_converters.add_hook_fns(
+    CargoWagon,
+    lambda fields: {
+        "inventory": fields.inventory.name,
+    },
+)

@@ -7,12 +7,25 @@ from collections.abc import Hashable
 import pytest
 
 
+@pytest.fixture
+def valid_radar():
+    return Radar(
+        "radar",
+        id="test",
+        quality="uncommon",
+        tile_position=(1, 1),
+        tags={"blah": "blah"},
+    )
+
+
 class TestRadar:
     def test_contstructor_init(self):
         radar = Radar()
 
         with pytest.warns(UnknownKeywordWarning):
-            Radar(unused_keyword="whatever").validate().reissue_all()
+            Radar.from_dict(
+                {"name": "radar", "unused_keyword": "whatever"}
+            ).validate().reissue_all()
 
         with pytest.warns(UnknownEntityWarning):
             Radar("this is not a radar").validate().reissue_all()

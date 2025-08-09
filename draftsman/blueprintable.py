@@ -6,20 +6,29 @@ Alias module. Imports :py:class:`.Blueprint`, :py:class:`.BlueprintBook`,
 :py:class:`.Group` under the namespace ``draftsman``.
 """
 
-from draftsman import utils
 from draftsman.error import IncorrectBlueprintTypeError
-
+from draftsman.utils import reissue_warnings, string_to_JSON, decode_version
 
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintBook
-
 from draftsman.classes.group import Group
 
 
-@utils.reissue_warnings
+__all__ = [
+    "Blueprint",
+    "DeconstructionPlanner",
+    "UpgradePlanner",
+    "BlueprintBook",
+    "Group",
+    "get_blueprintable_from_string",
+    "get_blueprintable_from_JSON",
+]
+
+
+@reissue_warnings
 def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
     """
     Gets a Blueprintable object based off of the ``blueprint_string``. A
@@ -42,22 +51,11 @@ def get_blueprintable_from_string(blueprintable_string: str) -> Blueprintable:
         ``"deconstruction_planner"``, ``"upgrade_planner"``, nor
         ``"blueprint_book"``, and thus it's type cannot be deduced.
     """
-    blueprintable = utils.string_to_JSON(blueprintable_string)
-    if "blueprint" in blueprintable:
-        return Blueprint(blueprintable)
-    elif "deconstruction_planner" in blueprintable:
-        return DeconstructionPlanner(blueprintable)
-    elif "upgrade_planner" in blueprintable:
-        return UpgradePlanner(blueprintable)
-    elif "blueprint_book" in blueprintable:
-        return BlueprintBook(blueprintable)
-    else:
-        raise IncorrectBlueprintTypeError(
-            "Unknown blueprintable '{}'".format(list(blueprintable.keys())[0])
-        )
+    blueprintable_JSON = string_to_JSON(blueprintable_string)
+    return get_blueprintable_from_JSON(blueprintable_JSON)
 
 
-@utils.reissue_warnings
+@reissue_warnings
 def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
     """
     Gets a Blueprintable object based off of the ``blueprint_JSON``. A
@@ -79,14 +77,25 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
         ``"blueprint_book"``, and thus it's type cannot be deduced.
     """
     if "blueprint" in blueprintable_JSON:
-        return Blueprint(blueprintable_JSON)
+        blueprintable_type = Blueprint
     elif "deconstruction_planner" in blueprintable_JSON:
-        return DeconstructionPlanner(blueprintable_JSON)
+        blueprintable_type = DeconstructionPlanner
     elif "upgrade_planner" in blueprintable_JSON:
-        return UpgradePlanner(blueprintable_JSON)
+        blueprintable_type = UpgradePlanner
     elif "blueprint_book" in blueprintable_JSON:
-        return BlueprintBook(blueprintable_JSON)
+        blueprintable_type = BlueprintBook
     else:
         raise IncorrectBlueprintTypeError(
-            "Unknown blueprintable '{}'".format(list(blueprintable_JSON.keys())[0])
+            "Unknown blueprintable with root key '{}'".format(
+                next(iter(blueprintable_JSON))
+            )
         )
+    # Try and get the version from the dictionary, falling back to current
+    # environment configuration if not found
+    root_item = blueprintable_type.root_item.fget(blueprintable_type)
+    if "version" in blueprintable_JSON[root_item]:
+        version = decode_version(blueprintable_JSON[root_item]["version"])
+    else:
+        version = None
+
+    return blueprintable_type.from_dict(blueprintable_JSON, version=version)
