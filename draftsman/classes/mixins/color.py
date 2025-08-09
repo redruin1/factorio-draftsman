@@ -25,7 +25,7 @@ class ColorMixin(Exportable):
 
         This attribute is imported/exported from blueprint strings.
 
-    The :py:attr:`.Color` of the Entity.
+    The :py:class:`.Color` of the entity.
     """
 
     # =========================================================================

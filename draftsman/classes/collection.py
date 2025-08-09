@@ -588,10 +588,10 @@ class Collection(metaclass=ABCMeta):
     A list of all the wire connections in this blueprint.
 
     Wires are specified as two pairs of :py:class:`.Association` and 
-    :py:class:`.WireType`; the first pair represents the first entity, and the 
-    second pair represents the second entity. The association points to the 
-    corresponding entity in this collection, and the wire type enum indicates
-    what type of connection it is.
+    :py:class:`.WireConnectorID`; the first pair represents the first entity, 
+    and the second pair represents the second entity. The association points to 
+    the corresponding entity in this collection, and the wire type enum 
+    indicates what type of connection it is.
 
     When exported to JSON, the associations and enums in each wire are resolved 
     to integers corresponding to the given ``entity_number`` in the resulting

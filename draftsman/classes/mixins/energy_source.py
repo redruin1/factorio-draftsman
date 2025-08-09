@@ -36,8 +36,9 @@ class EnergySourceMixin:
     def fuel_input_size(self) -> uint16 | None:
         """
         Gets the total number of fuel input slots that this entity can hold.
-        Returns ``None`` if the name of this entity is not recognized by
-        Draftsman.
+        Returns ``None`` if :py:attr:`.energy_source` is not of type "burner", 
+        or if the name of this entity is not recognized in the current 
+        environment.
         """
         if self.energy_source is not None:
             return self.energy_source.get("fuel_inventory_size", 0)
@@ -50,7 +51,7 @@ class EnergySourceMixin:
     def fuel_output_size(self) -> uint16 | None:
         """
         Gets the total number of fuel output slots that this entity has. Returns
-        ``None`` if the entity does not have a BurnerEnergySource, or if the
+        ``None`` if :py:attr:`.energy_source` is not of type "burner", or if the
         entity itself is not recognized in the current environment.
         """
         if self.energy_source is not None:
@@ -64,10 +65,9 @@ class EnergySourceMixin:
     def allowed_fuel_items(self) -> Optional[set[str]]:
         """
         A set of strings, each one a valid item that can be used as a fuel
-        source to power this entity. If this entity does not burn items to
-        power itself (and instead uses electricity, fluid, void, etc.) then this
-        property returns an empty set. Returns ``None`` if this entity is not
-        recognized by Draftsman.
+        source to power this entity. If :py:attr:`.energy_source` is not of type
+        "burner", then this property returns an empty set. Returns ``None`` if 
+        this entity is not recognized by the current environment.
         """
         if self.name not in entities.raw:
             return None
