@@ -27,7 +27,7 @@ def valid_burner_generator():
                 "id": {"name": "coal"},
                 "items": {
                     "in_inventory": [
-                        {"inventory": InventoryType.fuel, "stack": 0, "count": 50}
+                        {"inventory": InventoryType.FUEL, "stack": 0, "count": 50}
                     ]
                 },
             }

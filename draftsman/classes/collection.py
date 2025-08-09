@@ -757,7 +757,7 @@ class Collection(metaclass=ABCMeta):
         :param radius: The radius of the circle centered around ``position`` to
             search. Must be defined alongside ``position`` in order to search in
             a circular area.
-        :param aabb: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
+        :param area: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
         :param name: Either a ``str``, or a ``set[str]`` where each entry is a
             name of an entity to be returned.
         :param type: Either a ``str``, or a ``set[str]`` where each entry is a
@@ -901,7 +901,7 @@ class Collection(metaclass=ABCMeta):
         :param radius: The radius of the circle centered around ``position`` to
             search. Must be defined alongside ``position`` in order to search in
             a circular area.
-        :param aabb: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
+        :param area: The :py:class:`.AABB` or ``PrimitiveAABB`` to search in.
         :param name: Either a ``str``, or a ``set[str]`` where each entry is a
             name of an entity to be returned.
         :param invert: Whether or not to return the inversion of the search
@@ -993,26 +993,24 @@ class Collection(metaclass=ABCMeta):
         either of the power poles exceed 5 connections when this connection is
         added.
 
-        :param location_1: EntityLike, ID, or index of the first entity to join.
-        :param location_2: EntityLike, ID or index of the second entity to join.
+        :param entity_1: EntityLike, ID, or index of the first entity to join.
+        :param entity_2: EntityLike, ID or index of the second entity to join.
+        :param side_1: Which side of ``entity_1`` to connect power to. Only 
+            necessary to specify for entities that are 
+            :py:attr:`.Entity.dual_power_connectable`.
+        :param side_2: Which side of ``entity_2`` to connect power to. Only 
+            necessary to specify for entities that are 
+            :py:attr:`.Entity.dual_power_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
             invalid ID's or indices to the parent Collection.
         :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
             are not inside the parent Collection.
-        :exception InvalidConnectionSideError: If ``side`` is neither ``1`` nor
-            ``2``.
         :exception EntityNotPowerConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be copper wire connected.
         :exception DraftsmanError: If both `entity_1` and `entity_2` are
             dual-power-connectable, of which a connection is forbidden.
         """
-        # Normalize to tuple form
-        # if not isinstance(location_1, tuple):
-        #     location_1 = (location_1, "input")
-        # if not isinstance(location_2, tuple):
-        #     location_2 = (location_2, "input")
-
         if not isinstance(entity_1, EntityLike):
             # entity_1 = self.entities[entity_1]
             entity_1 = self._get_entity_from_path(entity_1)
@@ -1069,38 +1067,6 @@ class Collection(metaclass=ABCMeta):
         #         stacklevel=2,
         #     )
 
-        # 1.0 code
-        # # Only worried about entity_1
-        # if entity_1.dual_power_connectable:  # power switch
-        #     # Add copper circuit connection
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_1.connections[str_side] is None:
-        #         entity_1.connections[str_side] = []
-
-        #     entry = {"entity_id": Association(entity_2), "wire_id": 0}
-        #     if entry not in entity_1.connections[str_side]:
-        #         entity_1.connections[str_side].append(entry)
-        # else:  # electric pole
-        #     if not entity_2.dual_power_connectable:
-        #         if Association(entity_2) not in entity_1.neighbours:
-        #             entity_1.neighbours.append(Association(entity_2))
-
-        # # Only worried about entity_2
-        # if entity_2.dual_power_connectable:  # power switch
-        #     # Add copper circuit connection
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_2.connections[str_side] is None:
-        #         entity_2.connections[str_side] = []
-
-        #     entry = {"entity_id": Association(entity_1), "wire_id": 0}
-        #     if entry not in entity_2.connections[str_side]:
-        #         entity_2.connections[str_side].append(entry)
-        # else:  # electric pole
-        #     if not entity_1.dual_power_connectable:
-        #         if Association(entity_1) not in entity_2.neighbours:
-        #             entity_2.neighbours.append(Association(entity_1))
-
-        # 2.0 code
         dir_value = {"input": 5, "output": 6}
 
         wire_type_1 = dir_value[side_1]
@@ -1152,22 +1118,18 @@ class Collection(metaclass=ABCMeta):
             the connection to.
         :param entity_2: EntityLike, ID or index of the second entity to remove
             the connection to.
-        :param side: Which side of a dual-power-connectable entity to remove the
-            connection from, where ``1`` is "input" and ``2`` is "output". Only
-            used when disjoining a dual-power-connectable entity. Defaults to
-            ``1``.
+        :param side_1: Which side of ``entity_1`` to remove a power connection
+            from. Only necessary to specify for entities that are 
+            :py:attr:`.Entity.dual_power_connectable`.
+        :param side_2: Which side of ``entity_2`` to remove a power connection
+            from. Only necessary to specify for entities that are 
+            :py:attr:`.Entity.dual_power_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
             invalid ID's or indices to the parent Collection.
         :exception InvalidAssociationError: If ``entity_1`` and/or ``entity_2``
             are not inside the parent Collection.
         """
-        # Normalize to tuple form
-        # if not isinstance(location_1, tuple):
-        #     location_1 = (location_1, "input")
-        # if not isinstance(location_2, tuple):
-        #     location_2 = (location_2, "input")
-
         if not isinstance(entity_1, EntityLike):
             entity_1 = self.entities[entity_1]
         if not isinstance(entity_2, EntityLike):
@@ -1182,42 +1144,6 @@ class Collection(metaclass=ABCMeta):
                 "entity_2 ({}) not contained within this collection".format(entity_2)
             )
 
-        # 1.0 code
-        # # Only worried about self
-        # if entity_1.dual_power_connectable:  # power switch
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_1.connections[str_side] is not None:
-        #         entry = {"entity_id": Association(entity_2), "wire_id": 0}
-        #         if entry in entity_1.connections[str_side]:
-        #             entity_1.connections[str_side].remove(entry)
-        #         if len(entity_1.connections[str_side]) == 0:
-        #             # del entity_1.connections[str_side]
-        #             entity_1.connections[str_side] = None
-        # else:  # electric pole
-        #     if not entity_2.dual_power_connectable:
-        #         try:
-        #             entity_1.neighbours.remove(Association(entity_2))
-        #         except ValueError:
-        #             pass
-
-        # # Only worried about target
-        # if entity_2.dual_power_connectable:  # power switch
-        #     str_side = "Cu" + str(side - 1)
-        #     if entity_2.connections[str_side] is not None:
-        #         entry = {"entity_id": Association(entity_1), "wire_id": 0}
-        #         if entry in entity_2.connections[str_side]:
-        #             entity_2.connections[str_side].remove(entry)
-        #         if len(entity_2.connections[str_side]) == 0:
-        #             # del entity_2.connections[str_side]
-        #             entity_2.connections[str_side] = None
-        # else:  # electric pole
-        #     if not entity_1.dual_power_connectable:
-        #         try:
-        #             entity_2.neighbours.remove(Association(entity_1))
-        #         except ValueError:
-        #             pass
-
-        # 2.0 code
         dir_value = {"input": 5, "output": 6}
 
         wire_type_1 = dir_value[side_1]
@@ -1363,14 +1289,14 @@ class Collection(metaclass=ABCMeta):
 
         :param color: Color of the wire to make the connection with. Must be
             either ``"red"`` or ``"green"``.
-        :param id1: ID or index of the first entity to join.
-        :param id2: ID or index of the second entity to join.
-        :param side1: Which side of the first dual-circuit-entity to connect to,
-            where ``1`` is "input" and ``2`` is "output". Only used when the
-            first entity is dual-circuit-connectable. Defaults to ``1``.
-        :param side2: Which side of the second dual-circuit-entity to connect
-            to, where ``1`` is "input" and ``2`` is "output". Only used when the
-            second entity is dual-circuit-connectable. Defaults to ``1``.
+        :param entity_1: ID or index of the first entity to join.
+        :param entity_2: ID or index of the second entity to join.
+        :param side_1: Which side of ``entity_1`` to connect to. Only necessary 
+            to specify for entities that are 
+            :py:attr:`.Entity.dual_circuit_connectable`.
+        :param side_2: Which side of ``entity_2`` to connect to. Only necessary 
+            to specify for entities that are 
+            :py:attr:`.Entity.dual_circuit_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are invalid
             ID's or indices to the parent Collection.
@@ -1378,8 +1304,8 @@ class Collection(metaclass=ABCMeta):
             are not inside the parent Collection.
         :exception InvalidWireTypeError: If ``color`` is neither ``"red"`` nor
             ``"green"``.
-        :exception InvalidConnectionSideError: If ``side1`` or ``side2`` are
-            neither ``1`` nor ``2``.
+        :exception InvalidConnectionSideError: If ``side_1`` or ``side_2`` are
+            neither ``"input"`` nor ``"output"``.
         :exception EntityNotCircuitConnectableError: If either `entity_1` or
             `entity_2` do not have the capability to be circuit wire connected.
         """
@@ -1425,14 +1351,14 @@ class Collection(metaclass=ABCMeta):
 
         if side_1 == "output" and not entity_1.dual_circuit_connectable:
             warnings.warn(
-                "'side1' was specified as 2, but entity '{}' is not"
+                "'side_1' was specified as 'output', but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_1).__name__),
                 ConnectionSideWarning,
                 stacklevel=2,
             )
         if side_2 == "output" and not entity_2.dual_circuit_connectable:
             warnings.warn(
-                "'side2' was specified as 2, but entity '{}' is not"
+                "'side_2' was specified as 'output', but entity '{}' is not"
                 " dual circuit connectable".format(type(entity_2).__name__),
                 ConnectionSideWarning,
                 stacklevel=2,
@@ -1501,16 +1427,14 @@ class Collection(metaclass=ABCMeta):
             ``"green"``.
         :param entity_1: ID or index of the first entity to remove the
             connection to.
-        :param entity_@: ID or index of the second entity to remove the
+        :param entity_2: ID or index of the second entity to remove the
             connection to.
-        :param side1: Which side of the first dual-circuit-connectable entity to
-            remove the connection from, where ``1`` is "input" and ``2`` is
-            "output". Only used when disjoining a dual-circuit-connectable
-            entity. Defaults to ``1``.
-        :param side2: Which side of the second dual-circuit-connectable entity
-            to remove the connection from, where ``1`` is "input" and ``2`` is
-            "output". Only used when disjoining a dual-circuit-connectable
-            entity. Defaults to ``1``.
+        :param side_1: Which side of ``entity_1`` to remove the connection from. 
+            Only necessary to specify for entities that are 
+            :py:attr:`.Entity.dual_circuit_connectable`.
+        :param side_2: Which side of ``entity_2`` to remove the connection from. 
+            Only necessary to specify for entities that are 
+            :py:attr:`.Entity.dual_circuit_connectable`.
 
         :exception KeyError, IndexError: If ``entity_1`` and/or ``entity_2`` are
             invalid ID's or indices to the parent Collection.
@@ -1583,7 +1507,14 @@ class Collection(metaclass=ABCMeta):
         for group in self.groups:
             group.remove_circuit_connections()
 
-        self.wires[:] = [wire for wire in self.wires if wire[1] not in {1, 2, 3, 4}]
+        self.wires[:] = [
+            wire for wire in self.wires 
+            if wire[1] not in { # No need to check the other side
+                WireConnectorID.COMBINATOR_INPUT_RED, 
+                WireConnectorID.COMBINATOR_INPUT_GREEN, 
+                WireConnectorID.COMBINATOR_OUTPUT_RED, 
+                WireConnectorID.COMBINATOR_OUTPUT_GREEN
+            }]
 
     # =========================================================================
     # Trains
@@ -1794,7 +1725,7 @@ class Collection(metaclass=ABCMeta):
         corresponding :py:class:`Schedule` object(s). Does nothing if ``cars``
         is empty.
 
-        :param cars: A ``list`` of references to :py:class:`EntityLike`s within
+        :param cars: A ``list`` of references to :py:class:`EntityLike` s within
             the collection.
 
         :raises KeyError: If the specified entities within the list do not exist
@@ -2014,7 +1945,7 @@ class Collection(metaclass=ABCMeta):
             criteria.
         :param limit: A maximum number of unique trains to return.
 
-        :returns: A ``list`` of ``list``s, where each sub-list represents a
+        :returns: A ``list`` of ``list`` s, where each sub-list represents a
             contiguous train. Trains are ordered such that the first index is
             the "front" of the train, as chosen by the orientation of the first
             found wagon in that group.

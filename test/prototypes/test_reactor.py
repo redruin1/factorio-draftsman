@@ -33,7 +33,7 @@ def valid_reactor():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.fuel,
+                            inventory=InventoryType.FUEL,
                             stack=1,
                             count=50,
                         )
@@ -65,7 +65,7 @@ class TestReactor:
         assert reactor.allowed_fuel_items == {"uranium-fuel-cell"}
         assert reactor.fuel_input_size == 1
 
-        reactor.set_item_request("uranium-fuel-cell", 50, inventory=InventoryType.fuel)
+        reactor.set_item_request("uranium-fuel-cell", 50, inventory=InventoryType.FUEL)
         assert reactor.item_requests == [
             BlueprintInsertPlan(
                 **{

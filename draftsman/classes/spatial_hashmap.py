@@ -239,11 +239,11 @@ class SpatialHashMap(SpatialDataStructure):
         self, radius: float, point: PrimitiveVector
     ) -> list[PrimitiveIntVector]:
         """
-        Get a list of map-coordinates that correspond to a world-space circle.
+        Get a list of map cell coordinates that correspond to a world-space 
+        circle.
 
         :param radius: The radius of the circle.
-        :param pos: The position to examine; Can be specified as a sequence or
-            as a ``dict`` with ``"x"`` and ``"y"`` keys.
+        :param point: The position around which the radius is centered.
 
         :returns: A ``list`` of tuples, each one a map-coordinate.
         """

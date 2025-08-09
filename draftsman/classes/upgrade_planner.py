@@ -1,12 +1,5 @@
 # upgrade_planner.py
 
-"""
-.. code-block:: python
-
-    >>> from draftsman.blueprintable import UpgradePlanner
-    >>> UpgradePlanner.Format.schema_json(indent=4)
-"""
-
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.classes.exportable import Exportable
 from draftsman.constants import ValidationMode

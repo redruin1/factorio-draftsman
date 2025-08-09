@@ -112,7 +112,7 @@ class ConstantCombinator(
     def add_section(
         self,
         group: Optional[str] = None,
-        index: Optional[LuaDouble] = None,
+        index: Optional[int] = None, # TODO: should be int64
         active: bool = True,
     ) -> ManualSection:
         """

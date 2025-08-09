@@ -138,7 +138,7 @@ class Tile(SpatialLike, Exportable):
         Merges this tile with another one. Due to the simplicity of tiles, this
         does nothing as long as the merged tiles are of the same name. Allows
         you to overlap areas of concrete and landfill without issuing
-        :py:class:`.OverlappingObjectsWarning`s.
+        :py:class:`.OverlappingObjectsWarning` s.
 
         :param other: The other tile underneath this one.
         """

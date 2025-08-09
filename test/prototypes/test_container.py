@@ -39,7 +39,7 @@ def valid_container():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.chest, stack=0, count=50
+                            inventory=InventoryType.CHEST, stack=0, count=50
                         )
                     ]
                 ),
@@ -142,10 +142,10 @@ class TestContainer:
         container = Container("wooden-chest")
 
         container.set_item_request(
-            "iron-plate", 50, inventory=InventoryType.chest, slot=0
+            "iron-plate", 50, inventory=InventoryType.CHEST, slot=0
         )
         container.set_item_request(
-            "iron-plate", 50, inventory=InventoryType.chest, slot=3
+            "iron-plate", 50, inventory=InventoryType.CHEST, slot=3
         )
         assert container.item_requests == [
             BlueprintInsertPlan(
@@ -153,10 +153,10 @@ class TestContainer:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.chest, stack=0, count=50
+                            inventory=InventoryType.CHEST, stack=0, count=50
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.chest, stack=3, count=50
+                            inventory=InventoryType.CHEST, stack=3, count=50
                         ),
                     ]
                 ),
@@ -166,7 +166,7 @@ class TestContainer:
 
         # TODO: emit warning that two different items occupy the same slot
         container.set_item_request(
-            "iron-ore", 50, inventory=InventoryType.chest, slot=0
+            "iron-ore", 50, inventory=InventoryType.CHEST, slot=0
         )
         assert container.item_requests == [
             BlueprintInsertPlan(
@@ -174,10 +174,10 @@ class TestContainer:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.chest, stack=0, count=50
+                            inventory=InventoryType.CHEST, stack=0, count=50
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.chest, stack=3, count=50
+                            inventory=InventoryType.CHEST, stack=3, count=50
                         ),
                     ]
                 ),
@@ -187,7 +187,7 @@ class TestContainer:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.chest, stack=0, count=50
+                            inventory=InventoryType.CHEST, stack=0, count=50
                         )
                     ]
                 ),

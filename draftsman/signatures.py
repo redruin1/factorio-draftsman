@@ -803,8 +803,8 @@ class ManualSection(Exportable):
     .. versionadded:: 3.0.0 (Factorio 2.0)
     """
 
-    index: Annotated[LuaDouble, OneIndexed] = attrs.field(
-        validator=instance_of(LuaDouble)
+    index: Annotated[int64, OneIndexed] = attrs.field(
+        validator=instance_of(int64)
     )
     """
     Location of the logistics section within the entity. Hard capped to 100 
@@ -861,18 +861,10 @@ class ManualSection(Exportable):
 
     def set_signal(
         self,
-        index: int64,
-        name: Optional[SignalIDName],
-        count: int32 = 0,
-        quality: Literal[
-            "normal",
-            "uncommon",
-            "rare",
-            "epic",
-            "legendary",
-            "quality-unknown",
-            "any",
-        ] = "normal",
+        index: int, # TODO: should be int64
+        name: Optional[str], # TODO: should be SignalIDName
+        count: int = 0, # TODO: should be int32
+        quality: QualityID = "normal",
         type: Optional[str] = None,
     ) -> None:
         """
@@ -908,7 +900,10 @@ class ManualSection(Exportable):
         if existing_index is None:
             self.filters.append(new_entry)
 
-    def get_signal(self, index: int64) -> Optional[SignalFilter]:
+    def get_signal(
+            self, 
+            index: int # TODO: should be int64
+        ) -> Optional[SignalFilter]:
         """
         Get the :py:class:`.SignalFilter` entry at a particular index, if it
         exists.
@@ -916,7 +911,7 @@ class ManualSection(Exportable):
         :param index: The index of the signal to analyze.
 
         :returns: A :py:class:`.SignalFilter` instance, or ``None`` if nothing
-        was found at that index.
+            was found at that index.
         """
         return next(
             (item for item in self.filters if item.index == index),
@@ -1355,8 +1350,8 @@ class Inventory(Exportable):
 
     def set_filter(
         self,
-        index: int64,
-        item: Optional[ItemIDName],
+        index: int, # TODO: should be int64
+        item: Optional[str], # TODO: should be ItemIDName
         quality: QualityID = "normal",
         comparator: Comparator = "=",
     ):
@@ -1365,7 +1360,8 @@ class Inventory(Exportable):
         ``None``, the item filter at that location is removed.
 
         :param index: The index of the filter to set.
-        :param item: The string name of the item to filter.
+        :param item: The string name of the item to filter, or ``None`` to clear
+            the filter at ``index``.
 
         :exception TypeError: If ``index`` is not an ``int`` or if ``item`` is
             neither a ``str`` nor ``None``.

@@ -2,7 +2,7 @@
 .. py:currentmodule:: draftsman.classes.entity_list
 
 :py:mod:`~draftsman.classes.entity_list`
-=======================================
+========================================
 
 .. autoclass:: EntityList
     :members:

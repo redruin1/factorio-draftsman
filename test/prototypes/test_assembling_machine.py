@@ -151,13 +151,13 @@ class TestAssemblingMachine:
         machine.set_item_request(
             "productivity-module-3",
             1,
-            inventory=InventoryType.assembling_machine_modules,
+            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
             slot=0,
         )
         machine.set_item_request(
             "productivity-module-3",
             1,
-            inventory=InventoryType.assembling_machine_modules,
+            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
             slot=1,
         )
         # TODO: make a `set_module_request()` method
@@ -219,7 +219,7 @@ class TestAssemblingMachine:
 
         # machine.items = None
         # with pytest.warns(ModuleCapacityWarning):
-        #     machine.set_item_request("speed-module-3", 10, inventory=InventoryType.assembling_machine_modules)
+        #     machine.set_item_request("speed-module-3", 10, inventory=InventoryType.ASSEMBLING_MACHINE_MODULES)
         # with pytest.warns(ModuleLimitationWarning):
         #     machine.recipe = "iron-chest"
 
@@ -243,7 +243,7 @@ class TestAssemblingMachine:
         machine.recipe = "wooden-chest"
         assert machine.allowed_input_ingredients == {"wood"}
         machine.set_item_request(
-            "wood", 20, inventory=InventoryType.assembling_machine_input
+            "wood", 20, inventory=InventoryType.ASSEMBLING_MACHINE_INPUT
         )
         assert machine.ingredient_items == [
             BlueprintInsertPlan(
@@ -285,19 +285,19 @@ class TestAssemblingMachine:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.assembling_machine_modules,
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.assembling_machine_modules,
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
                             stack=1,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.assembling_machine_modules,
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
                             stack=2,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.assembling_machine_modules,
+                            inventory=InventoryType.ASSEMBLING_MACHINE_MODULES,
                             stack=3,
                         ),
                     ]

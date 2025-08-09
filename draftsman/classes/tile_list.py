@@ -89,7 +89,7 @@ class TileList(Exportable, MutableSequence):
             created.
         :param merge: Whether or not tiles with the same name and position
             should combine into one entity. If not, Draftsman will issue
-            :py:class:`.OverlappingObjectWarning`s in these cases.
+            :py:class:`.OverlappingObjectWarning` s in these cases.
         :param kwargs: Any other keyword arguments that should be passed to the
             newly created tile instance, if creating from a string ``name``.
         """
@@ -115,7 +115,7 @@ class TileList(Exportable, MutableSequence):
             created.
         :param merge: Whether or not tiles with the same name and position
             should combine into one entity. If not, Draftsman will issue
-            :py:class:`.OverlappingObjectWarning`s in these cases.
+            :py:class:`.OverlappingObjectWarning` s in these cases.
         :param kwargs: Any other keyword arguments that should be passed to the
             newly created tile instance, if creating from a string ``name``.
         """

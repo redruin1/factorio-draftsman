@@ -34,7 +34,7 @@ def valid_lab():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.lab_modules,
+                            inventory=InventoryType.LAB_MODULES,
                             stack=0,
                         )
                     ]
@@ -108,11 +108,11 @@ class TestLab:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.lab_modules,
+                            inventory=InventoryType.LAB_MODULES,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.lab_modules,
+                            inventory=InventoryType.LAB_MODULES,
                             stack=1,
                         ),
                     ]

@@ -5,6 +5,7 @@ from draftsman.data import entities
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import (
     Comparator,
+    QualityID,
     ItemFilter,
     ItemIDName,
     int64,
@@ -74,11 +75,9 @@ class FiltersMixin(Exportable):
 
     def set_item_filter(
         self,
-        index: int64,
-        item: ItemIDName,
-        quality: Literal[
-            "normal", "uncommon", "rare", "epic", "legendary", "any"
-        ] = "normal",
+        index: int, # TODO: should be int64
+        item: str, # TODO: should be ItemIDName
+        quality: QualityID = "normal",
         comparator: Comparator = "=",
     ):
         """

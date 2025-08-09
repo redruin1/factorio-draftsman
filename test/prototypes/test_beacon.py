@@ -57,7 +57,7 @@ class TestBeacon:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.beacon_modules,
+                            inventory=InventoryType.BEACON_MODULES,
                             stack=0,
                         ),
                     ]
@@ -75,7 +75,7 @@ class TestBeacon:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.beacon_modules,
+                            inventory=InventoryType.BEACON_MODULES,
                             stack=0,
                         ),
                     ]
@@ -86,7 +86,7 @@ class TestBeacon:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.beacon_modules,
+                            inventory=InventoryType.BEACON_MODULES,
                             stack=1,
                         ),
                     ]

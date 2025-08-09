@@ -78,7 +78,7 @@ class AssemblingMachine(
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == InventoryType.assembling_machine_modules
+                if inv_pos.inventory == InventoryType.ASSEMBLING_MACHINE_MODULES
             }
         )
 
@@ -86,12 +86,12 @@ class AssemblingMachine(
 
     def request_modules(
         self,
-        module_name: ModuleID,
+        module_name: str, # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            InventoryType.assembling_machine_modules, module_name, slots, quality
+            InventoryType.ASSEMBLING_MACHINE_MODULES, module_name, slots, quality
         )
 
     # =========================================================================

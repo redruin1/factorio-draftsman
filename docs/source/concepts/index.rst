@@ -11,4 +11,3 @@ Draftsman Concepts
     versioning.rst
     environment.rst
     groups.rst
-    extras.rst

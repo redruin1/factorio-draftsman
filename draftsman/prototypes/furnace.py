@@ -84,7 +84,7 @@ class Furnace(
                 for req in self.item_requests
                 if req.id.name in modules.raw
                 for inv_pos in req.items.in_inventory
-                if inv_pos.inventory == InventoryType.furnace_modules
+                if inv_pos.inventory == InventoryType.FURNACE_MODULES
             }
         )
 
@@ -92,12 +92,12 @@ class Furnace(
 
     def request_modules(
         self,
-        module_name: ModuleID,
+        module_name: str, # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):
         return super().request_modules(
-            InventoryType.furnace_modules, module_name, slots, quality
+            InventoryType.FURNACE_MODULES, module_name, slots, quality
         )
 
     # =========================================================================

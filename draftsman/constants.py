@@ -819,7 +819,8 @@ class Ticks(int, Enum):
             >>> Ticks.from_timedelta(td)
             15780
 
-        :param timedelta: The difference in time between two points.
+        :param td: The difference in time between two points.
+        
         :returns: The equivalent number of ticks representing this difference,
             rounded to the nearest tick.
         """
@@ -1051,56 +1052,61 @@ class InventoryType(IntEnum):  # TODO: fix docs here
     """
     Constants which define which internal inventories
     :py:attr:`.Entity.item_requests` should reside in.
+
+    .. NOTE::
+
+        Due to limitations with Sphinx/autoenum, only a subset of all values are
+        documented here.
     """
 
-    artillery_turret_ammo = 1
-    artillery_wagon_ammo = 1
-    beacon_modules = 1
-    cargo_landing_pad_main = 1
-    cargo_unit = 1
-    cargo_wagon = 1
-    character_corpse = 1
-    character_main = 1
-    chest = 1
-    editor_main = 1
-    fuel = 1
-    hub_main = 1
-    item_main = 1
-    roboport_robot = 1
-    robot_cargo = 1
-    turret_ammo = 1
-    assembling_machine_input = 2
-    car_trunk = 2
-    cargo_landing_pad_trash = 2
-    furnace_source = 2
-    god_main = 2
-    hub_trash = 2
-    lab_input = 2
-    logistic_container_trash = 2
-    mining_drill_modules = 2
-    roboport_material = 2
-    robot_repair = 2
-    rocket_silo_input = 2
-    spider_trunk = 2
-    assembling_machine_output = 3
-    car_ammo = 3
-    character_guns = 3
-    editor_guns = 3
-    furnace_result = 3
-    lab_modules = 3
-    rocket_silo_output = 3
-    spider_ammo = 3
-    assembling_machine_modules = 4
-    character_ammo = 4
-    editor_ammo = 4
-    furnace_modules = 4
-    rocket_silo_modules = 4
-    spider_trash = 4
-    character_armor = 5
-    editor_armor = 5
-    burnt_result = 6
-    assembling_machine_dump = 7
-    character_vehicle = 7
-    character_trash = 8
-    rocket_silo_rocket = 9
-    rocket_silo_trash = 11
+    ARTILLERY_TURRET_AMMO = 1
+    ARTILLERY_WAGON_AMMO = 1
+    BEACON_MODULES = 1
+    CARGO_LANDING_PAD_MAIN = 1
+    CARGO_UNIT = 1
+    CARGO_WAGON = 1
+    CHARACTER_CORPSE = 1
+    CHARACTER_MAIN = 1
+    CHEST = 1
+    EDITOR_MAIN = 1
+    FUEL = 1
+    HUB_MAIN = 1
+    ITEM_MAIN = 1
+    ROBOPORT_ROBOT = 1
+    ROBOT_CARGO = 1
+    TURRET_AMMO = 1
+    ASSEMBLING_MACHINE_INPUT = 2
+    CAR_TRUNK = 2
+    CARGO_LANDING_PAD_TRASH = 2
+    FURNACE_SOURCE = 2
+    GOD_MAIN = 2
+    HUB_TRASH = 2
+    LAB_INPUT = 2
+    LOGISTIC_CONTAINER_TRASH = 2
+    MINING_DRILL_MODULES = 2
+    ROBOPORT_MATERIAL = 2
+    ROBOT_REPAIR = 2
+    ROCKET_SILO_INPUT = 2
+    SPIDER_TRUNK = 2
+    ASSEMBLING_MACHINE_OUTPUT = 3
+    CAR_AMMO = 3
+    CHARACTER_GUNS = 3
+    EDITOR_GUNS = 3
+    FURNACE_RESULT = 3
+    LAB_MODULES = 3
+    ROCKET_SILO_OUTPUT = 3
+    SPIDER_AMMO = 3
+    ASSEMBLING_MACHINE_MODULES = 4
+    CHARACTER_AMMO = 4
+    EDITOR_AMMO = 4
+    FURNACE_MODULES = 4
+    ROCKET_SILO_MODULES = 4
+    SPIDER_TRASH = 4
+    CHARACTER_ARMOR = 5
+    EDITOR_ARMOR = 5
+    BURNT_RESULT = 6
+    ASSEMBLING_MACHINE_DUMP = 7
+    CHARACTER_VEHICLE = 7
+    CHARACTER_TRASH = 8
+    ROCKET_SILO_ROCKET = 9
+    ROCKET_SILO_TRASH = 11

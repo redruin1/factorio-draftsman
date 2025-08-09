@@ -73,7 +73,7 @@ def main():
     config.cars[2].tags = {"some": "stuff"}
     # Even preload the artillery wagons on construction
     config.cars[3].set_item_request(
-        "artillery-shell", 25, inventory=InventoryType.artillery_wagon_ammo
+        "artillery-shell", 25, inventory=InventoryType.ARTILLERY_WAGON_AMMO
     )
 
     # Cars are specified from the left of the right, so the 0th

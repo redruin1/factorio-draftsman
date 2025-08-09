@@ -772,10 +772,10 @@ class Entity(EntityLike, Exportable):
     def set_item_request(
         self,
         item: str,
-        count: Optional[uint32] = None,
+        count: Optional[int] = None, # TODO: should be uint32
         quality: QualityID = "normal",
         inventory: InventoryType = 1,
-        slot: Optional[uint32] = None,
+        slot: Optional[int] = None, # TODO: should be uint32
     ):
         """
         Creates a construction request for an item. Removes the item request if
@@ -786,7 +786,7 @@ class Entity(EntityLike, Exportable):
             ``0`` will be assumed.
         :param quality: The quality of the requested item.
         :param inventory: The particular :py:class:`.InventoryType` to request
-            this item to, since entities (As of Factorio 2.0) can have more than
+            this item to, since entities (as of Factorio 2.0) can have more than
             one distinct inventory to request items to. If omitted, it will
             default to ``1``, which is usally the "primary" inventory.
         :param slot: The particular slot in the inventory to place the item. The

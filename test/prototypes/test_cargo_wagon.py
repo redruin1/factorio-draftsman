@@ -43,7 +43,7 @@ def valid_cargo_wagon():
                     items=ItemInventoryPositions(
                         in_inventory=[
                             InventoryPosition(
-                                inventory=InventoryType.cargo_wagon, stack=0, count=50
+                                inventory=InventoryType.CARGO_WAGON, stack=0, count=50
                             )
                         ]
                     ),

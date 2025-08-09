@@ -31,7 +31,7 @@ def valid_artillery_wagon():
                     items=ItemInventoryPositions(
                         in_inventory=[
                             InventoryPosition(
-                                inventory=InventoryType.artillery_wagon_ammo,
+                                inventory=InventoryType.ARTILLERY_WAGON_AMMO,
                                 stack=0,
                                 count=1,
                             )

@@ -292,8 +292,8 @@ class SelectorCombinator(
     def set_mode_select(
         self,
         select_max: bool = True,
-        index_constant: int32 = 0,
-        index_signal: Optional[SignalID] = None,
+        index_constant: int = 0, # TODO: should be int32
+        index_signal: Optional[str] = None, # TODO: should be SignalID
     ):
         """
         Sets the selector combinator to "Select Inputs" mode, along with
@@ -322,7 +322,10 @@ class SelectorCombinator(
         self.operation = "count"
         self.count_signal = count_signal
 
-    def set_mode_random(self, interval: uint32 = 0):
+    def set_mode_random(
+            self, 
+            interval: int = 0 # TODO: should be uint32
+        ):
         """
         Sets the selector combinator to "Random Input" mode, along with
         associated parameters.

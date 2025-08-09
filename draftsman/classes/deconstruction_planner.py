@@ -1,7 +1,5 @@
 # deconstruction_planner.py
 
-""" """
-
 from draftsman.classes.blueprintable import Blueprintable
 from draftsman.constants import FilterMode, TileSelectionMode
 from draftsman.data import items
@@ -194,8 +192,8 @@ class DeconstructionPlanner(Blueprintable):
 
     def set_entity_filter(
         self,
-        index: uint64,
-        name: EntityID,
+        index: int, # TODO: should be uint64
+        name: str, # TODO: should be EntityID
         quality: QualityID = "normal",
         comparator: Comparator = "=",
     ):
@@ -226,21 +224,11 @@ class DeconstructionPlanner(Blueprintable):
             )
             bisect.insort(self.entity_filters, new_entry, key=lambda e: e.index)
 
-    def set_entity_filters(self, *entity_names: list[str]):
-        """
-        Sets a tile filter in the list of tile filters. Appends the new one
-        to the end of the list regardless of the ``index``. If ``index`` is
-        already occupied with a different filter it is overwritten with the new
-        one; does nothing if the exact filter already exists within
-        :py:attr:`.tile_filters`.
-
-        :param index: The index to set the new filter at.
-        :param name: The name of the tile to filter for deconstruction.
-        """
-        for i, entity_name in enumerate(entity_names):
-            self.set_entity_filter(i, entity_name)
-
-    def set_tile_filter(self, index: uint64, name: TileID):
+    def set_tile_filter(
+        self, 
+        index: int, # TODO: should be uint64
+        name: str # TODO: should be TileID
+    ):
         """
         Sets a tile filter in the list of tile filters. Appends the new one
         to the end of the list regardless of the ``index``. If ``index`` is

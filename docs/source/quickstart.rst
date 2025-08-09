@@ -103,12 +103,7 @@ For example, even though ``label`` must be a string, we can set it to ``None``, 
     >>> blueprint.label = None
     >>> assert blueprint.label == ""
 
-In Factorio, a label consisting of an empty string is equivalent to no label at all.
-Thus, if this blueprint is now imported into the game, it's label will be the game-given default of "Blueprint":
-
-.. image:: ../img/quickstart/starter_name_removed.png
-    :alt: The same blueprint, but with it's label removed, revealing the default blueprint name.
-    :align: center
+In Factorio, a label consisting of an empty string is equivalent to no label at all, and it's label will be the game-given default of "Blueprint":
 
 Adding Entities
 ---------------
@@ -266,7 +261,7 @@ This rendition searches the entities in the blueprint with a set of criteria and
 Here, we search for any entity with the name ``"electric-furnace"``, which returns a list with a single reference to one of the entities in the blueprint. 
 This will give us a nice anchor to read from as we know there is only one.
 
-Since we now know that the center of the furnace is at (8.5, 3.5), we can simply set the container 3 tiles to the right to place it correctly. ``Vector``s are smart, so we can add a tuple (or list or dict) to the furnace position and set the result to the container's position:
+Since we now know that the center of the furnace is at (8.5, 3.5), we can simply set the container 3 tiles to the right to place it correctly. ``Vector`` s are smart, so we can add a tuple (or list or dict) to the furnace position and set the result to the container's position:
 
 .. doctest:: group3
 

@@ -33,7 +33,7 @@ def valid_locomotive():
                     items=ItemInventoryPositions(
                         in_inventory=[
                             InventoryPosition(
-                                inventory=InventoryType.fuel, stack=0, count=50
+                                inventory=InventoryType.FUEL, stack=0, count=50
                             )
                         ]
                     ),

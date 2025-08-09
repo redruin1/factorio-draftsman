@@ -36,6 +36,7 @@ extensions = [
     #'sphinx.ext.napoleon',
     "sphinx.ext.duration",
     "sphinx.ext.autodoc",
+    # "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
     "sphinx.ext.doctest",
     "sphinx_copybutton",

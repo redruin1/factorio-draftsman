@@ -77,11 +77,11 @@ class TestRocketSilo:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.rocket_silo_modules,
+                            inventory=InventoryType.ROCKET_SILO_MODULES,
                             stack=0,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.rocket_silo_modules,
+                            inventory=InventoryType.ROCKET_SILO_MODULES,
                             stack=1,
                         ),
                     ]

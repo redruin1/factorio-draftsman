@@ -111,7 +111,7 @@ class TargetPrioritiesMixin(Exportable):
         self,
         first_operand: Union[signatures.SignalID, None] = None,
         comparator: signatures.Comparator = "<",
-        second_operand: Union[signatures.SignalID, signatures.int32] = 0,
+        second_operand: Union[signatures.SignalID, int] = 0, # TODO: should be int32
     ):
         """
         Sets the condition under which non-prioritized targets should be ignored.

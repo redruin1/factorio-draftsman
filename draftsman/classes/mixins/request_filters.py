@@ -85,7 +85,7 @@ class RequestFiltersMixin(Exportable):
     def add_section(
         self,
         group: Union[str, None] = None,
-        index: Optional[LuaDouble] = None,
+        index: Optional[int] = None, # TODO: should be int64
         active: bool = True,
     ) -> ManualSection:
         """

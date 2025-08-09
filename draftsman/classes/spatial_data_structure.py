@@ -75,8 +75,7 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         Get all the entities whose ``collision_set`` overlaps a circle.
 
         :param radius: The radius of the circle.
-        :param pos: The center of the circle; Can be specified as a sequence or
-            as a ``dict`` with ``"x"`` and ``"y"`` keys.
+        :param point: The center of the circle.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the region. Can be
@@ -91,8 +90,7 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         """
         Get all the entities whose ``collision_set`` overlaps a point.
 
-        :param point: The position to examine; Can be specified as a
-            PrimitiveVector or Vector.
+        :param point: The position to examine.
         :param limit: A maximum amount of entities to return.
 
         :returns: A ``list`` of all entities that intersect the point. Can be

@@ -1,5 +1,6 @@
 # modules.py
 
+from draftsman.constants import InventoryType
 from draftsman.data import entities, modules
 from draftsman.signatures import (
     BlueprintInsertPlan,
@@ -8,7 +9,6 @@ from draftsman.signatures import (
     InventoryPosition,
     ModuleID,
     QualityID,
-    uint32,
 )
 
 from abc import ABCMeta, abstractmethod
@@ -70,8 +70,8 @@ class ModulesMixin(metaclass=ABCMeta):
 
     def request_modules(
         self,
-        inventory_id: uint32,
-        module_name: ModuleID,
+        inventory_id: InventoryType,
+        module_name: str, # TODO: should be ModuleID
         slots: int | Iterable[int],
         quality: QualityID = "normal",
     ):

@@ -2,7 +2,7 @@
 .. py:currentmodule:: draftsman.classes.entity_like
 
 :py:mod:`~draftsman.classes.entity_like`
-=======================================
+========================================
 
 .. autoclass:: EntityLike
     :members:

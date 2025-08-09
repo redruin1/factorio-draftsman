@@ -90,7 +90,7 @@ class InventoryMixin(Exportable):
         entity. Useful for quickly determining the capacity of the chest after
         the item requests have been delivered.
         """
-        return calculate_occupied_slots(self.item_requests, InventoryType.chest)
+        return calculate_occupied_slots(self.item_requests, InventoryType.CHEST)
 
     # =========================================================================
 

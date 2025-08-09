@@ -51,7 +51,7 @@ def valid_mining_drill():
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=1,
                         )
                     ]
@@ -116,7 +116,7 @@ class TestMiningDrill:
     def test_set_item_request(self):
         mining_drill = MiningDrill("electric-mining-drill")
         mining_drill.set_item_request(
-            "speed-module-3", 3, inventory=InventoryType.mining_drill_modules
+            "speed-module-3", 3, inventory=InventoryType.MINING_DRILL_MODULES
         )
         assert mining_drill.to_dict(version=(1, 0)) == {
             "name": "electric-mining-drill",
@@ -173,7 +173,7 @@ class TestMiningDrill:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=0,
                             count=1,
                         ),
@@ -189,17 +189,17 @@ class TestMiningDrill:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=0,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=1,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=2,
                             count=1,
                         ),
@@ -215,17 +215,17 @@ class TestMiningDrill:
                 items=ItemInventoryPositions(
                     in_inventory=[
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=0,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=1,
                             count=1,
                         ),
                         InventoryPosition(
-                            inventory=InventoryType.mining_drill_modules,
+                            inventory=InventoryType.MINING_DRILL_MODULES,
                             stack=2,
                             count=1,
                         ),

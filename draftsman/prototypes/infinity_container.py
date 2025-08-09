@@ -98,16 +98,16 @@ class InfinityContainer(InventoryMixin, Entity):
 
     def set_infinity_filter(
         self,
-        index: uint16,
+        index: int, # TODO: should be uint16
         item: Optional[str],
         mode: Literal["at-least", "at-most", "exactly", None] = "at-least",
-        count: Optional[uint32] = None,
+        count: Optional[int] = None, # TODO: should be uint32
     ):
         """
         Sets an infinity filter.
 
         :param index: The index of the filter to set.
-        :param name: The name of the item to interact with.
+        :param item: The name of the item to filter.
         :param mode: The manner in which to set the filter. Can be one of
             ``"at-least"``, ``"at-most"``, or ``"exactly"``.
         :param count: The amount of the item to request. If set to ``None``, the

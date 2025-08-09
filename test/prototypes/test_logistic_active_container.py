@@ -99,7 +99,7 @@ class TestActiveContainer:
         container = LogisticActiveContainer()
 
         container.set_item_request(
-            "iron-ore", 50, quality="normal", inventory=InventoryType.chest
+            "iron-ore", 50, quality="normal", inventory=InventoryType.CHEST
         )
 
         # On 1.0, read_contents has no effect whatsoever
@@ -156,7 +156,7 @@ class TestActiveContainer:
                     "items": {
                         "in_inventory": [
                             {
-                                "inventory": InventoryType.chest,
+                                "inventory": InventoryType.CHEST,
                                 "stack": 0,
                                 "count": 50,
                             }
@@ -186,7 +186,7 @@ class TestActiveContainer:
                     "items": {
                         "in_inventory": [
                             {
-                                "inventory": InventoryType.chest,
+                                "inventory": InventoryType.CHEST,
                                 "stack": 0,
                                 "count": 50,
                             }
