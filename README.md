@@ -226,10 +226,12 @@ A html-browsable coverage report can be generated with:
 coverage html
 ```
 
-To build documentation locally:
+To build + check documentation locally:
 
 ```
 cd docs
+make clean
+make doctest
 make html
 ```
 
@@ -245,7 +247,7 @@ Bugs are tracked on the issue page; If you have an issue that's affecting you, s
 
 If you have a feature request that isn't currently on the TODO list and you believe it might be a good fit for the project, but you're not absolutely sure if it belongs or how it should be implemented into Draftsman, start a [discussion thread here](https://github.com/redruin1/factorio-draftsman/discussions/categories/ideas). If a discussed feature is accepted, it should be added to the TODO list and tracked on the issues page. Questions on how to use Draftsman are also recommended to live in the discussions channel.
 
-If you want to contribute, read [CONTRIBUTING.md](CONTRIBUTING.md) first, fork the project, and dive in. When you're ready, submit a PR with the changes towards the intended branch, describing what exactly the changes intend to do (linking against any relevant issues if necessary). If all checks pass, you can expect the PR to merged in a (relatively) timely manner and pushed to the next minor or major version.
+If you want to contribute, fork the project and dive in. When you're ready, submit a PR with the changes towards the intended branch, describing what exactly the changes intend to do (linking against any relevant issues if necessary). If all checks pass, you can expect the PR to merged in a (relatively) timely manner and pushed to the next minor or major version.
 
 If Draftsman is useful to you or any of your projects (and you would like to grease it's continued development) then you can send me a dollar or two here:
 
