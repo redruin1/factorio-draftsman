@@ -6,14 +6,13 @@ from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintableList, BlueprintBook
 from draftsman.data import mods
 from draftsman.error import (
-    InvalidSignalError,
     IncorrectBlueprintTypeError,
     DataFormatError,
     IncompleteSignalError,
 )
 from draftsman.signatures import Color, Icon
 from draftsman.utils import encode_version, string_to_JSON, version_tuple_to_string
-from draftsman.warning import DraftsmanWarning, IndexWarning, UnknownSignalWarning
+from draftsman.warning import UnknownSignalWarning
 
 import pytest
 
@@ -96,7 +95,7 @@ class TestBlueprintBook:
 
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
-                # "active_index": 0,
+                "active_index": 0,
                 "item": "blueprint-book",
                 "version": encode_version(*mods.versions["base"]),
             }
@@ -112,7 +111,7 @@ class TestBlueprintBook:
         blueprint_book = BlueprintBook.from_dict(example)
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
-                # "active_index": 0,
+                "active_index": 0,
                 "item": "blueprint-book",
                 "version": encode_version(*mods.versions["base"]),
             }
@@ -123,7 +122,7 @@ class TestBlueprintBook:
         )
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
-                # "active_index": 0,
+                "active_index": 0,
                 "item": "blueprint-book",
                 "version": encode_version(1, 1, 53, 0),
             }
@@ -135,7 +134,7 @@ class TestBlueprintBook:
         )
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
-                # "active_index": 0,
+                "active_index": 0,
                 "item": "blueprint-book",
                 "icons": [{"index": 1, "signal": {"name": "wood", "type": "item"}}],
                 "version": encode_version(1, 1, 59, 0),
@@ -148,7 +147,7 @@ class TestBlueprintBook:
         )
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
-                # "active_index": 0,
+                "active_index": 0,
                 "item": "blueprint-book",
                 "label": "A name.",
                 "description": "A description.",
@@ -233,7 +232,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 "item": "blueprint-book",
                 "label": "testing The LABEL",
-                # "active_index": 0,
+                "active_index": 0,
                 "version": encode_version(1, 1, 54, 0),
             }
         }
@@ -243,7 +242,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
-                # "active_index": 0,
+                "active_index": 0,
                 "version": encode_version(1, 1, 54, 0),
             }
         }
@@ -254,7 +253,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
-                # "active_index": 0,
+                "active_index": 0,
                 "version": encode_version(1, 1, 54, 0),
             }
         }
@@ -270,7 +269,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 "item": "blueprint-book",
                 "label_color": {"r": 0.5, "g": 0.1, "b": 0.5},
-                # "active_index": 0,
+                "active_index": 0,
                 "version": encode_version(1, 1, 54, 0),
             }
         }
@@ -280,7 +279,7 @@ class TestBlueprintBook:
             "blueprint_book": {
                 "item": "blueprint-book",
                 "label_color": {"r": 1.0, "g": 1.0, "b": 1.0, "a": 0.25},
-                # "active_index": 0,
+                "active_index": 0,
                 "version": encode_version(1, 1, 54, 0),
             }
         }
@@ -290,7 +289,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
-                # "active_index": 0,
+                "active_index": 0,
                 "version": encode_version(1, 1, 54, 0),
             }
         }
@@ -344,7 +343,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
-                # "active_index": 0, # Default
+                "active_index": 0,  # Default
                 "version": encode_version(*mods.versions["base"]),
             }
         }
@@ -398,7 +397,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
-                # "active_index": 0, # Default
+                "active_index": 0,  # Default
                 "blueprints": [
                     {
                         "index": 0,
@@ -412,7 +411,7 @@ class TestBlueprintBook:
                         "index": 1,
                         "blueprint_book": {
                             "item": "blueprint-book",
-                            # "active_index": 0, # Default
+                            "active_index": 0,  # Default
                             "version": encode_version(*mods.versions["base"]),
                         },
                     },
@@ -434,7 +433,7 @@ class TestBlueprintBook:
         assert new_blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
-                # "active_index": 0, # Default
+                "active_index": 0,  # Default
                 "blueprints": [
                     {
                         "index": 0,
@@ -448,7 +447,7 @@ class TestBlueprintBook:
                         "index": 1,
                         "blueprint_book": {
                             "item": "blueprint-book",
-                            # "active_index": 0, # Default
+                            "active_index": 0,  # Default
                             "version": encode_version(*mods.versions["base"]),
                         },
                     },
@@ -487,6 +486,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
+                "active_index": 0,
                 "blueprints": [
                     {
                         "index": 0,
@@ -579,6 +579,7 @@ class TestBlueprintBook:
         assert blueprint_book.to_dict() == {
             "blueprint_book": {
                 "item": "blueprint-book",
+                "active_index": 0,
                 "version": 281479278690304,
                 "blueprints": [
                     {

@@ -36,8 +36,8 @@ class EnergySourceMixin:
     def fuel_input_size(self) -> uint16 | None:
         """
         Gets the total number of fuel input slots that this entity can hold.
-        Returns ``None`` if :py:attr:`.energy_source` is not of type "burner", 
-        or if the name of this entity is not recognized in the current 
+        Returns ``None`` if :py:attr:`.energy_source` is not of type "burner",
+        or if the name of this entity is not recognized in the current
         environment.
         """
         if self.energy_source is not None:
@@ -66,7 +66,7 @@ class EnergySourceMixin:
         """
         A set of strings, each one a valid item that can be used as a fuel
         source to power this entity. If :py:attr:`.energy_source` is not of type
-        "burner", then this property returns an empty set. Returns ``None`` if 
+        "burner", then this property returns an empty set. Returns ``None`` if
         this entity is not recognized by the current environment.
         """
         if self.name not in entities.raw:
