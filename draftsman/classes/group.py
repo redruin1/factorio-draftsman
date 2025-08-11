@@ -173,22 +173,16 @@ class Group(
 
     # =========================================================================
 
+    # TODO: needed? No longer provides query support...
     name: str = attrs.field(default="group", validator=instance_of(str), kw_only=True)
     """
     The name of the Group. Defaults to ``"group"``. Can be specified to any
-    string to aid in organization and querying. For example:
-
-    .. doctest::
-
-        >>> blueprint.entities.append(Group("A"))
-        >>> blueprint.entities.append(Group("B", name="different_name"))
-
-        >>> different_entities = blueprint.find_entities_filtered(name="different_name")
-        >>> assert different_entities[0] is blueprint.entities["B"]
+    string to aid in organization and querying. 
     """
 
     # =========================================================================
 
+    # TODO: needed? No longer provides query support...
     type: str = attrs.field(
         default="group",
         validator=instance_of(str),
@@ -196,15 +190,7 @@ class Group(
     )
     """
     The type of the Group. Defaults to ``"group"``. Can be specified to any
-    string to aid in organization and querying. For example:
-
-    .. doctest::
-
-        >>> blueprint.entities.append(Group("A"))
-        >>> blueprint.entities.append(Group("B", type="different_type"))
-
-        >>> different_entities = blueprint.find_entities_filtered(type="different_type")
-        >>> assert different_entities[0] is blueprint.entities["B"]
+    string to aid in organization and querying.
     """
 
     # =========================================================================

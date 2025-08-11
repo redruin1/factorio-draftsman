@@ -45,10 +45,10 @@ class Direction(IntEnum):
         """
         Returns the direction opposite this one.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Direction.NORTH.opposite()
-            <Direction.SOUTH: 4>
+            <Direction.SOUTH: 8>
 
         :returns: A new :py:class:`Direction`.
         """
@@ -60,7 +60,7 @@ class Direction(IntEnum):
         ``eight_way`` determines whether or not to treat the next-most direction
         from a four-way or eight-way perspective; for example:
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Direction.NORTH.next(eight_way=False)
             <Direction.EAST: 4>
@@ -81,12 +81,12 @@ class Direction(IntEnum):
         previous-most direction from a four-way or eight-way perspective; for
         example:
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Direction.NORTH.previous(eight_way=False)
-            <Direction.WEST: 6>
+            <Direction.WEST: 12>
             >>> Direction.NORTH.previous(eight_way=True)
-            <Direction.NORTHWEST: 7>
+            <Direction.NORTHWEST: 14>
 
         :param eight_way: Whether to increment the current direction by 1 or 2
             units.
@@ -154,7 +154,7 @@ class Direction(IntEnum):
         Converts this direction to an :py:class:`Orientation` of corresponding
         value.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Direction.EAST.to_orientation()
             <Orientation.EAST: 0.25>
@@ -182,12 +182,12 @@ class Direction(IntEnum):
         directions. Returned vectors are unit-length, unless ``magnitude`` is
         specified.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Direction.NORTH.to_vector(magnitude=2)
-            <Vector>(0, -2)
+            Vector(0, -2)
             >>> Direction.SOUTHWEST.to_vector()
-            <Vector>(-0.7071067811865476, 0.7071067811865476)
+            Vector(-0.7071067811865476, 0.7071067811865476)
 
         :param magnitude: The magnitude (total length) of the vector to create.
 
@@ -273,10 +273,10 @@ class LegacyDirection(IntEnum):
         """
         Returns the direction opposite this one.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
-            >>> Direction.NORTH.opposite()
-            <Direction.SOUTH: 4>
+            >>> LegacyDirection.NORTH.opposite()
+            <LegacyDirection.SOUTH: 4>
 
         :returns: A new :py:class:`Direction`.
         """
@@ -288,17 +288,17 @@ class LegacyDirection(IntEnum):
         ``eight_way`` determines whether or not to treat the next-most direction
         from a four-way or eight-way perspective; for example:
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
-            >>> Direction.NORTH.next(eight_way=False)
-            <Direction.EAST: 2>
-            >>> Direction.NORTH.next(eight_way=True)
-            <Direction.NORTHEAST: 1>
+            >>> LegacyDirection.NORTH.next(eight_way=False)
+            <LegacyDirection.EAST: 2>
+            >>> LegacyDirection.NORTH.next(eight_way=True)
+            <LegacyDirection.NORTHEAST: 1>
 
         :param eight_way: Whether to increment the current direction by 1 or 2
             units.
 
-        :returns: A new :py:class:`Direction` object.
+        :returns: The following direction.
         """
         return LegacyDirection((self.value + 1 + (not eight_way)) % 8)
 
@@ -309,17 +309,17 @@ class LegacyDirection(IntEnum):
         previous-most direction from a four-way or eight-way perspective; for
         example:
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
-            >>> Direction.NORTH.previous(eight_way=False)
-            <Direction.WEST: 6>
-            >>> Direction.NORTH.previous(eight_way=True)
-            <Direction.NORTHWEST: 7>
+            >>> LegacyDirection.NORTH.previous(eight_way=False)
+            <LegacyDirection.WEST: 6>
+            >>> LegacyDirection.NORTH.previous(eight_way=True)
+            <LegacyDirection.NORTHWEST: 7>
 
         :param eight_way: Whether to increment the current direction by 1 or 2
             units.
 
-        :returns: A new :py:class:`Direction` object.
+        :returns: The preceding direction.
         """
         return LegacyDirection((self.value - 1 - (not eight_way)) % 8)
 
@@ -328,9 +328,9 @@ class LegacyDirection(IntEnum):
         Converts this direction to an :py:class:`Orientation` of corresponding
         value.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
-            >>> Direction.EAST.to_orientation()
+            >>> LegacyDirection.EAST.to_orientation()
             <Orientation.EAST: 0.25>
 
         :returns: An equivalent :py:class:`Orientation` object.
@@ -356,12 +356,12 @@ class LegacyDirection(IntEnum):
         directions. Returned vectors are unit-length, unless ``magnitude`` is
         specified.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
-            >>> Direction.NORTH.to_vector(magnitude=2)
-            <Vector>(0, -2)
-            >>> Direction.SOUTHWEST.to_vector()
-            <Vector>(-0.7071067811865476, 0.7071067811865476)
+            >>> LegacyDirection.NORTH.to_vector(magnitude=2)
+            Vector(0, -2)
+            >>> LegacyDirection.SOUTHWEST.to_vector()
+            Vector(-0.7071067811865476, 0.7071067811865476)
 
         :param magnitude: The magnitude (total length) of the vector to create.
 
@@ -459,7 +459,7 @@ class Orientation(float):
         opposite; but when calling on an arbitrary orientation the opposite may
         succumb to floating point error:
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Orientation.NORTH.opposite()
             <Orientation.SOUTH: 0.5>
@@ -478,13 +478,13 @@ class Orientation(float):
         orientation is imprecise, the orientation will be rounded to either the
         closest four-way or eight-way direction.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> example = Orientation(1.0 / 3.0)
             >>> example.to_direction(sixteen_way=False)
-            <Direction.EAST: 2>
+            <Direction.EAST: 4>
             >>> example.to_direction(sixteen_way=True)
-            <Direction.SOUTHEAST: 3>
+            <Direction.EASTSOUTHEAST: 5>
 
         :param sixteen_way: Whether to round to the closest four-way direction or
             sixteen-way direction.
@@ -502,12 +502,12 @@ class Orientation(float):
         vector, for various linear operations. Returned vectors are unit-length,
         unless ``magnitude`` is altered.
 
-        .. doctest:: [constants]
+        .. doctest:: constants
 
             >>> Orientation.NORTH.to_vector(magnitude=2)
-            <Vector>(0, -2)
+            Vector(0.0, -2.0)
             >>> Orientation.SOUTHWEST.to_vector()
-            <Vector>(-0.7071067811865476, 0.7071067811865476)
+            Vector(-0.7071067811865475, 0.7071067811865477)
 
         :param magnitude: The magnitude (total length) of the vector to create.
 
@@ -810,7 +810,7 @@ class Ticks(int, Enum):
 
         :example:
 
-        .. doctest::
+        .. doctest:: constants
 
             >>> from datetime import datetime
             >>> t1 = datetime.strptime("10:15:04", "%H:%M:%S")

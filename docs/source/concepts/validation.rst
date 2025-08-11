@@ -19,7 +19,8 @@ For example, one of this simplest Draftsman utilities (entity name suggestion) i
 
     >>> from draftsman.entity import Container
     >>> Container("woden-chest")
-    UnknownEntityWarning: Unknown entity 'woden-chest'; did you mean 'wooden-chest'?
+    %%%: UnknownEntityWarning: Unknown entity 'woden-chest'; did you mean 'wooden-chest'?
+        ...
 
 Instead of fully relying on static analysis, Draftsman also has a suite of runtime validators that it runs to ensure *Factorio-safety* and *Factorio-correctness*.
 This allows you to use Draftsman as not only a way to manipulate blueprint strings, but also a way to lint them:

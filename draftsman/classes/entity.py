@@ -666,7 +666,7 @@ class Entity(EntityLike, Exportable):
 
     .. doctest::
 
-        >>> from draftsman.entities import Container
+        >>> from draftsman.entity import Container
         >>> c = Container("steel-chest", quality="normal")
         >>> c.size
         48

@@ -273,14 +273,7 @@ That is, it will be unable to read or modify the version of your *regular* insta
 
     > draftsman --game-path D:/Steam/steamapps/common/Factorio/data factorio-version
     Traceback (most recent call last):
-    File "<frozen runpy>", line 198, in _run_module_as_main
-    File "<frozen runpy>", line 88, in _run_code
-    File "C:\Users\tfsch\AppData\Roaming\Python\Python312\Scripts\draftsman.exe\__main__.py", line 7, in <module>
-    File "D:\SourceCode\repos\Python\factorio-draftsman\draftsman\environment\script.py", line 193, in main
-        repo = git.Repo(args.game_path)
-            ^^^^^^^^^^^^^^^^^^^^^^^^
-    File "C:\Users\tfsch\AppData\Roaming\Python\Python312\site-packages\git\repo\base.py", line 289, in __init__
-        raise InvalidGitRepositoryError(epath)
+    ...
     git.exc.InvalidGitRepositoryError: D:\Steam\steamapps\common\Factorio\data
 
 This functionality may be possible in the future, but currently is not supported.

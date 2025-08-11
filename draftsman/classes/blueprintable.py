@@ -226,7 +226,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         >>> blueprint = Blueprint()
         >>> blueprint.icons = ["transport-belt"]
         >>> blueprint.icons
-        [Icon(index=0, signal=SignalID(name='transport-belt', type='item'))]
+        [Icon(index=0, signal=SignalID(name='transport-belt', type='item', quality='normal'))]
     """
 
     # =========================================================================
@@ -395,14 +395,14 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
             >>> from draftsman.blueprintable import (
             ...     Blueprint, DeconstructionPlanner, UpgradePlanner, BlueprintBook
             ... )
-            >>> Blueprint({"version": (1, 0)}).to_string()
+            >>> Blueprint(version=(1, 0)).to_string()
             '0eNqrVkrKKU0tKMrMK1GyqlbKLEnNVbJCEtNRKkstKs7Mz1OyMrIwNDE3sTQ3Mzc0MDM1q60FAHmVE1M='
-            >>> DeconstructionPlanner({"version": (1, 0)}).to_string()
-            '0eNpdy0EKgCAQAMC/7Nkgw7T8TIQtIdga7tol/HtdunQdmBs2DJlYSg0SMy1nWomwgL+BUSTSzuCppqQgCh7gf6H7goILC78Cfpi0cWZ21unejra1B7C2I9M='
-            >>> UpgradePlanner({"version": (1, 0)}).to_string()
-            '0eNo1yksKgCAUBdC93LFBhmm5mRB6iGAv8dNE3Hsjz/h0tOSzu+lK0TFThu0oVGtgX2C5xSgQKj2wcy5zCnyUS3gZdjukMuo02shV73qMH4ZxHbs='
-            >>> BlueprintBook({"version": (1, 0)}).to_string()
-            '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJQSk0syy1LjM/NSUiuUrAx0lMpSi4oz8/OUrIwsDE3MTSzNzcwNDcxMzWprAVWGHQI='
+            >>> DeconstructionPlanner(version=(1, 0)).to_string()
+            '0eNqrVkpJTc7PKy4pKk0uyczPiy/ISczLSy1SsqpWyixJzVWyQlOgC1Ogo1SWWlQMFFGyMrIwNDE3sTQ3Mzc0MDM1q60FAHp9Hf0='
+            >>> UpgradePlanner(version=(1, 0)).to_string()
+            '0eNqrViotSC9KTEmNL8hJzMtLLVKyqlbKLEnNVbKCyejCZHSUylKLijPz85SsjCwMTcxNLM3NzA0NzEzNamsBqdIX5Q=='
+            >>> BlueprintBook(version=(1, 0)).to_string()
+            '0eNqrVkrKKU0tKMrMK4lPys/PVrKqVsosSc1VskJI6IIldJTKUouKM/PzlKyMLAxNzE0szc3MDQ3MTM10lBKTSzLLUuMz81JSK5SsDGprATINHQI='
         """
         if version is None:
             version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)

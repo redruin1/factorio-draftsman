@@ -51,7 +51,7 @@ draftsman = "draftsman.environment.script:main"
 [dependency-groups]
 test = ["pytest >= 7.1.3", "coverage >= 6.4", "tox >= 4.4.7", "jsonschema >= 4.23.0"]
 lint = ["black >= 22.3.0", "ruff >= 0.12.0"]
-docs = ["sphinx"]
+docs = ["sphinx", "sphinx-copybutton", "enum-tools[sphinx]", "sphinx_immaterial"]
 dev  = [
     {include-group = "lint"}, 
     {include-group = "test"}, 

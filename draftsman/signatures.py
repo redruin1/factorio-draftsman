@@ -120,26 +120,28 @@ class SignalID(Exportable):
     For convenience, a SignalID object can be constructed with just the string
     name, *if* the current Draftsman environment recognizes the name:
 
-    .. code-block:: python
+    .. doctest:: signal-id
 
-        some_signal = SignalID("iron-ore")
-
-        assert some_signal.name == "iron-ore"
-        assert some_signal.type == "item"
-        assert some_signal.quality == "normal"
+        >>> some_signal = SignalID("iron-ore")
+        >>> some_signal.name
+        'iron-ore'
+        >>> some_signal.type
+        'item'
+        >>> some_signal.quality
+        'normal'
 
     In certain cases, you can even omit the ``SignalID`` constructor entirely in
     obvious cases:
 
-    .. code-block:: python
+    .. doctest:: signal-id
 
-        condition = Condition()
-        condition.first_signal = "iron-ore"
+        >>> condition = Condition()
+        >>> condition.first_signal = "iron-ore"
 
-        assert type(condition.first_signal) is SignalID
-        assert condition.first_signal.name == "iron-ore"
-        assert condition.first_signal.type == "item"
-        assert condition.first_signal.quality == "normal"
+        >>> assert type(condition.first_signal) is SignalID
+        >>> assert condition.first_signal.name == "iron-ore"
+        >>> assert condition.first_signal.type == "item"
+        >>> assert condition.first_signal.quality == "normal"
 
     Because the name ``"iron-ore"`` is known, Draftsman can pick a correct ``type``
     for it. For most applications, this defaults to ``"item"``, but notable
@@ -147,9 +149,12 @@ class SignalID(Exportable):
 
     .. code-block:: python
 
-        assert SignalID("iron-ore").type == "item"
-        assert SignalID("steam").type == "fluid"
-        assert SignalID("signal-A").type == "virtual"
+        >>> SignalID("iron-ore").type
+        "item"
+        >>> SignalID("steam").type
+        "fluid"
+        >>> SignalID("signal-A").type
+        "virtual"
 
     In Factorio 2.0 and up, multiple SignalID's can share the same name but have
     different types. The default signal type is the first entry in the return
@@ -163,18 +168,15 @@ class SignalID(Exportable):
         SignalID("assembling-machine", type="entity")
         SignalID("assembling-machine", type="recipe")
 
-    If the name is not recognized by the current environment, the type will be
-    unabled to be deduced, and so must be specified for signals of unknown
-    origin:
+    If the name is not recognized by the current environment, the type will
+    default back to "item", along with an accompanying warning message:
 
-    .. doctest::
+    .. doctest:: signal-id
 
         >>> SignalID("who knows!")
-        Traceback: most recent call last
+        %%%: UnknownSignalWarning: Unknown signal 'who knows!'; did you mean 'space-location-unknown'?
         ...
-        IncompleteSignalError
-        >>> SignalID("who knows!", type="item")
-        SignalID(name="who knows!", type="item", quality="normal")
+        SignalID(name='who knows!', type='item', quality='normal')
     """
 
     name: Optional[SignalIDName] = attrs.field(

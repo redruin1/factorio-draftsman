@@ -113,7 +113,7 @@ class Exportable:
     # =========================================================================
 
     extra_keys: Optional[dict[str, Any]] = attrs.field(
-        default=None, kw_only=True, metadata={"omit": True}
+        default=None, kw_only=True, repr=False, metadata={"omit": True}
     )
     """
     .. serialized::
@@ -212,10 +212,12 @@ class Exportable:
 
         .. doctest::
 
+            >>> import draftsman
+            >>> from draftsman.constants import ValidationMode
             >>> from draftsman.entity import Container
             >>> from draftsman.error import DataFormatError
             >>> c = Container("wooden-chest")
-            >>> with draftsman.validators.set_mode(ValidationMode.NONE):
+            >>> with draftsman.validators.set_mode(ValidationMode.DISABLED):
             ...     c.bar = "incorrect"
             >>> try:
             ...     c.validate().reissue_all()

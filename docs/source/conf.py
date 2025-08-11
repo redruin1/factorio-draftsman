@@ -146,22 +146,23 @@ sphinx_immaterial_custom_admonitions = [
     },
 ]
 
-# def fullname(o):
-#     klass = o.__class__
-#     module = klass.__module__
-#     if module == 'builtins':
-#         return klass.__qualname__ # avoid outputs like 'builtins.str'
-#     return module + '.' + klass.__qualname__
+# --- Doctest ---
 
-# def autodoc_skip_member(app, what, name, obj, skip, options):
-#     print(name)
-#     print(obj)
-#     print(fullname(obj))
-#     excluded_members = [excluded_member.split(".") for excluded_member in options.get("exclude-members", [])]
-#     print(excluded_members)
+import doctest
 
-#     return skip
+# No need, information is redundant
+doctest_show_successes = False
 
+# Route all warnings to stdout so they're picked up by doctests
+doctest_global_setup = """import sys; sys.stderr = sys.stdout"""
+
+# Flags which are enabled for all doctests
+doctest_default_flags = (
+    doctest.ELLIPSIS 
+    | doctest.IGNORE_EXCEPTION_DETAIL 
+    | doctest.DONT_ACCEPT_TRUE_FOR_1 
+    | doctest.NORMALIZE_WHITESPACE # added
+)
 
 def setup(app):
     # Mostly just for readthedocs configuration pass
@@ -179,7 +180,16 @@ def setup(app):
 
         update_draftsman_data(verbose=True)
 
-    # # Run our custom skip member function
-    # app.connect("autodoc-skip-member", autodoc_skip_member)
+    # Patch doctest so that it recognizes '%%%' as equivalent to '...' (So we
+    # can place it as the first characters in a return value without getting
+    # confused for continuation)
+    OC = doctest.OutputChecker
+    class AEOutputChecker(OC):
+        def check_output(self, want, got, optionflags):
+            from re import sub
+            if optionflags & doctest.ELLIPSIS:
+                want = sub(r'%%%', '...', want)
+            res = OC.check_output(self, want, got, optionflags)
+            return res
 
-
+    doctest.OutputChecker = AEOutputChecker

@@ -19,7 +19,7 @@ Additionally, the format of these files are not given any gurantee to remain con
 Having Draftsman be so tied to this generated environment has pros and cons. 
 On one hand, being able to access Factorio's data nigh-natively is immensely useful, and makes Draftsman a robust solution for all kinds of problems:
 
-.. doctest::
+.. code-block:: python
 
     >>> from draftsman.entity import Container
 
@@ -44,15 +44,19 @@ The classic example of this is attempting to import an old Factorio blueprint st
     >>> from draftsman.blueprintable import Blueprint
 
     >>> # Here, our configuration is modern
-    >>> assert mods.versions["base"] == (2, 0, 49, 0)
+    >>> mods.versions["base"]
+    (2, 0, 63, 0)
 
     >>> # Say we have an old blueprint string which contains one "filter-inserter".
-    >>> bp_string = "TODO"
+    >>> bp_string = "0eNp1j0sOgzAMRO8y64AaVH65SlVVfNzKEhiUhKoI5e4NsOmmO489fmNvaIeFZsviYTZwN4mDuW1w/JJm2Ht+nQkG7GmEgjTjrp48eLIJiyMbCwQFlp4+MDrcFUg8e6YTdYj1IcvYRqfRfyEK8+Ti3iR7bmRd0lxhhUl0mseEni1157jYU46TzM8HCm+y7jBklb6WdVZWVVXUOgvhC7N8TWA="
 
     >>> # In Factorio 1.0, this is a perfectly valid entity, but in 2.0 this entity
-    >>> # no longer exists, so attempting to import it creates UnknownEntityWarnings
+    >>> # no longer exists, so attempting to import it creates warnings
     >>> blueprint = Blueprint.from_string(bp_string)
-    Warning
+    %%%: UnknownSignalWarning: Unknown signal 'filter-inserter'; did you mean 'inserter'?
+      blueprint = Blueprint.from_string(bp_string)
+    %%%: UnknownEntityWarning: Unknown entity 'filter-inserter'; did you mean 'inserter'?
+      blueprint = Blueprint.from_string(bp_string)
     
 Draftsman knows how to parse the 1.0 string just fine, but because the data for ``"filter-inserter"`` does not exist under a Factorio 2.0 environment, it considers it entirely unknown and loads it as an ``Entity`` instance:
 

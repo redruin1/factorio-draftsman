@@ -14,7 +14,7 @@ From there you should be able to open an interpreter and check the version of Dr
 
 >>> import draftsman
 >>> draftsman.__version__
-3.0.0
+'3.0.0'
 
 If you see an output like above, then Draftsman should have installed correctly.
 
@@ -49,7 +49,7 @@ Let's start off simple by doing just that:
 
     # Re-encode the modifications and print to user
     >>> print(utils.JSON_to_string(blueprint_dict))
-    0eNqd0s1OxCAQB/BX0TnTjf2g3eW8B9/BGEPbWUMC0waosWl4d2lNGo2smj0Cf34Mk1mg1ROOVpEHsYDqBnIgnhZw6pWkXvf8PCIIUB4NMCBp1hVq7LxVXXaZLMkOITBQ1OM7iDw8M0Dyyiv8tLbF/EKTadHGwK54K8mNg/VZi9pHfRxcvDbQ+u5KNeWBM5hBZKfqwENgP7DiekkJrt65Ms2VO2ewV5PJdnUc9B8kT5PVTd+9Uh+/CSvSWL1jF+l8psih9fEgYVXfCmPQKxv7siXqhNz8Xz7+JsdJ2uZOfBlTBm9o3RYojnnVnIqG5zwv6wcGWsZmxPQjaj2wu7OVF++MpHsI4QPEofIr
+    0eNqVktFOhDAQRX9F57lsFpai8LwP/oMxpsBgmrRT0hbjhvTfLahoAiTyOJ25Z25vZoRaDdhbSR6qEWRjyEH1PIKTbyTU9EZCI1SAChtvZZN0gyXRIAQGklr8gCoNLwyQvPQSv9RzcXulQddo4wD7oWhs5aCTBdYbhcCgNy6KDU37IvDxxBncou7EQ2ArXLbgvBXkemN9UqPyaxD/Bl22QZfDoGwblC+gTjifSHJofWysOMUfQwxaaWMOczfNNrCc7aa/m9nOV4v/OkzPhyw+HI4wnwzGg5EedZT93h+Dd7RuFvAiK/Oy5AU/p/wc01UiQuP0Eypl2N3Vis47LegeQvgEFgjovg==
 
 When we import this string into Factorio, we get the same blueprint again but with it's name changed to "Hello, Draftsman!"
 
@@ -75,12 +75,12 @@ Lets start by instead of loading the blueprint string into a raw dict, we load i
     >>> print(blueprint)
     <Blueprint>{
       "item": "blueprint",
-      "version": 281479275151360,
+      "version": 562949956501504,
       "label": "Hello, Draftsman!",
       ...
     }
     >>> print(blueprint.to_string())
-    0eNqVkN1qhDAQhV+lneu4qGts9Xov+g5lKVHHEsiPJGOpiO/eaIssqFAv5+d8c+aMUKkeOycNQTmCJNRQPvQYfKHz0hooeZ4WWVHwnMcJjzMGSlSowvYbKmXZ082JlrwW5jmoZG2Nh/J9BC8/jVAznIYOw/pyg4EReq5QYU1O1lHbOyNqhCmITYPfUCbTnQEakiTxl7UUw4fpdYUuLKwUjY3sdbTCOqsw3OisD+LZ/AgB+HrhDIagu/BpYhtcuuLICeM76ygKH9IWxP9A133Q9TQo3QdlK6gVniJpPDoKgw0nfzDEoJEu5LBMk3QHy4/TP8zs4NX8vw6T+JTFl9MRZrPB+zT9ALKo7R0=
+    0eNqV0N1qhDAQBeBXaec6LuoaW73uRd+hLCXqWAJJlGQsFcm7N9pFFlSol/k5X05mgkoN2FtpCMoJJKGG8mGPwTdaJzsDJc/TIisKnvM44XHGQIkKVbj9jkp17OnNipacFuY5pGTdGQflRyBNgz9QJgyc/DJCzc/Q2GMILq8xMELPK1RYk5V11A7WiBrB+xsDNCRJ4p+1LMZPM+gK7WLesxobOehoJfpOYZD7zoXwXH6C0OH1whmMIXfh3rMNl64cWWFc31mKwg9pC/E7dN2HrqehdB/KVqgVjiJpHFoKBxsnfyjEoJE2zGE5TdIdlh/P/HBmB1/N/9swiU9VfDk9wmwuePP+F5yl7R0=
 
 ``Blueprint`` allows the user to modify all components of the blueprint by attribute, as shown with :py:attr:`~.Blueprint.label` above. 
 ``Blueprint`` also provides methods that operate on itself, such as the :py:meth:`~.Blueprint.to_string` function, as well as a prettier string representation using the Python standard library ``json``.
@@ -104,6 +104,8 @@ For example, even though ``label`` must be a string, we can set it to ``None``, 
     >>> assert blueprint.label == ""
 
 In Factorio, a label consisting of an empty string is equivalent to no label at all, and it's label will be the game-given default of "Blueprint":
+
+.. figure:: ../img/quickstart/default_blueprint_name.png
 
 Adding Entities
 ---------------
@@ -129,7 +131,7 @@ You can query exactly what the valid names for containers are by checking :py:da
 
     >>> from draftsman.data import entities
     >>> print(entities.containers)
-    ['wooden-chest', 'iron-chest', 'steel-chest', 'big-ship-wreck-1', 'big-ship-wreck-2', 'big-ship-wreck-3', 'blue-chest', 'red-chest', 'factorio-logo-11tiles', 'factorio-logo-16tiles', 'factorio-logo-22tiles']
+    ['wooden-chest', 'red-chest', 'iron-chest', 'factorio-logo-11tiles', 'bottomless-chest', 'factorio-logo-16tiles', 'crash-site-chest-1', 'blue-chest', 'factorio-logo-22tiles', 'crash-site-chest-2', 'steel-chest']
 
 Doing so gives you all valid entity names of that type; the example above is a likely output with a vanilla installation of Draftsman.
 
@@ -199,11 +201,11 @@ If no position for the entity is specified, it defaults to ``tile_position`` (0,
 .. doctest::
 
     >>> container = Container("steel-chest")
-    >>> print(container.tile_position)
+    >>> container.tile_position
     Vector(0, 0)
-    >>> print((container.tile_width, container.tile_height))
+    >>> (container.tile_width, container.tile_height)
     (1, 1)
-    >>> print(container.position)
+    >>> container.position
     Vector(0.5, 0.5)
 
 As shown, both ``position`` and ``tile_position`` are instances of :py:class:`.Vector`, which is a standard 2D vector with an ``x`` and ``y`` attribute.
@@ -211,12 +213,21 @@ You can specify either parameter and the other will update to the proper value:
 
 .. doctest::
 
+    >>> from draftsman.utils import Vector
     >>> container = Container("steel-chest")
     >>> container.position = Vector(10.5, 10.5)
-    >>> print(container.tile_position)
+    >>> container.tile_position
     Vector(10, 10)
 
 Because the explicit ``Vector`` constructor form is a little unweildly, you can also specify either position type as a sequence, usually a list or tuple:
+
+.. testsetup:: group3
+
+    from draftsman.entity import Container
+    container = Container("steel-chest")
+
+    from draftsman.blueprintable import Blueprint
+    blueprint = Blueprint()
 
 .. doctest::
     
@@ -229,21 +240,13 @@ Because the explicit ``Vector`` constructor form is a little unweildly, you can 
     >>> container.tile_position = [2, 3]
     >>> container.tile_position
     Vector(2, 3)
-    
-For compatibility, you can also specify ``position`` or ``tile_position`` as a ``dict`` with ``"x"`` and ``"y"`` keys to match the format of the raw JSON:
-
-.. doctest::
-
-    >>> container.position = {"x": -10.5, "y": 10.5}
-    >>> container.position
-    Vector(-10.5, 10.5)
 
 You can specify these parameters (in any of the above forms) in the constructor to immediately set the Entity's position as well:
 
 .. doctest::
 
     >>> container1 = Container("steel-chest", tile_position = (-5, 10))
-    >>> container2 = Container("iron-chest", position = {"x": 10.5, "y": 15.5})
+    >>> container2 = Container("iron-chest", position = [10.5, 15.5])
 
 We want to position the container such that the output inserter feeds into it.
 But what coordinate is that?
@@ -254,7 +257,7 @@ We could grab a random entity in :py:attr:`.blueprint.entities` to get a rough i
 
     >>> furnace = blueprint.find_entities_filtered(name = "electric-furnace")[0]
     >>> print(furnace) 
-    <Furnace>{'name': 'electric-furnace', 'position': {'x': 8.5, 'y': 3.5}}
+    <Furnace at 0x...>{'name': 'electric-furnace', 'position': {'x': 8.5, 'y': 3.5}}
 
 Anyone familiar with the `LuaSurface API <https://lua-api.factorio.com/latest/LuaSurface.html#LuaSurface.find_entities_filtered>`_ might recognize this function.
 This rendition searches the entities in the blueprint with a set of criteria and returns the list of entities that match.
@@ -263,12 +266,13 @@ This will give us a nice anchor to read from as we know there is only one.
 
 Since we now know that the center of the furnace is at (8.5, 3.5), we can simply set the container 3 tiles to the right to place it correctly. ``Vector`` s are smart, so we can add a tuple (or list or dict) to the furnace position and set the result to the container's position:
 
-.. doctest:: group3
+.. doctest::
 
     >>> container.position = furnace.position + (3, 0)
 
     # Now we can add it to the blueprint
     >>> blueprint.entities.append(container)
+    Container(name='steel-chest', ...)
 
 And presto!
 
@@ -281,7 +285,21 @@ It might be slicker to move the entire blueprint from its absolute position to a
 This would make the positions consistent, regardless of where the blueprint was originally constructed.
 Lets use :py:meth:`.Blueprint.translate` to do just that:
 
-.. doctest:: group3
+.. testsetup:: alternative
+
+    from draftsman.blueprintable import Blueprint
+    from draftsman.entity import Container
+
+    bp_string = "0eNqVkuFqhTAMhd8lv+tFvdZNX+UyRtXcEWijtHXsIn33Vbe5gQrzZ5qeLyeHTNDoEQdL7KGegNqeHdS3CRy9sdLzGyuDUANqbL2lNrmPllWLEAQQd/gBdRZeBCB78oRf6qV4vPJoGrTxg/ihGOxoNMkKG3qNIGDoXRT3PM+LwOeLFPCIuosMQWxw+YrzVrEbeuuTBrXfguQ36LoPup4G5fugYgXdlfMJsUPrY2PDKf8YEtCRjTks3SzfwUpxmP5hZgerlv91mKWnLD6djrCYDcaDIY8myn7vT8A7WrcIZJlXRVXJUqaZTIsQPgElXN/P"
+
+    blueprint = Blueprint.from_string(bp_string)
+    blueprint.label = "Hello, draftsman!"
+
+    # Normalize coordinates to furnace center
+    furnace = blueprint.find_entities_filtered(type = "furnace")[0]
+    container = Container("steel-chest")
+
+.. doctest:: alternative
 
     # Lets say we want to set the blueprint origin to the middle tile of the
     # 3x3 electric furnace
@@ -297,6 +315,7 @@ Lets use :py:meth:`.Blueprint.translate` to do just that:
     # Now we can specify the container at tile position (3, 0) and get the same result as before.
     >>> container.tile_position = (3, 0)
     >>> blueprint.entities.append(container)
+    Container(name='steel-chest', ...)
     
 .. NOTE::
 
@@ -326,8 +345,8 @@ Instead, we can write something like this:
 .. code-block:: python
 
     container = Container("whatever-container-we-want")
-    # Note: container.inventory_size is read only
-    container.bar = container.inventory_size / 2
+    # Note: Container.size is read only
+    container.bar = container.size / 2
 
 which works with every Container (even modded ones!):
 
@@ -349,53 +368,70 @@ For example, because :py:attr:`~.Container.bar` must be an integer in order to i
 Similarly, if we were to set the bar to be anything outside of the value range of a ``uint16``, Factorio would refuse to import the entity. 
 Thus, Draftsman raises an exception right when we make the mistake:
 
-.. doctest:: group3
-
+.. doctest::
+    
     >>> container.bar = -1
     Traceback (most recent call last):
        ...
-    IndexError: 'bar' not in range [0, 65536)
+    draftsman.error.DataFormatError: -1 did not match any of:
+        * -1 must be >= 0
+        * -1 must be None
 
 However, what if we were to set the index to a number within that range, but *greater* than the number of inventory slots? 
 Factorio imports this just fine, simply acting as if the bar index was not set, but does so *silently*; which, if such a component is critical, can be hard to catch. 
 Wouldn't it be better to be notified of such a mistake without necessarily affecting program function?
 
-As a result, in addition to attempting to be *"Factorio-safe"*, Draftsman also attempts to be *"Factorio-correct"*: If some component or attribute does not break the importing/exporting process, but either doesn't make sense or fails to achieve the desired effect, a warning is raised:
+As a result, in addition to attempting to be *"Factorio-safe"*, Draftsman also has the capability to be *"Factorio-correct"*: If some component or attribute does not break the importing/exporting process, but either doesn't make sense or fails to achieve the desired effect, users can opt-into warnings for linting-like behavior:
 
-.. doctest:: group3
+.. testsetup:: group1
 
-    >>> container.bar = 100 
-    IndexWarning: 'bar' not in range [0, 48)
+    from draftsman.entity import Container
 
-Thus, we can now see our mistake and fix it. Or, we can just ignore it:
+    container = Container("steel-chest")
 
-.. code-block:: python
+.. doctest:: group1
 
-    import warnings
-    from draftsman.warning import IndexWarning, DraftsmanWarning
+    >>> from draftsman.validators import set_mode
+    >>> from draftsman.constants import ValidationMode
 
-    # We can choose to ignore just this specific warning
-    warnings.simplefilter("ignore", IndexWarning)
-    # Or we can ignore all warnings issued by Draftsman
-    warnings.simplefilter("ignore", DraftsmanWarning)
+    >>> set_mode(ValidationMode.PEDANTIC)
+    <draftsman.validators.set_mode.<locals>.ValidationContext object at 0x...>
+    >>> container.bar = 100
+    %%%: BarWarning: Bar index (100) exceeds the container's inventory size (48)
+      container.bar = 100
 
-    container.bar = 100 # Peace and quiet.
+Thus, we can now see our mistake and fix it. Draftsman's validation can be manipulated in the opposite direction, too: the level of built-in validation can be minimized or even disabled entirely:
+
+.. doctest:: group1
+
+    >>> # `set_mode` can also be used as a context:
+    >>> with set_mode(ValidationMode.DISABLED):
+    ...     # Validation will be disabled only inside of this scope
+    ...     container.bar = -1
+    >>> container.bar
+    -1
+    >>> container.to_dict()
+    {'name': 'steel-chest', 'position': {'x': 0.5, 'y': 0.5}, 'bar': -1}
 
 One final thing. Remember that aside above about unrecognized entities still being useful, but not providing any metadata?
 
 .. doctest::
 
     >>> container = Container("unknown-container")
+    %%%: UnknownEntityWarning: Unknown entity 'unknown-container'; did you mean 'tank'?
+    ...
     >>> container.bar = -1 # Still errors
     Traceback (most recent call last):
        ...
-    IndexError: 'bar' not in range [0, 65536)
-    >>> container.inventory_size # But we have no idea of the inventory size...
-    None
+    draftsman.error.DataFormatError: -1 did not match any of:
+        * -1 must be >= 0
+        * -1 must be None
+    >>> # But we have no idea of the inventory's size:
+    >>> assert container.size is None
     >>> container.bar = 100 # ... which means no warnings!
 
 Draftsman knows that all entities must have a bar that can fit inside an unsigned short; but if it doesn't know anything about ``"unknown-container"``, it cannot assert whether or not a bar value of 100 lies inside or outside of it's inventory size.
-Thus, if you want or need access to this contextual information, it is generally recommended to keep your `Draftsman environment <TODO>`_ up to date with your scripts.
+Thus, if you want or need access to this contextual information, it is generally recommended to keep your :doc:`Draftsman environment <concepts/environment>` up to date with your scripts.
 
 With all the components discussed, we can finally put all the pieces together.
 Here's a full working example:
@@ -407,7 +443,7 @@ Here's a full working example:
 
     bp_string = "0eNqVkuFqhTAMhd8lv+tFvdZNX+UyRtXcEWijtHXsIn33Vbe5gQrzZ5qeLyeHTNDoEQdL7KGegNqeHdS3CRy9sdLzGyuDUANqbL2lNrmPllWLEAQQd/gBdRZeBCB78oRf6qV4vPJoGrTxg/ihGOxoNMkKG3qNIGDoXRT3PM+LwOeLFPCIuosMQWxw+YrzVrEbeuuTBrXfguQ36LoPup4G5fugYgXdlfMJsUPrY2PDKf8YEtCRjTks3SzfwUpxmP5hZgerlv91mKWnLD6djrCYDcaDIY8myn7vT8A7WrcIZJlXRVXJUqaZTIsQPgElXN/P"
 
-    blueprint = Blueprint(bp_string)
+    blueprint = Blueprint.from_string(bp_string)
     blueprint.label = "Hello, draftsman!"
 
     # Normalize coordinates to furnace center

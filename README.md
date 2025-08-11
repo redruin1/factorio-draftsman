@@ -145,9 +145,9 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
 * Verbose Errors and Warnings (["Factorio-safety" and "Factorio-correctness"](https://factorio-draftsman.readthedocs.io/en/latest/concepts/validation.html))
 * Expansive and rigorous test suite
 
-# Usage
+# Installation
 
-## Installation (For Users):
+## For Users:
 
 ```
 pip install factorio-draftsman
@@ -164,9 +164,9 @@ draftsman --mods-path "path/to/mods/folder" update
 
 For more information on how to use this tool, you can run `draftsman -h` or see it's documentation [here](https://factorio-draftsman.readthedocs.io/en/latest/reference/environment/script.html).
 
-## Installation (For Developers)
+## For Developers
 
-Clone the repository using your preferred method (making sure submodules are populated) and navigate to the newly cloned repository:
+Clone the repository using your preferred method (making sure submodules are populated) and navigate to the root of the newly cloned repository:
 
 ```
 git clone --recurse-submodules https://github.com/redruin1/factorio-draftsman.git
@@ -180,10 +180,11 @@ pip install uv # or via pipx or standalone script, see uv docs
 uv venv
 ```
 
-Install the package in editable mode:
+Install the package in editable mode, alongside the `dev` dependency group (requires modern pip):
 
 ```
 pip install -e .
+pip install --group dev
 ```
 
 You should now be able to run the test suite with [`pytest`](https://docs.pytest.org/en/stable/#):
@@ -218,6 +219,21 @@ Available recipes:
 ```
 
 Note that testing currently is only guaranteed to pass with a vanilla [environment](https://factorio-draftsman.readthedocs.io/en/latest/concepts/environment.html).
+
+A html-browsable coverage report can be generated with:
+
+```
+coverage html
+```
+
+To build documentation locally:
+
+```
+cd docs
+make html
+```
+
+and then navigate to `docs/build/index.html` to view.
 
 --------------------------------------------------------------------------------
 

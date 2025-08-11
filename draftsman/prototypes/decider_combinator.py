@@ -200,33 +200,33 @@ class DeciderCombinator(
         :py:class:`.DeciderCombinator.Condition` object, wherupon one is created
         by using conditional operators:
 
-        .. doctest::
+        .. testsetup:: decider-combinator.input
+
+            from draftsman.entity import DeciderCombinator
+
+        .. doctest:: decider-combinator.input
 
             >>> Input = DeciderCombinator.Input
-
             >>> input_1 = Input(signal="signal-A", networks={"red"})
             >>> input_2 = Input(signal="signal-B", networks={"green"})
-
             >>> condition = input_1 < input_2
-
             >>> assert isinstance(condition, DeciderCombinator.Condition)
             >>> condition.first_signal.name
-            "signal-A"
+            'signal-A'
             >>> condition.comparator
-            "<"
+            '<'
             >>> condition.second_signal.name
-            "signal-B"
+            'signal-B'
 
         :py:class:`.Input` objects also support comparisons against integers:
 
-        .. doctest::
+        .. doctest:: decider-combinator.input
 
             >>> condition = Input("signal-C") >= 100
-
             >>> condition.first_signal.name
-            "signal-C"
+            'signal-C'
             >>> condition.comparator
-            "≥"
+            '≥'
             >>> condition.constant
             100
 

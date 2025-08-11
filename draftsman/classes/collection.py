@@ -525,9 +525,11 @@ class Collection(metaclass=ABCMeta):
         
     .. doctest::
 
+        >>> from draftsman.blueprintable import Blueprint, Group
         >>> blueprint = Blueprint()
         >>> new_group = Group(id="something")
         >>> blueprint.groups.append(new_group)
+        Group(...)
         >>> assert blueprint.groups["something"] == new_group
 
     This attribute is not exported. Instead, all entities/tiles that are 

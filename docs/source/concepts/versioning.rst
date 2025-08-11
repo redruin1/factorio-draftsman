@@ -8,6 +8,7 @@ As of Draftsman 3.0, all import and export methods support working with both Fac
     >>> import json
     >>> from draftsman.entity import RocketSilo
     >>> silo = RocketSilo()
+    >>> silo.request_modules("productivity-module-3", slots=(0, 1))
     >>> print(json.dumps(silo.to_dict(version=(1, 0), exclude_defaults=False), indent=4))
     {
         "name": "rocket-silo",

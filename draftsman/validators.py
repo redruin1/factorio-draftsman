@@ -209,10 +209,9 @@ class _OrValidator:
             except DataFormatError as e:
                 messages.append(str(e))
 
-        msg = "{} did not match any of {}\n\t{}".format(
+        msg = "{} did not match any of:{}".format(
             repr(value),
-            repr(self.validators),
-            "\n\t".join(message for message in messages),
+            "".join("\n\t* " + message for message in messages),
         )
         raise DataFormatError(msg)
 
@@ -224,7 +223,7 @@ def or_(*validators):
 @conditional(ValidationMode.MINIMUM)
 def is_none(inst: "Exportable", attr: attrs.Attribute, value: Any):
     if value is not None:
-        msg = "{} was not None".format(repr(value))
+        msg = "{} must be None".format(repr(value))
         raise DataFormatError(msg)
 
 
@@ -325,7 +324,7 @@ class _NumberValidator:
     @conditional(ValidationMode.MINIMUM)
     def __call__(self, _inst: "Exportable", attr, value, **kwargs):
         if value is not None and not self.compare_func(value, self.bound):
-            msg = f"'{attr.name}' must be {self.compare_op} {self.bound}: {repr(value)}"
+            msg = f"{repr(value)} must be {self.compare_op} {self.bound}"
             raise DataFormatError(msg)
 
     def __repr__(self):  # pragma: no coverage

@@ -1,6 +1,6 @@
 .. py:currentmodule:: draftsman.constants
 
-.. testsetup:: [constants]
+.. testsetup:: constants
 
     from draftsman.constants import *
 

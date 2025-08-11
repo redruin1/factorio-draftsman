@@ -142,7 +142,11 @@ class BlueprintBook(Blueprintable):
 
     # =========================================================================
 
-    active_index: uint16 = attrs.field(default=0, validator=instance_of(uint16))
+    active_index: uint16 = attrs.field(
+        default=0, 
+        validator=instance_of(uint16), 
+        metadata={"omit": False}
+    )
     """
     .. serialized::
 
