@@ -97,8 +97,9 @@ class SpatialHashMap(SpatialDataStructure):
             # StraightRails and CurvedRails cannot collide with each other
             # UNLESS they are the same type, face the same direction, and
             # exist at the exact same place
-            if isinstance(item, (StraightRail, LegacyCurvedRail)) and isinstance(
-                overlapping_item, (StraightRail, LegacyCurvedRail)
+            if isinstance(
+                item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)) and isinstance(
+                overlapping_item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)
             ):
                 identical = (
                     item.name == overlapping_item.name
@@ -125,13 +126,18 @@ class SpatialHashMap(SpatialDataStructure):
             overlapping_collision_set = overlapping_item.get_world_collision_set()
             if item_collision_set.overlaps(overlapping_collision_set):
                 warnings.warn(
-                    "Added object '{}' ({}) at {} intersects '{}' ({}) at {}".format(
+                    "Added object\n" 
+                    "\t'{}' ({}) at {}{}\n"
+                    "intersects\n"
+                    "\t'{}' ({}) at {}{}".format(
                         item.name,
                         type(item).__name__,
                         item.global_position,
+                        " facing {}".format(repr(item.direction)) if hasattr(item, "rotatable") and item.rotatable else "",
                         overlapping_item.name,
                         type(overlapping_item).__name__,
                         overlapping_item.global_position,
+                        " facing {}".format(repr(overlapping_item.direction)) if hasattr(overlapping_item, "rotatable") and overlapping_item.rotatable else ""
                     ),
                     OverlappingObjectsWarning,
                     stacklevel=2,

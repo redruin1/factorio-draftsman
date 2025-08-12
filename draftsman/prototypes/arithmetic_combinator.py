@@ -318,12 +318,20 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "control_behavior",
             "arithmetic_conditions",
             "first_constant",
-        ): fields.first_operand.name,  # Happens first
+        ): {
+            "attr": fields.first_operand,
+            "name": "first_operand",
+            "type": Optional[int32],
+        }, # Happens first
         (
             "control_behavior",
             "arithmetic_conditions",
             "first_signal",
-        ): fields.first_operand.name,  # Overwrites if found
+        ): {
+            "attr": fields.first_operand,
+            "name": "first_operand",
+            "type": Optional[SignalID],
+        }, # Overwrites if found
         # None: fields.first_operand_wires.name,
         (
             "control_behavior",
@@ -334,12 +342,20 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "control_behavior",
             "arithmetic_conditions",
             "second_constant",
-        ): fields.second_operand.name,  # Happens first
+        ): {
+            "attr": fields.second_operand,
+            "name": "second_operand",
+            "type": Optional[int32],
+        },  # Happens first
         (
             "control_behavior",
             "arithmetic_conditions",
             "second_signal",
-        ): fields.second_operand.name,  # Overwrites if found
+        ): {
+            "attr": fields.second_operand,
+            "name": "second_operand",
+            "type": Optional[SignalID],
+        },  # Overwrites if found
         # None: fields.second_operand_wires.name,
         (
             "control_behavior",
@@ -415,12 +431,20 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
             "control_behavior",
             "arithmetic_conditions",
             "first_constant",
-        ): fields.first_operand.name,  # Happens first
+        ): {
+            "attr": fields.first_operand,
+            "name": "first_operand",
+            "type": Optional[int32],
+        },  # Happens first
         (
             "control_behavior",
             "arithmetic_conditions",
             "first_signal",
-        ): fields.first_operand.name,  # Overwrites first_constant if found
+        ): {
+            "attr": fields.first_operand,
+            "name": "first_operand",
+            "type": Optional[SignalID],
+        },  # Overwrites first_constant if found
         (
             "control_behavior",
             "arithmetic_conditions",
@@ -435,12 +459,20 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
             "control_behavior",
             "arithmetic_conditions",
             "second_constant",
-        ): fields.second_operand.name,  # Happens first
+        ): {
+            "attr": fields.second_operand,
+            "name": "second_operand",
+            "type": Optional[int32],
+        },  # Happens first
         (
             "control_behavior",
             "arithmetic_conditions",
             "second_signal",
-        ): fields.second_operand.name,  # Overwrites second_constant if found
+        ): {
+            "attr": fields.second_operand,
+            "name": "second_operand",
+            "type": Optional[SignalID],
+        },  # Overwrites second_constant if found
         (
             "control_behavior",
             "arithmetic_conditions",

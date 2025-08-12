@@ -77,6 +77,11 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # Try and get the version from the dictionary, falling back to current
         # environment configuration if not found
         if "version" in json_dict[root_item]:
+            # However, "version" is simply the version of the game that the 
+            # blueprint was originally created in, and is not necessarily kept
+            # up-to-date and as such may be straight up wrong.
+            # This means our importing methods need to be robust to the case 
+            # where the blueprint string lies to us about it's contents
             version = decode_version(json_dict[root_item]["version"])
         else:
             version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
@@ -254,7 +259,7 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
 
         This attribute is imported/exported from blueprint strings.
 
-    The version of Factorio the Blueprint was created in/intended for.
+    The version of Factorio the Blueprint was created in.
 
     The Blueprint ``version`` is a 64-bit integer, which is a bitwise-OR
     of four 16-bit numbers. You can interpret this number more clearly by

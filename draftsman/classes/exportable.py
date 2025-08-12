@@ -375,40 +375,64 @@ def make_exportable_structure_factory_func(
         def structure_hook(input_dict: dict, _: type):
             inst = cls.__new__(cls)
 
+            print(input_dict)
+
             init_args = {}
-            for dict_loc, attr_name in structure_dict.items():
-                if attr_name is None:
-                    try_pop_location(input_dict, dict_loc)
+            for source_loc, dest_loc in structure_dict.items():
+                # If the destination is None, that's us telling the structure
+                # function to ignore that particular entry
+                if dest_loc is None:
+                    try_pop_location(input_dict, source_loc)
                     continue
 
-                if isinstance(attr_name, tuple):
-                    attr = attr_name[0]
-                    custom_handler = attr_name[1]
+                print(source_loc, dest_loc)
+
+                if isinstance(dest_loc, dict):
+                    custom_handler = dest_loc.get("handler", None)
+                    attr = dest_loc["attr"]
+                    attr_name = dest_loc["name"]
+                    attr_type = dest_loc["type"]
+                elif isinstance(dest_loc, tuple):
+                    attr = dest_loc[0]
+                    custom_handler = dest_loc[1]
                     attr_name = attr.alias if attr.alias != attr.name else attr.name
+                    attr_type = attr.type
                 else:
-                    attr = getattr(class_attrs, attr_name)
+                    attr = getattr(class_attrs, dest_loc)
                     custom_handler = None
                     attr_name = attr.alias if attr.alias != attr.name else attr.name
+                    attr_type = attr.type
 
-                value = try_pop_location(input_dict, dict_loc)
+                # print(source_loc, dest_loc)
+                # print(attr)
+                # print(attr_name)
+                # print(attr_type)
+                # print(custom_handler)
+
+                value = try_pop_location(input_dict, source_loc)
+                # No value means nothing to do
                 if value is None:
                     continue
 
+                # Grab the appropriate structure handler
                 handler = (
                     custom_handler
-                    if custom_handler
-                    else find_structure_handler(attr, attr.type, converter)
+                    if custom_handler is not None
+                    else find_structure_handler(attr, attr_type, converter)
                 )
+                # print(handler)
                 try:
                     if custom_handler:
-                        init_args[attr_name] = handler(value, attr.type, inst)
+                        init_args[attr_name] = handler(value, attr_type, inst)
                     else:
-                        init_args[attr_name] = handler(value, attr.type)
+                        init_args[attr_name] = handler(value, attr_type)
                 except Exception as e:
                     raise DataFormatError(e)
 
             if input_dict:
                 init_args["extra_keys"] = input_dict
+
+            print(init_args)
 
             inst.__init__(**init_args)
             return inst

@@ -21,6 +21,8 @@ _right_turn = CollisionSet(
     [AABB(-1.75, 1.8, -0.25, 3.9), Rectangle((0.375, -0.7175), 1.4, 5.45, 35)]
 )
 
+# TODO: this doesn't update if the environment updates after loading this file...
+# Also, this just kinda sucks
 if mods.versions.get("base", DEFAULT_FACTORIO_VERSION) < (2, 0):
     _legacy_curved_rail_name = "curved-rail"
 else:

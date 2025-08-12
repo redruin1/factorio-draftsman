@@ -417,7 +417,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             ),
         ),
         ("blueprint", "tiles"): fields.tiles.name,
-        # None: fields.wires.name,
+        ("blueprint", "wires"): fields.wires.name, # *Possibly* imported
         ("blueprint", "schedules"): fields.schedules.name,
         # None: fields.stock_connections.name,
     },
@@ -436,7 +436,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.position_relative_to_grid.name,
         ("blueprint", "entities"): fields.entities.name,
         ("blueprint", "tiles"): fields.tiles.name,
-        # None: fields.wires.name,
+        # None: fields.wires.name, # Not exported (if I have anything to say about it)
         ("blueprint", "schedules"): fields.schedules.name,
         # None: fields.stock_connections.name,
     },
@@ -486,7 +486,14 @@ def structure_blueprint_1_0_factory(t: type):
 
         blueprint_dict = d["blueprint"]
 
-        wires = blueprint_dict["wires"] = []
+        # For crazy ass reasons, "wires" might *actually* be populated on a 1.0
+        # versioned blueprint (If the blueprint "version" key is straight up 
+        # wrong)
+        # So try to grab it and use it if it exists, otherwise initialize it to
+        # an empty list
+        if "wires" not in blueprint_dict:
+            blueprint_dict["wires"] = []
+        wires = blueprint_dict["wires"]
         if "entities" in blueprint_dict:
             for entity in blueprint_dict["entities"]:
 

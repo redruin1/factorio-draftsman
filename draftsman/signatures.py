@@ -1458,6 +1458,7 @@ class TileFilter(Exportable):
     An object representing the filter of a particular tile.
     """
 
+    # TODO: is this optional?
     index: Optional[uint64] = attrs.field(validator=instance_of(uint64))
     """
     Position of the filter in the GUI.
@@ -1470,7 +1471,7 @@ class TileFilter(Exportable):
 
 
 draftsman_converters.add_hook_fns(
-    EntityFilter,
+    TileFilter,
     lambda fields: {
         "index": fields.index.name,
         "name": fields.name.name,
