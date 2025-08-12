@@ -219,7 +219,11 @@ class DeconstructionPlanner(Blueprintable):
             new_entry = EntityFilter(
                 index=index, name=name, quality=quality, comparator=comparator
             )
-            bisect.insort(self.entity_filters, new_entry, key=lambda e: e.index)
+            bisect.insort(
+                self.entity_filters, 
+                new_entry, 
+                key=lambda e: 0 if e.index is None else e.index
+            )
 
     def set_tile_filter(
         self, index: int, name: str  # TODO: should be uint64  # TODO: should be TileID
@@ -248,7 +252,11 @@ class DeconstructionPlanner(Blueprintable):
         if found_index is None:
             # Otherwise its unique; add to list
             new_entry = TileFilter(index=index, name=name)
-            bisect.insort(self.tile_filters, new_entry, key=lambda e: e.index)
+            bisect.insort(
+                self.tile_filters, 
+                new_entry, 
+                key=lambda e: 0 if e.index is None else e.index
+            )
 
 
 draftsman_converters.add_hook_fns(

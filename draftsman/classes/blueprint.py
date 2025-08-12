@@ -211,7 +211,7 @@ class Blueprint(Transformable, Collection, Blueprintable):
         result += self.tiles.validate(mode=mode)
         # TODO: self.schedules.validate(mode=mode)
 
-        for class_validator in type(self).__attrs_class_validators__:
+        for class_validator in type(self).__attrs_class_validators__: # type: ignore
             class_validator(self, mode=mode)  # TODO: pass in error/warning list
 
         return result

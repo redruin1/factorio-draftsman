@@ -271,6 +271,7 @@ class _ArgsAreValidator:
                 raise DataFormatError(msg)
 
 
+# TODO: should really be `type | TypeForm`, but TypeForm doesn't exist (yet, probably)
 def instance_of(cls: type):
     """
     Ensures that a given input matches the type of the given class.

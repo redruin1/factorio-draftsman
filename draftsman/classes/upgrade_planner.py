@@ -26,7 +26,7 @@ from draftsman.warning import (
 
 import attrs
 import bisect
-from typing import Literal, Optional, Sequence, Union
+from typing import Literal, Optional, Sequence, TypedDict
 import warnings
 
 
@@ -242,7 +242,7 @@ draftsman_converters.add_hook_fns(
 
 def check_valid_upgrade_pair(
     from_obj: UpgradeMapperSource | None, to_obj: UpgradeMapperDestination | None
-) -> list[Warning]:
+) -> list[Warning] | None:
     """
     Checks a mapping from a "source" object to a "destination" objects,
     and returns a list of warnings if the transformation is malformed in some
@@ -255,6 +255,12 @@ def check_valid_upgrade_pair(
         why the mapping would be invalid, or ``None`` if the transformation is
         considered valid.
     """
+
+    # If one (or both) of from and to are empty, then there's also no reason to
+    # check if a mapping between them is valid because there's just simply not
+    # enough information
+    if from_obj is None or to_obj is None:
+        return None
 
     # First we need to check if Draftsman even recognizes both from and to,
     # because if not then Draftsman cannot possibly expect to know whether the
@@ -279,12 +285,6 @@ def check_valid_upgrade_pair(
         )
     if unrecognized:
         return unrecognized
-
-    # If one (or both) of from and to are empty, then there's also no reason to
-    # check if a mapping between them is valid because there's just simply not
-    # enough information
-    if from_obj is None or to_obj is None:
-        return None
 
     # If both from and to are the same, the game will allow it; but the GUI
     # prevents the user from doing it and it ends up being functionally useless,
@@ -492,7 +492,11 @@ class UpgradePlanner(Blueprintable):
         Ensure the given mappings are correct, and that there aren't any mappers
         that occupy the same indices.
         """
-        occupied_indices = {}
+        class OccupiedMapper(TypedDict):
+            count: int
+            mapper: Mapper
+
+        occupied_indices: dict[int, OccupiedMapper] = {}
         # warning_list = []
         for mapper in value:
             # Ensure that "from" and "to" are a valid pair
@@ -532,10 +536,10 @@ class UpgradePlanner(Blueprintable):
         for spot in occupied_indices:
             entry = occupied_indices[spot]
             if entry["count"] > 0:
-                from_name = entry["mapper"].from_
-                from_name = from_name.name if from_name is not None else from_name
-                to_name = entry["mapper"].to
-                to_name = to_name.name if to_name is not None else to_name
+                from_obj = entry["mapper"].from_
+                from_name = None if from_obj is None else from_obj.name
+                to_obj = entry["mapper"].to
+                to_name = None if to_obj is None else to_obj.name
                 warnings.warn(
                     IndexWarning(
                         "Mapping at index {} was overwritten {} time(s); final mapping is '{}' to '{}'".format(
@@ -552,8 +556,8 @@ class UpgradePlanner(Blueprintable):
     @reissue_warnings
     def set_mapping(
         self,
-        source: Union[str, UpgradeMapperSource],
-        destination: Union[str, UpgradeMapperDestination],
+        source: str | UpgradeMapperSource,
+        destination: str | UpgradeMapperDestination,
         index: int,
     ):
         """
@@ -586,9 +590,9 @@ class UpgradePlanner(Blueprintable):
 
     def remove_mapping(
         self,
-        source: Union[str, UpgradeMapperSource],
-        destination: Union[str, UpgradeMapperDestination],
-        index: Optional[int] = None,
+        source: str | UpgradeMapperSource,
+        destination: str | UpgradeMapperDestination,
+        index: int | None = None,
     ):
         """
         Removes a specified upgrade planner mapping. If ``index`` is not

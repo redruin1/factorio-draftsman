@@ -191,7 +191,7 @@ class DraftsmanConverters:
         self,
         cls: type,
         structure_func: Callable[
-            [tuple[attrs.Attribute, ...]], dict[str | tuple[str, ...], str]
+            [tuple[attrs.Attribute, ...]], dict[str | tuple[str, ...], str | None]
         ],
         unstructure_func: Optional[Callable[..., dict[str, str]]] = None,
     ):

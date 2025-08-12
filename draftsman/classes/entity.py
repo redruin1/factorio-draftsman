@@ -259,7 +259,7 @@ class Entity(EntityLike, Exportable):
     # =========================================================================
 
     @property
-    def collision_mask(self) -> set:
+    def collision_mask(self) -> set[str]:
         """
         The set of all collision layers that this Entity collides with,
         specified as strings. Equivalent to Factorio's ``data.raw`` entry.

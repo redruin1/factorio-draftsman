@@ -20,7 +20,7 @@ from draftsman.validators import instance_of
 import attrs
 import cattrs
 from collections.abc import MutableSequence
-from typing import Any, Literal, Union
+from typing import Any, Iterable, Literal, Sequence, Union, overload
 
 
 class BlueprintableList(MutableSequence):
@@ -30,7 +30,7 @@ class BlueprintableList(MutableSequence):
 
     def __init__(
         self,
-        initlist: list[Union[dict, Blueprintable]] = [],
+        initlist: Sequence[dict | Blueprintable] = [],
     ):
         from draftsman.blueprintable import get_blueprintable_from_JSON  # FIXME: cursed
 
@@ -47,17 +47,27 @@ class BlueprintableList(MutableSequence):
 
         self.data.insert(idx, value)
 
-    def __getitem__(
-        self, idx: Union[int, slice]
-    ) -> Union[Blueprintable, MutableSequence[Blueprintable]]:
+    @overload
+    def __getitem__(self, idx: int) -> Blueprintable: ...
+    @overload
+    def __getitem__(self, idx: slice) -> list[Blueprintable]: ...
+    def __getitem__(self, idx):
         return self.data[idx]
 
-    def __setitem__(self, idx: Union[int, slice], value: Blueprintable) -> None:
-        self.check_blueprintable(value)
+    @overload
+    def __setitem__(self, idx: int, value: Blueprintable) -> None: ...
+    @overload
+    def __setitem__(self, idx: slice, value: Iterable[Blueprintable]) -> None: ...
+    def __setitem__(self, idx, value):
+        if isinstance(idx, slice):
+            for v in value:
+                self.check_blueprintable(v)
+            self.data[idx] = [v for v in value]
+        else:
+            self.check_blueprintable(value)
+            self.data[idx] = value
 
-        self.data[idx] = value
-
-    def __delitem__(self, idx: Union[int, slice]) -> None:
+    def __delitem__(self, idx: int | slice) -> None:
         del self.data[idx]
 
     def __len__(self) -> int:

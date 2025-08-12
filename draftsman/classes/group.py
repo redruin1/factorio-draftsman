@@ -6,6 +6,7 @@ from draftsman.classes.blueprint import (
 )
 from draftsman.classes.collection import Collection
 from draftsman.classes.collision_set import CollisionSet
+from draftsman.classes.entity import Entity
 from draftsman.classes.entity_like import EntityLike
 from draftsman.classes.entity_list import EntityList
 from draftsman.classes.exportable import Exportable, ValidationMode, ValidationResult
@@ -151,7 +152,8 @@ class Group(
 
     # TODO: this should be moved into EntityLike since that makes more sense
     def _set_id(self, attr: attrs.Attribute, value: Optional[str]):
-        attr.validator(self, attr, value)
+        if attr.validator:
+            attr.validator(self, attr, value)
         if self.parent:
             self.parent.entities._remove_key(self.id)
             if value is not None:
@@ -241,16 +243,15 @@ class Group(
 
     # =========================================================================
 
-    # TODO: delete this or fix this
-    collision_mask: dict = attrs.field(
-        factory=lambda: {"layers": set()},
-        converter=lambda v: {"layers": set()} if v is None else v,
-        validator=instance_of(dict),
+    collision_mask: set[str] = attrs.field(
+        factory=set,
+        converter=lambda v: set() if v is None else v,
+        validator=instance_of(set),
         kw_only=True,
     )
     """
-    The set of all collision layers that this Entity collides with,
-    specified as strings. Defaults to an empty ``set``.
+    The set of all collision layers that this group collides with, specified as 
+    strings. Defaults to an empty ``set``.
     """
 
     # =========================================================================
@@ -264,7 +265,7 @@ class Group(
 
     # =========================================================================
 
-    def get(self) -> list[EntityLike]:
+    def get(self) -> list[Entity]:
         """
         Gets all the child-most ``Entity`` instances in this ``Group`` and
         returns them as a "flattened" 1-dimensional list. Offsets all of their
@@ -285,7 +286,7 @@ class Group(
     def get_dimensions(self) -> tuple[int, int]:
         return aabb_to_dimensions(self.get_world_bounding_box())
 
-    def mergable_with(self, other: "Group") -> bool:
+    def mergable_with(self, other: EntityLike) -> bool:
         # For now, we assume that Groups themselves are not mergable
         # Note that the entities *inside* groups are perfectly mergable; the
         # only case where this is important is when two identical groups are
@@ -293,7 +294,7 @@ class Group(
         # will exist, one of which will be empty
         return False
 
-    def merge(self, other: "Group"):
+    def merge(self, other: EntityLike):
         # For now, we assume that Groups themselves are not mergable
         return  # Do nothing
 

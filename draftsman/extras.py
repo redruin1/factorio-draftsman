@@ -4,7 +4,6 @@ from draftsman.classes.collection import Collection
 from draftsman.classes.entity_like import EntityLike
 from draftsman.entity import TransportBelt, UndergroundBelt, Splitter
 
-from typing import Union
 from typing import cast as typing_cast
 
 
@@ -29,7 +28,7 @@ def reverse_belts(collection: Collection) -> None:
         if entity.type not in belt_types:
             continue
 
-        entity = typing_cast(Union[TransportBelt, UndergroundBelt, Splitter], entity)
+        entity = typing_cast(TransportBelt | UndergroundBelt | Splitter, entity)
 
         # If it's not in the direction map, add it
         if entity.type in belt_types and i not in direction_map:

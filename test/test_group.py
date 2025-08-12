@@ -219,10 +219,10 @@ class TestGroup:
 
     def test_set_collision_mask(self):
         group = Group("test")
-        group.collision_mask = {"layers": {"entities", "something-else"}}
-        assert group.collision_mask == {"layers": {"entities", "something-else"}}
+        group.collision_mask = {"entities", "something-else"}
+        assert group.collision_mask == {"entities", "something-else"}
         group.collision_mask = None
-        assert group.collision_mask == {"layers": set()}
+        assert group.collision_mask == set()
 
         with pytest.raises(DataFormatError):
             group.collision_mask = TypeError

@@ -1449,14 +1449,14 @@ def extract_signals(
     unsorted_raw_signals = {}
     type_of_signals: dict[str, list[str]] = {}
 
-    virtual_signals = []
-    item_signals = []
-    fluid_signals = []
-    recipe_signals = []
-    entity_signals = []
-    space_location_signals = []
-    asteroid_chunk_signals = []
-    quality_signals = []
+    virtual_signals: list[str] = []
+    item_signals: list[str] = []
+    fluid_signals: list[str] = []
+    recipe_signals: list[str] = []
+    entity_signals: list[str] = []
+    space_location_signals: list[str] = []
+    asteroid_chunk_signals: list[str] = []
+    quality_signals: list[str] = []
 
     # hidden_signals = []
 

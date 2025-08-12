@@ -76,6 +76,7 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
         ``"deconstruction_planner"``, ``"upgrade_planner"``, nor
         ``"blueprint_book"``, and thus it's type cannot be deduced.
     """
+    blueprintable_type: type[Blueprintable]
     if "blueprint" in blueprintable_JSON:
         blueprintable_type = Blueprint
     elif "deconstruction_planner" in blueprintable_JSON:
@@ -92,7 +93,9 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
         )
     # Try and get the version from the dictionary, falling back to current
     # environment configuration if not found
-    root_item = blueprintable_type.root_item.fget(blueprintable_type)
+    # TODO: could maybe fix mypy annotation here by making `root_item` a raw
+    # attribute, but that seems worse
+    root_item = blueprintable_type.root_item.fget(blueprintable_type) # type: ignore
     if "version" in blueprintable_JSON[root_item]:
         version = decode_version(blueprintable_JSON[root_item]["version"])
     else:
