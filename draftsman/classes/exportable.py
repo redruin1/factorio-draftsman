@@ -375,7 +375,7 @@ def make_exportable_structure_factory_func(
         def structure_hook(input_dict: dict, _: type):
             inst = cls.__new__(cls)
 
-            print(input_dict)
+            # print(input_dict)
 
             init_args = {}
             for source_loc, dest_loc in structure_dict.items():
@@ -385,7 +385,7 @@ def make_exportable_structure_factory_func(
                     try_pop_location(input_dict, source_loc)
                     continue
 
-                print(source_loc, dest_loc)
+                # print(source_loc, dest_loc)
 
                 if isinstance(dest_loc, dict):
                     custom_handler = dest_loc.get("handler", None)
@@ -403,7 +403,6 @@ def make_exportable_structure_factory_func(
                     attr_name = attr.alias if attr.alias != attr.name else attr.name
                     attr_type = attr.type
 
-                # print(source_loc, dest_loc)
                 # print(attr)
                 # print(attr_name)
                 # print(attr_type)
@@ -423,7 +422,9 @@ def make_exportable_structure_factory_func(
                 # print(handler)
                 try:
                     if custom_handler:
-                        init_args[attr_name] = handler(value, attr_type, inst)
+                        init_args[attr_name] = handler(
+                            value, attr_type, inst, init_args
+                        )
                     else:
                         init_args[attr_name] = handler(value, attr_type)
                 except Exception as e:
@@ -431,8 +432,6 @@ def make_exportable_structure_factory_func(
 
             if input_dict:
                 init_args["extra_keys"] = input_dict
-
-            print(init_args)
 
             inst.__init__(**init_args)
             return inst

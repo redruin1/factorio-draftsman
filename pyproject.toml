@@ -1,3 +1,5 @@
+### Draftsman ###
+
 [build-system]
 requires = ["setuptools >= 70"]
 build-backend = "setuptools.build_meta"
@@ -7,7 +9,7 @@ name = "factorio-draftsman"
 dynamic = ["version"]
 description = "A complete, well-tested, and up-to-date module to manipulate Factorio blueprint strings. Compatible with mods."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 keywords = ["factorio", "blueprint", "string"]
 authors = [
@@ -58,17 +60,10 @@ dev  = [
     {include-group = "docs"}
 ]
 
+### Setuptools ###
+
 [tool.setuptools.dynamic]
 version = {attr = "draftsman._version.__version__"}
-
-# [tool.setuptools.packages.find]
-# where = ["draftsman/"]
-# 'draftsman', 
-# 'draftsman.classes', 
-# 'draftsman.classes.mixins',
-# 'draftsman.environment',
-# 'draftsman.data',
-# 'draftsman.prototypes'
 
 [tool.setuptools.package-data]
 draftsman = [
@@ -77,8 +72,12 @@ draftsman = [
     "draftsman/data/*"
 ]
 
+### Pytest ###
+
 [tool.pytest.ini_options]
 addopts = "--ignore=test/performance"
+
+### Coverage ###
 
 [tool.coverage.run]
 omit = [
@@ -91,6 +90,12 @@ branch = true
 command_line = "-m pytest test -Werror -vv"
 
 [tool.coverage.report]
+exclude_also = [
+    "def __repr__",
+    "@(abc\\.)?abstractmethod",
+    "@(typing\\.)overload",
+    "\\.\\.\\.",
+]
 skip_covered = true
 
 [tool.coverage.html]

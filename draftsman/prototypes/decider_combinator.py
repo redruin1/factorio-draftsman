@@ -108,7 +108,9 @@ class DeciderCombinator(
         """
 
         constant: Optional[int32] = attrs.field(
-            default=None, validator=instance_of(Optional[int32])
+            default=None,
+            validator=instance_of(Optional[int32]),
+            metadata={"never_null": True},
         )
         """
         .. serialized::
@@ -462,7 +464,68 @@ draftsman_converters.add_hook_fns(
 # )
 # Or, we write a pre hook that converts the old format into the new format, but that doesn't work both ways
 
-draftsman_converters.add_hook_fns(
+
+@attrs.define
+class _ExportDeciderCombinator:
+    conditions: dict = attrs.field(factory=dict)
+
+
+_export_fields = attrs.fields(_ExportDeciderCombinator)
+
+
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    DeciderCombinator,
+    lambda fields: {
+        # Pull the output signal first and construct a single output object
+        ("control_behavior", "decider_conditions", "output_signal"): (
+            fields.outputs,
+            lambda input_dict, _, inst, args: [
+                DeciderCombinator.Output(signal=input_dict)
+            ],
+        ),
+        # Set the `copy_count_from_input` mode for the now existing? Output inst
+        ("control_behavior", "decider_conditions", "copy_count_from_input"): (
+            fields.outputs,
+            lambda input_dict, _, inst, args: [
+                DeciderCombinator.Output(
+                    signal=args["outputs"][0].signal, copy_count_from_input=input_dict
+                )
+            ],
+        ),
+        # Now `output_signal` and `copy_count_from_input` should be gone
+        # (if they were present originall)
+        ("control_behavior", "decider_conditions"): (
+            fields.conditions,
+            lambda input_dict, _, inst, args: [
+                DeciderCombinator.Condition(**input_dict)
+            ],
+        ),
+    },
+    lambda fields, converter: {
+        ("control_behavior", "decider_conditions"): (
+            _export_fields.conditions,
+            lambda inst: {
+                **(
+                    converter.unstructure(inst.conditions[0])
+                    if len(inst.conditions) > 0
+                    else {}
+                ),
+                **(
+                    {"output_signal": converter.unstructure(inst.outputs[0].signal)}
+                    if len(inst.outputs) > 0
+                    else {}
+                ),
+                **(
+                    {"copy_count_from_input": inst.outputs[0].copy_count_from_input}
+                    if len(inst.outputs) > 0
+                    else {}
+                ),
+            },
+        )
+    },
+)
+
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     DeciderCombinator,
     lambda fields: {
         (

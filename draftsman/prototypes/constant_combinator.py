@@ -9,7 +9,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ManualSection, uint32
+from draftsman.signatures import ManualSection, SignalFilter, uint32
 from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 from draftsman.data import mods
@@ -147,9 +147,37 @@ class ConstantCombinator(
     __hash__ = Entity.__hash__
 
 
-# TODO: 1.0 hook functions
+draftsman_converters.get_version((1, 0)).add_hook_fns(
+    ConstantCombinator,
+    lambda fields, converter: {
+        ("control_behavior", "is_on"): fields.enabled.name,
+        ("control_behavior", "filters"): (
+            fields.sections,
+            lambda value, _, inst, args: [
+                ManualSection(
+                    index=0,
+                    filters=[converter.structure(elem, SignalFilter) for elem in value],
+                )
+            ],
+        ),
+    },
+    lambda fields, converter: {
+        ("control_behavior", "is_on"): fields.enabled.name,
+        ("control_behavior", "filters"): (
+            fields.sections,
+            lambda inst: (
+                [
+                    converter.unstructure(signal)
+                    for signal in inst.sections[0].filters.values()
+                ]
+                if len(inst.sections) > 0
+                else []
+            ),
+        ),
+    },
+)
 
-draftsman_converters.add_hook_fns(
+draftsman_converters.get_version((2, 0)).add_hook_fns(
     ConstantCombinator,
     lambda fields: {
         ("control_behavior", "is_on"): fields.enabled.name,

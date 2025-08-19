@@ -189,30 +189,30 @@ class TestRequestContainer:
     def test_set_requests(self):
         container = LogisticRequestContainer()
 
-        # Shorthand
+        # Shorthand list
         section = container.add_section()
         section.filters = [
             ("iron-ore", 100),
             ("copper-ore", 200),
             ("coal", 300),
         ]
-        assert container.sections[-1].filters == [
-            SignalFilter(index=0, name="iron-ore", count=100, comparator="="),
-            SignalFilter(index=1, name="copper-ore", count=200, comparator="="),
-            SignalFilter(index=2, name="coal", count=300, comparator="="),
-        ]
+        assert container.sections[-1].filters == {
+            0: SignalFilter(index=0, name="iron-ore", count=100, comparator="="),
+            1: SignalFilter(index=1, name="copper-ore", count=200, comparator="="),
+            2: SignalFilter(index=2, name="coal", count=300, comparator="="),
+        }
 
-        # Longhand
+        # Longhand list
         section.filters = [
             SignalFilter(index=0, name="iron-ore", count=100),
             SignalFilter(index=1, name="copper-ore", count=200),
             SignalFilter(index=2, name="coal", count=300),
         ]
-        assert container.sections[-1].filters == [
-            SignalFilter(index=0, name="iron-ore", count=100),
-            SignalFilter(index=1, name="copper-ore", count=200),
-            SignalFilter(index=2, name="coal", count=300),
-        ]
+        assert container.sections[-1].filters == {
+            0: SignalFilter(index=0, name="iron-ore", count=100),
+            1: SignalFilter(index=1, name="copper-ore", count=200),
+            2: SignalFilter(index=2, name="coal", count=300),
+        }
 
         # Error
         with pytest.raises(DataFormatError):
@@ -432,7 +432,7 @@ class TestRequestContainer:
             "request_filters": [
                 {
                     "index": 1,
-                    "name": "iron-plate",
+                    "signal": {"name": "iron-plate", "type": "item"},
                     "count": 50,
                 }
             ],

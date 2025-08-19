@@ -44,3 +44,7 @@ _giga-test313:
 report-coverage:
     - uv run coverage combine
     uv run coverage html
+
+# Run benchmark tests and save profiles for this Draftsman version
+benchmark:
+    - uv run pytest --benchmark-autosave test/performance

@@ -1,16 +1,24 @@
 # tilelist.py
 
-from draftsman.classes.spatial_hashmap import SpatialDataStructure, SpatialHashMap
+from draftsman.classes.spatial_hashmap import SpatialDataStructure
 from draftsman.classes.exportable import Exportable, ValidationResult
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
 from draftsman.error import DataFormatError
 from draftsman.serialization import draftsman_converters
+from draftsman.utils import (
+    PrimitiveAABB,
+    PrimitiveVector,
+    AABB,
+    aabb_overlaps_circle,
+)
 from draftsman.validators import get_mode
+from draftsman.warning import OverlappingObjectsWarning
 
 import attrs
 from collections.abc import MutableSequence
 from copy import deepcopy
+from math import floor
 from typing import (
     Callable,
     Iterator,
@@ -18,9 +26,138 @@ from typing import (
     Union,
     TYPE_CHECKING,
 )
+import warnings
 
 if TYPE_CHECKING:  # pragma: no coverage
     from draftsman.classes.collection import Collection
+
+
+class TileHashMap(SpatialDataStructure):
+    # Operates under the assumptions that:
+    #   * Tiles can only ever be 1 tile square in area
+    #   * Only 1 tile instance can occupy a particular coordinate at a time
+    def __init__(self):
+        self.map: dict[tuple[int, int], Tile] = {}
+
+    def add(self, item: Tile, merge: bool = False) -> Tile:
+        pos = self._map_coords(item.global_position)
+        if merge and pos in self.map:
+            if item.mergable_with(self.map[pos]):
+                self.map[pos].merge(item)
+                return None
+
+        self.map[pos] = item
+
+        return item
+
+    def remove(self, item: Tile):
+        try:
+            del self.map[self._map_coords(item.global_position)]
+        except KeyError:
+            pass
+
+    def clear(self) -> None:
+        self.map.clear()
+
+    def validate_insert(self, item: Tile, merge: bool):
+        pos = self._map_coords(item.global_position)
+        if pos in self.map:
+            existing_tile = self.map[pos]
+            if not merge or not existing_tile.mergable_with(item):
+                # If the two objects have no shared collision layers they can
+                # never intersect
+                item_layers = item.collision_mask
+                other_layers = existing_tile.collision_mask
+                if len(other_layers.intersection(item_layers)) == 0:  # pragma: no coverage
+                    return
+
+                warnings.warn(
+                    "Added tile '{}' intersects '{}' at {}".format(
+                        item.name,
+                        existing_tile.name,
+                        existing_tile.global_position,
+                    ),
+                    OverlappingObjectsWarning,
+                    stacklevel=2,
+                )
+
+    def get_all(self) -> list[Tile]:
+        return [tile for tile in self.map.values()]
+
+    def get_on_point(self, point: PrimitiveVector, limit=None):
+        try:
+            return [self.map[self._map_coords(point)]]
+        except KeyError:
+            return []
+
+    def get_in_radius(
+        self, radius: float, point: PrimitiveVector, limit: Optional[int] = None
+    ):
+        cell_coords = self._cell_coords_from_radius(radius, point)
+        items = []
+        for cell_coord in cell_coords:
+            if cell_coord in self.map:
+                if limit is not None and len(items) >= limit:
+                    break
+                items.append(self.map[cell_coord])
+
+        return items
+
+    def get_in_aabb(self, aabb: PrimitiveAABB, limit: Optional[int] = None):
+        cell_coords = self._cell_coords_from_aabb(aabb)
+        items = []
+        for cell_coord in cell_coords:
+            if cell_coord in self.map:
+                if limit is not None and len(items) >= limit:
+                    break
+                items.append(self.map[cell_coord])
+
+        return items
+
+    def _map_coords(self, point):
+        return (floor(point[0]), floor(point[1]))
+
+    def _cell_coords_from_aabb(self, aabb: AABB) -> list[tuple[int, int]]:
+        if aabb is None:
+            return []
+
+        # Add a small error to under-round if aabb lands on cell boundary
+        eps = 0.001
+        grid_min = self._map_coords(aabb.top_left)
+        grid_max = self._map_coords([aabb.bot_right[0] - eps, aabb.bot_right[1] - eps])
+
+        grid_width = grid_max[0] - grid_min[0] + 1
+        grid_height = grid_max[1] - grid_min[1] + 1
+
+        cells = []
+        for j in range(grid_min[1], grid_min[1] + grid_height):
+            for i in range(grid_min[0], grid_min[0] + grid_width):
+                cells.append((i, j))
+
+        return cells
+
+    def _cell_coords_from_radius(
+        self, radius: float, point: PrimitiveVector
+    ) -> list[tuple[int, int]]:
+        grid_min = self._map_coords((point[0] - radius, point[1] - radius))
+        grid_max = self._map_coords((point[0] + radius, point[1] + radius))
+
+        grid_width = grid_max[0] - grid_min[0] + 1
+        grid_height = grid_max[1] - grid_min[1] + 1
+
+        cells = []
+        for j in range(grid_min[1], grid_min[1] + grid_height):
+            for i in range(grid_min[0], grid_min[0] + grid_width):
+                cell_aabb = AABB(
+                    i,
+                    j,
+                    (i + 1),
+                    (j + 1),
+                )
+                if aabb_overlaps_circle(cell_aabb, radius, point):
+                    cells.append((i, j))
+
+        return cells
 
 
 @attrs.define
@@ -59,7 +196,7 @@ class TileList(Exportable, MutableSequence):
 
         self.data = []
 
-        self.spatial_map: SpatialDataStructure = SpatialHashMap()
+        self.spatial_map: SpatialDataStructure = TileHashMap()
 
         self._parent = parent
 
@@ -77,7 +214,7 @@ class TileList(Exportable, MutableSequence):
 
     def append(
         self, name: Union[str, Tile], copy: bool = True, merge: bool = False, **kwargs
-    ) -> None:
+    ) -> Tile:
         """
         Appends the Tile to the end of the sequence.
 
@@ -92,8 +229,10 @@ class TileList(Exportable, MutableSequence):
             :py:class:`.OverlappingObjectWarning` s in these cases.
         :param kwargs: Any other keyword arguments that should be passed to the
             newly created tile instance, if creating from a string ``name``.
+
+        :returns: The newly appended :py:class:`.Tile`.
         """
-        self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
+        return self.insert(idx=len(self), name=name, copy=copy, merge=merge, **kwargs)
 
     def insert(
         self,
@@ -102,7 +241,7 @@ class TileList(Exportable, MutableSequence):
         copy: bool = True,
         merge: bool = False,
         **kwargs,
-    ) -> None:
+    ) -> Tile:
         """
         Inserts an element into the TileList.
 
@@ -118,6 +257,8 @@ class TileList(Exportable, MutableSequence):
             :py:class:`.OverlappingObjectWarning` s in these cases.
         :param kwargs: Any other keyword arguments that should be passed to the
             newly created tile instance, if creating from a string ``name``.
+
+        :returns: The newly inserted :py:class:`.Tile`.
         """
         # Convert to new Tile if constructed via string keyword
         new = False
@@ -147,10 +288,11 @@ class TileList(Exportable, MutableSequence):
         if not isinstance(tile, Tile):
             raise TypeError("Entry in TileList must be a Tile")
 
-        tile.validate(mode=get_mode()).reissue_all()
-        self.spatial_map.validate_insert(
-            tile, merge=merge
-        )  # TODO: remove this and integrate it into `add()`
+        if get_mode() and self._parent is not None:
+            # tile.validate(mode=get_mode()).reissue_all()
+            self.spatial_map.validate_insert(
+                tile, merge=merge
+            )  # TODO: remove this and integrate it into `add()`
 
         # Add to tile map
         tile = self.spatial_map.add(tile, merge=merge)
@@ -163,6 +305,8 @@ class TileList(Exportable, MutableSequence):
 
         # Keep a reference of the parent blueprint in the tile
         tile._parent = self._parent
+
+        return tile
 
     def validate(
         self, mode: ValidationMode = ValidationMode.STRICT

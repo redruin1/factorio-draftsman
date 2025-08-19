@@ -120,7 +120,7 @@ class TestConstantCombinator:
         combinator = ConstantCombinator()
 
         combinator.add_section(group="Some group name", index=2)
-        assert combinator.to_dict() == {
+        assert combinator.to_dict(version=(2, 0)) == {
             "name": combinator.name,
             "position": combinator.position.to_dict(),
             "control_behavior": {
@@ -142,26 +142,26 @@ class TestConstantCombinator:
         combinator = ConstantCombinator()
         section = combinator.add_section()
         section.set_signal(0, "signal-A", 100)
-        assert section.filters == [
-            SignalFilter(index=0, name="signal-A", count=100, quality="normal")
-        ]
+        assert section.filters == {
+            0: SignalFilter(index=0, name="signal-A", count=100, quality="normal")
+        }
 
         section.set_signal(1, "signal-B", 200)
-        assert section.filters == [
-            SignalFilter(index=0, name="signal-A", count=100, quality="normal"),
-            SignalFilter(index=1, name="signal-B", count=200, quality="normal"),
-        ]
+        assert section.filters == {
+            0: SignalFilter(index=0, name="signal-A", count=100, quality="normal"),
+            1: SignalFilter(index=1, name="signal-B", count=200, quality="normal"),
+        }
 
         section.set_signal(0, "signal-C", 300)
-        assert section.filters == [
-            SignalFilter(index=0, name="signal-C", count=300, quality="normal"),
-            SignalFilter(index=1, name="signal-B", count=200, quality="normal"),
-        ]
+        assert section.filters == {
+            0: SignalFilter(index=0, name="signal-C", count=300, quality="normal"),
+            1: SignalFilter(index=1, name="signal-B", count=200, quality="normal"),
+        }
 
         section.set_signal(1, None)
-        assert section.filters == [
-            SignalFilter(index=0, name="signal-C", count=300, quality="normal")
-        ]
+        assert section.filters == {
+            0: SignalFilter(index=0, name="signal-C", count=300, quality="normal")
+        }
 
         with pytest.raises(DataFormatError):
             section.set_signal(TypeError, "something")
@@ -216,8 +216,7 @@ class TestConstantCombinator:
             }
         )
 
-        signal = section.get_signal(50)
-        assert signal == None
+        assert section.get_signal(50) is None
 
     def test_issue_158(self):
         cc = ConstantCombinator(

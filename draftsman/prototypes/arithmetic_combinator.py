@@ -322,7 +322,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "attr": fields.first_operand,
             "name": "first_operand",
             "type": Optional[int32],
-        }, # Happens first
+        },  # Happens first
         (
             "control_behavior",
             "arithmetic_conditions",
@@ -331,7 +331,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             "attr": fields.first_operand,
             "name": "first_operand",
             "type": Optional[SignalID],
-        }, # Overwrites if found
+        },  # Overwrites if found
         # None: fields.first_operand_wires.name,
         (
             "control_behavior",

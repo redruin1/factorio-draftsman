@@ -27,7 +27,7 @@ class SpatialHashMap(SpatialDataStructure):
     Accellerates spatial queries of :py:class:`~.Collection`.
     """
 
-    def __init__(self, cell_size: int = 8) -> None:
+    def __init__(self, cell_size: int = 4) -> None:
         """
         Create a new :py:class:`.SpatialHashMap`.
 
@@ -98,7 +98,8 @@ class SpatialHashMap(SpatialDataStructure):
             # UNLESS they are the same type, face the same direction, and
             # exist at the exact same place
             if isinstance(
-                item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)) and isinstance(
+                item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)
+            ) and isinstance(
                 overlapping_item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)
             ):
                 identical = (
@@ -126,24 +127,33 @@ class SpatialHashMap(SpatialDataStructure):
             overlapping_collision_set = overlapping_item.get_world_collision_set()
             if item_collision_set.overlaps(overlapping_collision_set):
                 warnings.warn(
-                    "Added object\n" 
+                    "Added object\n"
                     "\t'{}' ({}) at {}{}\n"
                     "intersects\n"
                     "\t'{}' ({}) at {}{}".format(
                         item.name,
                         type(item).__name__,
                         item.global_position,
-                        " facing {}".format(repr(item.direction)) if hasattr(item, "rotatable") and item.rotatable else "",
+                        (
+                            " facing {}".format(repr(item.direction))
+                            if hasattr(item, "rotatable") and item.rotatable
+                            else ""
+                        ),
                         overlapping_item.name,
                         type(overlapping_item).__name__,
                         overlapping_item.global_position,
-                        " facing {}".format(repr(overlapping_item.direction)) if hasattr(overlapping_item, "rotatable") and overlapping_item.rotatable else ""
+                        (
+                            " facing {}".format(repr(overlapping_item.direction))
+                            if hasattr(overlapping_item, "rotatable")
+                            and overlapping_item.rotatable
+                            else ""
+                        ),
                     ),
                     OverlappingObjectsWarning,
                     stacklevel=2,
                 )
 
-    def get_all_entities(self) -> list[SpatialLike]:
+    def get_all(self) -> list[SpatialLike]:
         items = []
         for cell_coord in self.map:
             for item in self.map[cell_coord]:

@@ -59,6 +59,7 @@ coverage.xml
 
 # Performace outputs
 mprofile_*
+.benchmarks
 
 # Translations
 *.mo

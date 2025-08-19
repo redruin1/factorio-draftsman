@@ -754,23 +754,33 @@ class SignalFilter(Exportable):
     #     return value
 
 
+@attrs.define
+class _ExportSignalFilter:
+    type: str = "item"
+    signal: dict = attrs.field(factory=dict)
+
+
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     SignalFilter,
     lambda fields: {
         "index": fields.index.name,
-        "name": fields.name.name,
+        ("signal", "name"): fields.name.name,
+        "name": fields.name.name,  # Scary, but necessary
+        ("signal", "type"): fields.type.name,
+        "type": fields.type.name,  # Scary, but necessary
         "count": fields.count.name,
-        # None: fields.type.name,
-        # None: fields.quality.name,
-        # None: fields.comparator.name,
-        # None: fields.max_count.name,
+    },
+    lambda fields, converter: {
+        "index": fields.index.name,
+        "signal": (
+            attrs.fields(_ExportSignalFilter).signal,
+            lambda inst: converter.unstructure(
+                SignalID(name=inst.name, type=inst.type)
+            ),
+        ),
+        "count": fields.count.name,
     },
 )
-
-
-@attrs.define
-class _ExportSignalFilter:
-    type: str = "item"
 
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
@@ -821,21 +831,26 @@ class ManualSection(Exportable):
             msg = "Index ({}) must be in range [0, 100)".format(value)
             raise IndexError(msg)
 
-    def _filters_converter(value: list[Any]) -> list[SignalFilter]:
+    def _filters_converter(value: list[Any]) -> dict[int, SignalFilter]:
         if isinstance(value, list):
+            result = {}
             for i, entry in enumerate(value):
                 if isinstance(entry, tuple):
-                    value[i] = SignalFilter(
+                    result[i] = SignalFilter(
                         index=i,
                         name=entry[0],
                         count=entry[1],
                     )
-        return value
+                else:
+                    result[i] = entry
+            return result
+        else:
+            return value
 
-    filters: list[SignalFilter] = attrs.field(
-        factory=list,
+    filters: dict[int, SignalFilter] = attrs.field(
+        factory=dict,
         converter=_filters_converter,
-        validator=instance_of(list[SignalFilter]),
+        validator=instance_of(dict),
     )
     """
     List of item requests for this section.
@@ -876,8 +891,21 @@ class ManualSection(Exportable):
         :param quality: The quality of the signal.
         :param type: The internal type of the signal.
         """
-        if name is not None:
-            new_entry = SignalFilter(
+        # If the item already exists, then just modify the existing one instead
+        # of constructing a new object (which is very slow)
+        if index in self.filters:
+            existing_filter = self.filters[index]
+            if name is None:
+                del self.filters[index]
+            else:
+                existing_filter.name = name
+                existing_filter.count = count
+                existing_filter.quality = quality
+                existing_filter.type = (
+                    signals.get_signal_types(name)[0] if type is None else type
+                )
+        else:
+            self.filters[index] = SignalFilter(
                 index=index,
                 name=name,
                 type=type if type is not None else NOTHING,
@@ -885,20 +913,6 @@ class ManualSection(Exportable):
                 comparator="=",
                 count=count,
             )
-
-        # Check to see if filters already contains an entry with the same index
-        existing_index = None
-        for i, signal_filter in enumerate(self.filters):
-            if index == signal_filter.index:  # Index already exists in the list
-                if name is None:  # Delete the entry
-                    del self.filters[i]
-                else:
-                    self.filters[i] = new_entry
-                existing_index = i
-                break
-
-        if existing_index is None:
-            self.filters.append(new_entry)
 
     def get_signal(self, index: int) -> Optional[SignalFilter]:  # TODO: should be int64
         """
@@ -910,10 +924,7 @@ class ManualSection(Exportable):
         :returns: A :py:class:`.SignalFilter` instance, or ``None`` if nothing
             was found at that index.
         """
-        return next(
-            (item for item in self.filters if item.index == index),
-            None,
-        )
+        return self.filters.get(index, None)
 
     # @field_validator("filters", mode="before")
     # @classmethod
@@ -938,13 +949,38 @@ class ManualSection(Exportable):
     #     return value
 
 
+@attrs.define
+class _ExportManualSection:
+    filters: list = attrs.field(factory=list)
+
+
 draftsman_converters.add_hook_fns(
     ManualSection,
-    lambda fields: {
-        fields.index.name: "index",
-        fields.filters.name: "filters",
-        fields.group.name: "group",
-        fields.active.name: "active",
+    lambda fields, converter: {
+        "index": fields.index.name,
+        "filters": {
+            "attr": fields.filters,
+            "name": "filters",
+            "type": list,
+            "handler": lambda value, _type, _inst, _args: {
+                elem["index"]: converter.structure(elem, SignalFilter)
+                for elem in enumerate(value)
+            },
+        },
+        "group": fields.group.name,
+        "active": fields.active.name,
+    },
+    lambda fields, converter: {
+        "index": fields.index.name,
+        "filters": (
+            attrs.fields(_ExportManualSection).filters,
+            lambda inst: [
+                converter.unstructure(value)
+                for _, value in sorted(inst.filters.items())
+            ],
+        ),
+        "group": fields.group.name,
+        "active": fields.active.name,
     },
 )
 

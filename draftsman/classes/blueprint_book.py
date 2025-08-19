@@ -20,7 +20,7 @@ from draftsman.validators import instance_of
 import attrs
 import cattrs
 from collections.abc import MutableSequence
-from typing import Any, Iterable, Literal, Sequence, Union, overload
+from typing import Any, Iterable, Literal, Sequence, overload
 
 
 class BlueprintableList(MutableSequence):
@@ -48,16 +48,20 @@ class BlueprintableList(MutableSequence):
         self.data.insert(idx, value)
 
     @overload
-    def __getitem__(self, idx: int) -> Blueprintable: ...
+    def __getitem__(self, idx: int) -> Blueprintable: 
+        ...
     @overload
-    def __getitem__(self, idx: slice) -> list[Blueprintable]: ...
+    def __getitem__(self, idx: slice) -> list[Blueprintable]: 
+        ...
     def __getitem__(self, idx):
         return self.data[idx]
 
     @overload
-    def __setitem__(self, idx: int, value: Blueprintable) -> None: ...
+    def __setitem__(self, idx: int, value: Blueprintable) -> None: 
+        ...
     @overload
-    def __setitem__(self, idx: slice, value: Iterable[Blueprintable]) -> None: ...
+    def __setitem__(self, idx: slice, value: Iterable[Blueprintable]) -> None: 
+        ...
     def __setitem__(self, idx, value):
         if isinstance(idx, slice):
             for v in value:

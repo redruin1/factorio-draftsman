@@ -156,7 +156,7 @@ class Entity(EntityLike, Exportable):
     def __attrs_post_init__(self):
         # We gave incorrect defaults for `position` and `tile_position` so that
         # we can deduce which ones were specified in init
-        # (For example`position` can be `None` at this point, even though it's
+        # (For example `position` can be `None` at this point, even though it's
         # type annotated as always being a Vector instance. We wouldn't have to
         # do this if attrs supported kwargs here, but it doesn't, so.)
 
@@ -1021,7 +1021,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "entity_number": None,
         "name": (
             fields.name,
-            lambda input, _, inst: migrate_name(
+            lambda input, _, inst, args: migrate_name(
                 input,
                 source_version=(1, 0),
                 dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),
@@ -1032,7 +1032,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         # None: fields.quality.name,
         "items": (
             _export_fields.item_requests,
-            lambda input_dict, _, inst: [
+            lambda input_dict, _, inst, args: [
                 {
                     "id": {"name": k, "quality": "normal"},
                     "items": {
@@ -1060,7 +1060,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     lambda fields, converter: {
         "name": (
             fields.name,
-            lambda inst: migrate_name(
+            lambda inst: migrate_name(  # TODO
                 inst.name,
                 source_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),
                 dest_version=(1, 0),
@@ -1090,7 +1090,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         "entity_number": None,
         "name": (
             fields.name,
-            lambda input, _, inst: migrate_name(
+            lambda input, _, inst, args: migrate_name(
                 input,
                 source_version=(2, 0),
                 dest_version=mods.versions.get("base", DEFAULT_FACTORIO_VERSION),

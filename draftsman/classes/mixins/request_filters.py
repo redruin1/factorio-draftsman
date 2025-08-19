@@ -139,7 +139,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         # None: fields.requests_enabled.name,
         "request_filters": (
             _export_fields.sections,
-            lambda input_dict, _, inst: [
+            lambda input_dict, _, inst, args: [
                 ManualSection(
                     index=0, filters=converter.structure(input_dict, list[SignalFilter])
                 )
@@ -153,7 +153,11 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "request_filters": (
             _export_fields.sections,
             lambda inst: (
-                converter.unstructure(inst.sections[0].filters)
+                # Have to copy from ManualSection
+                [
+                    converter.unstructure(value)
+                    for _, value in sorted(inst.sections[0].filters.items())
+                ]
                 if len(inst.sections) > 0
                 else []
             ),

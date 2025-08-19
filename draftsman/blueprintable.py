@@ -95,7 +95,7 @@ def get_blueprintable_from_JSON(blueprintable_JSON: dict) -> Blueprintable:
     # environment configuration if not found
     # TODO: could maybe fix mypy annotation here by making `root_item` a raw
     # attribute, but that seems worse
-    root_item = blueprintable_type.root_item.fget(blueprintable_type) # type: ignore
+    root_item = blueprintable_type.root_item.fget(blueprintable_type)  # type: ignore
     if "version" in blueprintable_JSON[root_item]:
         version = decode_version(blueprintable_JSON[root_item]["version"])
     else:

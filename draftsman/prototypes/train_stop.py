@@ -271,6 +271,10 @@ class TrainStop(
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     TrainStop,
     lambda fields: {
+        (
+            "control_behavior",
+            "circuit_enable_disable",
+        ): fields.circuit_enabled.name,  # Overwrite
         "station": fields.station.name,
         "manual_trains_limit": fields.manual_trains_limit.name,
         ("control_behavior", "send_to_train"): fields.send_to_train.name,

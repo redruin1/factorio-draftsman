@@ -77,10 +77,10 @@ class Blueprintable(Exportable, metaclass=ABCMeta):
         # Try and get the version from the dictionary, falling back to current
         # environment configuration if not found
         if "version" in json_dict[root_item]:
-            # However, "version" is simply the version of the game that the 
+            # However, "version" is simply the version of the game that the
             # blueprint was originally created in, and is not necessarily kept
             # up-to-date and as such may be straight up wrong.
-            # This means our importing methods need to be robust to the case 
+            # This means our importing methods need to be robust to the case
             # where the blueprint string lies to us about it's contents
             version = decode_version(json_dict[root_item]["version"])
         else:

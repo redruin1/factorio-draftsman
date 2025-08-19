@@ -216,6 +216,7 @@ Available recipes:
     test            # Run test suite against {current Factorio version, all Python versions}
     test-all        # Run test suite against {all Factorio versions, latest Python version} (LONG)
     report-coverage # Combine all coverage files and create HTML report
+    benchmark       # Run benchmark tests and save profiles for this Draftsman version
 ```
 
 Note that testing currently is only guaranteed to pass with a vanilla [environment](https://factorio-draftsman.readthedocs.io/en/latest/concepts/environment.html).

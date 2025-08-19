@@ -492,6 +492,7 @@ class UpgradePlanner(Blueprintable):
         Ensure the given mappings are correct, and that there aren't any mappers
         that occupy the same indices.
         """
+
         class OccupiedMapper(TypedDict):
             count: int
             mapper: Mapper

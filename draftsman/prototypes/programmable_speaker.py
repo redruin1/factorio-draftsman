@@ -460,7 +460,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("parameters", "playback_volume"): fields.volume.name,
         ("parameters", "playback_globally"): (
             fields.playback_mode,
-            lambda v, _type, _inst: "surface" if v else "local",
+            lambda v, _type, _inst, _args: "surface" if v else "local",
         ),
         ("parameters", "allow_polyphony"): fields.allow_polyphony.name,
         ("alert_parameters", "show_alert"): fields.show_alert.name,

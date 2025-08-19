@@ -152,8 +152,7 @@ class Group(
 
     # TODO: this should be moved into EntityLike since that makes more sense
     def _set_id(self, attr: attrs.Attribute, value: Optional[str]):
-        if attr.validator:
-            attr.validator(self, attr, value)
+        attr.validator(self, attr, value)
         if self.parent:
             self.parent.entities._remove_key(self.id)
             if value is not None:
@@ -329,7 +328,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("blueprint", "position-relative-to-grid"): None,
         ("blueprint", "entities"): (  # Custom structure function
             fields.entities,
-            lambda value, _, inst: EntityList(
+            lambda value, _, inst, args: EntityList(
                 inst,
                 [
                     converter.structure(elem, get_entity_class(elem.get("name", None)))
@@ -378,7 +377,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ("blueprint", "position-relative-to-grid"): None,
         ("blueprint", "entities"): (  # Custom structure function
             fields.entities,
-            lambda value, _, inst: EntityList(
+            lambda value, _, inst, args: EntityList(
                 inst,
                 [
                     converter.structure(elem, get_entity_class(elem.get("name", None)))

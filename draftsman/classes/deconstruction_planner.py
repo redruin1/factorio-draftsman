@@ -220,9 +220,9 @@ class DeconstructionPlanner(Blueprintable):
                 index=index, name=name, quality=quality, comparator=comparator
             )
             bisect.insort(
-                self.entity_filters, 
-                new_entry, 
-                key=lambda e: 0 if e.index is None else e.index
+                self.entity_filters,
+                new_entry,
+                key=lambda e: 0 if e.index is None else e.index,
             )
 
     def set_tile_filter(
@@ -253,9 +253,9 @@ class DeconstructionPlanner(Blueprintable):
             # Otherwise its unique; add to list
             new_entry = TileFilter(index=index, name=name)
             bisect.insort(
-                self.tile_filters, 
-                new_entry, 
-                key=lambda e: 0 if e.index is None else e.index
+                self.tile_filters,
+                new_entry,
+                key=lambda e: 0 if e.index is None else e.index,
             )
 
 

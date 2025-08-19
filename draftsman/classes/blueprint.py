@@ -211,7 +211,7 @@ class Blueprint(Transformable, Collection, Blueprintable):
         result += self.tiles.validate(mode=mode)
         # TODO: self.schedules.validate(mode=mode)
 
-        for class_validator in type(self).__attrs_class_validators__: # type: ignore
+        for class_validator in type(self).__attrs_class_validators__:  # type: ignore
             class_validator(self, mode=mode)  # TODO: pass in error/warning list
 
         return result
@@ -397,7 +397,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ): fields.position_relative_to_grid.name,
         ("blueprint", "entities"): (  # Custom structure function
             fields.entities,
-            lambda value, _, inst: EntityList(
+            lambda value, _, inst, args: EntityList(
                 inst,
                 [
                     converter.structure(
@@ -417,7 +417,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
             ),
         ),
         ("blueprint", "tiles"): fields.tiles.name,
-        ("blueprint", "wires"): fields.wires.name, # *Possibly* imported
+        ("blueprint", "wires"): fields.wires.name,  # *Possibly* imported
         ("blueprint", "schedules"): fields.schedules.name,
         # None: fields.stock_connections.name,
     },
@@ -487,11 +487,11 @@ def structure_blueprint_1_0_factory(t: type):
         blueprint_dict = d["blueprint"]
 
         # For crazy ass reasons, "wires" might *actually* be populated on a 1.0
-        # versioned blueprint (If the blueprint "version" key is straight up 
+        # versioned blueprint (If the blueprint "version" key is straight up
         # wrong)
         # So try to grab it and use it if it exists, otherwise initialize it to
         # an empty list
-        if "wires" not in blueprint_dict:
+        if "wires" not in blueprint_dict:  # pragma: no coverage
             blueprint_dict["wires"] = []
         wires = blueprint_dict["wires"]
         if "entities" in blueprint_dict:
@@ -609,7 +609,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ): fields.position_relative_to_grid.name,
         ("blueprint", "entities"): (  # Custom structure function
             fields.entities,
-            lambda value, _, inst: EntityList(
+            lambda value, _, inst, args: EntityList(
                 inst,
                 [
                     converter.structure(

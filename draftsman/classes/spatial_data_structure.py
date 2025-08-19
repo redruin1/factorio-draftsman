@@ -57,7 +57,7 @@ class SpatialDataStructure(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def get_all_entities(self) -> list[SpatialLike]:  # pragma: no coverage
+    def get_all(self) -> list[SpatialLike]:  # pragma: no coverage
         """
         Get all the entities in the hash map. Iterates over every cell and
         returns the contents sequentially. Useful if you want to get all the
