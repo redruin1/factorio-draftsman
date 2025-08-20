@@ -71,14 +71,15 @@ draftsman = [
 ### Pytest ###
 
 [tool.pytest.ini_options]
-addopts = "--ignore=test/performance"
+addopts = "--ignore=test/performance --ignore=test/factorio-blueprint-schemas"
 
 ### Coverage ###
 
 [tool.coverage.run]
 omit = [
-    "examples/**",
     "draftsman/environment/**",
+    "examples/**",
+    "test/factorio-blueprint-schemas/**"
     "test/performance/**",
     "test/test_all_factorio_versions.py"
 ]

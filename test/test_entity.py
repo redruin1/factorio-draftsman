@@ -212,7 +212,7 @@ def grab_json_file(*path) -> dict:
 def retrieve_from_path(uri: str) -> Resource:
     print(uri)
     return Resource.from_contents(
-        grab_json_file("factorio-blueprint-schemas", "schemas", uri)
+        grab_json_file("test", "factorio-blueprint-schemas", "schemas", uri)
     )
 
 
@@ -249,6 +249,7 @@ class TestAllEntities:
 
         try:
             entity_schema = grab_json_file(
+                "test",
                 "factorio-blueprint-schemas",
                 "schemas",
                 version_tuple_to_string(version),
