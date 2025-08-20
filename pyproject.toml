@@ -79,7 +79,7 @@ addopts = "--ignore=test/performance --ignore=test/factorio-blueprint-schemas"
 omit = [
     "draftsman/environment/**",
     "examples/**",
-    "test/factorio-blueprint-schemas/**"
+    "test/factorio-blueprint-schemas/**",
     "test/performance/**",
     "test/test_all_factorio_versions.py"
 ]
