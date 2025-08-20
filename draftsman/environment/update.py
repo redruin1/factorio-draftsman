@@ -363,9 +363,10 @@ def run_data_stage(
 def run_data_lifecycle(
     game_path: str | None = None,
     mods_path: str | None = None,
-    show_logs: bool = False,
+    owned_dlc: list[str] = ["space-age"],
     no_mods: bool = False,
     verbose: bool = False,
+    show_logs: bool = False,
 ) -> lupa.LuaRuntime:
     """
     Runs the entire Factorio data lifecycle, from discovering mods, determining
@@ -378,6 +379,9 @@ def run_data_lifecycle(
     :param mods_path: The path pointing to the user mods folder. Also the
         location where ``mod-settings.dat`` and ``mod-list.json`` files are
         searched for and parsed from.
+    :param owned_dlc: A list of string names indicating which DLC's Draftsman
+        should emulate owning, as mods can read this information when deciding
+        their behavior.
     :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
         Does not omit any "official" mods found at ``game_path``. Useful to
         quickly toggle modded/unmodded configurations without having to
@@ -522,14 +526,33 @@ def run_data_lifecycle(
             )
         )
     else:
-        # except FileNotFoundError:
         lua.execute(
             file_to_string(os.path.join(draftsman_path, "compatibility", "defines.lua"))
         )
 
+    if verbose:
+        print("Owned DLC:")
+        print(owned_dlc, end="\n\n")
+
+    # Define a number of 'feature flags' so the load process can query whether
+    # or not it 'owns' the features provided in the DLC
+    lua.execute(
+        """
+        feature_flags = {{
+            quality={sa_enabled},
+            rail_bridges={sa_enabled},
+            space_travel={sa_enabled},
+            spoiling={sa_enabled},
+            freezing={sa_enabled},
+            segmented_units={sa_enabled},
+            expansion_shaders={sa_enabled},
+        }}
+        """.format(sa_enabled="space-age" in owned_dlc)
+    )
+
     # "interface.lua" houses a number of patching functions used to emulate
     # Factorio's internal load process.
-    # Primarily, it updates the require function to now handle python_require,
+    # Primarily, it updates the require function to now handle `python_require`,
     # and fixes a few small discrepancies that Factorio's environment has.
     lua.execute(
         file_to_string(os.path.join(draftsman_path, "compatibility", "interface.lua"))
@@ -1782,6 +1805,7 @@ def extract_data(
 def update_draftsman_data(
     game_path: Optional[str] = None,
     mods_path: Optional[str] = None,
+    owned_dlc: list[str] = ["space-age"],
     no_mods: bool = False,
     verbose: bool = False,
     show_logs: bool = False,
@@ -1803,6 +1827,9 @@ def update_draftsman_data(
         location where ``mod-settings.dat`` and ``mod-list.json`` files are
         searched for and parsed from. If omitted, defaults to the `factorio-mods`
         folder provided in the Draftsman installation location.
+    :param owned_dlc: A list of string names indicating which DLC's Draftsman
+        should emulate owning, as mods can read this information when deciding
+        their behavior.
     :param no_mods: Whether or not to actually use any of the mods at ``mods_path``.
         Does not omit any "official" mods found at ``game_path``. Useful to
         quickly toggle modded/unmodded configurations without having to
@@ -1832,9 +1859,10 @@ def update_draftsman_data(
     lua_instance = run_data_lifecycle(
         game_path=game_path,
         mods_path=mods_path,
-        show_logs=show_logs,
+        owned_dlc=owned_dlc,
         no_mods=no_mods,
         verbose=verbose,
+        show_logs=show_logs,
     )
 
     # At this point, `data.raw` in `lua_instance` and should(!) be properly

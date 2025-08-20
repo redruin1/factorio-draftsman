@@ -287,19 +287,25 @@ Use this to update Draftsman's metadata any time the Factorio or mod configurati
 .. code-block:: text
 
     > draftsman update -h
-    usage: draftsman update [-h] [-l] [--no-mods]
+    usage: draftsman update [-h] [--owns OWNS [OWNS ...]] [--no-mods] [--no-dlc] [-l]
 
     Runs the Factorio data lifecycle using the data pointed to by `game_path`. All information that 
-    Draftsman needs will be extracted into pickle files located in the draftsman/data/ folder in the 
+    Draftsman needs will be extracted into pickle files located in the `/draftsman/data` folder in the
     installation directory.
 
     options:
-    -h, --help  show this help message and exit
-    -l, --log   Display any `log()` messages to stdout; any logged messages will be ignored if this 
-                argument is not set.
-    --no-mods   Prevents user mods from loading even if they are enabled. Official mods made by Wube 
-                (`quality`, `elevated-rails`, `space-age`) are NOT affected by this flag; those should 
-                be manually configured with `draftsman enable|disable [official-mod]`
+    -h, --help            show this help message and exit
+    --owns OWNS [OWNS ...]
+                          Emulates that Draftsman has ownership of the list of these DLC when running the 
+                          data lifecycle. Certain modlists require DLC access in order to function correctly. 
+                          Currently, the only valid argument is `space-age`. Space Age is owned by default.
+    --no-mods             Prevents user mods from loading even if they are enabled. Official mods made by Wube 
+                          (`quality`, `elevated-rails`, `space-age`) are NOT affected by this flag; those should 
+                          be manually configured with `draftsman enable|disable [official-mod]`
+    --no-dlc              Runs the data lifecycle as if Draftsman has no access to Wube's DLC content. Superceeds 
+                          the `owns` argument; equivalent to setting `--owns` to an empty list.
+    -l, --log             Display any `log()` messages to stdout; any logged messages will be ignored if this 
+                          argument is not set.
 
 In addition to the universal ``GAME_PATH``, ``MODS_PATH``, and ``verbose``, update supports a ``--no-mods`` flag which allows you to quickly ignore any non-official mod, if you quickly want to reduce your configuration to a vanilla state:
 
@@ -308,16 +314,14 @@ In addition to the universal ``GAME_PATH``, ``MODS_PATH``, and ``verbose``, upda
     > draftsman -v update --no-mods
     Discovering mods...
 
-    ✓ (dir) base               2.0.61
+    ✓ (dir) base               2.0.64
     ✓ (dir) core                    -
-    ✓ (dir) elevated-rails     2.0.61
-    ✓ (dir) quality            2.0.61
-    ✓ (dir) space-age          2.0.61
+    ✓ (dir) elevated-rails     2.0.64
+    ✓ (dir) quality            2.0.64
+    ✓ (dir) space-age          2.0.64
 
     Determining dependency tree...
 
-    base
-            core
     elevated-rails
             base >= 2.0.0
     quality
@@ -329,6 +333,9 @@ In addition to the universal ``GAME_PATH``, ``MODS_PATH``, and ``verbose``, upda
 
     Load order:
     ['core', 'base', 'elevated-rails', 'quality', 'space-age']
+
+    Owned DLC:
+    ['space-age']
 
     SETTINGS.LUA:
     SETTINGS-UPDATES.LUA:
@@ -362,5 +369,36 @@ In addition to the universal ``GAME_PATH``, ``MODS_PATH``, and ``verbose``, upda
 
     Update finished.
     hella slick; nothing broke!
+
+Similarly, there is a ``--no-dlc`` flag if you want to run the data lifecycle emulating someone who does *not* own the Space Age DLC:
+
+.. code-block:: text
+
+    > draftsman -v update --no-dlc
+    Discovering mods...
+
+    ...
+
+    Owned DLC:
+    []
+
+    ...
+
+    Update finished.
+    hella slick; nothing broke!
+
+If you want to enable specific DLC, use the ``--owns`` argument followed by a list of their names:
+
+.. code-block:: text
+
+    > draftsman update --owns space-age
+
+Of course, there's currently only one valid option here (``space-age``), but multiple can be specified if Wube ever makes another official DLC:
+
+.. code-block:: text
+
+    > draftsman update --owns space-age some-mythical-dlc
+
+---
 
 All of the individual functionality of the above commands are abstracted out into Python methods, which can be imported from their corresponding files in :py:mod:`draftsman.environment`.

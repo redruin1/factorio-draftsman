@@ -24,8 +24,10 @@ class DraftsmanCommandArgs(argparse.Namespace):
     mod_names: list[str]
 
     # `update`
-    log: bool
+    owns: list[str]
     no_mods: bool
+    no_dlc: bool
+    log: bool
 
 
 def main():
@@ -164,11 +166,13 @@ def main():
         "installation directory.",
     )
     update_command.add_argument(
-        "-l",
-        "--log",
-        action="store_true",
-        help="Display any `log()` messages to stdout; any logged messages will "
-        "be ignored if this argument is not set.",
+        "--owns",
+        nargs="+",
+        default=["space-age"],
+        help="Emulates that Draftsman has ownership of the list of these DLC "
+        "when running the data lifecycle. Certain modlists require DLC access "
+        "in order to function correctly. Currently, the only valid argument is "
+        "`space-age`. Space Age is owned by default."
     )
     update_command.add_argument(
         "--no-mods",
@@ -177,6 +181,20 @@ def main():
         "mods made by Wube (`quality`, `elevated-rails`, `space-age`) are NOT "
         "affected by this flag; those should be manually configured with "
         "`draftsman enable|disable [official-mod]`",
+    )
+    update_command.add_argument(
+        "--no-dlc",
+        action="store_true",
+        help="Runs the data lifecycle as if Draftsman has no access to Wube's "
+        "DLC content. Superceeds the `owns` argument; equivalent to setting "
+        "`--owns` to an empty list."
+    )
+    update_command.add_argument(
+        "-l",
+        "--log",
+        action="store_true",
+        help="Display any `log()` messages to stdout; any logged messages will "
+        "be ignored if this argument is not set.",
     )
 
     args: DraftsmanCommandArgs = parser.parse_args(namespace=DraftsmanCommandArgs())
@@ -261,12 +279,14 @@ def main():
         )
 
     elif args.operation in "update":
+        owned_dlc = [] if args.no_dlc else args.owns
         update_draftsman_data(
             game_path=args.game_path,
             mods_path=args.mods_path,
-            show_logs=args.log,
+            owned_dlc=owned_dlc,
             no_mods=args.no_mods,
             verbose=args.verbose,
+            show_logs=args.log,
         )
 
 
