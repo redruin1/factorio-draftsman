@@ -118,7 +118,7 @@ blueprint_book.blueprints = [blueprint, UpgradePlanner(), DeconstructionPlanner(
 print(blueprint_book.to_string(version=(2, 0)))  # Blueprint string to import into Factorio
 ```
 
-![The output from the above script.](examples/images/readme_output.PNG)
+![The output from the above script.](https://github.com/redruin1/factorio-draftsman/raw/main/examples/images/readme_output.PNG)
 
 # Overview
 
