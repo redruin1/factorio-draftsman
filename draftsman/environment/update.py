@@ -547,7 +547,9 @@ def run_data_lifecycle(
             segmented_units={sa_enabled},
             expansion_shaders={sa_enabled},
         }}
-        """.format(sa_enabled="space-age" in owned_dlc)
+        """.format(
+            sa_enabled="space-age" in owned_dlc
+        )
     )
 
     # "interface.lua" houses a number of patching functions used to emulate

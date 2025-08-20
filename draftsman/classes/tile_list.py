@@ -68,7 +68,9 @@ class TileHashMap(SpatialDataStructure):
                 # never intersect
                 item_layers = item.collision_mask
                 other_layers = existing_tile.collision_mask
-                if len(other_layers.intersection(item_layers)) == 0:  # pragma: no coverage
+                if (
+                    len(other_layers.intersection(item_layers)) == 0
+                ):  # pragma: no coverage
                     return
 
                 warnings.warn(

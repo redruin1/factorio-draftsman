@@ -2,7 +2,7 @@
 
 ## 3.0.1
 * Updated `factorio-data` to version `2.0.64` (latest stable)
-* Added `--owns` and `--no-dlc` arguments to `draftsman update` and `draftsman.environment.run_data_lifecycle()`
+* Added `--owns` and `--no-dlc` arguments to `draftsman update` and `draftsman.environment.run_data_lifecycle()` (#184)
 * Added command `just benchmark` which will run a suite of benchmarks and record the result in a `.benchmarks` folder
 * [PERF] Improved `ManualSection.get/set_signal()` for requester chests and constant combinators
 * [PERF] Implemented a special `SpatialDataStructure` for `tiles`, leading to ~16x speedup on adding tiles to blueprints

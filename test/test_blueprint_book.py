@@ -63,11 +63,14 @@ class TestBlueprintableList:
         blueprint_book.blueprints[0] = BlueprintBook(label="bpb")
         assert isinstance(blueprint_book.blueprints[0], BlueprintBook)
 
-        blueprint_book.blueprints[1:2] = [Blueprint(label="100"), Blueprint(label="200")]
+        blueprint_book.blueprints[1:2] = [
+            Blueprint(label="100"),
+            Blueprint(label="200"),
+        ]
         assert blueprint_book.blueprints.data == [
             BlueprintBook(label="bpb"),
-            Blueprint(label="100"), 
-            Blueprint(label="200")
+            Blueprint(label="100"),
+            Blueprint(label="200"),
         ]
 
         with pytest.raises(TypeError):

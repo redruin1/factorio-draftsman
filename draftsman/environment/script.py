@@ -172,7 +172,7 @@ def main():
         help="Emulates that Draftsman has ownership of the list of these DLC "
         "when running the data lifecycle. Certain modlists require DLC access "
         "in order to function correctly. Currently, the only valid argument is "
-        "`space-age`. Space Age is owned by default."
+        "`space-age`. Space Age is owned by default.",
     )
     update_command.add_argument(
         "--no-mods",
@@ -187,7 +187,7 @@ def main():
         action="store_true",
         help="Runs the data lifecycle as if Draftsman has no access to Wube's "
         "DLC content. Superceeds the `owns` argument; equivalent to setting "
-        "`--owns` to an empty list."
+        "`--owns` to an empty list.",
     )
     update_command.add_argument(
         "-l",
