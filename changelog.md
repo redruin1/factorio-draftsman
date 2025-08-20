@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.1.0
+* Added support for blueprint parameters
+
 ## 3.0.1
 * Updated `factorio-data` to version `2.0.64` (latest stable)
 * Added `--owns` and `--no-dlc` arguments to `draftsman update` and `draftsman.environment.run_data_lifecycle()` (#184)

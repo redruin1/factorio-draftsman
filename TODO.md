@@ -1,13 +1,14 @@
 # TODO
 
+### Better stack traceback on LUA errors
+Also better to have log messages point to the calling script line number like how the game does it.
+
+---
 ### Add a `CONTRIBUTING.md`
 Most information is already in the readme, just leaving out more niche guidelines
 
 ---
 ### Remove all old typing constructs (`Union`, `List`, etc.) now that minimum Python version > 3.9
-
----
-### A better way to filter specific errors (some further API additions to `ValidationResult`, likely)
 
 ---
 ### Make the delineation between train schedule/space platform conditions/interrupts larger, as they're not all interchangeable

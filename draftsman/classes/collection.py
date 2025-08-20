@@ -10,7 +10,7 @@ from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
 from draftsman.classes.vector import Vector, PrimitiveVector
 from draftsman.constants import Direction, Orientation, WireConnectorID
-from draftsman.signatures import StockConnection
+from draftsman.signatures import StockConnection, IDParameter, NumberParameter
 from draftsman.error import (
     DuplicateIDError,
     EntityNotPowerConnectableError,
@@ -600,6 +600,26 @@ class Collection(metaclass=ABCMeta):
     ``entities`` list.
 
     .. versionadded:: 3.0.0 (Factorio 2.0)
+    """
+
+    # =========================================================================
+
+    parameters: list[IDParameter | NumberParameter] = attrs.field(
+        factory=list,
+        # TODO: validators
+        kw_only=True,
+    )
+    """
+    .. serialized::
+
+        This attribute is imported/exported from blueprint strings.
+
+    A list of all :py:class:`.Parameter` s that this blueprint implements.
+
+    Parameters are evaluated sequentially from the beginning of the list to the
+    end.
+
+    .. versionadded:: 3.1.0 (Factorio 2.0)
     """
 
     # =========================================================================

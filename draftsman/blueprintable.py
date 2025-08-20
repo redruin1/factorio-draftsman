@@ -15,6 +15,7 @@ from draftsman.classes.deconstruction_planner import DeconstructionPlanner
 from draftsman.classes.upgrade_planner import UpgradePlanner
 from draftsman.classes.blueprint_book import BlueprintBook
 from draftsman.classes.group import Group
+from draftsman.signatures import IDParameter, NumberParameter
 
 
 __all__ = [
@@ -23,6 +24,8 @@ __all__ = [
     "UpgradePlanner",
     "BlueprintBook",
     "Group",
+    "IDParameter",
+    "NumberParameter",
     "get_blueprintable_from_string",
     "get_blueprintable_from_JSON",
 ]

@@ -419,6 +419,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("blueprint", "tiles"): fields.tiles.name,
         ("blueprint", "wires"): fields.wires.name,  # *Possibly* imported
         ("blueprint", "schedules"): fields.schedules.name,
+        # None: fields.parameters.name,
         # None: fields.stock_connections.name,
     },
     lambda fields, converter: {
@@ -438,6 +439,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("blueprint", "tiles"): fields.tiles.name,
         # None: fields.wires.name, # Not exported (if I have anything to say about it)
         ("blueprint", "schedules"): fields.schedules.name,
+        # None: fields.parameters.name,
         # None: fields.stock_connections.name,
     },
 )
@@ -630,6 +632,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ),
         ("blueprint", "tiles"): fields.tiles.name,
         ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "parameters"): fields.parameters.name,
         ("blueprint", "schedules"): fields.schedules.name,
         ("blueprint", "stock_connections"): fields.stock_connections.name,
     },
@@ -649,6 +652,7 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ("blueprint", "entities"): fields.entities.name,
         ("blueprint", "tiles"): fields.tiles.name,
         ("blueprint", "wires"): fields.wires.name,
+        ("blueprint", "parameters"): fields.parameters.name,
         ("blueprint", "schedules"): fields.schedules.name,
         ("blueprint", "stock_connections"): (
             fields.stock_connections,
