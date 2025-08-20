@@ -163,7 +163,7 @@ class Mod:
             # incompatible, etc.) so we only consider the ones that actually
             # point to a loaded mod in the current load cycle
             if dependency.reference is not None:
-                depth = max(depth, depth + dependency.reference.get_depth())
+                depth = max(depth, 1 + dependency.reference.get_depth())
         return depth
 
     def get_file(self, filepath) -> str:
