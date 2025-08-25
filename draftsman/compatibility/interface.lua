@@ -9,7 +9,7 @@
 -- process (since we have to do this manually due to reasons)
 MOD_FOLDER_LOCATION = nil    -- Exactly where the mods are expected to be
 MOD_LIST = nil      -- Total list of all mods; populated by Python
-MOD_TREE = {}       -- Stack of mods keeping track of where to require files
+MOD_STACK = {}       -- Stack of mods keeping track of where to require files
 MOD_DIR = nil       -- Path to the current mod (at the top of the mod tree)
 CURRENT_FILE = nil  -- String filepath to the file we're currently executing
 CURRENT_DIR = ""    -- Location of the filepath in some relative directory
@@ -74,15 +74,62 @@ function table_size(t)
     return count
 end
 
+-- Override the regular traceback with a prettier one that prints the actual
+-- sections of the affected source code.
+--old_traceback = debug.traceback
+debug.traceback = function(message, level)
+
+    print(message)
+
+    local function get_function_name(info) 
+        if info.name then
+            return string.format("%s '%s'", info.namewhat, info.name)
+        elseif info.what == "main" then
+            return "main chunk"
+        --elseif globals() then -- try a global name
+            -- TODO
+        elseif info.what ~= "C" then
+            return string.format("function <%s:%d>", info.source, info.linedefined)
+        else
+            return "?"
+        end
+    end
+
+    local stack_traces = ""
+    level = level or 3
+    local info = debug.getinfo(level, "nSlLf")
+    while info do
+        -- TODO: ignore our custom `require`
+
+        local stack_trace = string.format(
+            "\n\t%s:%d: in %s", info.source, info.currentline, get_function_name(info)
+        )
+
+        print(info.source)
+
+        local source, err = py_get_source(info.source, info.currentline, package.path)
+
+        if err == nil then
+            stack_traces = stack_trace .. source .. stack_traces
+        else
+            stack_traces = stack_trace .. stack_traces
+        end
+
+        level = level + 1
+        info = debug.getinfo(level, "nSlL")
+    end
+    return message .. "\nstack traceback:" .. stack_traces
+end
+
 -- Standardizes the lua require paths to standardized paths. Removes ".lua" from
 -- the end, replaces all "." with "/", and changes "__modname__..." to
--- "./factorio-mods/modname/...". Does the same with "__base__" and "__core__",
--- except they point to "factorio-data" instead of "factorio-mods". Also handles
+-- "mod/folder/location/modname/...". Does the same with "__base__" and 
+-- "__core__", except they point to "factorio-data" instead. Also handles
 -- a number of other miscellaneous cases in order to get the paths as normal as
 -- possible.
 -- Also returns a boolean `absolute`, which indicates if the filepath is 
 -- considered absolute (from the root mods directory) or local (relative to
--- CURRENT_FILE)
+-- the top of `REQUIRE_STACK`)
 local function normalize_module_name(module_name)
     -- remove lua from end if present
     module_name = module_name:gsub(".lua$", "")
@@ -140,23 +187,19 @@ end
 -- function.
 local old_require = require
 function require(module_name)
-    -- print("\tcurrent_file:", CURRENT_FILE)
+    -- print("\tcurrent file:", REQUIRE_STACK[#REQUIRE_STACK])
     -- print("\trequiring:", module_name)
 
     local mod_changed = false
     local match, name = module_name:match("(__([%w%-_]+)__)")
     -- if the filepath uses this notation and the name is a mod, then we alter the current mod
-    if match and mods[name] and MOD_TREE[#MOD_TREE] ~= MOD_LIST[name]then
-        --print(name)
-        --print("pushing mod ", name)
+    if match and mods[name] and MOD_STACK[#MOD_STACK] ~= MOD_LIST[name]then
         lua_push_mod(MOD_LIST[name])
         mod_changed = true
     end
 
     local norm_module_name, absolute = normalize_module_name(module_name)
     -- print("Normalized module name:", norm_module_name)
-
-    --CURRENT_FILE = norm_module_name
 
     local function get_parent(path)
         local pattern1 = "^(.+)/"
@@ -169,38 +212,35 @@ function require(module_name)
         end
     end
 
-    PARENT_DIR = get_parent(norm_module_name)
-    --print("PARENT_DIR:", PARENT_DIR)
+    parent_dir = get_parent(norm_module_name)
     local path_added = false
     -- TODO: revise this logic to be better
-    if PARENT_DIR then
-        -- print("\tabsolute")
-        local with_path = PARENT_DIR .. "/?.lua"
+    if absolute then
+        local with_path = parent_dir .. "/?.lua"
         -- add the mod directory to the path if it's an absolute path
         if not absolute then with_path = MOD_DIR .. "/" .. with_path end
-        -- print("\tWITH_PATH: " .. with_path)
+
         lua_add_path(with_path)
-        -- print("added path:", with_path)
+
         path_added = true
+        table.insert(REQUIRE_STACK, norm_module_name) -- push
     else -- God this whole thing is scuffed
-        -- print("\trelative")
-        -- print(CURRENT_DIR)
         -- get directory of current file
-        local rel_parent = get_parent(CURRENT_FILE) or ""
+        local rel_parent = get_parent(REQUIRE_STACK[#REQUIRE_STACK]) or ""
+
         if not absolute then with_path = rel_parent .. "/?.lua" end -- MOD_DIR .. CURRENT_DIR
         lua_add_path(with_path)
-        -- print("added path:", with_path)
+
         path_added = true
-        CURRENT_FILE = rel_parent .. "/" .. norm_module_name
+        table.insert(REQUIRE_STACK, rel_parent .. "/" .. norm_module_name) -- push
     end
 
     result = old_require(module_name)
 
-    -- CURRENT_FILE = PARENT_DIR .. "/" .. norm_module_name
-
     if path_added then
         --print("removed path")
         lua_remove_path()
+        table.remove(REQUIRE_STACK) -- pop
     end
 
     if mod_changed then
@@ -231,10 +271,6 @@ local missing_file_substitution = function(module_name)
     local is_graphics = string.match(normal_name, ".*/?graphics/.+")
     local is_sounds = string.match(normal_name, ".*/?sound/.+")
 
-    -- print(is_menu_simulations)
-    -- print(is_graphics)
-    -- print(is_sounds)
-
     -- Infer the type of file that Factorio is expecting from the path, and then
     -- return a value corresponding to that type
     if is_menu_simulations then
@@ -251,12 +287,10 @@ end
 -- lua file loading afterwards.
 local archive_searcher = function(module_name)
     module_name, _ = normalize_module_name(module_name)
-    -- TODO
-    local contents, err = python_require(MOD_TREE[#MOD_TREE], MOD_FOLDER_LOCATION, module_name, package.path)
+
+    local contents, err = python_require(MOD_STACK[#MOD_STACK], MOD_FOLDER_LOCATION, module_name, package.path)
     if contents then
-        filepath = err
-        --CURRENT_DIR = filepath -- hacky patch
-        return assert(load(contents, module_name))
+        return assert(load(contents, MOD_STACK[#MOD_STACK].location .. "/" .. module_name))
     else
         return err
     end
@@ -267,7 +301,7 @@ end
 -- ourselves in `normalize_module_name`. Every path passed into this function
 -- expects to be in a literal path format, hence the name.
 local literal_searcher = function(module_name)
-    local norm_module_name, absolute = normalize_module_name(module_name)
+    local norm_module_name, _ = normalize_module_name(module_name)
     --print(package.path)
 
     local errmsg = ""
@@ -340,19 +374,20 @@ end
 
 -- Push a mod to the stack of mods that the current require chain is using
 function lua_push_mod(mod)
-    table.insert(MOD_TREE, mod)
-    MOD_DIR = MOD_TREE[#MOD_TREE].location
+    table.insert(MOD_STACK, mod)
+    MOD_DIR = MOD_STACK[#MOD_STACK].location
 end
 
 -- Pop a mod off the stack of mods that the current require chain is using
 function lua_pop_mod()
-    table.remove(MOD_TREE)
-    MOD_DIR = MOD_TREE[#MOD_TREE].location
+    table.remove(MOD_STACK)
+    MOD_DIR = MOD_STACK[#MOD_STACK].location
 end
 
 -- Wipe all mods from the mod tree to return it to a known state 
 -- (on stage change)
 function lua_wipe_mods()
-    MOD_TREE = {}
+    MOD_STACK = {}
     MOD_DIR = nil
+    REQUIRE_STACK = {}
 end

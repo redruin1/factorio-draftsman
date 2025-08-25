@@ -29,6 +29,7 @@ import lupa.lua52 as lupa
 from collections import OrderedDict
 import json
 import os
+import pathlib
 import pickle
 from typing import Optional, Union
 
@@ -221,6 +222,78 @@ def specify_factorio_version(
             )
 
 
+def run_lua_file(lua: lupa.LuaRuntime, file: str):
+    lua.execute(
+        file_to_string(file),
+        name=file
+    )
+
+def py_get_source(mods_list: dict[str, Mod]):
+    # We need access to the mods list, but we don't have that information on the
+    # Lua side. We pass a reference to it during the `run_data_lifecycle` part
+    # instead and generate the function like a decorator.
+
+    def py_get_source(
+        module_name: str, line_no: int, package_path: str,
+    ) -> tuple[str | None, str]:
+        """
+        Attempts to grab the source code surrounding the line of code specified at
+        ``line_no``.
+        """
+
+        # We're given a generic module name, which can point to either a regular 
+        # folder or a compressed archive.
+        # The given string should be coercable to a path object:
+        module_path = pathlib.Path(module_name)
+        # If we go through all parent path objects and at least one of them is a 
+        # file, then we know that we're dealing with an archive
+        file_parents = [parent for parent in module_path.parents if parent.is_file()]
+        if len(file_parents) > 0:
+            archive = True
+            archive_path = file_parents[0]
+        else:
+            archive = False
+
+        if archive:
+            # Archive module names should be of the format:
+            #   mod-folder/mod.zip/path/to/file.lua
+            # So we should be able to replace the location substring of 
+            # "mod-folder/mod.zip" with the internal `archive_folder` and grab
+            # it natively
+            for _, mod in mods_list.items():
+                if mod.location == str(pathlib.PurePosixPath(archive_path)):
+                    break
+
+            module_name = module_name.replace(mod.location, mod.archive_folder)
+
+            source, err = python_require(mod, None, module_name, package_path)
+        else:
+            try:
+                source = file_to_string(module_name)
+                err = None
+            except Exception as e:
+                source = "\n"
+                err = str(e)
+
+        if err:
+            return source, err
+        
+        lines = source.split("\n")
+
+        digit_width = len(str(len(lines)))
+        radius = 5
+        line_no = line_no - 1 # 0-index instead of 1-index
+
+        local_lines = [
+            f"\n{">>>" if i == 0 else ""}\t{(i + line_no + 1):<{digit_width}}: {lines[i + line_no]}"
+            for i in range(-radius, radius + 1)
+            if 0 <= i + line_no < len(lines)
+        ]
+        return "\n" + "".join(local_lines) + "\n", None
+    
+    return py_get_source
+        
+
 def python_require(
     mod: Mod, mod_folder: str, module_name: str, package_path: str
 ) -> tuple[str | None, str]:
@@ -251,14 +324,12 @@ def python_require(
         # internal path
         filepath = filepath.replace(mod.location, mod.archive_folder)
         try:
-            string_contents = archive_to_string(mod.archive, filepath)
-            fixed_filepath = os.path.dirname(filepath[filepath.find("/") :])
-            return string_contents, fixed_filepath
+            return archive_to_string(mod.archive, filepath), None
         except KeyError:
             pass
 
     # Otherwise, we found squat
-    return None, "no file '{}' found in '{}' archive".format(module_name, mod.name)
+    return None, "no module '{}' found in '{}' archive".format(module_name, mod.name)
 
 
 def run_mod_phase(lua: lupa.LuaRuntime, mod: Mod, stage: str) -> None:
@@ -269,12 +340,12 @@ def run_mod_phase(lua: lupa.LuaRuntime, mod: Mod, stage: str) -> None:
     # lua.globals().MOD = mod
     lua.globals().MOD_DIR = mod.location
     lua.globals().lua_push_mod(mod)
-    lua.globals().CURRENT_FILE = mod.location + "/" + stage
+    lua.globals().REQUIRE_STACK = lua.eval("{{\"{}\"}}".format(mod.location + "/" + stage))
 
     # Add the base mod folder as a base path (in addition to base and core)
     lua.globals().lua_add_path(mod.location + "/?.lua")
 
-    lua.execute(mod.get_file(stage))
+    lua.execute(mod.get_file(stage), name=(mod.location + "/" + stage.replace(".lua", "")))
 
 
 def run_settings_stage(
@@ -305,7 +376,7 @@ def run_settings_stage(
                 if verbose:
                     print("\tmod:", mod.name)
 
-                run_mod_phase(lua, mod, stage)
+                run_mod_phase(lua, mod, stage) # TODO: wrap in try-catch
 
                 # Reset the included modules
                 lua.globals().lua_unload_cache()
@@ -317,7 +388,7 @@ def run_settings_stage(
     )
 
     # If there is a `mod-settings.dat` file present, we overwrite the current
-    # values with the user-specified ones:
+    # default values with the user-specified ones:
     try:
         user_settings = read_mod_settings(mods_path)
         # If so, Overwrite the 'value' key for all the settings present
@@ -351,7 +422,7 @@ def run_data_stage(
                 if verbose:
                     print("\tmod:", mod.name)
 
-                run_mod_phase(lua, mod, stage)
+                run_mod_phase(lua, mod, stage) # TODO: wrap in try-catch
 
                 # Reset the included modules
                 lua.globals().lua_unload_cache()
@@ -556,9 +627,7 @@ def run_data_lifecycle(
     # Factorio's internal load process.
     # Primarily, it updates the require function to now handle `python_require`,
     # and fixes a few small discrepancies that Factorio's environment has.
-    lua.execute(
-        file_to_string(os.path.join(draftsman_path, "compatibility", "interface.lua"))
-    )
+    run_lua_file(lua, os.path.join(draftsman_path, "compatibility", "interface.lua"))
 
     # For ease of access, we setup some aliases and variables between the two
     # contexts:
@@ -579,8 +648,10 @@ def run_data_lifecycle(
     # This function is in charge of reading a required file from a zip archive
     # and providing the source to Lua's `require` function.
     lua.globals().python_require = python_require
+    lua.globals().py_get_source = py_get_source(mods)
 
     # Factorio utility functions
+    run_lua_file(lua, os.path.join(game_path, "core", "lualib", "util.lua"))
     lua.execute(file_to_string(os.path.join(game_path, "core", "lualib", "util.lua")))
 
     # Because Lupa can't handle byte-order marks in input files, we can't rely
@@ -588,7 +659,7 @@ def run_data_lifecycle(
     # We can try to strip the byte-order mark on the Lua side of things, but
     # frankly I trust Python here way more than I trust Lua to handle file
     # formatting
-    # So instead, we open a correctly encoded file on the python side of things
+    # So instead, we open a correctly encoded file on the Python side of things
     # and then pass a file handle to Lua instead (which Lua reads from and
     # unloads)
     def python_get_file(filepath):
@@ -605,12 +676,14 @@ def run_data_lifecycle(
     # lua.globals().MOD = mod
     lua.globals().MOD_DIR = mods["core"].location
     lua.globals().lua_push_mod(mods["core"])
-    lua.globals().CURRENT_FILE = mods["core"].location + "/lualib/dataloader.lua"
+    lua.globals().REQUIRE_STACK = lua.eval(
+        "{{\"{}\"}}".format(mods["core"].location + "/lualib/dataloader.lua")
+    )
 
     # Factorio `data:extend` function
-    lua.execute(
-        file_to_string(os.path.join(game_path, "core", "lualib", "dataloader.lua"))
-    )
+    # NOTE: the actual load process might load all files in `lualib`, but it
+    # seems we only need this file for our purposes
+    run_lua_file(lua, os.path.join(game_path, "core", "lualib", "dataloader.lua"))
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
     python_mods = {}
@@ -618,10 +691,10 @@ def run_data_lifecycle(
         python_mods[mod] = mods[mod].version
     lua.globals().python_mods = python_mods
     # This is still a Python data structure though, so we run the following bit
-    # of code to convert the `python_mods` global to the `mods` Lua table
+    # of code to convert the `python_mods` Python dict to the `mods` Lua table
     # Factorio wants
     lua.execute(
-        """
+    """
     mods = {}
     for k in python.iter(python_mods) do
         mods[k] = python_mods[k]
@@ -633,16 +706,13 @@ def run_data_lifecycle(
     root_path = os.path.join(draftsman_path, "?.lua")
     lua_add_path(root_path)
 
-    # Add the path to and setup the `core` module
-    # This should probably be part of the main load process in case more than
-    # "data.lua" is added to the core module, but core is kinda special and
-    # would have to be integrated into the load order as a unique case anyway
+    # Add the lualib path since mods can use them at any point
     lualib_path = os.path.join(game_path, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
-    # load_stage(lua, mods, core_mod, "data.lua")
 
     # We also add a special path, which is just the entire module
-    # (This is used for absolute paths in archives, so we add it once here)
+    # (This is used for local paths in archives which also uses the same 
+    # package.path, so we add it once here)
     lua_add_path("?.lua")
 
     # We want to include core in all further mods, so we set this as the "base"
@@ -1167,6 +1237,7 @@ def extract_entities(
     add_entities("transport-belt")
     add_entities("turret")  # turrets that require no ammo whatsoever
     add_entities("underground-belt")
+    add_entities("valve")
     add_entities("wall")
 
     entities["flippable"] = is_flippable
@@ -1664,6 +1735,7 @@ def extract_signals(
     add_signals("underground-belt", entity_signals, "entity")
     add_signals("unit", entity_signals, "entity")
     add_signals("unit-spawner", entity_signals, "entity")
+    add_signals("valve", entity_signals, "entity")
     add_signals("wall", entity_signals, "entity")
     # fmt: on
 

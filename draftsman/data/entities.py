@@ -132,6 +132,7 @@ try:
         turrets: list[str] = of_type["turret"]
         underground_belts: list[str] = of_type["underground-belt"]
         underground_pipes: list[str] = of_type["pipe-to-ground"]
+        valves: list[str] = of_type["valve"]
         walls: list[str] = of_type["wall"]
 
 

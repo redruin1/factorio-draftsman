@@ -112,6 +112,7 @@ from test.prototypes.test_train_stop import valid_train_stop
 from test.prototypes.test_transport_belt import valid_transport_belt
 from test.prototypes.test_underground_belt import valid_underground_belt
 from test.prototypes.test_underground_pipe import valid_underground_pipe
+from test.prototypes.test_valve import valid_valve
 from test.prototypes.test_wall import valid_wall
 
 entity_fixtures = [
@@ -200,6 +201,7 @@ entity_fixtures = [
     "valid_transport_belt",
     "valid_underground_belt",
     "valid_underground_pipe",
+    "valid_valve",
     "valid_wall",
 ]
 

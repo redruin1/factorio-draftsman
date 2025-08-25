@@ -93,6 +93,7 @@ from draftsman.prototypes.train_stop import TrainStop, train_stops
 from draftsman.prototypes.transport_belt import TransportBelt, transport_belts
 from draftsman.prototypes.underground_belt import UndergroundBelt, underground_belts
 from draftsman.prototypes.underground_pipe import UndergroundPipe, underground_pipes
+from draftsman.prototypes.valve import Valve, valves
 from draftsman.prototypes.wall import Wall, walls
 # fmt: on
 
@@ -188,6 +189,7 @@ __all__ = [
     "TransportBelt", "transport_belts",
     "UndergroundBelt", "underground_belts",
     "UndergroundPipe", "underground_pipes",
+    "Valve", "valves",
     "Wall", "walls",
     "get_entity_class",
     "new_entity",

@@ -136,7 +136,7 @@ class Mod:
         # self.enabled = enabled
         # self.dependencies = []
 
-    def setup_archive(self, archive, archive_folder):
+    def setup_archive(self, archive: zipfile.ZipFile, archive_folder: str):
         """
         Initialize the internal structure with archive data.
         """

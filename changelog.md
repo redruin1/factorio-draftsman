@@ -2,6 +2,9 @@
 
 ## 3.1.0
 * Added support for blueprint parameters
+* Added `Valve` prototype (added in Factorio `2.0.48`)
+* Improved Lua stack trace output on `LuaErrors` when running `draftsman update`
+* Fixed #196 (draftsman update fails to load pyanadons mods)
 
 ## 3.0.1
 * Updated `factorio-data` to version `2.0.64` (latest stable)
