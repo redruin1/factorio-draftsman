@@ -1,7 +1,11 @@
 # TODO
 
-### Better stack traceback on LUA errors
-Also better to have log messages point to the calling script line number like how the game does it.
+### Add `draftsman update` testing
+So that regressions are unlikely. Can likely settle for the most common mods/modpacks, probably tested via workflows
+
+---
+### Rewrite `draftsman update` Lua interface
+Likely can be massively cleaned up and simplified
 
 ---
 ### Add a `CONTRIBUTING.md`

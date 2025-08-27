@@ -48,9 +48,9 @@ math.pow = math.pow or function(value, power)
 end
 
 -- Overwrite print to distinguish which "side" the message came from
-local old_print = print
+local lua_print = print
 function print(...)
-    old_print("LUA:", ...)
+    lua_print("LUA:", ...)
 end
 
 -- Display any logged messages if logging is enabled. Any error messages are
@@ -74,12 +74,25 @@ function table_size(t)
     return count
 end
 
--- Override the regular traceback with a prettier one that prints the actual
--- sections of the affected source code.
---old_traceback = debug.traceback
-debug.traceback = function(message, level)
+-- Factorio uses Lua 5.2.1 - Lupa uses 5.2.4. Inbetween these two versions the
+-- semantics of table.insert/remove changed slightly - for now we just overwrite
+-- the new implementations with ones that mimic the old behavior
+table_remove_5_2_4 = table.remove
+function table_remove_5_2_1(t, idx)
+    idx = idx ~= nil and idx or #t
+    if t[idx] then
+        return table_remove_5_2_4(t, idx)
+    else
+        return nil
+    end
+end
+table.remove = table_remove_5_2_1
 
-    print(message)
+-- Override the regular traceback with a prettier one that prints the actual
+-- sections of the affected Lua source code.
+debug.traceback = function(message, level)
+    -- Message can be nil - make it an empty string in that case
+    message = (message == nil) and "" or message
 
     local function get_function_name(info) 
         if info.name then
@@ -96,29 +109,45 @@ debug.traceback = function(message, level)
     end
 
     local stack_traces = ""
-    level = level or 3
+    level = level or 2
     local info = debug.getinfo(level, "nSlLf")
     while info do
         -- TODO: ignore our custom `require`
+        if info.name ~= "require" then
 
-        local stack_trace = string.format(
-            "\n\t%s:%d: in %s", info.source, info.currentline, get_function_name(info)
-        )
+            local stack_trace = string.format(
+                "\n\t%s:%d: in %s\n", info.source, info.currentline, get_function_name(info)
+            )
 
-        print(info.source)
+            -- print(info.source)
 
-        local source, err = py_get_source(info.source, info.currentline, package.path)
+            local source, err = py_get_source(info.source, info.currentline, package.path)
 
-        if err == nil then
-            stack_traces = stack_trace .. source .. stack_traces
-        else
-            stack_traces = stack_trace .. stack_traces
+            if err == nil then
+                stack_traces = stack_trace .. source .. stack_traces
+            else
+                stack_traces = stack_trace .. stack_traces
+            end
+
         end
 
         level = level + 1
         info = debug.getinfo(level, "nSlL")
     end
     return message .. "\nstack traceback:" .. stack_traces
+end
+
+-- Removes the child-most file/folder from a path, leaving just the parent 
+-- folders.
+local function get_parent(path)
+    local pattern1 = "^(.+)/"
+    local pattern2 = "^(.+)\\"
+
+    if (string.match(path,pattern1) == nil) then
+        return string.match(path,pattern2)
+    else
+        return string.match(path,pattern1)
+    end
 end
 
 -- Standardizes the lua require paths to standardized paths. Removes ".lua" from
@@ -185,7 +214,7 @@ end
 -- to interpret later, and manages a number of other things. After preprocessing
 -- has taken place, `old_require` is called and executed at the end of the
 -- function.
-local old_require = require
+local lua_require = require
 function require(module_name)
     -- print("\tcurrent file:", REQUIRE_STACK[#REQUIRE_STACK])
     -- print("\trequiring:", module_name)
@@ -193,24 +222,13 @@ function require(module_name)
     local mod_changed = false
     local match, name = module_name:match("(__([%w%-_]+)__)")
     -- if the filepath uses this notation and the name is a mod, then we alter the current mod
-    if match and mods[name] and MOD_STACK[#MOD_STACK] ~= MOD_LIST[name]then
+    if match and mods[name] and MOD_STACK[#MOD_STACK] ~= MOD_LIST[name] then
         lua_push_mod(MOD_LIST[name])
         mod_changed = true
     end
 
     local norm_module_name, absolute = normalize_module_name(module_name)
     -- print("Normalized module name:", norm_module_name)
-
-    local function get_parent(path)
-        local pattern1 = "^(.+)/"
-        local pattern2 = "^(.+)\\"
-
-        if (string.match(path,pattern1) == nil) then
-            return string.match(path,pattern2)
-        else
-            return string.match(path,pattern1)
-        end
-    end
 
     parent_dir = get_parent(norm_module_name)
     local path_added = false
@@ -231,11 +249,16 @@ function require(module_name)
         if not absolute then with_path = rel_parent .. "/?.lua" end -- MOD_DIR .. CURRENT_DIR
         lua_add_path(with_path)
 
+        rel_parent = get_parent(REQUIRE_STACK[#REQUIRE_STACK])
+        if rel_parent then
+            norm_module_name = rel_parent .. "/" .. norm_module_name
+        end
+
         path_added = true
-        table.insert(REQUIRE_STACK, rel_parent .. "/" .. norm_module_name) -- push
+        table.insert(REQUIRE_STACK, norm_module_name) -- push
     end
 
-    result = old_require(module_name)
+    result = lua_require(module_name)
 
     if path_added then
         --print("removed path")
@@ -286,11 +309,11 @@ end
 -- to read from the python zipfile archives first and continues with regular
 -- lua file loading afterwards.
 local archive_searcher = function(module_name)
-    module_name, _ = normalize_module_name(module_name)
+    norm_module_name, _ = normalize_module_name(module_name)
 
-    local contents, err = python_require(MOD_STACK[#MOD_STACK], MOD_FOLDER_LOCATION, module_name, package.path)
+    local contents, err = python_require(MOD_STACK[#MOD_STACK], MOD_FOLDER_LOCATION, norm_module_name, package.path)
     if contents then
-        return assert(load(contents, MOD_STACK[#MOD_STACK].location .. "/" .. module_name))
+        return assert(load(contents, norm_module_name .. ".lua"))
     else
         return err
     end
@@ -302,7 +325,6 @@ end
 -- expects to be in a literal path format, hence the name.
 local literal_searcher = function(module_name)
     local norm_module_name, _ = normalize_module_name(module_name)
-    --print(package.path)
 
     local errmsg = ""
     for path in string.gmatch(package.path, "([^;]+)") do

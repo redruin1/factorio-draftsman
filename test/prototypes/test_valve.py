@@ -30,57 +30,63 @@ class TestValve:
 
         # Warnings
         with pytest.warns(UnknownKeywordWarning):
-            pipe = Valve.from_dict(
-                {"name": "top-up-valve", "unused_keyword": 10}
-            )
+            valve = Valve.from_dict({"name": "top-up-valve", "unused_keyword": 10})
 
         # Errors
         with pytest.warns(UnknownEntityWarning):
-            pipe = Valve("this is not an valve")
+            valve = Valve("this is not an valve")
 
     def test_power_and_circuit_flags(self):
         for name in valves:
-            underground_belt = Valve(name)
-            assert underground_belt.power_connectable == False
-            assert underground_belt.dual_power_connectable == False
-            assert underground_belt.circuit_connectable == False
-            assert underground_belt.dual_circuit_connectable == False
+            valve = Valve(name)
+            assert valve.power_connectable == False
+            assert valve.dual_power_connectable == False
+            assert valve.circuit_connectable == False
+            assert valve.dual_circuit_connectable == False
+
+    def test_threshold(self):
+        valve = Valve("top-up-valve")
+        assert valve.threshold == 0.5
+
+        with pytest.warns(UnknownEntityWarning):
+            valve = Valve("unknown-valve")
+        assert valve.threshold is None
 
     def test_mergable_with(self):
-        pipe1 = Valve("top-up-valve")
-        pipe2 = Valve("top-up-valve", tags={"some": "stuff"})
+        valve1 = Valve("top-up-valve")
+        valve2 = Valve("top-up-valve", tags={"some": "stuff"})
 
-        assert pipe1.mergable_with(pipe1)
+        assert valve1.mergable_with(valve1)
 
-        assert pipe1.mergable_with(pipe2)
-        assert pipe2.mergable_with(pipe1)
+        assert valve1.mergable_with(valve2)
+        assert valve2.mergable_with(valve1)
 
-        pipe2.tile_position = (1, 1)
-        assert not pipe1.mergable_with(pipe2)
+        valve2.tile_position = (1, 1)
+        assert not valve1.mergable_with(valve2)
 
     def test_merge(self):
-        pipe1 = Valve("top-up-valve")
-        pipe2 = Valve("top-up-valve", tags={"some": "stuff"})
+        valve1 = Valve("top-up-valve")
+        valve2 = Valve("top-up-valve", tags={"some": "stuff"})
 
-        pipe1.merge(pipe2)
-        del pipe2
+        valve1.merge(valve2)
+        del valve2
 
-        assert pipe1.tags == {"some": "stuff"}
+        assert valve1.tags == {"some": "stuff"}
 
     def test_eq(self):
-        pipe1 = Valve("top-up-valve")
-        pipe2 = Valve("top-up-valve")
+        valve1 = Valve("top-up-valve")
+        valve2 = Valve("top-up-valve")
 
-        assert pipe1 == pipe2
+        assert valve1 == valve2
 
-        pipe1.tags = {"some": "stuff"}
+        valve1.tags = {"some": "stuff"}
 
-        assert pipe1 != pipe2
+        assert valve1 != valve2
 
         container = Container()
 
-        assert pipe1 != container
-        assert pipe2 != container
+        assert valve1 != container
+        assert valve2 != container
 
         # hashable
-        assert isinstance(pipe1, Hashable)
+        assert isinstance(valve1, Hashable)

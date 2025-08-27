@@ -8,6 +8,9 @@ _no_target_provided:
 # Run 'lint + test + report-coverage'
 ci: lint test report-coverage
 
+# Run 'lint + test-targeted + report-coverage'
+ci-waypoints: lint test-waypoints report-coverage
+
 # Run 'lint + test-all + report-coverage'
 ci-all: lint test-all report-coverage
 
@@ -31,6 +34,9 @@ _test312:
 _test313:
     - uv run "--isolated" "--python=3.13" coverage run -p
 
+# Run test suite against {specific Factorio versions, latest Python version}
+test-waypoints:
+    uv run "--isolated" "--python=3.13" python test/test_waypoint_factorio_versions.py
 
 # Run test suite against {all Factorio versions, latest Python version} (LONG)
 test-all: _giga-test313

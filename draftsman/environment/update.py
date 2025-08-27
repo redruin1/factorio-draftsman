@@ -31,6 +31,7 @@ import json
 import os
 import pathlib
 import pickle
+import re
 from typing import Optional, Union
 
 
@@ -222,11 +223,9 @@ def specify_factorio_version(
             )
 
 
-def run_lua_file(lua: lupa.LuaRuntime, file: str):
-    lua.execute(
-        file_to_string(file),
-        name=file
-    )
+def run_lua_file(lua: lupa.LuaRuntime, file: str, custom_name: str | None = None):
+    lua.execute(file_to_string(file), name=file if custom_name is None else custom_name)
+
 
 def py_get_source(mods_list: dict[str, Mod]):
     # We need access to the mods list, but we don't have that information on the
@@ -234,18 +233,27 @@ def py_get_source(mods_list: dict[str, Mod]):
     # instead and generate the function like a decorator.
 
     def py_get_source(
-        module_name: str, line_no: int, package_path: str,
+        module_name: str,
+        line_no: int,
+        package_path: str,
     ) -> tuple[str | None, str]:
         """
         Attempts to grab the source code surrounding the line of code specified at
         ``line_no``.
         """
 
-        # We're given a generic module name, which can point to either a regular 
+        # `module_name` can contain the __mod-name__ syntax, so we want to
+        # remedy that first
+        rename = re.compile(r"__([\w-]+)__")
+        match = rename.match(module_name)
+        if match:
+            module_name = rename.sub(mods_list[match[1]].location, module_name)
+
+        # We're given a generic module name, which can point to either a regular
         # folder or a compressed archive.
         # The given string should be coercable to a path object:
         module_path = pathlib.Path(module_name)
-        # If we go through all parent path objects and at least one of them is a 
+        # If we go through all parent path objects and at least one of them is a
         # file, then we know that we're dealing with an archive
         file_parents = [parent for parent in module_path.parents if parent.is_file()]
         if len(file_parents) > 0:
@@ -257,7 +265,7 @@ def py_get_source(mods_list: dict[str, Mod]):
         if archive:
             # Archive module names should be of the format:
             #   mod-folder/mod.zip/path/to/file.lua
-            # So we should be able to replace the location substring of 
+            # So we should be able to replace the location substring of
             # "mod-folder/mod.zip" with the internal `archive_folder` and grab
             # it natively
             for _, mod in mods_list.items():
@@ -266,7 +274,14 @@ def py_get_source(mods_list: dict[str, Mod]):
 
             module_name = module_name.replace(mod.location, mod.archive_folder)
 
-            source, err = python_require(mod, None, module_name, package_path)
+            try:
+                source = archive_to_string(mod.archive, module_name)
+                err = None
+            except KeyError:
+                source = None
+                err = "no file found in archive"
+
+            # source, err = python_require(mod, None, module_name, package_path)
         else:
             try:
                 source = file_to_string(module_name)
@@ -277,22 +292,27 @@ def py_get_source(mods_list: dict[str, Mod]):
 
         if err:
             return source, err
-        
+
         lines = source.split("\n")
 
         digit_width = len(str(len(lines)))
         radius = 5
-        line_no = line_no - 1 # 0-index instead of 1-index
+        line_no = line_no - 1  # 0-index instead of 1-index
 
         local_lines = [
-            f"\n{">>>" if i == 0 else ""}\t{(i + line_no + 1):<{digit_width}}: {lines[i + line_no]}"
+            "\n\t{}\t{:<{digit_width}}: {}".format(
+                ">>>" if i == 0 else "",
+                (i + line_no + 1),
+                lines[i + line_no],
+                digit_width=digit_width,
+            )
             for i in range(-radius, radius + 1)
             if 0 <= i + line_no < len(lines)
         ]
-        return "\n" + "".join(local_lines) + "\n", None
-    
+        return "".join(local_lines) + "\n", None
+
     return py_get_source
-        
+
 
 def python_require(
     mod: Mod, mod_folder: str, module_name: str, package_path: str
@@ -323,13 +343,16 @@ def python_require(
         # Make it local to the archive, replacing the global path to the local
         # internal path
         filepath = filepath.replace(mod.location, mod.archive_folder)
+        filepath = filepath.replace(f"__{mod.name}__", mod.archive_folder)
         try:
             return archive_to_string(mod.archive, filepath), None
         except KeyError:
             pass
 
     # Otherwise, we found squat
-    return None, "no module '{}' found in '{}' archive".format(module_name, mod.name)
+    return None, "\n\tno module '{}' found in '{}' archive".format(
+        module_name, mod.name
+    )
 
 
 def run_mod_phase(lua: lupa.LuaRuntime, mod: Mod, stage: str) -> None:
@@ -337,15 +360,17 @@ def run_mod_phase(lua: lupa.LuaRuntime, mod: Mod, stage: str) -> None:
     Runs one of the mod entry-points for either the settings or the data stage.
     (`settings.lua`, `data-updates.lua`, etc.)
     """
+    file_name = "__{}__/{}".format(mod.name, stage)  # mod.location
+
     # lua.globals().MOD = mod
     lua.globals().MOD_DIR = mod.location
     lua.globals().lua_push_mod(mod)
-    lua.globals().REQUIRE_STACK = lua.eval("{{\"{}\"}}".format(mod.location + "/" + stage))
+    lua.globals().REQUIRE_STACK = lua.eval('{{"{}"}}'.format(file_name))
 
     # Add the base mod folder as a base path (in addition to base and core)
     lua.globals().lua_add_path(mod.location + "/?.lua")
 
-    lua.execute(mod.get_file(stage), name=(mod.location + "/" + stage.replace(".lua", "")))
+    lua.execute(mod.get_file(stage), name=file_name)
 
 
 def run_settings_stage(
@@ -376,7 +401,7 @@ def run_settings_stage(
                 if verbose:
                     print("\tmod:", mod.name)
 
-                run_mod_phase(lua, mod, stage) # TODO: wrap in try-catch
+                run_mod_phase(lua, mod, stage)  # TODO: wrap in try-catch
 
                 # Reset the included modules
                 lua.globals().lua_unload_cache()
@@ -422,7 +447,7 @@ def run_data_stage(
                 if verbose:
                     print("\tmod:", mod.name)
 
-                run_mod_phase(lua, mod, stage) # TODO: wrap in try-catch
+                run_mod_phase(lua, mod, stage)  # TODO: wrap in try-catch
 
                 # Reset the included modules
                 lua.globals().lua_unload_cache()
@@ -652,7 +677,7 @@ def run_data_lifecycle(
 
     # Factorio utility functions
     run_lua_file(lua, os.path.join(game_path, "core", "lualib", "util.lua"))
-    lua.execute(file_to_string(os.path.join(game_path, "core", "lualib", "util.lua")))
+    # lua.execute(file_to_string(os.path.join(game_path, "core", "lualib", "util.lua")))
 
     # Because Lupa can't handle byte-order marks in input files, we can't rely
     # on Lua itself to load raw files using require unmodified
@@ -677,13 +702,17 @@ def run_data_lifecycle(
     lua.globals().MOD_DIR = mods["core"].location
     lua.globals().lua_push_mod(mods["core"])
     lua.globals().REQUIRE_STACK = lua.eval(
-        "{{\"{}\"}}".format(mods["core"].location + "/lualib/dataloader.lua")
+        '{{"{}"}}'.format(mods["core"].location + "/lualib/dataloader.lua")
     )
+    print(game_path)
 
     # Factorio `data:extend` function
     # NOTE: the actual load process might load all files in `lualib`, but it
     # seems we only need this file for our purposes
-    run_lua_file(lua, os.path.join(game_path, "core", "lualib", "dataloader.lua"))
+    run_lua_file(
+        lua,
+        os.path.join(game_path, "core", "lualib", "dataloader.lua"),
+    )
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
     python_mods = {}
@@ -694,7 +723,7 @@ def run_data_lifecycle(
     # of code to convert the `python_mods` Python dict to the `mods` Lua table
     # Factorio wants
     lua.execute(
-    """
+        """
     mods = {}
     for k in python.iter(python_mods) do
         mods[k] = python_mods[k]
@@ -711,7 +740,7 @@ def run_data_lifecycle(
     lua_add_path(lualib_path)
 
     # We also add a special path, which is just the entire module
-    # (This is used for local paths in archives which also uses the same 
+    # (This is used for local paths in archives which also uses the same
     # package.path, so we add it once here)
     lua_add_path("?.lua")
 

@@ -81,6 +81,7 @@ omit = [
     "examples/**",
     "test/factorio-blueprint-schemas/**",
     "test/performance/**",
+    "test/test_waypoint_factorio_versions.py",
     "test/test_all_factorio_versions.py"
 ]
 branch = true

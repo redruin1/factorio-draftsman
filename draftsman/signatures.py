@@ -963,8 +963,7 @@ draftsman_converters.add_hook_fns(
             "name": "filters",
             "type": list,
             "handler": lambda value, _type, _inst, _args: {
-                elem["index"]: converter.structure(elem, SignalFilter)
-                for elem in value
+                elem["index"]: converter.structure(elem, SignalFilter) for elem in value
             },
         },
         "group": fields.group.name,
@@ -1514,8 +1513,10 @@ draftsman_converters.add_hook_fns(
     },
 )
 
+
 class Parameter(Exportable):
     pass
+
 
 @attrs.define
 class IDParameter(Parameter):
@@ -1524,16 +1525,13 @@ class IDParameter(Parameter):
 
     .. versionadded:: 3.1.0 (Factorio 2.0)
     """
-    type: Literal["id"] = attrs.field(
-        validator=one_of("id")
-    )
+
+    type: Literal["id"] = attrs.field(validator=one_of("id"))
     """
     The type of this parameter, indicating this parameters structure.
     """
 
-    id: str = attrs.field( # TODO: should be SignalIDName
-        validator=instance_of(str)
-    )
+    id: str = attrs.field(validator=instance_of(str))  # TODO: should be SignalIDName
     """
     The name of the specific signal ID. Can be either a fixed signal name (in
     which case :py:attr:`.parameter` should be ``False``) or a parameter ID (in 
@@ -1541,10 +1539,7 @@ class IDParameter(Parameter):
     :py:attr:`.type` is ``"id"``.
     """
 
-    name: str = attrs.field(
-        default="",
-        validator=instance_of(str) # TODO: byte length
-    )
+    name: str = attrs.field(default="", validator=instance_of(str))  # TODO: byte length
     """
     The user-given display name to this particular parameter.
     """
@@ -1553,30 +1548,29 @@ class IDParameter(Parameter):
         factory=lambda: QualityFilter(quality="normal", comparator="="),
         converter=QualityFilter.converter,
         validator=instance_of(QualityFilter),
-        metadata={"never_null": True}
+        metadata={"never_null": True},
     )
     """
     The condition indicating what quality to select. Appears to only permit a
     exactly equals comparison.
     """
 
-    ingredient_of: Optional[str] = attrs.field( # TODO: should be ParameterIDName | None
-        default=None,
-        validator=instance_of(Optional[str])
+    ingredient_of: Optional[str] = (
+        attrs.field(  # TODO: should be ParameterIDName | None
+            default=None, validator=instance_of(Optional[str])
+        )
     )
     """
     A separate parameter name to use as a basis for determining the value of 
     this parameter's signal type.
     """
 
-    parameter: bool = attrs.field(
-        default=True,
-        validator=instance_of(bool)
-    )
+    parameter: bool = attrs.field(default=True, validator=instance_of(bool))
     """
     Whether or not this parameter should be selected during placement, or if it
     should just act as a variable for use via other parameters.
     """
+
 
 draftsman_converters.add_hook_fns(
     IDParameter,
@@ -1590,49 +1584,39 @@ draftsman_converters.add_hook_fns(
     },
 )
 
+
 @attrs.define
 class NumberParameter(Parameter):
     """
-    A blueprint parameter specification representing a numeric value 
+    A blueprint parameter specification representing a numeric value
     substitution.
 
     .. versionadded:: 3.1.0 (Factorio 2.0)
     """
-    
-    type: Literal["number"] = attrs.field(
-        validator=one_of("number")
-    )
+
+    type: Literal["number"] = attrs.field(validator=one_of("number"))
     """
     The type of this parameter, indicating this parameters structure.
     """
 
-    number: str = attrs.field(
-        validator=instance_of(str) # TODO: byte length
-    )
+    number: str = attrs.field(validator=instance_of(str))  # TODO: byte length
     """
     A string representing the constant number value to search for and substitute.
     """
 
-    not_parametrised: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    not_parametrised: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not this value should be substitued, or left as-is in the 
     original blueprint.
     """
 
-    name: str = attrs.field(
-        default="",
-        validator=instance_of(str) # TODO: byte length
-    )
+    name: str = attrs.field(default="", validator=instance_of(str))  # TODO: byte length
     """
     The user-given display name to this particular parameter.
     """
 
     variable: str = attrs.field(
-        default="",
-        validator=instance_of(str) # TODO: byte length
+        default="", validator=instance_of(str)  # TODO: byte length
     )
     """
     A string representing a variable name that can be reused in subsequent
@@ -1640,8 +1624,7 @@ class NumberParameter(Parameter):
     """
 
     formula: str = attrs.field(
-        default="",
-        validator=instance_of(str) # TODO: byte length
+        default="", validator=instance_of(str)  # TODO: byte length
     )
     """
     A string representing a mathematical sequence in order to calculate the 
@@ -1649,14 +1632,12 @@ class NumberParameter(Parameter):
     :py:attr:`.variable` names.
     """
 
-    dependent: bool = attrs.field(
-        default=False,
-        validator=instance_of(bool)
-    )
+    dependent: bool = attrs.field(default=False, validator=instance_of(bool))
     """
     Whether or not this parameter is dependent on other variables/formulas 
     above it in order to determine it's value.
     """
+
 
 draftsman_converters.add_hook_fns(
     NumberParameter,
