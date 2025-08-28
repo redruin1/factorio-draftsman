@@ -29,7 +29,7 @@ jobs:
     - name: Checkout `factorio-mod-downloader`
       uses: actions/checkout@v5
       with:
-        repository: redruin01/factorio-mod-downloader
+        repository: redruin1/factorio-mod-downloader
         path: factorio-mod-downloader
     - name: Install poetry
       uses: snok/install-poetry@v1
