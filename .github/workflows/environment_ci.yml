@@ -49,5 +49,5 @@ jobs:
       working-directory: ./factorio-mod-downloader
     - name: Run `draftsman update`
       run: |
-        pwd
-        draftsman -v --mods-path "factorio-draftsman/.github/workflows/environments/${{ matrix.environment }}/mods" update
+        ls
+        draftsman -v --mods-path ".github/workflows/environments/${{ matrix.environment }}/mods" update
