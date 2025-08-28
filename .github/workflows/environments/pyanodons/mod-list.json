@@ -1,0 +1,130 @@
+
+{
+  "mods": [
+
+    {
+      "name": "base",
+      "enabled": true
+    },
+
+    {
+      "name": "core",
+      "enabled": true
+    },
+
+    {
+      "name": "elevated-rails",
+      "enabled": true
+    },
+
+    {
+      "name": "quality",
+      "enabled": true
+    },
+
+    {
+      "name": "space-age",
+      "enabled": false
+    },
+
+    {
+      "name": "pyalienlifegraphics2",
+      "enabled": true
+    },
+
+    {
+      "name": "pyalienlifegraphics3",
+      "enabled": true
+    },
+
+    {
+      "name": "pyalienlifegraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pyalienlife",
+      "enabled": true
+    },
+
+    {
+      "name": "pyalternativeenergygraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pyalternativeenergy",
+      "enabled": true
+    },
+
+    {
+      "name": "pycoalprocessinggraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pycoalprocessing",
+      "enabled": true
+    },
+
+    {
+      "name": "pyfusionenergygraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pyfusionenergy",
+      "enabled": true
+    },
+
+    {
+      "name": "pyhightechgraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pyhightech",
+      "enabled": true
+    },
+
+    {
+      "name": "pyindustrygraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pyindustry",
+      "enabled": true
+    },
+
+    {
+      "name": "pymodpack",
+      "enabled": true
+    },
+
+    {
+      "name": "pypetroleumhandlinggraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pypetroleumhandling",
+      "enabled": true
+    },
+
+    {
+      "name": "pypostprocessing",
+      "enabled": true
+    },
+
+    {
+      "name": "pyraworesgraphics",
+      "enabled": true
+    },
+
+    {
+      "name": "pyrawores",
+      "enabled": true
+    }
+  ]
+}

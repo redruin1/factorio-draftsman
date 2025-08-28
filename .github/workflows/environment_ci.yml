@@ -26,8 +26,8 @@ jobs:
       with:
         python-version: '3.13'
     - name: Install Draftsman
-      run: pip install factorio-draftsman/.
-      # working-directory: ./factorio-draftsman
+      run: pip install .
+      working-directory: ./factorio-draftsman
     - name: Checkout `factorio-mod-downloader`
       uses: actions/checkout@v5
       with:

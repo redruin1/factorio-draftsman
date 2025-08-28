@@ -1,0 +1,55 @@
+
+{
+  "mods": [
+
+    {
+      "name": "base",
+      "enabled": true
+    },
+
+    {
+      "name": "core",
+      "enabled": true
+    },
+
+    {
+      "name": "elevated-rails",
+      "enabled": true
+    },
+
+    {
+      "name": "quality",
+      "enabled": false
+    },
+
+    {
+      "name": "space-age",
+      "enabled": false
+    },
+
+    {
+      "name": "ChangeInserterDropLane",
+      "enabled": true
+    },
+
+    {
+      "name": "flib",
+      "enabled": true
+    },
+
+    {
+      "name": "Krastorio2Assets",
+      "enabled": true
+    },
+
+    {
+      "name": "Krastorio2MenuSimulations",
+      "enabled": true
+    },
+
+    {
+      "name": "Krastorio2",
+      "enabled": true
+    }
+  ]
+}

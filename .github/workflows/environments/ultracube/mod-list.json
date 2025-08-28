@@ -1,0 +1,55 @@
+
+{
+  "mods": [
+
+    {
+      "name": "base",
+      "enabled": true
+    },
+
+    {
+      "name": "core",
+      "enabled": true
+    },
+
+    {
+      "name": "elevated-rails",
+      "enabled": true
+    },
+
+    {
+      "name": "quality",
+      "enabled": false
+    },
+
+    {
+      "name": "space-age",
+      "enabled": false
+    },
+
+    {
+      "name": "aai-loaders",
+      "enabled": true
+    },
+
+    {
+      "name": "krastorio2-assets-ultracube",
+      "enabled": true
+    },
+
+    {
+      "name": "nixie-tubes",
+      "enabled": true
+    },
+
+    {
+      "name": "pushbutton",
+      "enabled": true
+    },
+
+    {
+      "name": "Ultracube",
+      "enabled": true
+    }
+  ]
+}
