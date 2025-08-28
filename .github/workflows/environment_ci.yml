@@ -24,8 +24,6 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    - name: Install pip
-      run: python -m pip install --upgrade pip
     - name: Install Draftsman
       run: pip install factorio-draftsman/.
     - name: Checkout `factorio-mod-downloader`
@@ -36,7 +34,9 @@ jobs:
     - name: Install poetry
       uses: snok/install-poetry@v1
     - name: Install deps for `factorio-mod-downloader`
-      run: poetry install
+      run: |
+        cd factorio-mod-downloader
+        poetry install
     - name: Install Factorio mods
       run: poetry run factorio-mod-downloader \
         --headless \
