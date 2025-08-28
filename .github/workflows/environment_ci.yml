@@ -41,9 +41,9 @@ jobs:
       run: |
         cd factorio-mod-downloader
         poetry run factorio-mod-downloader \
-        --headless \
-        --file "./.github/workflows/environments/${{ matrix.environment }}/mod-sources.txt" \
-        --destination "./.github/workflows/environments/${{ matrix.environment }}" \
-        --ignore-overwrite
+          --headless \
+          --file "./.github/workflows/environments/${{ matrix.environment }}/mod-sources.txt" \
+          --destination "./.github/workflows/environments/${{ matrix.environment }}" \
+          --ignore-overwrite
     - name: Run `draftsman update`
       run: draftsman -v --mods-path "./.github/workflows/environments/${{ matrix.environment }}/mods" update
