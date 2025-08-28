@@ -19,6 +19,7 @@ jobs:
     steps:
     - uses: actions/checkout@v5
       with:
+        submodules: true
         path: factorio-draftsman
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
