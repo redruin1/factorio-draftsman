@@ -27,6 +27,7 @@ jobs:
         python-version: '3.13'
     - name: Install Draftsman
       run: pip install factorio-draftsman/.
+      # working-directory: ./factorio-draftsman
     - name: Checkout `factorio-mod-downloader`
       uses: actions/checkout@v5
       with:
@@ -49,5 +50,6 @@ jobs:
       working-directory: ./factorio-mod-downloader
     - name: Run `draftsman update`
       run: |
-        ls
+        tree .github/workflows/environments
         draftsman -v --mods-path ".github/workflows/environments/${{ matrix.environment }}/mods" update
+      working-directory: ./factorio-draftsman
