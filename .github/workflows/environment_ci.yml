@@ -35,17 +35,17 @@ jobs:
     - name: Install poetry
       uses: snok/install-poetry@v1
     - name: Install deps for `factorio-mod-downloader`
-      run: |
-        cd factorio-mod-downloader
-        poetry install
+      run: poetry install
+      working-directory: ./factorio-mod-downloader
     - name: Install Factorio mods
       run: |
-        cd factorio-mod-downloader
+        pwd
         poetry run factorio-mod-downloader \
           --headless \
-          --file "./.github/workflows/environments/${{ matrix.environment }}/mod-sources.txt" \
+          --file "../factorio-draftsman/.github/workflows/environments/${{ matrix.environment }}/mod-sources.txt" \
           --destination "./.github/workflows/environments/${{ matrix.environment }}" \
           --ignore-overwrite
+      working-directory: ./factorio-mod-downloader
     - name: Run `draftsman update`
       run: |
         pwd
