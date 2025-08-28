@@ -524,7 +524,7 @@ def run_data_lifecycle(
     mods = {name: mod_list[0] for name, mod_list in mods.items() if mod_list[0].enabled}
 
     for mod_name, mod in mods.items():
-        # core/base have no dependecies, so determining their trees is redundant
+        # core/base have no dependencies, so determining their trees is redundant
         if mod_name == "core" or mod_name == "base":
             continue
 

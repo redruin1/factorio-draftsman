@@ -51,7 +51,7 @@ class Mod:
         name: str,
         title: str,
         author: str,
-        version: str = "",  # Required, but `core` is special for some reason
+        version: str = "",  # Required, but `core` is special
         contact: str | None = None,
         homepage: str | None = None,
         description: str | None = None,
@@ -65,7 +65,7 @@ class Mod:
         freezing_required: bool = False,
         segmented_units_required: bool = False,
         expansion_shaders_required: bool = False,
-        # Other goodies not normally included, but nice to know
+        # Other goodies not normally attached, but nice to know
         enabled: bool = True,
         # is_archive: bool,
         # internal_folder: str,
@@ -88,28 +88,12 @@ class Mod:
         self.description = description
         self.factorio_version = factorio_version
 
-        for i, dependency in enumerate(dependencies):
-            # Remove whitespace
-            dependency = dependency.replace(" ", "")
-            # Convert
-            m = Mod.dependency_regex.match(dependency)
-            dependency = Dependency(
-                flag=m[1], name=m[2], operation=m[3], version=m[4], reference=None
-            )
-            # Replace
-            dependencies[i] = dependency
-
-        # For *some* reason, it seems "base" is an implicit dependency of ALL
-        # mods, regardless of whether or not it's actually specified
-        # Hence, we always add "base" as a dependency if not present in order to
-        # bring it in line with how Factorio loads it's mods
-        # I cannot figure out where this is documented, if so
-        # if "base" not in [dependency.name for dependency in dependencies]:
-        #     dependencies.insert(0, Dependency(
-        #         flag="", name="base", operation=None, version=None,
-        #     ))
-
-        self.dependencies: list[Dependency] = dependencies
+        # Convert string dependencies into `Dependency` instances
+        self.dependencies = [
+            Dependency(flag=m[1], name=m[2], operation=m[3], version=m[4], reference=None)
+            for dependency in dependencies
+            if (m := Mod.dependency_regex.match(dependency))
+        ]
 
         self.feature_flags = {
             "quality": quality_required,
@@ -123,18 +107,8 @@ class Mod:
 
         self.enabled = enabled
 
-        # self.name = name
-        # self.author = author
-        # self.
-        # self.internal_folder = internal_folder
-        # self.version = version
-        # self.is_archive = is_archive
-        # self.location = location
-        # self.info = info
-        # self.files = files
-        # self.data = data
-        # self.enabled = enabled
-        # self.dependencies = []
+        # Any extra information can be accessed here
+        self.extra_info = kwargs
 
     def setup_archive(self, archive: zipfile.ZipFile, archive_folder: str):
         """
