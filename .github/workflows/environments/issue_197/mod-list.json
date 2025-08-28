@@ -1,0 +1,45 @@
+
+{
+  "mods": [
+
+    {
+      "name": "base",
+      "enabled": true
+    },
+
+    {
+      "name": "core",
+      "enabled": true
+    },
+
+    {
+      "name": "elevated-rails",
+      "enabled": false
+    },
+
+    {
+      "name": "quality",
+      "enabled": false
+    },
+
+    {
+      "name": "space-age",
+      "enabled": false
+    },
+
+    {
+      "name": "Kux-CoreLib",
+      "enabled": true
+    },
+
+    {
+      "name": "Kux-GuiLib",
+      "enabled": true
+    },
+
+    {
+      "name": "Kux-ProductionRates",
+      "enabled": true
+    }
+  ]
+}

@@ -144,6 +144,9 @@ For more examples on what exactly you can do with Draftsman, take a look at the 
     * Group entities together and manipulate them all as one unit
 * Verbose Errors and Warnings (["Factorio-safety" and "Factorio-correctness"](https://factorio-draftsman.readthedocs.io/en/latest/concepts/validation.html))
 * Expansive and rigorous test suite
+    * Over 1000 unit-tests
+    * Automatic CI against all Python and Factorio versions
+    * Tested against the most popular mods/modpacks in addition to pure vanilla
 
 # Installation
 

@@ -65,7 +65,7 @@ Documentation is currently written in [reStructuredText](https://docutils.source
 
 ---
 ### Custom `data.raw` extraction and formatting?
-~~In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.~~ This can be done by running `draftsman.environment.run_data_lifecycle()` and manipulating the Lua instance that is spit out.
+~~In this case Draftsman would benefit from a generic editable interface where people can configure and modify exactly the information they want from the game for whatever their purposes are.~~ This can be done by running `draftsman.environment.run_data_lifecycle()` and reading the Lua instance that is spit out.
 
 Alternatively, since Draftsman depends on `data.raw` when available more and more, perhaps the best solution (if performant enough) would be to simply extract the entirety of `data.raw`. (Possible, but while it would simplify extracting the data it would complicate accessing it, and possibly with performance degradation since the extracted data is organized as efficient to Draftsman)
 

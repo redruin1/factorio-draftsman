@@ -1,0 +1,251 @@
+
+{
+  "mods": 
+  [
+    
+    {
+      "name": "base",
+      "enabled": true
+    },
+    
+    {
+      "name": "elevated-rails",
+      "enabled": true
+    },
+    
+    {
+      "name": "quality",
+      "enabled": true
+    },
+    
+    {
+      "name": "space-age",
+      "enabled": true
+    },
+    
+    {
+      "name": "4k_planets",
+      "enabled": true
+    },
+    
+    {
+      "name": "AutoDeconstruct",
+      "enabled": true
+    },
+    
+    {
+      "name": "Automatic_Train_Painter",
+      "enabled": true
+    },
+    
+    {
+      "name": "belt-visualizer",
+      "enabled": true
+    },
+    
+    {
+      "name": "biter-expansion-toggle",
+      "enabled": true
+    },
+    
+    {
+      "name": "blueprint-sandboxes",
+      "enabled": true
+    },
+    
+    {
+      "name": "Bottleneck",
+      "enabled": true
+    },
+    
+    {
+      "name": "brake-squeal-modded",
+      "enabled": true
+    },
+    
+    {
+      "name": "bullet-trails",
+      "enabled": true
+    },
+    
+    {
+      "name": "chest-auto-sort",
+      "enabled": true
+    },
+    
+    {
+      "name": "CursorEnhancements",
+      "enabled": true
+    },
+    
+    {
+      "name": "DiscoScience",
+      "enabled": true
+    },
+    
+    {
+      "name": "EditorExtensions",
+      "enabled": true
+    },
+    
+    {
+      "name": "even-distribution",
+      "enabled": true
+    },
+    
+    {
+      "name": "Fill4Me",
+      "enabled": true
+    },
+    
+    {
+      "name": "flib",
+      "enabled": true
+    },
+    
+    {
+      "name": "FluidWagonColorMask",
+      "enabled": true
+    },
+    
+    {
+      "name": "GhostScanner4",
+      "enabled": true
+    },
+    
+    {
+      "name": "GUI_Unifyer",
+      "enabled": true
+    },
+    
+    {
+      "name": "helmod",
+      "enabled": true
+    },
+    
+    {
+      "name": "lavafill",
+      "enabled": true
+    },
+    
+    {
+      "name": "LogisticTrainNetwork",
+      "enabled": true
+    },
+    
+    {
+      "name": "MaxRateCalculator",
+      "enabled": true
+    },
+    
+    {
+      "name": "Milestones",
+      "enabled": true
+    },
+    
+    {
+      "name": "mining-patch-planner",
+      "enabled": true
+    },
+    
+    {
+      "name": "nixie-tubes",
+      "enabled": true
+    },
+    
+    {
+      "name": "no--inventory-is-full--corpse-pickup-troubles",
+      "enabled": true
+    },
+    
+    {
+      "name": "OilOutpostPlanner",
+      "enabled": true
+    },
+    
+    {
+      "name": "pushbutton",
+      "enabled": true
+    },
+    
+    {
+      "name": "RailSignalPlanner",
+      "enabled": true
+    },
+    
+    {
+      "name": "RainbowLasers",
+      "enabled": true
+    },
+    
+    {
+      "name": "recipe_combinator",
+      "enabled": true
+    },
+    
+    {
+      "name": "show-max-underground-distance",
+      "enabled": true
+    },
+    
+    {
+      "name": "sonaxaton-infinite-resources",
+      "enabled": true
+    },
+    
+    {
+      "name": "squeak-through-2",
+      "enabled": true
+    },
+    
+    {
+      "name": "StatsGui",
+      "enabled": true
+    },
+    
+    {
+      "name": "textplates",
+      "enabled": true
+    },
+    
+    {
+      "name": "Todo-List",
+      "enabled": true
+    },
+    
+    {
+      "name": "tree-healing",
+      "enabled": true
+    },
+    
+    {
+      "name": "Tree_XRay",
+      "enabled": true
+    },
+    
+    {
+      "name": "visible-planets",
+      "enabled": true
+    },
+    
+    {
+      "name": "Water-Friendly-Walls",
+      "enabled": true
+    },
+    
+    {
+      "name": "Waterfill_v17",
+      "enabled": true
+    },
+    
+    {
+      "name": "Wr_Enhanced_Map_Colors",
+      "enabled": true
+    },
+    
+    {
+      "name": "YARM",
+      "enabled": true
+    }
+  ]
+}
