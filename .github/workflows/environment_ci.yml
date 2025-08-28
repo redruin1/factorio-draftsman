@@ -47,4 +47,6 @@ jobs:
           --destination "./.github/workflows/environments/${{ matrix.environment }}" \
           --ignore-overwrite
     - name: Run `draftsman update`
-      run: draftsman -v --mods-path "./.github/workflows/environments/${{ matrix.environment }}/mods" update
+      run: |
+        pwd
+        draftsman -v --mods-path "factorio-draftsman/.github/workflows/environments/${{ matrix.environment }}/mods" update
