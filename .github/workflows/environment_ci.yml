@@ -29,7 +29,7 @@ jobs:
     - name: Checkout `factorio-mod-downloader`
       uses: actions/checkout@v5
       with:
-        repository: vaibhavvikas/factorio-mod-downloader
+        repository: redruin01/factorio-mod-downloader
         path: factorio-mod-downloader
     - name: Install poetry
       uses: snok/install-poetry@v1
@@ -38,7 +38,9 @@ jobs:
         cd factorio-mod-downloader
         poetry install
     - name: Install Factorio mods
-      run: poetry run factorio-mod-downloader \
+      run: |
+        cd factorio-mod-downloader
+        poetry run factorio-mod-downloader \
         --headless \
         --file "./.github/workflows/environments/${{ matrix.environment }}/mod-sources.txt" \
         --destination "./.github/workflows/environments/${{ matrix.environment }}" \
