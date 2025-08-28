@@ -41,7 +41,6 @@ jobs:
       working-directory: ./factorio-mod-downloader
     - name: Install Factorio mods
       run: |
-        pwd
         poetry run factorio-mod-downloader \
           --headless \
           --file "../factorio-draftsman/.github/workflows/environments/${{ matrix.environment }}/mod-sources.txt" \
@@ -51,5 +50,5 @@ jobs:
     - name: Run `draftsman update`
       run: |
         tree .github/workflows/environments
-        draftsman -v --mods-path ".github/workflows/environments/${{ matrix.environment }}/mods" update
+        draftsman -v --mods-path ".github/workflows/environments/${{ matrix.environment }}" update
       working-directory: ./factorio-draftsman
