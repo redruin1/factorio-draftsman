@@ -23,16 +23,16 @@ lint *args:
 test: _test310 _test311 _test312 _test313
 
 _test310:
-    - uv run "--isolated" "--python=3.10" coverage run -p 
+    uv run "--isolated" "--python=3.10" coverage run -p 
 
 _test311:
-    - uv run "--isolated" "--python=3.11" coverage run -p
+    uv run "--isolated" "--python=3.11" coverage run -p
 
 _test312:
-    - uv run "--isolated" "--python=3.12" coverage run -p 
+    uv run "--isolated" "--python=3.12" coverage run -p 
 
 _test313:
-    - uv run "--isolated" "--python=3.13" coverage run -p
+    uv run "--isolated" "--python=3.13" coverage run -p
 
 # Run test suite against {specific Factorio versions, latest Python version}
 test-waypoints:
@@ -44,7 +44,7 @@ test-all: _giga-test313
 # Ideally, we might want to run this test against all supported python versions,
 # but that is a LOT of tests
 _giga-test313:
-    - uv run "--isolated" "--python=3.13" python test/test_all_factorio_versions.py
+    uv run "--isolated" "--python=3.13" python test/test_all_factorio_versions.py
 
 # Combine all coverage files and create HTML report
 report-coverage:
@@ -53,4 +53,4 @@ report-coverage:
 
 # Run benchmark tests and save profiles for this Draftsman version
 benchmark:
-    - uv run pytest --benchmark-autosave test/performance
+    uv run pytest --benchmark-autosave test/performance
