@@ -27,6 +27,6 @@ jobs:
         uv venv --python 3.13
         uv pip install --group test
         uv pip install -e .
-        draftsman update --no-mods
+        uv run draftsman update --no-mods
     - name: Run tests
       run: just test
