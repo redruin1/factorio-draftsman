@@ -7,7 +7,7 @@
 
 -- Factorio and Factorio mods use this for serialization/debugging, so we
 -- include it as well
-serpent = require("compatibility.serpent")
+serpent = require("serpent")
 
 settings = {}
 settings["startup"] = {}

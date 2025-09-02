@@ -10,7 +10,6 @@
 MOD_FOLDER_LOCATION = nil    -- Exactly where the mods are expected to be
 MOD_LIST = nil      -- Total list of all mods; populated by Python
 MOD_STACK = {}       -- Stack of mods keeping track of where to require files
-MOD_DIR = nil       -- Path to the current mod (at the top of the mod tree)
 CURRENT_FILE = nil  -- String filepath to the file we're currently executing
 CURRENT_DIR = ""    -- Location of the filepath in some relative directory
 
@@ -112,8 +111,9 @@ debug.traceback = function(message, level)
     level = level or 2
     local info = debug.getinfo(level, "nSlLf")
     while info do
-        -- TODO: ignore our custom `require`
-        if info.name ~= "require" then
+        -- Ignore both our custom `require` and lua C require (since  they're 
+        -- not relevant)
+        if info.name ~= "require" and info.name ~= "lua_require" then
 
             local stack_trace = string.format(
                 "\n\t%s:%d: in %s\n", info.source, info.currentline, get_function_name(info)
@@ -134,6 +134,8 @@ debug.traceback = function(message, level)
         level = level + 1
         info = debug.getinfo(level, "nSlL")
     end
+    --print(message .. "\nstack traceback:" .. stack_traces)
+    --debug.debug()
     return message .. "\nstack traceback:" .. stack_traces
 end
 
@@ -159,55 +161,79 @@ end
 -- Also returns a boolean `absolute`, which indicates if the filepath is 
 -- considered absolute (from the root mods directory) or local (relative to
 -- the top of `REQUIRE_STACK`)
+
+-- This function has to 
+-- * remove `.lua`
+-- * convert dots to slashes
+-- * prepend the current parent folder if not an absolute path
+-- so `data-duplicate-checker.lua` turns into `__core__/lualib/data-duplicate-checker`
+-- This must be done like this so that 
+-- 1. Internal paths remain how mods expect them
+-- 2. `require` has no ambiguity between different modules with the same name in different packages
+-- The actual resolution of __mod-name__ to a true path is beyond the scope of this function
 local function normalize_module_name(module_name)
-    -- remove lua from end if present
+    -- Remove lua from end if present
     module_name = module_name:gsub(".lua$", "")
 
+    -- If the module starts with `./` or `.`, then this is special (redundant) 
+    -- relative import syntax and can be safely removed
+    if module_name[1] == "." then
+        if module_name[2] == "/" then
+            module_name = module_name:gsub("%./", "")
+        else
+            module_name = module_name:gsub("%.", "")
+        end
+    end
+
     -- Normalize dots to paths, if appropriate
-    -- First, check to see if there are any slashes in the path
+    -- Certain slash paths can have dots in their folder names (Krastorio2), so
+    -- we check to make sure it's a "pure" dot path with no slashes before 
+    -- converting
     dot_path = module_name:find("[/\\]") == nil
-    -- If not, we assume it's a dot separated path, so we convert to forward
-    -- slashes for consistency
     if dot_path then
+        -- Convert dots to forward slashes
         module_name = module_name:gsub("%.", "/")
     end
-    -- We do this because some slash paths can have dots in their folder names
-    -- that should not be converted to path delimeters (Krastorio2)
+
+    -- Normalize any back slashes to forward slashes (plays better with archives)
+    module_name = module_name:gsub("\\", "/")
 
     -- Some people like to specify their paths with a prepending dot to indicate
     -- the current folder like 'require(".config")' (FreightForwarding)
     -- In order to fix this, we check if the path starts with a slash, and then
     -- remove it if it does
-    module_name = module_name:gsub("^/", "")
+    -- module_name = module_name:gsub("^/", "")
 
-    -- Handle __mod-name__ format (alphanumeric + '-' + '_')
-    local match, name = module_name:match("(__([%w%-_]+)__)")
-    --print(modname, match, name)
-    local absolute = true
-    if name == "core" or name == "base" then
-        module_name = string.gsub(module_name, match, "./factorio-data/"..name)
-    elseif match ~= nil then
-        -- Check if the name is the name of a currently enabled mod
-        -- We need to do this because some people like to name their files
-        -- "__init__.lua" or similar (FactorioExtended-Plus-Logistics)
-        if mods[name] then
-            --print(name.." is a recognized mod")
-            -- Change '-' to '%-' so the following gsub doesn't treat them
-            -- as special characters
-            local correct_match = string.gsub(match, "%-", "%%-")
-            --print(MOD_LIST[name].location)
-            -- replace
-            module_name = string.gsub(module_name, correct_match, MOD_LIST[name].location)
-        else
-            -- Can't determine what mod; use relative paths instead
-            -- TODO: this should probably error with a better message
-            assert(false, "Unknown mod " .. name)
-        end
+    local absolute = false
+    if module_name[1] == "/" then
+        -- If the path still starts with a `/` at this point, then it must refer 
+        -- to an absolute path. In Factorio terms, this means it originates from 
+        -- the root folder of the importing mod
+        absolute = true
+        module_name = MOD_STACK[#MOD_STACK].name .. module_name
+        return module_name, true
     else
-        absolute = false
+        -- Similarly if the path specifies `__mod-name__`, then that path is
+        -- also absolute (just relative to a different mod root)
+        local match, name = module_name:match("(__([%w%-_]+)__)")
+        if match then
+            -- Check if the name is the name of a currently enabled mod
+            -- We need to do this because some people like to name their files
+            -- "__init__.lua" or similar (FactorioExtended-Plus-Logistics)
+            if MOD_LIST[name] then
+                absolute = true
+                return module_name, true
+            else
+                -- error("Unknown mod " .. mod)
+            end
+        end
     end
 
-    return module_name, absolute
+    -- Otherwise, we need to prepend the current mod name in __mod-name__
+    -- format
+    -- module_name = get_parent(REQUIRE_STACK[#REQUIRE_STACK]) .. "/" .. module_name
+
+    return module_name, false
 end
 
 -- Overwrite of require function. Normalizes the module name to make it easier
@@ -219,59 +245,155 @@ function require(module_name)
     -- print("\tcurrent file:", REQUIRE_STACK[#REQUIRE_STACK])
     -- print("\trequiring:", module_name)
 
+    -- Normalize the module name and determine whether it's an absolute path or
+    -- not
+    local norm_module_name, absolute = normalize_module_name(module_name)
+
+    -- Check to see if the mod specifies a path with the `__mod-name__` format,
+    -- and if `mod-name` is not the currently active mod, change contexts to the
+    -- newly specified one
     local mod_changed = false
     local match, name = module_name:match("(__([%w%-_]+)__)")
-    -- if the filepath uses this notation and the name is a mod, then we alter the current mod
-    if match and mods[name] and MOD_STACK[#MOD_STACK] ~= MOD_LIST[name] then
+    if match and MOD_LIST[name] and MOD_STACK[#MOD_STACK] ~= MOD_LIST[name] then
         lua_push_mod(MOD_LIST[name])
         mod_changed = true
     end
 
-    local norm_module_name, absolute = normalize_module_name(module_name)
-    -- print("Normalized module name:", norm_module_name)
-
-    parent_dir = get_parent(norm_module_name)
     local path_added = false
-    -- TODO: revise this logic to be better
     if absolute then
-        local with_path = parent_dir .. "/?.lua"
-        -- add the mod directory to the path if it's an absolute path
-        if not absolute then with_path = MOD_DIR .. "/" .. with_path end
+        -- Path is already absolute; set it as the new "current file"
+        table.insert(REQUIRE_STACK, norm_module_name)
+    else
+        -- Relative path; get the parent of the current file
+        local parent = get_parent(REQUIRE_STACK[#REQUIRE_STACK])
 
-        lua_add_path(with_path)
-
+        -- In order to look for files in the same location as the current file, 
+        -- we add the parent folder to `package.path`
+        lua_add_path(parent .. "/?.lua")
         path_added = true
-        table.insert(REQUIRE_STACK, norm_module_name) -- push
-    else -- God this whole thing is scuffed
-        -- get directory of current file
-        local rel_parent = get_parent(REQUIRE_STACK[#REQUIRE_STACK]) or ""
 
-        if not absolute then with_path = rel_parent .. "/?.lua" end -- MOD_DIR .. CURRENT_DIR
-        lua_add_path(with_path)
-
-        rel_parent = get_parent(REQUIRE_STACK[#REQUIRE_STACK])
-        if rel_parent then
-            norm_module_name = rel_parent .. "/" .. norm_module_name
-        end
-
-        path_added = true
-        table.insert(REQUIRE_STACK, norm_module_name) -- push
+        -- Current file is the constructed absolute path from parent and module
+        -- name
+        table.insert(REQUIRE_STACK, parent .. "/" .. norm_module_name)
     end
 
+    -- TODO: FIXME
+    -- Temporary, until I figure out how Factorio handles `package.loaded`
+    --lua_unload_cache()
+
+    -- local package_loaded_copy = shallowcopy(package.loaded)
+
+    -- Call the original Lua require function.
+    -- We MUST use the original `module_name` here, otherwise mod behaviors that
+    -- specifically look for this string will fail in creative ways 
+    -- (flib, Kuxynators)
     result = lua_require(module_name)
 
+    --package.loaded = package_loaded_copy
+    -- local markDeletion = {}
+    -- local markModify = {}
+    -- for name in pairs(package.loaded) do
+    --     if not package_loaded_copy[name] then
+    --         table.insert(markDeletion, name)
+    --     elseif package_loaded_copy[name] ~= package.loaded[name] then
+    --         table.insert(markModify, name)
+    --     end
+    -- end
+    -- for _, name in pairs(markDeletion) do
+    --     package.loaded[name] = nil
+    -- end
+    -- for _, name in pairs(markModify) do
+    --     package.loaded[name] = package_loaded_copy[name]
+    -- end
+    -- for name in pairs(package.loaded) do
+    --     package.loaded[name] = package_loaded_copy[name]
+    -- end
+
+    package.loaded[module_name] = nil
+
+    -- After the require function finishes, the current file has now completed 
+    -- and can return control back to the caller
+    table.remove(REQUIRE_STACK) -- pop
+
+    -- If we added a local path to `package.path`, tidy up
     if path_added then
-        --print("removed path")
         lua_remove_path()
-        table.remove(REQUIRE_STACK) -- pop
     end
 
+    -- If we changed mod contexts to load a file, tidy up
     if mod_changed then
-        --print("removed mod")
         lua_pop_mod()
     end
 
     return result
+end
+
+-- Wrapper function for `python_require` on the env.py side of things. Attempts
+-- to read from the python zipfile archives first and continues with regular
+-- lua file loading afterwards.
+local archive_searcher = function(module_name)
+    --print("Archive search")
+    local norm_module_name, absolute = normalize_module_name(module_name)
+
+    local contents, err = python_require(MOD_STACK[#MOD_STACK], MOD_FOLDER_LOCATION, norm_module_name, package.path)
+    if contents then
+        local source_name = norm_module_name
+        if not absolute then
+            source_name = (get_parent(REQUIRE_STACK[#REQUIRE_STACK]) or "") .. "/" .. norm_module_name
+        end
+        return assert(load(contents, source_name .. ".lua"))
+    else
+        return err
+    end
+end
+
+-- Function that replaces the regular Lua file searching. Identical in function
+-- except that it doesn't convert dots to slashes; we manually take care of that
+-- ourselves in `normalize_module_name`. Every path passed into this function
+-- expects to be in a literal path format, hence the name.
+local literal_searcher = function(module_name)
+    -- This function needs a true path to a file
+    --print("Literal search")
+    module_name, _ = normalize_module_name(module_name)
+    -- print(norm_module_name)
+    -- print(package.path)
+    --print(module_name)
+
+    local errmsg = ""
+    for path in string.gmatch(package.path, "([^;]+)") do
+        local filename = string.gsub(path, "%?", module_name)
+
+        -- Convert __mod-name__ format into the actual mod filepath
+        local match, name = filename:match("(__([%w%-_]+)__)")
+        if match ~= nil and MOD_LIST[name] then
+            --print(name.." is a recognized mod")
+            -- Change '-' to '%-' so the following gsub doesn't treat them
+            -- as special characters
+            local correct_match = string.gsub(match, "%-", "%%-")
+            --print(MOD_LIST[name].location)
+            -- replace
+            filename = string.gsub(filename, correct_match, MOD_LIST[name].location)
+        end
+
+        --local file, err = io.open(filename, "rb")
+        --local file_string, err = python_file_to_string(filename)
+        local file, err = python_get_file(filename)
+        if file then
+            --print(file, err)
+            --print("loaded from file: " .. filename)
+            -- Compile and return the module
+            --result = assert(load(assert(file:read("*a")), module_name))
+            --result = assert(load(file_string, module_name))
+            result = assert(load(file.read(), module_name .. ".lua"))
+            file.close() -- make sure we close that bitch
+            --CURRENT_DIR = filename
+            return result
+        else
+            --print(err)
+        end
+        errmsg = errmsg.."\n\tno file '"..filename.."' (checked with custom loader)"
+    end
+    return errmsg
 end
 
 -- Certain files are not included in the `factorio-data` repo for copyright 
@@ -279,10 +401,6 @@ end
 -- files, which Factorio itself does not handle. This function intercepts the 
 -- beginning of the `require` process to see if it's (likely) one of these 
 -- missing files, and then substitutes dummy values in their stead.
-
--- TODO: move this to the last step of the require process; that way you we'll
--- be able to handle both game cases elegantly, since files will be returned
--- properly if they exist, and only substituted with dummy values if they dont!
 local missing_file_substitution = function(module_name)
     if module_name == "__base__/menu-simulations/menu-simulations" then
         return (function() return menu_simulations end)
@@ -301,65 +419,20 @@ local missing_file_substitution = function(module_name)
     elseif is_graphics then
         return (function() return { width=0, height=0, shift={0, 0}, line_length=0 } end)
     elseif is_sounds then
-        return (function() return {type="sound", name=module_name} end)
+        return (function() return { type="sound", name=module_name } end)
     end
-end
-
--- Wrapper function for `python_require` on the env.py side of things. Attempts
--- to read from the python zipfile archives first and continues with regular
--- lua file loading afterwards.
-local archive_searcher = function(module_name)
-    norm_module_name, _ = normalize_module_name(module_name)
-
-    local contents, err = python_require(MOD_STACK[#MOD_STACK], MOD_FOLDER_LOCATION, norm_module_name, package.path)
-    if contents then
-        return assert(load(contents, norm_module_name .. ".lua"))
-    else
-        return err
-    end
-end
-
--- Function that replaces the regular Lua file searching. Identical in function
--- except that it doesn't convert dots to slashes; we manually take care of that
--- ourselves in `normalize_module_name`. Every path passed into this function
--- expects to be in a literal path format, hence the name.
-local literal_searcher = function(module_name)
-    local norm_module_name, _ = normalize_module_name(module_name)
-
-    local errmsg = ""
-    for path in string.gmatch(package.path, "([^;]+)") do
-        local filename = string.gsub(path, "%?", norm_module_name)
-        --local file, err = io.open(filename, "rb")
-        --local file_string, err = python_file_to_string(filename)
-        local file, err = python_get_file(filename)
-        if file then
-            --print(file, err)
-            --print("loaded from file: " .. filename)
-            -- Compile and return the module
-            --result = assert(load(assert(file:read("*a")), module_name))
-            --result = assert(load(file_string, module_name))
-            result = assert(load(file.read(), module_name))
-            file.close() -- make sure we close that bitch
-            --CURRENT_DIR = filename
-            return result
-        else
-            --print(err)
-        end
-        errmsg = errmsg.."\n\tno file '"..filename.."' (checked with custom loader)"
-    end
-    return errmsg
 end
 
 -- search order:
--- 1. missing_file_substitution (returns dummy data so that Factorio doesn't explode)
--- 2. archive_searcher (defers to python and searches one of the zip files)
--- 3. package.preload (returns a copy if already loaded once in this session)
--- 4. literal_searcher (overwrites file searcher, identical but with some custom behavior)
--- 5. C lib searcher (unused)
--- 6. All-in-one searcher (unused)
-table.insert(package.searchers, 1, missing_file_substitution)
-table.insert(package.searchers, 2, archive_searcher)
-package.searchers[4] = literal_searcher
+-- 1. archive_searcher (defers to python and searches one of the zip files)
+-- 2. package.preload (returns a copy if already loaded once in this session)
+-- 3. literal_searcher (overwrites file searcher, identical but with some custom behavior)
+-- 4. C lib searcher (unused)
+-- 5. All-in-one searcher (unused)
+-- 6. missing_file_substitution (returns dummy data so that Factorio doesn't explode)
+table.insert(package.searchers, 1, archive_searcher)
+package.searchers[3] = literal_searcher
+table.insert(package.searchers, missing_file_substitution)
 
 -- =================
 -- Interface Helpers
@@ -381,35 +454,34 @@ function lua_set_path(path)
     package.path = path
 end
 
--- Unloads all files. Lua has a package.preload functionality where files are
+-- Unloads all files. Lua has a package.loaded functionality where files are
 -- only included once and reused as necessary. This can cause problems when two
 -- files have the exact same name however; If mod A has a file named "utils" and
 -- is loaded first, mod B will require "utils" and will get A's copy of the file
 -- instead of loading mod B's copy.
 -- To prevent this, we unload all required files every time we load a stage,
 -- which is excessive but (hopefully) guarantees correct behavior.
+-- TODO: this could probably be removed if we used absolute paths for all
+-- requires, so `__base__/utils` would be distinguishable from `__mod__/utils`
 function lua_unload_cache()
-    for k, _ in pairs(package.loaded) do
-        package.loaded[k] = nil
-    end
+    -- for k, _ in pairs(package.loaded) do
+    --     package.loaded[k] = nil
+    -- end
 end
 
 -- Push a mod to the stack of mods that the current require chain is using
 function lua_push_mod(mod)
     table.insert(MOD_STACK, mod)
-    MOD_DIR = MOD_STACK[#MOD_STACK].location
 end
 
 -- Pop a mod off the stack of mods that the current require chain is using
 function lua_pop_mod()
     table.remove(MOD_STACK)
-    MOD_DIR = MOD_STACK[#MOD_STACK].location
 end
 
 -- Wipe all mods from the mod tree to return it to a known state 
 -- (on stage change)
 function lua_wipe_mods()
     MOD_STACK = {}
-    MOD_DIR = nil
     REQUIRE_STACK = {}
 end

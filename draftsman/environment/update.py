@@ -408,8 +408,12 @@ def run_settings_stage(
 
     # Factorio then converts the settings which were stored in data.raw
     # to the global 'settings' table: We emulate that here in 'settings.lua':
+    file_name = os.path.join(draftsman_path, "compatibility", "settings.lua").replace("\\", "/")
+    lua.globals().REQUIRE_STACK = lua.eval('{{"{}"}}'.format(file_name))
+    lua.globals().MODS_STACK = lua.eval("{}")
     lua.execute(
-        file_to_string(os.path.join(draftsman_path, "compatibility", "settings.lua"))
+        file_to_string(os.path.join(draftsman_path, "compatibility", "settings.lua")),
+        name=file_name
     )
 
     # If there is a `mod-settings.dat` file present, we overwrite the current
@@ -666,8 +670,13 @@ def run_data_lifecycle(
     # Set this once at the beginning
     lua.globals().MOD_LIST = mods
 
-    # Adds path to Lua `package.path`.
+    # Adds a path to Lua `package.path`.
     lua_add_path = lua.globals()["lua_add_path"]
+
+    # We also add a special path, which is just the entire module
+    # (This is used for local paths in archives which also uses the same
+    # package.path, so we add it once here)
+    lua_add_path("?.lua")
 
     # Register `python_require` in lua context.
     # This function is in charge of reading a required file from a zip archive
@@ -702,9 +711,9 @@ def run_data_lifecycle(
     lua.globals().MOD_DIR = mods["core"].location
     lua.globals().lua_push_mod(mods["core"])
     lua.globals().REQUIRE_STACK = lua.eval(
-        '{{"{}"}}'.format(mods["core"].location + "/lualib/dataloader.lua")
+        # '{{"{}"}}'.format(mods["core"].location + "/lualib/dataloader.lua")
+        '{{"{}"}}'.format("__core__/lualib/dataloader")
     )
-    print(game_path)
 
     # Factorio `data:extend` function
     # NOTE: the actual load process might load all files in `lualib`, but it
@@ -712,6 +721,7 @@ def run_data_lifecycle(
     run_lua_file(
         lua,
         os.path.join(game_path, "core", "lualib", "dataloader.lua"),
+        custom_name="__core__/lualib/dataloader.lua"
     )
 
     # Construct and send the mods table to the Lua instance in `interface.lua`
@@ -738,11 +748,6 @@ def run_data_lifecycle(
     # Add the lualib path since mods can use them at any point
     lualib_path = os.path.join(game_path, "core", "lualib", "?.lua")
     lua_add_path(lualib_path)
-
-    # We also add a special path, which is just the entire module
-    # (This is used for local paths in archives which also uses the same
-    # package.path, so we add it once here)
-    lua_add_path("?.lua")
 
     # We want to include core in all further mods, so we set this as the "base"
     # path to return to every time a new mod is initialized
