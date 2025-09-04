@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.1
+* Added Github workflow for automatically testing `draftsman update`
+* Fixed #199 (draftsman update fails if multiple mods with no explicit dependencies)
+* Fixed #200 (Failure to extract data from Factorio+ modpack)
+
 ## 3.1.0
 * Added support for `Blueprint.parameters`
 * Added `Valve` prototype (added in Factorio `2.0.48`)
