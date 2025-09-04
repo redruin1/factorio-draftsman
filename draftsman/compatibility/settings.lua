@@ -5,10 +5,6 @@
 -- Converts the settings data stored in data.raw and stores it in the global
 -- table 'settings'.
 
--- Factorio and Factorio mods use this for serialization/debugging, so we
--- include it as well
-serpent = require("serpent")
-
 settings = {}
 settings["startup"] = {}
 settings["runtime-global"] = {}
