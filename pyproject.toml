@@ -10,7 +10,8 @@ dynamic = ["version"]
 description = "A complete, well-tested, and up-to-date module to manipulate Factorio blueprint strings. Compatible with mods."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["factorio", "blueprint", "string"]
 authors = [
     { name = "redruin01" }
@@ -33,8 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Intended Audience :: Developers",
     "Intended Audience :: End Users/Desktop",
-    "Operating System :: OS Independent",
-    "License :: OSI Approved :: MIT License"
+    "Operating System :: OS Independent"
 ]
 
 [project.urls]
