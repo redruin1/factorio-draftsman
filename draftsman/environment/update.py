@@ -641,21 +641,39 @@ def run_data_lifecycle(
         print("Owned DLC:")
         print(owned_dlc, end="\n\n")
 
+    feature_flags = {
+        "quality": False,
+        "rail_bridges": False,
+        "space_travel": False,
+        "spoiling": False,
+        "freezing": False,
+        "segmented_units": False,
+        "expansion_shaders": False,
+    }
+    for mod in load_order:
+        feature_flags["quality"] |= mod.feature_flags["quality"]
+        feature_flags["rail_bridges"] |= mod.feature_flags["rail_bridges"]
+        feature_flags["space_travel"] |= mod.feature_flags["space_travel"]
+        feature_flags["spoiling"] |= mod.feature_flags["spoiling"]
+        feature_flags["freezing"] |= mod.feature_flags["freezing"]
+        feature_flags["segmented_units"] |= mod.feature_flags["segmented_units"]
+        feature_flags["expansion_shaders"] |= mod.feature_flags["expansion_shaders"]
+
     # Define a number of 'feature flags' so the load process can query whether
     # or not it 'owns' the features provided in the DLC
     lua.execute(
         """
         feature_flags = {{
-            quality={sa_enabled},
-            rail_bridges={sa_enabled},
-            space_travel={sa_enabled},
-            spoiling={sa_enabled},
-            freezing={sa_enabled},
-            segmented_units={sa_enabled},
-            expansion_shaders={sa_enabled},
+            quality={quality},
+            rail_bridges={rail_bridges},
+            space_travel={space_travel},
+            spoiling={spoiling},
+            freezing={freezing},
+            segmented_units={segmented_units},
+            expansion_shaders={expansion_shaders},
         }}
         """.format(
-            sa_enabled="space-age" in owned_dlc
+            **feature_flags
         )
     )
 
