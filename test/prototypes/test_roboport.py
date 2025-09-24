@@ -1,7 +1,7 @@
 # test_roboport.py
 
 from draftsman.constants import ValidationMode
-from draftsman.entity import Roboport, roboports, Container
+from draftsman.entity import Roboport, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID, SignalFilter, ManualSection
 import draftsman.validators

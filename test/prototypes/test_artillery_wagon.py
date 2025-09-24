@@ -1,7 +1,7 @@
 # test_artillery_wagon.py
 
 from draftsman.constants import InventoryType, Orientation, ValidationMode
-from draftsman.entity import ArtilleryWagon, artillery_wagons, Container
+from draftsman.entity import ArtilleryWagon, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     BlueprintInsertPlan,
@@ -10,7 +10,7 @@ from draftsman.signatures import (
     EquipmentComponent,
 )
 import draftsman.validators
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

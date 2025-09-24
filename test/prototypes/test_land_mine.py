@@ -1,7 +1,7 @@
 # test_land_mine.py
 
-from draftsman.entity import LandMine, land_mines, Container
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import LandMine, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

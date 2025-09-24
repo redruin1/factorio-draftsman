@@ -2,7 +2,6 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import UndergroundPipe, Container, underground_pipes
-from draftsman.error import InvalidEntityError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable

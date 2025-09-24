@@ -1,8 +1,7 @@
 # test_heat_pipe.py
 
-from draftsman.entity import HeatPipe, heat_pipes, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import HeatPipe, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

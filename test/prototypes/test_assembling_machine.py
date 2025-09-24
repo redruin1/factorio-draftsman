@@ -5,9 +5,6 @@ from draftsman.constants import Direction, InventoryType
 from draftsman.data import mods
 from draftsman.entity import AssemblingMachine, assembling_machines, Container
 from draftsman.error import (
-    InvalidEntityError,
-    InvalidRecipeError,
-    InvalidItemError,
     DataFormatError,
 )
 from draftsman.signatures import (
@@ -18,17 +15,12 @@ from draftsman.signatures import (
     InventoryPosition,
 )
 from draftsman.warning import (
-    ModuleCapacityWarning,
-    ModuleLimitationWarning,
     ItemLimitationWarning,
     RecipeLimitationWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
     UnknownRecipeWarning,
 )
 
-import warnings
 
 from collections.abc import Hashable
 import pytest

@@ -2,7 +2,7 @@
 
 from draftsman.constants import Direction, LegacyDirection
 from draftsman.entity import UndergroundBelt, underground_belts, Container
-from draftsman.error import DataFormatError, InvalidEntityError
+from draftsman.error import DataFormatError
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable

@@ -1,8 +1,8 @@
 # test_gate.py
 
 from draftsman.constants import Direction
-from draftsman.entity import Gate, gates, Container
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import Gate, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

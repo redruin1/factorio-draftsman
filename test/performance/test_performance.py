@@ -1,12 +1,9 @@
 # test_performance.py
 
 from draftsman import validators
-from draftsman.blueprintable import get_blueprintable_from_string, BlueprintBook
 from draftsman.constants import ValidationMode
-from draftsman.warning import OverlappingObjectsWarning, UnknownElementWarning
 
 import pytest
-import warnings
 
 validation_levels = (ValidationMode.DISABLED, ValidationMode.STRICT)
 

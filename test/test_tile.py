@@ -4,7 +4,7 @@ from draftsman.classes.group import Group
 from draftsman.classes.vector import Vector
 from draftsman.constants import ValidationMode
 from draftsman.tile import Tile, new_tile
-from draftsman.error import DataFormatError, InvalidTileError
+from draftsman.error import DataFormatError
 import draftsman.validators
 from draftsman.warning import UnknownTileWarning
 

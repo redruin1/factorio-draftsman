@@ -1,7 +1,6 @@
 # test_logistic_request_container.py
 
 from draftsman.constants import LogisticModeOfOperation, ValidationMode
-from draftsman.classes.mixins import RequestFiltersMixin
 from draftsman.entity import (
     LogisticRequestContainer,
     logistic_request_containers,
@@ -12,8 +11,6 @@ from draftsman.signatures import SignalFilter, ManualSection
 import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from draftsman.data import mods

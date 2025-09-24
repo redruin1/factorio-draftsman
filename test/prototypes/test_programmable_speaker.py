@@ -3,11 +3,6 @@
 from draftsman.constants import ValidationMode
 from draftsman.entity import ProgrammableSpeaker, programmable_speakers, Container
 from draftsman.error import (
-    DraftsmanError,
-    InvalidEntityError,
-    InvalidSignalError,
-    InvalidInstrumentID,
-    InvalidNoteID,
     DataFormatError,
     IncompleteSignalError,
 )

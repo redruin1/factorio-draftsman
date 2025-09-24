@@ -1,11 +1,5 @@
 # conftest.py
-import pytest
 
-import draftsman
-from draftsman.environment.update import run_data_lifecycle
-from draftsman.utils import version_string_to_tuple, version_tuple_to_string
-import git
-import os
 
 # @pytest.fixture(scope="session", params=["sqlite", "postgresql"])
 # def draftsman_environment(request):

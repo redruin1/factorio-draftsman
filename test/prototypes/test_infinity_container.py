@@ -1,12 +1,12 @@
 # test_infinity_container.py
 
 from draftsman.constants import ValidationMode
-from draftsman.entity import InfinityContainer, infinity_containers, Container
+from draftsman.entity import InfinityContainer, Container
 from draftsman.error import (
     DataFormatError,
 )
 import draftsman.validators
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

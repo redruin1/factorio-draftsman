@@ -1,11 +1,10 @@
 # test_accumulator.py
 
 from draftsman.classes.vector import Vector
-from draftsman.constants import ValidationMode
 from draftsman.entity import Accumulator, accumulators, Container
-from draftsman.error import DataFormatError, IncompleteSignalError
+from draftsman.error import IncompleteSignalError
 from draftsman.signatures import SignalID
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

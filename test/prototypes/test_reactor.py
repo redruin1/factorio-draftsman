@@ -1,17 +1,13 @@
 # test_reactor.py
 
 from draftsman.constants import InventoryType
-from draftsman.entity import Reactor, reactors, Container
-from draftsman.error import DataFormatError
+from draftsman.entity import Reactor, Container
 from draftsman.signatures import (
     BlueprintInsertPlan,
     ItemInventoryPositions,
     InventoryPosition,
 )
 from draftsman.warning import (
-    FuelLimitationWarning,
-    FuelCapacityWarning,
-    ItemLimitationWarning,
     UnknownEntityWarning,
     UnknownKeywordWarning,
 )

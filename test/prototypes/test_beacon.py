@@ -1,8 +1,7 @@
 # test_beacon.py
 
 from draftsman.constants import InventoryType
-from draftsman.entity import Beacon, beacons, Container
-from draftsman.error import DataFormatError
+from draftsman.entity import Beacon, Container
 from draftsman.signatures import (
     BlueprintInsertPlan,
     ItemID,
@@ -10,12 +9,7 @@ from draftsman.signatures import (
     InventoryPosition,
 )
 from draftsman.warning import (
-    ModuleCapacityWarning,
-    ModuleNotAllowedWarning,
-    ItemLimitationWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

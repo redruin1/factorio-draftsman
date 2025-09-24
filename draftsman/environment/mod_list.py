@@ -90,7 +90,9 @@ class Mod:
 
         # Convert string dependencies into `Dependency` instances
         self.dependencies = [
-            Dependency(flag=m[1], name=m[2], operation=m[3], version=m[4], reference=None)
+            Dependency(
+                flag=m[1], name=m[2], operation=m[3], version=m[4], reference=None
+            )
             for dependency in dependencies
             if (m := Mod.dependency_regex.match(dependency))
         ]

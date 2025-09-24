@@ -409,13 +409,15 @@ def run_settings_stage(
 
     # Factorio then converts the settings which were stored in data.raw
     # to the global 'settings' table: We emulate that here in 'settings.lua':
-    file_name = os.path.join(draftsman_path, "compatibility", "settings.lua").replace("\\", "/")
+    file_name = os.path.join(draftsman_path, "compatibility", "settings.lua").replace(
+        "\\", "/"
+    )
     lua.globals().REQUIRE_STACK = lua.eval('{{"{}"}}'.format(file_name))
     lua.globals().MODS_STACK = lua.eval("{}")
     lua.globals().lua_stage_reset()
     lua.execute(
         file_to_string(os.path.join(draftsman_path, "compatibility", "settings.lua")),
-        name=file_name
+        name=file_name,
     )
 
     # If there is a `mod-settings.dat` file present, we overwrite the current
@@ -729,7 +731,7 @@ def run_data_lifecycle(
     run_lua_file(
         lua,
         os.path.join(game_path, "core", "lualib", "dataloader.lua"),
-        custom_name="__core__/lualib/dataloader.lua"
+        custom_name="__core__/lualib/dataloader.lua",
     )
 
     # Construct and send the `mods` table to the Lua instance in `interface.lua`
@@ -741,7 +743,7 @@ def run_data_lifecycle(
     # of code to convert the `python_mods` Python dict to the `mods` Lua table
     # Factorio wants
     lua.execute(
-    """
+        """
     mods = {}
     for k in python.iter(python_mods) do
         mods[k] = python_mods[k]

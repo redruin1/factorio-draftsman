@@ -3,7 +3,6 @@
 from draftsman.classes.train_configuration import TrainConfiguration
 from draftsman.prototypes.locomotive import Locomotive
 from draftsman.prototypes.cargo_wagon import CargoWagon
-from draftsman.prototypes.fluid_wagon import FluidWagon
 from draftsman.prototypes.artillery_wagon import ArtilleryWagon
 
 import pytest

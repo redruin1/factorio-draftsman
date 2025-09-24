@@ -16,10 +16,7 @@ from draftsman.signatures import (
 import draftsman.validators
 from draftsman.warning import (
     BarWarning,
-    ItemCapacityWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

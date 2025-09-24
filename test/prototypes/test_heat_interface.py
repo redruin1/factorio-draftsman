@@ -1,12 +1,11 @@
 # test_heat_interface.py
 
 from draftsman.constants import ValidationMode
-from draftsman.entity import HeatInterface, heat_interfaces, Container
+from draftsman.entity import HeatInterface, Container
 from draftsman.error import DataFormatError
 import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
-    UnknownKeywordWarning,
     TemperatureRangeWarning,
 )
 

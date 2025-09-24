@@ -1,13 +1,9 @@
 # test_burner_generator.py
 
 from draftsman.constants import Direction, InventoryType
-from draftsman.entity import BurnerGenerator, burner_generators, Container
-from draftsman.error import InvalidEntityError
+from draftsman.entity import BurnerGenerator, Container
 from draftsman.warning import (
-    FuelCapacityWarning,
-    ItemLimitationWarning,
     UnknownEntityWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

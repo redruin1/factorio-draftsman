@@ -8,7 +8,7 @@ from draftsman.constants import (
     InventoryType,
 )
 from draftsman.data import mods
-from draftsman.entity import MiningDrill, mining_drills, Container
+from draftsman.entity import MiningDrill, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     BlueprintInsertPlan,
@@ -18,8 +18,6 @@ from draftsman.signatures import (
 )
 import draftsman.validators
 from draftsman.warning import (
-    ModuleCapacityWarning,
-    ItemLimitationWarning,
     UnknownEntityWarning,
 )
 

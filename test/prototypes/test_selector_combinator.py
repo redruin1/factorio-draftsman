@@ -1,7 +1,7 @@
 # test_selector_combinator.py
 
 from draftsman.constants import Direction
-from draftsman.error import InvalidSignalError, IncompleteSignalError
+from draftsman.error import IncompleteSignalError
 from draftsman.prototypes.selector_combinator import (
     SelectorCombinator,
     selector_combinators,

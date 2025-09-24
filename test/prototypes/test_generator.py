@@ -1,8 +1,8 @@
 # test_generator.py
 
 from draftsman.constants import Direction
-from draftsman.entity import Generator, generators, Container
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import Generator, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

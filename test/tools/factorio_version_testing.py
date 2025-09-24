@@ -20,7 +20,6 @@ from git import Repo
 import pytest
 
 import logging
-import sys
 
 
 def main():

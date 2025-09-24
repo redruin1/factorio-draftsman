@@ -2,7 +2,7 @@
 
 from draftsman.constants import InventoryType, Orientation, ValidationMode
 from draftsman.data import mods
-from draftsman.entity import CargoWagon, cargo_wagons, Container
+from draftsman.entity import CargoWagon, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     Inventory,

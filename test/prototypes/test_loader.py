@@ -1,9 +1,9 @@
 # test_loader.py
 
 from draftsman.constants import Direction
-from draftsman.entity import Loader, loaders, Container
+from draftsman.entity import Loader, Container
 from draftsman.signatures import ItemFilter
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

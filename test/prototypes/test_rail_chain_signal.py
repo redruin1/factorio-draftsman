@@ -1,7 +1,7 @@
 # test_rail_chain_signal.py
 
 from draftsman.constants import Direction
-from draftsman.entity import RailChainSignal, rail_chain_signals, Container
+from draftsman.entity import RailChainSignal, Container
 from draftsman.error import DataFormatError, IncompleteSignalError
 from draftsman.signatures import SignalID
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning

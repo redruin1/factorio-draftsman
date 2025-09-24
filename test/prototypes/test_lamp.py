@@ -1,10 +1,10 @@
 # test_lamp.py
 
 from draftsman.constants import LampColorMode, ValidationMode
-from draftsman.entity import Lamp, lamps, Container
+from draftsman.entity import Lamp, Container
 from draftsman.error import DataFormatError
 import draftsman.validators
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

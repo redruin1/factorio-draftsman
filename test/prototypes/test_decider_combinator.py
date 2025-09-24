@@ -1,20 +1,15 @@
 # test_arithmetic_combinator.py
 
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction
 from draftsman.entity import DeciderCombinator, decider_combinators, Container
 from draftsman.error import (
-    InvalidEntityError,
     DataFormatError,
-    DraftsmanError,
 )
 from draftsman.signatures import CircuitNetworkSelection
 from draftsman.warning import (
-    PureVirtualDisallowedWarning,
     UnknownEntityWarning,
-    UnknownKeywordWarning,
 )
 
-from draftsman.data import signals
 
 from collections.abc import Hashable
 import pytest

@@ -112,6 +112,20 @@ ArithmeticOperation = Literal[
 ]
 
 
+def normalize_comparator(value):
+    conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
+    if value in conversions:
+        return conversions[value]
+    else:
+        return value
+
+
+Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
+# draftsman_converters.register_unstructure_hook(
+#     Comparator, lambda inst: normalize_comparator(inst)
+# )
+
+
 @attrs.define
 class SignalID(Exportable):
     """
@@ -183,8 +197,8 @@ class SignalID(Exportable):
         default=None, validator=instance_of(Optional[SignalIDName])
     )
     """
-    Name of the signal. If omitted, the signal is treated as no signal and 
-    removed on import/export cycle.
+    Name of the signal. If omitted, the signal is treated as either no signal or
+    any signal.
     """
 
     type: SignalIDType = attrs.field(
@@ -205,7 +219,15 @@ class SignalID(Exportable):
         default="normal", validator=or_(one_of(QualityID), is_none)
     )
     """
-    Quality flag of the signal.
+    Quality flag of the signal. A quality of ``None`` means any quality.
+    """
+
+    comparator: Optional[Comparator] = attrs.field(
+        default="=", validator=or_(one_of(Comparator), is_none)
+    )
+    """
+    Comparator used when representing quality ranges. A value of ``None`` is 
+    only permitted when :py:attr:`.quality` is also ``None``.
     """
 
     @classmethod
@@ -434,20 +456,6 @@ draftsman_converters.add_hook_fns(
         "a": fields.a.name,
     },
 )
-
-
-def normalize_comparator(value):
-    conversions = {"==": "=", ">=": "≥", "<=": "≤", "!=": "≠"}
-    if value in conversions:
-        return conversions[value]
-    else:
-        return value
-
-
-Comparator = Literal[">", "<", "=", "==", "≥", ">=", "≤", "<=", "≠", "!="]
-# draftsman_converters.register_unstructure_hook(
-#     Comparator, lambda inst: normalize_comparator(inst)
-# )
 
 
 @attrs.define

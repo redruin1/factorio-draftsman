@@ -9,7 +9,6 @@ from draftsman.signatures import SignalID
 import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
-    UnknownKeywordWarning,
     PureVirtualDisallowedWarning,
     SignalConfigurationWarning,
     UnknownSignalWarning,

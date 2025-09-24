@@ -1,15 +1,13 @@
 # test_constant_combinator.py
 
 from draftsman import DEFAULT_FACTORIO_VERSION
-from draftsman.constants import Direction, ValidationMode
+from draftsman.constants import Direction
 from draftsman.data import mods
 from draftsman.entity import ConstantCombinator, constant_combinators, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import SignalFilter, ManualSection
 from draftsman.warning import (
-    PureVirtualDisallowedWarning,
     UnknownEntityWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

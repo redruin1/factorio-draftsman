@@ -1,6 +1,6 @@
 # test_radar.py
 
-from draftsman.entity import Radar, radars, Container
+from draftsman.entity import Radar, Container
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 
 from collections.abc import Hashable

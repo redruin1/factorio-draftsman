@@ -1,14 +1,14 @@
 # test_offshore_pump.py
 
 from draftsman.constants import Direction, ValidationMode
-from draftsman.entity import OffshorePump, offshore_pumps, Container
+from draftsman.entity import OffshorePump, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     Condition,
     SignalID,
 )
 import draftsman.validators
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

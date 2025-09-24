@@ -1,12 +1,10 @@
 # test_legacy_curved_rail.py
 
 from draftsman.constants import Direction, LegacyDirection
-from draftsman.entity import LegacyCurvedRail, legacy_curved_rails, Container
-from draftsman.error import InvalidEntityError
+from draftsman.entity import LegacyCurvedRail, Container
 from draftsman.warning import (
     GridAlignmentWarning,
     UnknownEntityWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

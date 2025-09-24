@@ -2,7 +2,7 @@
 
 from draftsman.entity import LinkedContainer, linked_containers, Container
 from draftsman.error import DataFormatError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

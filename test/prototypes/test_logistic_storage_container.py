@@ -8,7 +8,7 @@ from draftsman.entity import (
 from draftsman.error import DataFormatError
 
 # from draftsman.signatures import RequestFilter
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

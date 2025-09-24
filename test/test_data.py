@@ -2,8 +2,7 @@
 
 from draftsman.entity import Container, StorageTank
 from draftsman.tile import Tile
-from draftsman.data import entities, modules, tiles, signals
-from draftsman.utils import AABB
+from draftsman.data import entities, tiles
 
 import pytest
 

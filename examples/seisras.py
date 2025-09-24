@@ -4,7 +4,7 @@
 Creates a bunch of components for the SEISRAS CPU.
 """
 
-from draftsman.blueprintable import Blueprint, BlueprintBook, Group
+from draftsman.blueprintable import Blueprint, Group
 from draftsman.constants import Direction, ValidationMode
 from draftsman.entity import ConstantCombinator, DeciderCombinator, DisplayPanel
 from draftsman.signatures import SignalID, SignalFilter

@@ -1,7 +1,7 @@
 # test_locomotive.py
 
 from draftsman.constants import Orientation, InventoryType, ValidationMode
-from draftsman.entity import Locomotive, locomotives, Container
+from draftsman.entity import Locomotive, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     Color,
@@ -11,7 +11,7 @@ from draftsman.signatures import (
     EquipmentComponent,
 )
 import draftsman.validators
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

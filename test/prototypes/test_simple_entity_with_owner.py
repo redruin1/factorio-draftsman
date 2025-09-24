@@ -2,7 +2,7 @@
 
 from draftsman.constants import Direction, LegacyDirection
 from draftsman.entity import SimpleEntityWithOwner, simple_entities_with_owner
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 import pytest
 

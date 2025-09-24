@@ -16,7 +16,6 @@ from draftsman.signatures import SignalID, Condition, ItemFilter
 import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
-    UnknownKeywordWarning,
     UnknownSignalWarning,
 )
 

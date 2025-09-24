@@ -2,7 +2,6 @@
 
 from draftsman.blueprintable import *
 from draftsman.error import (
-    DataFormatError,
     MalformedBlueprintStringError,
     IncorrectBlueprintTypeError,
 )

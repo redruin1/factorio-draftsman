@@ -5,7 +5,7 @@ from draftsman import utils
 from draftsman.classes.vector import Vector
 from draftsman.constants import Direction, Orientation, Ticks, ValidationMode
 from draftsman.error import InvalidSignalError
-from draftsman.data import recipes, signals
+from draftsman.data import signals
 
 import pytest
 import warnings

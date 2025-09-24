@@ -1,15 +1,12 @@
 # test_electric_pole.py
 
-from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.data import mods
-from draftsman.entity import ElectricPole, electric_poles, Container
-from draftsman.error import DataFormatError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import ElectricPole, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
-import sys
 import pytest
 
 

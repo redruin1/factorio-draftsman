@@ -1,5 +1,8 @@
 # Changelog
 
+## 3.2.0
+* Updated `Splitter` to be circuit connectable (Factorio `2.0.67`)
+
 ## 3.1.1
 * Added Github workflow for automatically testing `draftsman update`
 * Fixed #199 (draftsman update fails if multiple mods with no explicit dependencies)

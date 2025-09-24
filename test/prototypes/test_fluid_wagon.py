@@ -1,7 +1,7 @@
 # test_fluid_wagon.py
 
 from draftsman.constants import Orientation, ValidationMode
-from draftsman.entity import FluidWagon, fluid_wagons, Container
+from draftsman.entity import FluidWagon, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     BlueprintInsertPlan,

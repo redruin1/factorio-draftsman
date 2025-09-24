@@ -2,11 +2,10 @@
 
 from draftsman.entity import (
     ElectricEnergyInterface,
-    electric_energy_interfaces,
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

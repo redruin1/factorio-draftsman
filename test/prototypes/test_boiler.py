@@ -1,9 +1,8 @@
 # test_boiler.py
 
 from draftsman.constants import InventoryType
-from draftsman.entity import Boiler, boilers, Container
-from draftsman.error import InvalidEntityError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import Boiler, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

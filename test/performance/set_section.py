@@ -1,6 +1,5 @@
 # set_signal.py
 
-from draftsman.data import signals
 from draftsman.entity import ConstantCombinator
 
 

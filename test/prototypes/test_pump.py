@@ -1,8 +1,8 @@
 # test_pump.py
 
 from draftsman.constants import Direction
-from draftsman.entity import Pump, pumps, Container
-from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.entity import Pump, Container
+from draftsman.error import DataFormatError
 from draftsman.signatures import Condition
 from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
 

@@ -2,7 +2,7 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import LinkedBelt, linked_belts, Container
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

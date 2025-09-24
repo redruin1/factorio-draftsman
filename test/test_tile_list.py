@@ -5,7 +5,7 @@ from draftsman.classes.exportable import ValidationResult
 from draftsman.classes.tile import Tile
 from draftsman.classes.tile_list import TileList
 from draftsman.constants import ValidationMode
-from draftsman.error import DataFormatError, UnreasonablySizedBlueprintError
+from draftsman.error import DataFormatError
 import draftsman.validators
 from draftsman.warning import OverlappingObjectsWarning, UnknownTileWarning
 

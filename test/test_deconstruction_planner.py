@@ -1,12 +1,12 @@
 # test_deconstruction_planner.py
 
 from draftsman.classes.deconstruction_planner import DeconstructionPlanner
-from draftsman.constants import FilterMode, TileSelectionMode, ValidationMode
+from draftsman.constants import FilterMode, TileSelectionMode
 from draftsman.data import mods
 from draftsman.error import DataFormatError
 from draftsman.signatures import Icon, EntityFilter, TileFilter
 from draftsman.utils import encode_version
-from draftsman.warning import DraftsmanWarning, UnknownEntityWarning, UnknownTileWarning
+from draftsman.warning import UnknownEntityWarning, UnknownTileWarning
 
 import pytest
 

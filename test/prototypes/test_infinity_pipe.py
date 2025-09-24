@@ -1,13 +1,12 @@
 # test_infinity_pipe.py
 
 from draftsman.constants import ValidationMode
-from draftsman.entity import InfinityPipe, infinity_pipes, Container
+from draftsman.entity import InfinityPipe, Container
 from draftsman.error import DataFormatError
 import draftsman.validators
 from draftsman.warning import (
     UnknownEntityWarning,
     UnknownFluidWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

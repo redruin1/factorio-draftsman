@@ -6,7 +6,7 @@ from draftsman.entity import (
     Container,
 )
 from draftsman.error import DataFormatError
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from draftsman.data import mods
 

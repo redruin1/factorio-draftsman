@@ -3,17 +3,13 @@
 from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import InventoryType
 from draftsman.data import mods
-from draftsman.entity import Lab, labs, Container
-from draftsman.error import DataFormatError
+from draftsman.entity import Lab, Container
 from draftsman.signatures import (
     BlueprintInsertPlan,
-    ItemID,
     ItemInventoryPositions,
     InventoryPosition,
 )
 from draftsman.warning import (
-    ModuleCapacityWarning,
-    ItemLimitationWarning,
     UnknownEntityWarning,
 )
 

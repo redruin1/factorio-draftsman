@@ -5,7 +5,6 @@ from draftsman.classes.blueprint import Blueprint
 from draftsman.entity import Container
 from draftsman.error import InvalidAssociationError
 
-import sys
 import pytest
 import weakref
 

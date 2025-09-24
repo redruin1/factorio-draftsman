@@ -3,9 +3,9 @@
 from draftsman.classes.blueprint import Blueprint
 from draftsman.classes.group import Group
 from draftsman.entity import PowerSwitch, power_switches, Container
-from draftsman.error import InvalidEntityError, DataFormatError
+from draftsman.error import DataFormatError
 from draftsman.signatures import Condition
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

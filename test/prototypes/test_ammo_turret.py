@@ -1,7 +1,7 @@
 # test_ammo_turret.py
 
 from draftsman.constants import Direction, InventoryType
-from draftsman.entity import AmmoTurret, ammo_turrets, Container
+from draftsman.entity import AmmoTurret, Container
 from draftsman.error import DataFormatError
 from draftsman.signatures import (
     Condition,
@@ -10,7 +10,7 @@ from draftsman.signatures import (
     ItemInventoryPositions,
     InventoryPosition,
 )
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

@@ -1,7 +1,7 @@
 # test_pipe.py
 
-from draftsman.entity import Pipe, pipes, Container
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.entity import Pipe, Container
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

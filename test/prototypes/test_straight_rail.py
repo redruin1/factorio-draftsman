@@ -4,7 +4,6 @@ from draftsman.blueprintable import Blueprint
 from draftsman.constants import Direction
 from draftsman.entity import StraightRail, straight_rails, Container
 from draftsman.warning import (
-    DraftsmanWarning,
     GridAlignmentWarning,
     OverlappingObjectsWarning,
     UnknownEntityWarning,

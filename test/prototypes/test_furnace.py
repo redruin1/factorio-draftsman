@@ -3,8 +3,7 @@
 from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.constants import Direction, InventoryType
 from draftsman.data import mods
-from draftsman.entity import Furnace, furnaces, Container
-from draftsman.error import DataFormatError
+from draftsman.entity import Furnace, Container
 from draftsman.signatures import (
     BlueprintInsertPlan,
     ItemID,
@@ -12,15 +11,7 @@ from draftsman.signatures import (
     InventoryPosition,
 )
 from draftsman.warning import (
-    ModuleCapacityWarning,
-    ModuleNotAllowedWarning,
-    ItemCapacityWarning,
-    ItemLimitationWarning,
-    FuelCapacityWarning,
-    FuelLimitationWarning,
     UnknownEntityWarning,
-    UnknownItemWarning,
-    UnknownKeywordWarning,
 )
 
 from collections.abc import Hashable

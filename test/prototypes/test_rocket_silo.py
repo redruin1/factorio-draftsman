@@ -9,7 +9,7 @@ from draftsman.signatures import (
     ItemInventoryPositions,
     InventoryPosition,
 )
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 from collections.abc import Hashable
 import pytest

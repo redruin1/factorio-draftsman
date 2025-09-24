@@ -10,7 +10,7 @@ from draftsman.entity import Container, ElectricPole, new_entity
 from draftsman.error import DuplicateIDError
 from draftsman.utils import encode_version
 import draftsman.validators
-from draftsman.warning import OverlappingObjectsWarning, HiddenEntityWarning
+from draftsman.warning import OverlappingObjectsWarning
 
 import pytest
 

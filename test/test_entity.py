@@ -4,14 +4,12 @@ from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.blueprintable import *
 from draftsman.classes.vector import Vector
 from draftsman.constants import *
-import draftsman.data.entities as data
 from draftsman.data import mods
 from draftsman.entity import *
 from draftsman.error import *
 from draftsman.warning import *
 from draftsman.utils import AABB, version_tuple_to_string
 import draftsman.validators
-from draftsman.serialization import draftsman_converters
 
 import pytest
 from referencing import Registry, Resource
@@ -207,7 +205,7 @@ entity_fixtures = [
 
 
 def grab_json_file(*path) -> dict:
-    with open(os.path.join(*path), "r") as json_file:
+    with open(os.path.join(*path), "r", encoding="utf-8") as json_file:
         return json.load(json_file)
 
 

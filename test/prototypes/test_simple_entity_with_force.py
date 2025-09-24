@@ -2,7 +2,7 @@
 
 from draftsman.constants import Direction
 from draftsman.entity import SimpleEntityWithForce, simple_entities_with_force
-from draftsman.warning import UnknownEntityWarning, UnknownKeywordWarning
+from draftsman.warning import UnknownEntityWarning
 
 import pytest
 
