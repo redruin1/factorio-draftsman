@@ -34,8 +34,9 @@ class TestCurvedRailB:
 
     def test_flags(self):
         for rail_name in curved_rails_b:
-            curved_rail = CurvedRailB(rail_name)
-            assert curved_rail.power_connectable == False
-            assert curved_rail.dual_power_connectable == False
-            assert curved_rail.circuit_connectable == False
-            assert curved_rail.dual_circuit_connectable == False
+            rail = CurvedRailB(rail_name)
+            assert rail.double_grid_aligned == True
+            assert rail.power_connectable == False
+            assert rail.dual_power_connectable == False
+            assert rail.circuit_connectable == False
+            assert rail.dual_circuit_connectable == False

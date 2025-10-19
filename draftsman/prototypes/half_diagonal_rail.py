@@ -1,6 +1,5 @@
 # half_diagonal_rail.py
 
-from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.utils import AABB, Rectangle
@@ -29,14 +28,14 @@ class HalfDiagonalRail(DirectionalMixin, Entity):
     # =========================================================================
 
     @property
-    def double_grid_aligned(self) -> bool:
-        return True
+    def square(self) -> bool:
+        return False
 
     # =========================================================================
 
     @property
-    def valid_directions(self) -> set[Direction]:
-        return EIGHT_WAY_DIRECTIONS
+    def double_grid_aligned(self) -> bool:
+        return True
 
     # =========================================================================
 

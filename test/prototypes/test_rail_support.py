@@ -33,6 +33,7 @@ class TestRailSupport:
     def test_flags(self):
         for support_name in rail_supports:
             support = RailSupport(support_name)
+            assert support.double_grid_aligned == True
             assert support.power_connectable == False
             assert support.dual_power_connectable == False
             assert support.circuit_connectable == False

@@ -21,7 +21,7 @@ from draftsman.data import mods
 
 import attrs
 import copy
-from typing import Literal, Optional, Union
+from typing import ClassVar, Literal, Optional, Union
 
 
 # TODO: Right now, everything is just lumped into one WaitCondition class, which means
@@ -293,6 +293,65 @@ draftsman_converters.register_unstructure_hook_factory(
 
 
 @attrs.define
+class ScheduleStop(Exportable):
+    station: str = attrs.field(validator=instance_of(str))
+    """
+    The name of the station or planet that this train or space platform
+    should stop at.
+    """
+    wait_conditions: WaitConditions = attrs.field(
+        factory=WaitConditions,
+        converter=WaitConditions,
+        validator=instance_of(WaitConditions),
+    )
+    """
+    A list of :py:class:`.WaitCondition` objects to evaluate at this
+    particular stop.
+    """
+    allows_unloading: Optional[bool] = attrs.field(
+        default=True, validator=instance_of(Optional[bool])
+    )
+    """
+    Whether or not this stop permits this space platform to fulfill any
+    requests at the planet it's stopped above. Only applies to space
+    platform schedules.
+    """
+
+
+@attrs.define
+class ScheduleInterrupt(Exportable):
+    name: str = attrs.field(validator=instance_of(str))
+    """
+    The name of this particular interrupt.
+    """
+    conditions: WaitConditions = attrs.field(
+        factory=WaitConditions,
+        converter=WaitConditions,
+        validator=instance_of(WaitConditions),
+    )
+    """
+    The set of conditions that need to pass in order for this interrupt
+    to be triggered.
+    """
+    targets: list[ScheduleStop] = attrs.field(
+        factory=list,
+        # TODO: converter
+        validator=instance_of(list[ScheduleStop]),
+    )
+    """
+    The target schedule that the interrupt should execute if it's 
+    triggered.
+    """
+    inside_interrupt: bool = attrs.field(
+        default=False,
+    )
+    """
+    Whether or not this interrupt can be triggered midway through an 
+    already executing interrupt.
+    """
+
+
+@attrs.define
 class Schedule(Exportable):
     """
     An object representing a particular schedule, for both trains and space
@@ -301,62 +360,66 @@ class Schedule(Exportable):
     interrupts.
     """
 
-    @attrs.define
-    class Stop(Exportable):
-        station: str = attrs.field(validator=instance_of(str))
-        """
-        The name of the station or planet that this train or space platform
-        should stop at.
-        """
-        wait_conditions: WaitConditions = attrs.field(
-            factory=WaitConditions,
-            converter=WaitConditions,
-            validator=instance_of(WaitConditions),
-        )
-        """
-        A list of :py:class:`.WaitCondition` objects to evaluate at this
-        particular stop.
-        """
-        allows_unloading: Optional[bool] = attrs.field(
-            default=True, validator=instance_of(Optional[bool])
-        )
-        """
-        Whether or not this stop permits this space platform to fulfill any
-        requests at the planet it's stopped above. Only applies to space
-        platform schedules.
-        """
+    Stop: ClassVar = ScheduleStop
 
-    @attrs.define
-    class Interrupt(Exportable):
-        name: str = attrs.field(validator=instance_of(str))
-        """
-        The name of this particular interrupt.
-        """
-        conditions: WaitConditions = attrs.field(
-            factory=WaitConditions,
-            converter=WaitConditions,
-            validator=instance_of(WaitConditions),
-        )
-        """
-        The set of conditions that need to pass in order for this interrupt
-        to be triggered.
-        """
-        targets: list["Schedule.Stop"] = attrs.field(
-            factory=list,
-            # TODO: converter
-            validator=instance_of(list["Schedule.Stop"]),
-        )
-        """
-        The target schedule that the interrupt should execute if it's 
-        triggered.
-        """
-        inside_interrupt: bool = attrs.field(
-            default=False,
-        )
-        """
-        Whether or not this interrupt can be triggered midway through an 
-        already executing interrupt.
-        """
+    # @attrs.define
+    # class Stop(Exportable):
+    #     station: str = attrs.field(validator=instance_of(str))
+    #     """
+    #     The name of the station or planet that this train or space platform
+    #     should stop at.
+    #     """
+    #     wait_conditions: WaitConditions = attrs.field(
+    #         factory=WaitConditions,
+    #         converter=WaitConditions,
+    #         validator=instance_of(WaitConditions),
+    #     )
+    #     """
+    #     A list of :py:class:`.WaitCondition` objects to evaluate at this
+    #     particular stop.
+    #     """
+    #     allows_unloading: Optional[bool] = attrs.field(
+    #         default=True, validator=instance_of(Optional[bool])
+    #     )
+    #     """
+    #     Whether or not this stop permits this space platform to fulfill any
+    #     requests at the planet it's stopped above. Only applies to space
+    #     platform schedules.
+    #     """
+
+    Interrupt: ClassVar = ScheduleInterrupt
+
+    # @attrs.define
+    # class Interrupt(Exportable):
+    #     name: str = attrs.field(validator=instance_of(str))
+    #     """
+    #     The name of this particular interrupt.
+    #     """
+    #     conditions: WaitConditions = attrs.field(
+    #         factory=WaitConditions,
+    #         converter=WaitConditions,
+    #         validator=instance_of(WaitConditions),
+    #     )
+    #     """
+    #     The set of conditions that need to pass in order for this interrupt
+    #     to be triggered.
+    #     """
+    #     targets: list["Schedule.Stop"] = attrs.field(
+    #         factory=list,
+    #         # TODO: converter
+    #         validator=instance_of(list["Schedule.Stop"]),
+    #     )
+    #     """
+    #     The target schedule that the interrupt should execute if it's
+    #     triggered.
+    #     """
+    #     inside_interrupt: bool = attrs.field(
+    #         default=False,
+    #     )
+    #     """
+    #     Whether or not this interrupt can be triggered midway through an
+    #     already executing interrupt.
+    #     """
 
     # =========================================================================
 
@@ -375,9 +438,9 @@ class Schedule(Exportable):
 
     # =========================================================================
 
-    stops: list[Stop] = attrs.field(
+    stops: list[ScheduleStop] = attrs.field(
         factory=list,
-        validator=instance_of(list[Stop]),
+        validator=instance_of(list[ScheduleStop]),
     )
     """
     The list of all stops that this schedule uses.
@@ -388,9 +451,9 @@ class Schedule(Exportable):
 
     # =========================================================================
 
-    interrupts: list[Interrupt] = attrs.field(
+    interrupts: list[ScheduleInterrupt] = attrs.field(
         factory=list,
-        validator=instance_of(list[Interrupt]),
+        validator=instance_of(list[ScheduleInterrupt]),
     )
     """
     The list of all interrupts that apply to this schedule.
@@ -519,7 +582,7 @@ class Schedule(Exportable):
         self,
         name: str,
         conditions: Union[WaitCondition, WaitConditions],
-        targets: list[Stop],
+        targets: list[ScheduleStop],
         inside_interrupt: bool = False,
     ):
         """

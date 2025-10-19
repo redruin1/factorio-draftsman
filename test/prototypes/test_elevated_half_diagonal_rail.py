@@ -37,8 +37,9 @@ class TestElevatedHalfDiagonalRail:
 
     def test_flags(self):
         for rail_name in elevated_half_diagonal_rails:
-            diagonal_rail = ElevatedHalfDiagonalRail(rail_name)
-            assert diagonal_rail.power_connectable == False
-            assert diagonal_rail.dual_power_connectable == False
-            assert diagonal_rail.circuit_connectable == False
-            assert diagonal_rail.dual_circuit_connectable == False
+            rail = ElevatedHalfDiagonalRail(rail_name)
+            assert rail.double_grid_aligned == True
+            assert rail.power_connectable == False
+            assert rail.dual_power_connectable == False
+            assert rail.circuit_connectable == False
+            assert rail.dual_circuit_connectable == False

@@ -35,6 +35,7 @@ class TestRailRamp:
     def test_flags(self):
         for ramp_name in rail_ramps:
             ramp = RailRamp(ramp_name)
+            assert ramp.double_grid_aligned == True
             assert ramp.power_connectable == False
             assert ramp.dual_power_connectable == False
             assert ramp.circuit_connectable == False

@@ -41,6 +41,7 @@ class TestLegacyStraightRail:
     def test_flags(self):
         for rail_name in legacy_straight_rails:
             rail = LegacyStraightRail(rail_name)
+            assert rail.double_grid_aligned == True
             assert rail.power_connectable == False
             assert rail.dual_power_connectable == False
             assert rail.circuit_connectable == False
