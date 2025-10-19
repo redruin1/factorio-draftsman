@@ -2,14 +2,12 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import IOTypeMixin, DirectionalMixin
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import underground_belts
 
 import attrs
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class UndergroundBelt(IOTypeMixin, DirectionalMixin, Entity):
     """

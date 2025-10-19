@@ -10,7 +10,6 @@ from draftsman.classes.mixins import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import ManualSection, SignalFilter, uint32
-from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 from draftsman.data import mods
 
@@ -21,7 +20,6 @@ import attrs
 from typing import Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class ConstantCombinator(
     PlayerDescriptionMixin,

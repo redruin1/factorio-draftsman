@@ -1,5 +1,5 @@
 # Requirements
-attrs >= 25.3.0
+attrs >= 25.4.0
 cattrs >= 24.1.3
 lupa >= 2.0
 GitPython >= 3.1.43

@@ -17,7 +17,6 @@ from draftsman.signatures import (
     int32,
     normalize_comparator,
 )
-from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of, try_convert
 
 from draftsman.data.entities import decider_combinators
@@ -37,7 +36,6 @@ _signal_blacklist = {
 }
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class DeciderCombinator(
     PlayerDescriptionMixin,

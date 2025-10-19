@@ -1,7 +1,15 @@
 # Changelog
 
 ## 3.2.0
+* Updated `factorio-data` to version `2.0.68` (latest stable)
 * Updated `Splitter` to be circuit connectable (Factorio `2.0.67`)
+* Made more `SignalFilter` attributes optional, bringing it more in line with how Factorio operates
+* Removed several hacks working around a bug in `attrs`
+    * Minimum `attrs` version is now `25.4.0`
+* Fixed issues hidden by the hacky workaround of above bug
+* Added (mostly) correct collision boxes for all new rail entities (`[Elevated]StraightRail`, `[Elevated]HalfDiagonalRail`, `[Elevated]CurvedRailA`, `[Elevated]CurvedRailB`)
+* Fixed #207 (TypeError running README example)
+* Removed validator issuing `GridAlignmentWarning`s (possibly temporarily) due to lack of contextual information needed to make them useful and general code cruft
 
 ## 3.1.1
 * Added Github workflow for automatically testing `draftsman update`

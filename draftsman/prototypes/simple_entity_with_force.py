@@ -3,14 +3,12 @@
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin, VariationMixin
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import simple_entities_with_force
 
 import attrs
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class SimpleEntityWithForce(VariationMixin, DirectionalMixin, Entity):
     """

@@ -47,34 +47,20 @@ class DirectionalMixin(Exportable):
         :py:class:`~.OrientationMixin`
     """
 
-    def __attrs_pre_init__(self, name=attrs.NOTHING, first_call=None, **kwargs):
-        # Make sure this is the first time calling pre-init (bugfix until attrs
-        # is patched)
-        if not first_call:
-            return
-
-        # Call parent pre-init
-        # super().__attrs_pre_init__()
-        # name = kwargs.get("name", get_first(self.similar_entities))
+    def __attrs_pre_init__(self, name=attrs.NOTHING, *args, **kwargs):
+        # Other attributes might need to know what entity we're dealing with,
+        # even prior to __init__
         name = name if name is not attrs.NOTHING else get_first(self.similar_entities)
         object.__setattr__(self, "name", name)
 
         # We generate collision sets on an as-needed basis for each unique
         # entity that is instantiated
-        # Automatically generate a set of rotated collision sets for every
-        # orientation
         try:
             _rotated_collision_sets[name]
         except KeyError:
-            static_collision_set = entities.collision_sets.get(name, None)
-            _rotated_collision_sets[name] = {}
-            for i in self.valid_directions:
-                if self.collision_set_rotated and static_collision_set is not None:
-                    rotated_collision_set = static_collision_set.rotate(i)
-                else:
-                    rotated_collision_set = static_collision_set
-
-                _rotated_collision_sets[name][i] = rotated_collision_set
+            # We encapsulate it in a function, since certain collision sets are
+            # hardcoded by the game and we need to account for that
+            _rotated_collision_sets[name] = self._specify_collision_sets()
 
         # The default position function uses `tile_width`/`tile_height`, which
         # use `collision_set`, which for rotatable entities is derived from the
@@ -235,6 +221,23 @@ class DirectionalMixin(Exportable):
     def mergable_with(self, other: "Entity") -> bool:
         base_mergable = super().mergable_with(other)
         return base_mergable and self.direction == other.direction
+
+    def _specify_collision_sets(self) -> dict:
+        """
+        What values the rotated collision sets for this entity should be.
+        Isolated into it's own function for certain entities whose collision
+        boxes are hardcoded.
+        """
+        result = {}
+        static_collision_set = entities.collision_sets.get(self.name, None)
+        for dir in self.valid_directions:
+            if self.collision_set_rotated and static_collision_set is not None:
+                rotated_collision_set = static_collision_set.rotate(dir)
+            else:
+                rotated_collision_set = static_collision_set
+
+            result[dir] = rotated_collision_set
+        return result
 
 
 draftsman_converters.add_hook_fns(

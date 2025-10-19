@@ -8,7 +8,6 @@ from draftsman.classes.mixins import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Condition, SignalID
-from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import splitters
@@ -22,7 +21,6 @@ except ImportError:  # pragma: no coverage
     from typing_extensions import Literal
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class Splitter(ControlBehaviorMixin, CircuitConnectableMixin, DirectionalMixin, Entity):
     """

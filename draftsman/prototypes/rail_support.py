@@ -30,6 +30,12 @@ class RailSupport(DirectionalMixin, Entity):
     # =========================================================================
 
     @property
+    def collision_set_rotated(self) -> bool:
+        return False
+
+    # =========================================================================
+
+    @property
     def valid_directions(self) -> set[Direction]:
         return SIXTEEN_WAY_DIRECTIONS
 

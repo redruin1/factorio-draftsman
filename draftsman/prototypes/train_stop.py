@@ -12,7 +12,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import Color, SignalID, LuaDouble, uint32
-from draftsman.utils import fix_incorrect_pre_init, attrs_reuse
+from draftsman.utils import attrs_reuse
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import train_stops
@@ -21,7 +21,6 @@ import attrs
 from typing import Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class TrainStop(
     ColorMixin,

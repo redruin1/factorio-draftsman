@@ -16,7 +16,7 @@ from draftsman.signatures import (
     SignalID,
     int32,
 )
-from draftsman.utils import reissue_warnings, fix_incorrect_pre_init
+from draftsman.utils import reissue_warnings
 from draftsman.validators import and_, conditional, instance_of, one_of, try_convert
 from draftsman.warning import PureVirtualDisallowedWarning, SignalConfigurationWarning
 
@@ -62,7 +62,6 @@ def _ensure_proper_each_configuration(
         warnings.warn(SignalConfigurationWarning(msg))
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class ArithmeticCombinator(
     PlayerDescriptionMixin,

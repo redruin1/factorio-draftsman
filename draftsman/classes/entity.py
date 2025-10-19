@@ -8,6 +8,7 @@ from draftsman.classes.exportable import (
 )
 from draftsman.classes.vector import Vector
 from draftsman.constants import (
+    Direction,
     InventoryType,
     ValidationMode,
 )
@@ -536,7 +537,7 @@ class Entity(EntityLike, Exportable):
         )
 
         # Check of grid-alignment warnings after the positions have been updated
-        attr.validator(self, attr, value)
+        # attr.validator(self, attr, value)
 
         return res
 
@@ -564,21 +565,51 @@ class Entity(EntityLike, Exportable):
         <handbook.blueprints.forbidden_entity_attributes>`
     """
 
-    @position.validator
-    @conditional(ValidationMode.MINIMUM)
-    def _position_validator(self, _: attrs.Attribute, value: Vector):
-        if self.double_grid_aligned:
-            if self.tile_position.x % 2 == 1 or self.tile_position.y % 2 == 1:
-                cast_position = Vector(
-                    math.floor(self.tile_position.x / 2) * 2,
-                    math.floor(self.tile_position.y / 2) * 2,
-                )
-                msg = (
-                    "Double-grid aligned entity is not placed along chunk grid; "
-                    "entity's tile position will be cast from {} to {} when "
-                    "imported".format(self.tile_position, cast_position)
-                )
-                warnings.warn(GridAlignmentWarning(msg))
+    # This validator has always been a pain in the ass; I'm going to remove it
+    # for now as it needs a rethink, as it is incredibly contextual and does not
+    # play well with some of the hacky behaviors I've needed to use when working
+    # with attrs
+
+    # @position.validator
+    # @conditional(ValidationMode.MINIMUM)
+    # def _position_validator(self, _: attrs.Attribute, value: Vector):
+    #     if self.double_grid_aligned:
+    #         # If a double grid aligned entity lies on an odd coordinate, they're
+    #         # in the wrong spot
+    #         incorrect_offset = 1
+    #         # ... except for the case of 2.0 diagonal straight rails, which now
+    #         # lie on odd coordinates
+    #         # TODO: needs to be versioned...
+    #         if self.type == "straight-rail":
+    #             if self.direction in (
+    #                 Direction.NORTHEAST,
+    #                 Direction.SOUTHEAST,
+    #                 Direction.SOUTHWEST,
+    #                 Direction.NORTHWEST,
+    #             ):
+    #                 incorrect_offset = 0
+    #         print(incorrect_offset)
+    #         print(self.position)
+    #         print(self.tile_position)
+    #         print(self.tile_position.x % 2)
+
+    #         if (
+    #             self.tile_position.x % 2 == incorrect_offset
+    #             or self.tile_position.y % 2 == incorrect_offset
+    #         ):
+    #             print("wtf")
+    #             cast_position = Vector(
+    #                 math.floor(self.tile_position.x / 2) * 2,
+    #                 math.floor(self.tile_position.y / 2) * 2,
+    #             )
+    #             msg = (
+    #                 "Double-grid aligned entity ({}) is not placed along chunk grid; "
+    #                 "entity's tile position will be cast from {} to {} when "
+    #                 "imported".format(
+    #                     repr(self.name), self.tile_position, cast_position
+    #                 )
+    #             )
+    #             warnings.warn(GridAlignmentWarning(msg))
 
     # =========================================================================
 

@@ -14,7 +14,6 @@ from draftsman.classes.mixins import (
 )
 from draftsman.constants import InventoryType
 from draftsman.signatures import QualityID
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data import entities, modules
 from draftsman.data.entities import mining_drills
@@ -23,7 +22,6 @@ import attrs
 from typing import Iterable, Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class MiningDrill(
     ModulesMixin,

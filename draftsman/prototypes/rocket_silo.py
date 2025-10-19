@@ -12,7 +12,7 @@ from draftsman.classes.mixins import (
 from draftsman.constants import InventoryType, SiloReadMode
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import QualityID, uint32
-from draftsman.utils import attrs_reuse, fix_incorrect_pre_init
+from draftsman.utils import attrs_reuse
 from draftsman.validators import instance_of, try_convert
 
 from draftsman.data.entities import rocket_silos
@@ -22,7 +22,6 @@ import attrs
 from typing import Iterable, Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class RocketSilo(
     ModulesMixin,

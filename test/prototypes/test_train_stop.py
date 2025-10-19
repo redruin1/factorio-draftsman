@@ -146,8 +146,8 @@ class TestTrainStop:
         assert train_stop.position.y == 1.0
 
         # Warning
-        with pytest.warns(GridAlignmentWarning):
-            train_stop.position = (2.0, 2.0)
+        # with pytest.warns(GridAlignmentWarning):
+        #     train_stop.position = (2.0, 2.0)
 
         # Tile position
 
@@ -157,8 +157,8 @@ class TestTrainStop:
         assert train_stop.tile_position.y == 2
 
         # Warning
-        with pytest.warns(GridAlignmentWarning):
-            train_stop.tile_position = (1, 1)
+        # with pytest.warns(GridAlignmentWarning):
+        #     train_stop.tile_position = (1, 1)
 
     def test_set_manual_trains_limit(self):
         train_stop = TrainStop("train-stop")

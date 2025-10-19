@@ -7,7 +7,7 @@ from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.data import mods
-from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
+from draftsman.utils import AABB, Rectangle
 
 from draftsman.data.entities import legacy_curved_rails
 
@@ -40,7 +40,6 @@ _rotated_collision_sets[_legacy_curved_rail_name] = {
 }
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class LegacyCurvedRail(DirectionalMixin, Entity):
     """

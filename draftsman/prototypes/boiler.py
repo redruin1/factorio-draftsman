@@ -5,14 +5,12 @@ from draftsman.classes.mixins import (
     EnergySourceMixin,
     DirectionalMixin,
 )
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import boilers
 
 import attrs
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class Boiler(EnergySourceMixin, DirectionalMixin, Entity):
     """

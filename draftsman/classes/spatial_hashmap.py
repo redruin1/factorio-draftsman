@@ -4,8 +4,15 @@ from draftsman.classes.spatial_like import SpatialLike
 from draftsman.classes.spatial_data_structure import SpatialDataStructure
 from draftsman.classes.vector import PrimitiveVector, PrimitiveIntVector
 from draftsman.prototypes.straight_rail import StraightRail
+from draftsman.prototypes.half_diagonal_rail import HalfDiagonalRail
 from draftsman.prototypes.legacy_straight_rail import LegacyStraightRail
+from draftsman.prototypes.curved_rail_a import CurvedRailA
+from draftsman.prototypes.curved_rail_b import CurvedRailB
 from draftsman.prototypes.legacy_curved_rail import LegacyCurvedRail
+from draftsman.prototypes.elevated_straight_rail import ElevatedStraightRail
+from draftsman.prototypes.elevated_half_diagonal_rail import ElevatedHalfDiagonalRail
+from draftsman.prototypes.elevated_curved_rail_a import ElevatedCurvedRailA
+from draftsman.prototypes.elevated_curved_rail_b import ElevatedCurvedRailB
 from draftsman.prototypes.gate import Gate
 from draftsman.utils import (
     AABB,
@@ -97,10 +104,22 @@ class SpatialHashMap(SpatialDataStructure):
             # StraightRails and CurvedRails cannot collide with each other
             # UNLESS they are the same type, face the same direction, and
             # exist at the exact same place
-            if isinstance(
-                item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)
-            ) and isinstance(
-                overlapping_item, (StraightRail, LegacyStraightRail, LegacyCurvedRail)
+            # Rail ramps are excluded from these checks as they cannot overlap
+            # in this manner
+            rail_types = (
+                StraightRail,
+                LegacyStraightRail,
+                HalfDiagonalRail,
+                CurvedRailA,
+                CurvedRailB,
+                LegacyCurvedRail,
+                ElevatedStraightRail,
+                ElevatedHalfDiagonalRail,
+                ElevatedCurvedRailA,
+                ElevatedCurvedRailB,
+            )
+            if isinstance(item, rail_types) and isinstance(
+                overlapping_item, rail_types
             ):
                 identical = (
                     item.name == overlapping_item.name

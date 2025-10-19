@@ -16,7 +16,6 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.signatures import QualityID
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import assembling_machines
 from draftsman.data import modules
@@ -25,7 +24,6 @@ import attrs
 from typing import Iterable, Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class AssemblingMachine(
     InputIngredientsMixin,

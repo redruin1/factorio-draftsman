@@ -643,12 +643,14 @@ class SignalFilter(Exportable):
     signal in the parent 'filters' key, but this is not strictly enforced. 
     """
 
-    name: SignalIDName = attrs.field(validator=instance_of(SignalIDName))
+    name: Optional[SignalIDName] = attrs.field(
+        validator=instance_of(Optional[SignalIDName])
+    )
     """
     Name of the signal.
     """
 
-    count: int32 = attrs.field(validator=instance_of(int32))
+    count: Optional[int32] = attrs.field(validator=instance_of(Optional[int32]))
     """
     Value of the signal filter, or the lower bound of a range if ``max_count`` 
     is also specified.

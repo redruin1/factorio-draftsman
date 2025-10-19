@@ -11,7 +11,6 @@ from draftsman.classes.mixins import (
 from draftsman.constants import Direction, SIXTEEN_WAY_DIRECTIONS
 from draftsman.serialization import draftsman_converters
 from draftsman.signatures import SignalID
-from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of
 
 from draftsman.data.entities import rail_chain_signals
@@ -20,7 +19,6 @@ import attrs
 from typing import Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class RailChainSignal(
     ReadRailSignalMixin,

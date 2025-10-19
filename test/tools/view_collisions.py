@@ -15,21 +15,19 @@ import math
 
 
 def main():
-    # bp_string = input()
+    bp_string = input()
 
-    blueprint = Blueprint()
-    blueprint.entities.append("rail-chain-signal")
-    # with pytest.warns(OverlappingObjectsWarning):
-    blueprint.entities.append("straight-rail", direction=Direction.NORTHWEST)
-    print(blueprint.get_world_bounding_box())
+    blueprint = Blueprint.from_string(bp_string)
 
-    entity_list = flatten_entities(blueprint.entities)
-
-    print(entity_list)
+    entity_list = flatten_entities(blueprint)
 
     screen_size = 1000
 
     translation = Vector.from_other(blueprint.get_world_bounding_box().top_left, int)
+    # dim = blueprint.get_dimensions()
+    # translation = blueprint.get_world_bounding_box().top_left #- (dim[0] / 2.0, dim[1] / 2.0)
+    # print(blueprint.get_world_bounding_box().top_left)
+    # print(dim)
 
     root = Tk()
     root.title("test")
@@ -38,7 +36,7 @@ def main():
     canvas = Canvas(root, width=screen_size, height=screen_size, bg="white")
     canvas.pack()
 
-    scale = screen_size / max(blueprint.get_dimensions())
+    scale = screen_size / (max(blueprint.get_dimensions()))
 
     grid_size = 1
 
@@ -76,8 +74,6 @@ def main():
 
     for entity in entity_list:
         g_pos = entity.global_position - translation
-        print(entity.global_position)
-        print(translation)
         canvas.create_rectangle(
             (g_pos.x - 0.1) * scale,
             (g_pos.y - 0.1) * scale,

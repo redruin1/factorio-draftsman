@@ -15,7 +15,7 @@ from draftsman.classes.mixins import (
 )
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction
-from draftsman.utils import AABB, Rectangle, fix_incorrect_pre_init
+from draftsman.utils import AABB, Rectangle
 
 from draftsman.data.entities import ammo_turrets
 
@@ -40,7 +40,6 @@ _rotated_collision_sets["railgun-turret"] = {
 }
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class AmmoTurret(
     ReadAmmoMixin,

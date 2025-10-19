@@ -19,12 +19,10 @@ class OrientationMixin(Exportable):
     Used in trains and wagons to specify their direction.
     """
 
-    def __attrs_pre_init__(self, name=attrs.NOTHING, *args, first_call=None, **kwargs):
-        if not first_call:
-            return
-
+    def __attrs_pre_init__(self, name=attrs.NOTHING, *args, **kwargs):
         name = name if name is not attrs.NOTHING else get_first(self.similar_entities)
         object.__setattr__(self, "name", name)
+
         object.__setattr__(
             self, "orientation", kwargs.get("orientation", Orientation.NORTH)
         )

@@ -15,7 +15,6 @@ from draftsman.classes.mixins import (
 )
 from draftsman.constants import InventoryType
 from draftsman.signatures import QualityID
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import furnaces
 from draftsman.data import entities, modules, recipes
@@ -24,7 +23,6 @@ import attrs
 from typing import Iterable
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class Furnace(
     InputIngredientsMixin,

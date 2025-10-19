@@ -11,14 +11,12 @@ from draftsman.classes.mixins import (
     CircuitConnectableMixin,
     DirectionalMixin,
 )
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import fluid_turrets
 
 import attrs
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class FluidTurret(
     ReadAmmoMixin,

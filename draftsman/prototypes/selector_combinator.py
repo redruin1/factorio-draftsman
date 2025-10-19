@@ -19,7 +19,6 @@ from draftsman.signatures import (
     int32,
     uint32,
 )
-from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import conditional, instance_of, one_of
 from draftsman.warning import PureVirtualDisallowedWarning
 
@@ -41,7 +40,6 @@ SelectorOperations = Literal[
 ]
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class SelectorCombinator(
     PlayerDescriptionMixin,

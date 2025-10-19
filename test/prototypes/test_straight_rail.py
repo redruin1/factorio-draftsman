@@ -51,9 +51,9 @@ class TestStraightRail:
         # Warnings:
         # if entity is not on a grid pos / 2, then warn the user of the incoming
         # shift
-        with pytest.warns(GridAlignmentWarning):
-            rail = StraightRail("straight-rail", tile_position=[1, 1])
-            rail.validate().reissue_all()
+        # with pytest.warns(GridAlignmentWarning):
+        #     rail = StraightRail("straight-rail", tile_position=[1, 1])
+        #     rail.validate().reissue_all()
 
         # Errors
         with pytest.warns(UnknownEntityWarning):

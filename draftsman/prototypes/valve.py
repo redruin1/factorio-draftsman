@@ -2,14 +2,12 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import valves
 
 import attrs
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class Valve(DirectionalMixin, Entity):
     """

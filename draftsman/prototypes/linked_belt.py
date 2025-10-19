@@ -2,14 +2,12 @@
 
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.utils import fix_incorrect_pre_init
 
 from draftsman.data.entities import linked_belts
 
 import attrs
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class LinkedBelt(DirectionalMixin, Entity):
     """

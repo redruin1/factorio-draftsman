@@ -18,7 +18,6 @@ from draftsman.classes.mixins import (
 from draftsman.classes.vector import Vector
 from draftsman.constants import Direction
 from draftsman.serialization import draftsman_converters
-from draftsman.utils import fix_incorrect_pre_init
 from draftsman.validators import instance_of, one_of
 
 from draftsman.data.entities import inserters
@@ -27,7 +26,6 @@ import attrs
 from typing import Literal, Optional
 
 
-@fix_incorrect_pre_init
 @attrs.define
 class Inserter(
     CircuitSetFiltersMixin,
