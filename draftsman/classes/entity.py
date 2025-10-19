@@ -8,7 +8,6 @@ from draftsman.classes.exportable import (
 )
 from draftsman.classes.vector import Vector
 from draftsman.constants import (
-    Direction,
     InventoryType,
     ValidationMode,
 )
@@ -32,7 +31,6 @@ from draftsman.utils import (
 )
 from draftsman.validators import conditional, instance_of, one_of
 from draftsman.warning import (
-    GridAlignmentWarning,
     UnknownEntityWarning,
     UnknownKeywordWarning,
 )
@@ -41,7 +39,6 @@ from draftsman.data import mods
 from draftsman.data.planets import get_surface_properties
 
 import attrs
-import math
 import pprint
 from typing import Any, Optional
 import warnings

@@ -3,7 +3,6 @@ Example code from the readme, encoded as a file and integrated into CI so it
 continues to work across versions.
 """
 
-
 from draftsman.blueprintable import *
 from draftsman.constants import Direction
 from draftsman.entity import *
@@ -22,8 +21,8 @@ for i, char in enumerate(test_string):
     constant_combinator = ConstantCombinator(tile_position=(i - 2, 0))
     section = constant_combinator.add_section()
     section.set_signal(
-        index=0, 
-        name=signal_string, 
+        index=0,
+        name=signal_string,
         count=0,
     )
     blueprint.entities.append(constant_combinator)
@@ -38,19 +37,15 @@ blueprint.entities.append(
     "constant-combinator",
     id="constant",
     tile_position=(-1, 3),
-    direction=Direction.EAST
+    direction=Direction.EAST,
 )
 blueprint.entities.append(
     "decider-combinator",
     id="clock",
     tile_position=(0, 3),
     direction=Direction.EAST,
-)    
-blueprint.entities.append(
-    "small-lamp", 
-    id="blinker", 
-    tile_position=(2, 3)
 )
+blueprint.entities.append("small-lamp", id="blinker", tile_position=(2, 3))
 
 # Use IDs for ease of access on complex blueprints
 constant: ConstantCombinator = blueprint.entities["constant"]
@@ -58,17 +53,9 @@ constant.add_section().set_signal(index=0, name="signal-red", count=1)
 
 clock: DeciderCombinator = blueprint.entities["clock"]
 clock.conditions = [
-    DeciderCombinator.Condition(
-        first_signal="signal-red",
-        comparator="<=",
-        constant=60
-    )
+    DeciderCombinator.Condition(first_signal="signal-red", comparator="<=", constant=60)
 ]
-clock.outputs = [
-    DeciderCombinator.Output(
-        signal="signal-red"
-    )
-]
+clock.outputs = [DeciderCombinator.Output(signal="signal-red")]
 
 blinker: Lamp = blueprint.entities["blinker"]
 blinker.circuit_enabled = True
@@ -76,15 +63,13 @@ blinker.set_circuit_condition("signal-red", "=", 60)
 blinker.use_colors = True
 
 # Sophisticated relationship handling with Associations
-blueprint.add_circuit_connection( # Constant to input of decider
-    color="green", 
-    entity_1="constant", 
-    entity_2="clock"
+blueprint.add_circuit_connection(  # Constant to input of decider
+    color="green", entity_1="constant", entity_2="clock"
 )
-blueprint.add_circuit_connection( # Input of decider to output of decider
+blueprint.add_circuit_connection(  # Input of decider to output of decider
     color="red", entity_1="clock", side_1="input", entity_2="clock", side_2="output"
 )
-blueprint.add_circuit_connection( # Output of decider to lamp
+blueprint.add_circuit_connection(  # Output of decider to lamp
     color="green", entity_1="clock", side_1="output", entity_2="blinker", side_2="input"
 )
 
@@ -99,7 +84,9 @@ for i in range(3):
 # Quickly query Blueprints by region or contents
 ccs = blueprint.find_entities_filtered(name="constant-combinator")
 assert len(ccs) == len(test_string) + 1
-asm_machines: list[AssemblingMachine] = blueprint.find_entities_filtered(type="assembling-machine")
+asm_machines: list[AssemblingMachine] = blueprint.find_entities_filtered(
+    type="assembling-machine"
+)
 assert len(asm_machines) == 3
 for asm_machine in asm_machines:
     asm_machine.recipe = "low-density-structure"
@@ -108,4 +95,6 @@ for asm_machine in asm_machines:
 blueprint_book = BlueprintBook()
 blueprint_book.blueprints = [blueprint, UpgradePlanner(), DeconstructionPlanner()]
 
-print(blueprint_book.to_string(version=(2, 0)))  # Blueprint string to import into Factorio
+print(
+    blueprint_book.to_string(version=(2, 0))
+)  # Blueprint string to import into Factorio

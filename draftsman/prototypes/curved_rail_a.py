@@ -3,7 +3,6 @@
 from draftsman.classes.collision_set import CollisionSet
 from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
-from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
 from draftsman.utils import Rectangle
 
