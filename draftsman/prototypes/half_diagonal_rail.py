@@ -10,6 +10,7 @@ from draftsman.data.entities import half_diagonal_rails
 
 import attrs
 
+import copy
 import math
 
 
@@ -28,6 +29,12 @@ class HalfDiagonalRail(DirectionalMixin, Entity):
     # =========================================================================
 
     @property
+    def double_grid_aligned(self) -> bool:
+        return True
+
+    # =========================================================================
+
+    @property
     def valid_directions(self) -> set[Direction]:
         return EIGHT_WAY_DIRECTIONS
 
@@ -37,7 +44,9 @@ class HalfDiagonalRail(DirectionalMixin, Entity):
         result = {}
         # Take the original AABB and convert it to a slightly canted Rectangle
         # Not quite right either, but close enough for now
-        static_collision_set = entities.collision_sets.get(self.name, None)
+        static_collision_set = copy.deepcopy(
+            entities.collision_sets.get("half-diagonal-rail", None)
+        )
         aabb: AABB = static_collision_set.shapes[0]
         width = aabb.bot_right.x - aabb.top_left.x
         height = 4.0  # (aabb.bot_right.y - aabb.top_left.y)

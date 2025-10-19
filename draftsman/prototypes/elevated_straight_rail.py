@@ -5,6 +5,7 @@ from draftsman.classes.entity import Entity
 from draftsman.classes.mixins import DirectionalMixin
 from draftsman.classes.mixins.directional import _rotated_collision_sets
 from draftsman.constants import Direction, EIGHT_WAY_DIRECTIONS
+from draftsman.prototypes.straight_rail import StraightRail
 from draftsman.utils import AABB, Rectangle
 
 from draftsman.data.entities import elevated_straight_rails
@@ -55,5 +56,7 @@ class ElevatedStraightRail(DirectionalMixin, Entity):
         return EIGHT_WAY_DIRECTIONS
 
     # =========================================================================
+
+    _specify_collision_sets = StraightRail._specify_collision_sets
 
     __hash__ = Entity.__hash__
