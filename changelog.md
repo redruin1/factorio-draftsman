@@ -1,7 +1,7 @@
 # Changelog
 
 ## 3.2.0
-* Updated `factorio-data` to version `2.0.68` (latest stable)
+* Updated `factorio-data` to version `2.0.71` (latest)
 * Updated `Splitter` to be circuit connectable (Factorio `2.0.67`)
 * Made more `SignalFilter` attributes optional, bringing it more in line with how Factorio operates
 * Removed several hacks working around a bug in `attrs`
