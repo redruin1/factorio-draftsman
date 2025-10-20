@@ -8,6 +8,7 @@
     * Minimum `attrs` version is now `25.4.0`
 * Fixed issues hidden by the hacky workaround of above bug
 * Added (mostly) correct collision boxes for all new rail entities (`[Elevated]StraightRail`, `[Elevated]HalfDiagonalRail`, `[Elevated]CurvedRailA`, `[Elevated]CurvedRailB`)
+* Fixed #205 (Cannot create or load an interrupt with targets)
 * Fixed #207 (TypeError running README example)
 * Removed validator issuing `GridAlignmentWarning`s (possibly temporarily) due to lack of contextual information needed to make them useful and general code cruft
 
