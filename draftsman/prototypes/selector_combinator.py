@@ -418,7 +418,7 @@ draftsman_converters.add_hook_fns(
         ("control_behavior", "select_max"): fields.select_max.name,
         ("control_behavior", "index_constant"): fields.index_constant.name,
         ("control_behavior", "index_signal"): fields.index_signal.name,
-        ("control_behavior", "count_inputs_signal"): fields.count_signal.name,
+        ("control_behavior", "count_signal"): fields.count_signal.name,
         (
             "control_behavior",
             "random_update_interval",
