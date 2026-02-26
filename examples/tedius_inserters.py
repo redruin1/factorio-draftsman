@@ -1,6 +1,6 @@
 """
-Requested by a conversation on Discord. Creates a set of connected inserters 
-with a slightly changing circuit condition, but multiplied by 900. Perfect 
+Requested by a conversation on Discord. Creates a set of connected inserters
+with a slightly changing circuit condition, but multiplied by 900. Perfect
 example of the type of problems Draftsman is suited to solve.
 """
 
@@ -19,7 +19,7 @@ for i in range(900):
     inserter.set_circuit_condition(activation_signal, ">", i)
     bp.entities.append(inserter)
     try:
-        bp.add_circuit_connection("red", bp.entities[i-1], bp.entities[i])
+        bp.add_circuit_connection("red", bp.entities[i - 1], bp.entities[i])
     except IndexError:
         pass
 

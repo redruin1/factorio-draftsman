@@ -1,6 +1,9 @@
 # Changelog
 
-## 3.2.1
+## 3.3.0
+* Updated `factorio-data` to version `2.0.76` (latest)
+* Added `ConstantCombinator.add_signal` and `ConstantCombinator.get_signal`
+    * These make simple cases of setting a unique signals in a constant combinator much easier since you don't have to do the signal section management yourself
 * Added `sqrt_lut.py` and `tedius_inserters.py` to `./examples`
 * Merged Snagnar's pull request:
     * Selector combinator `count_inputs_signal` should be `count_signal`

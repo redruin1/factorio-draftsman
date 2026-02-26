@@ -136,7 +136,7 @@ class TestConstantCombinator:
         with pytest.raises(IndexError):
             combinator.add_section(index=100)
 
-    def test_set_signal(self):
+    def test_set_section_signal(self):
         combinator = ConstantCombinator()
         section = combinator.add_section()
         section.set_signal(0, "signal-A", 100)
@@ -185,7 +185,7 @@ class TestConstantCombinator:
         with pytest.raises(DataFormatError):
             section.filters = "incorrect thingy"
 
-    def test_get_signal(self):
+    def test_get_section_signal(self):
         combinator = ConstantCombinator()
 
         section = combinator.add_section()
@@ -215,6 +215,66 @@ class TestConstantCombinator:
         )
 
         assert section.get_signal(50) is None
+
+    def test_set_signal(self):
+        combinator = ConstantCombinator()
+
+        # Normal set signal
+        combinator.set_signal(0, "iron-plate", 1)
+        assert len(combinator.sections) == 1
+        assert len(combinator.sections[0].filters) == 1
+        assert combinator.sections[0].filters[0] == SignalFilter(
+            index=0, name="iron-plate", quality="normal", type="item", count=1
+        )
+
+        # Set signal in already existing section
+        combinator.set_signal(25, "iron-ore", 100)
+        assert len(combinator.sections) == 1
+        assert len(combinator.sections[0].filters) == 2
+        assert combinator.sections[0].filters[25] == SignalFilter(
+            index=25, name="iron-ore", quality="normal", type="item", count=100
+        )
+
+        # Add next section
+        combinator.set_signal(1000, "signal-A", 2)
+        assert len(combinator.sections) == 2
+        assert len(combinator.sections[1].filters) == 1
+        assert combinator.sections[1].filters[0] == SignalFilter(
+            index=0, name="signal-A", quality="normal", type="virtual", count=2
+        )
+
+        # Clear for next tests
+        combinator.sections = []
+
+        # Sections are not always added in topological order, but their indexes
+        # are guaranteed to be correct
+        combinator.set_signal(1000, "signal-A", 2)  # section 2
+        combinator.set_signal(0, "iron-plate", 1)  # section 1
+        assert len(combinator.sections) == 2
+        assert combinator.sections[0].index == 1
+        assert combinator.sections[1].index == 0
+
+    def test_get_signal(self):
+        combinator = ConstantCombinator()
+
+        assert combinator.get_signal(0) == None
+        assert combinator.get_signal(1000) == None
+        assert len(combinator.sections) == 0
+
+        # Normal set signal
+        combinator.set_signal(0, "iron-plate", 1)
+
+        assert combinator.get_signal(0) == SignalFilter(
+            index=0, name="iron-plate", quality="normal", type="item", count=1
+        )
+        assert combinator.get_signal(1000) == None
+        assert len(combinator.sections) == 1
+
+        combinator.set_signal(1000, "signal-A", 2)
+        assert combinator.get_signal(1000) == SignalFilter(
+            index=0, name="signal-A", quality="normal", type="virtual", count=2
+        )
+        assert len(combinator.sections) == 2
 
     def test_issue_158(self):
         cc = ConstantCombinator(

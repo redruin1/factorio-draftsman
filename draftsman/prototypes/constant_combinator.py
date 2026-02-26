@@ -9,7 +9,7 @@ from draftsman.classes.mixins import (
     DirectionalMixin,
 )
 from draftsman.serialization import draftsman_converters
-from draftsman.signatures import ManualSection, SignalFilter, uint32
+from draftsman.signatures import ManualSection, QualityID, SignalFilter, uint32
 from draftsman.validators import instance_of
 from draftsman.data import mods
 
@@ -131,6 +131,7 @@ class ConstantCombinator(
 
         :returns: A reference to the :py:class:`.ManualSection` just added.
         """
+        print("add_section")
         self.sections += [
             ManualSection(
                 group=group,
@@ -139,6 +140,81 @@ class ConstantCombinator(
             )
         ]
         return self.sections[-1]
+
+    # =========================================================================
+
+    def set_signal(
+        self,
+        index: int,  # TODO: should be int64
+        name: Optional[str],  # TODO: should be SignalIDName
+        count: int = 0,  # TODO: should be int32
+        quality: QualityID = "normal",
+        type: Optional[str] = None,
+    ) -> None:
+        """
+        Sets a particular signal in this constant combinator.
+
+        This function does all of the signal section management for you, acting
+        as if the constant combinator has one big, unnamed signal group rather
+        than multiple individual groups. This is useful if you just want to
+        treat the CC as a black box that outputs the given signals with the
+        given values for simple cases.
+
+        What signal section defined signals will reside in is determined by
+        their ``index // 1000``; so a signal set at index 999 will be in the
+        0th signal section, while a signal set at index 1000 will be in the
+        1st signal section, and so on.
+
+        In order to prevent collisions between identical signal types in the
+        same group, this method prohibits setting the same signal in at two
+        different indexes at the same time (following the concept of "one big
+        signal section"). If this is troublesome, users should instead use
+        :py:meth:`.add_section` and perform the grouping themselves manually.
+
+        :param index: The index of the signal in the GUI.
+        :param name: The name of the signal.
+        :param count: The amount of the item/the value to output.
+        :param quality: The quality of the signal.
+        :param type: The internal type of the signal.
+        """
+        section_index = index // 1000
+        print(section_index)
+        print([section for section in self.sections if section.index == section_index])
+        # TODO: this might be slow
+        section = next(
+            # Try and an existing section with that particular index...
+            (section for section in self.sections if section.index == section_index),
+            None,
+        )
+        # ... or create a new one if it doesn't exist
+        if section is None:
+            section = self.add_section(index=section_index)
+
+        section.set_signal(
+            index=index % 1000, name=name, count=count, quality=quality, type=type
+        )
+
+    # =========================================================================
+
+    def get_signal(self, index: int) -> Optional[SignalFilter]:
+        """
+        Gets a particular signal inside of this constant combinator.
+
+        :returns: A :py:class:`.SignalFilter` instance, or ``None`` if nothing
+            was found at that index.
+        """
+        section_index = index // 1000
+        # TODO: this might be slow
+        section = next(
+            # Try and an existing section with that particular index
+            (section for section in self.sections if section.index == section_index),
+            None,
+        )
+        # If it doesn't exist, clearly there's no signal there
+        if section is None:
+            return None
+
+        return section.get_signal(index=index % 1000)
 
     # =========================================================================
 
