@@ -103,7 +103,7 @@ class TestSelectorCombinator:
             "position": {"x": 0.5, "y": 1.0},
             "control_behavior": {
                 "operation": "count",
-                "count_inputs_signal": {"name": "signal-C", "type": "virtual"},
+                "count_signal": {"name": "signal-C", "type": "virtual"},
             },
         }
 

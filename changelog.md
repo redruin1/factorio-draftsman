@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.2.1
+* Added `sqrt_lut.py` and `tedius_inserters.py` to `./examples`
+* Merged Snagnar's pull request:
+    * Selector combinator `count_inputs_signal` should be `count_signal`
+* Fixed #217 (Turret `priority_list` should be `priority-list`)
+
 ## 3.2.0
 * Updated `factorio-data` to version `2.0.71` (latest)
 * Updated `Splitter` to be circuit connectable (Factorio `2.0.67`)

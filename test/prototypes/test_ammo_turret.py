@@ -99,7 +99,7 @@ class TestAmmoTurret:
         assert turret.to_dict(version=(2, 0)) == {
             "name": "gun-turret",
             "position": {"x": 1.0, "y": 1.0},
-            "priority_list": [
+            "priority-list": [
                 {
                     "index": 0,
                     "name": "small-biter",
@@ -119,7 +119,7 @@ class TestAmmoTurret:
         assert turret.to_dict(version=(2, 0)) == {
             "name": "gun-turret",
             "position": {"x": 1.0, "y": 1.0},
-            "priority_list": [
+            "priority-list": [
                 {
                     "index": 0,
                     "name": "small-biter",

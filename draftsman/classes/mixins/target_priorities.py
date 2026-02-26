@@ -148,7 +148,7 @@ class TargetPrioritiesMixin(Exportable):
 draftsman_converters.get_version((2, 0)).add_hook_fns(
     TargetPrioritiesMixin,
     lambda fields: {
-        "priority_list": fields.priority_list.name,
+        "priority-list": fields.priority_list.name,
         "ignore_unprioritized": fields.ignore_unprioritized.name,
         "set_priority_list": fields.set_priority_list.name,
         "set_ignore_unprioritized": fields.set_ignore_unprioritized.name,
