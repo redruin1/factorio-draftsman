@@ -873,6 +873,7 @@ def get_items(lua):
     add_items(data.raw["repair-tool"])  # not an item somehow
     add_items(data.raw["rail-planner"])
     add_items(data.raw["copy-paste-tool"])
+    add_items(data.raw["space-platform-starter-pack"])
 
     # Sort everything
     for i, _ in enumerate(group_list):
