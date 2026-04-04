@@ -17,3 +17,9 @@ class TestPlanets:
             "pressure": 1000,
             "gravity": 10,
         }
+        assert planets.get_surface_properties("fulgora") == {
+            "solar-power": 20,
+            "magnetic-field": 99,
+            "pressure": 800,
+            "gravity": 8,
+        }

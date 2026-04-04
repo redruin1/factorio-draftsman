@@ -28,9 +28,10 @@ def get_surface_properties(surface_name: str) -> dict:
         return {}
     else:
         surface = raw[surface_name]
+        surface_props = surface.get("surface_properties", {})
         return {
-            "solar-power": surface.get("solar-power", 100),
-            "magnetic-field": surface.get("magnetic-field", 90),
-            "pressure": surface.get("pressure", 1000),
-            "gravity": surface.get("gravity", 10),
+            "solar-power": surface_props.get("solar-power", 100),
+            "magnetic-field": surface_props.get("magnetic-field", 90),
+            "pressure": surface_props.get("pressure", 1000),
+            "gravity": surface_props.get("gravity", 10),
         }
