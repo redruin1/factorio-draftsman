@@ -86,6 +86,7 @@ class TestItemsData:
         else:
             assert items.get_stack_size("rocket-fuel") == 20
             assert items.get_stack_size("space-science-pack") == 200
+            assert items.get_stack_size("space-platform-starter-pack") == 1
 
         # TODO: should this raise an error instead?
         assert items.get_stack_size("unknown!") == None
