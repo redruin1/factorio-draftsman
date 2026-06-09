@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.3.1
+* Updated `factorio-data` to version `2.0.77` (latest)
+* Merged shaunmorris's pull requests:
+    * Read surface properties correctly from nested `surface_properties` dict 
+    * Extract `space-platform-starter-pack` from Factorio data 
+* Fixed #221 (Loading blueprints removes absolute positioning)
+* Fixed #219 (Debug print statements in ConstantCombinator.add_section)
+
 ## 3.3.0
 * Updated `factorio-data` to version `2.0.76` (latest)
 * Added `ConstantCombinator.add_signal` and `ConstantCombinator.get_signal`

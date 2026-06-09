@@ -368,17 +368,17 @@ class TestBlueprint:
 
     def test_set_absolute_snapping(self):
         blueprint = Blueprint()
-        assert blueprint.absolute_snapping == True
+        assert blueprint.absolute_snapping == False
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
             "version": encode_version(*mods.versions["base"]),
         }
 
-        blueprint.absolute_snapping = False
-        assert blueprint.absolute_snapping == False
+        blueprint.absolute_snapping = True
+        assert blueprint.absolute_snapping == True
         assert blueprint.to_dict()["blueprint"] == {
             "item": "blueprint",
-            "absolute-snapping": False,
+            "absolute-snapping": True,
             "version": encode_version(*mods.versions["base"]),
         }
 

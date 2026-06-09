@@ -10,13 +10,16 @@ class TestPlanets:
         assert planets.get_surface_properties("unknown") == {}
 
     @pytest.mark.skipif("nauvis" not in planets.raw, reason="'nauvis' planet not found")
-    def test_get_surface_properties(self):
+    def test_get_nauvis_properties(self):
         assert planets.get_surface_properties("nauvis") == {
             "solar-power": 100,
             "magnetic-field": 90,
             "pressure": 1000,
             "gravity": 10,
         }
+
+    @pytest.mark.skipif("fulgora" not in planets.raw, reason="'nauvis' planet not found")
+    def test_get_fulgora_properties(self):
         assert planets.get_surface_properties("fulgora") == {
             "solar-power": 20,
             "magnetic-field": 99,

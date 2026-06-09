@@ -120,7 +120,7 @@ class Blueprint(Transformable, Collection, Blueprintable):
     # =========================================================================
 
     absolute_snapping: bool = attrs.field(
-        default=True,
+        default=False,
         validator=instance_of(bool),
     )
     """

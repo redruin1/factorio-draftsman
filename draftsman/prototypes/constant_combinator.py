@@ -178,8 +178,6 @@ class ConstantCombinator(
         :param type: The internal type of the signal.
         """
         section_index = index // 1000
-        print(section_index)
-        print([section for section in self.sections if section.index == section_index])
         # TODO: this might be slow
         section = next(
             # Try and an existing section with that particular index...
