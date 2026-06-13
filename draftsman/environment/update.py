@@ -788,7 +788,7 @@ def convert_table_to_dict(table) -> Union[dict, list]:
     return out
 
 
-def get_items(lua):
+def get_items(lua, game_version: tuple[int, int, int, int]):
     """
     Gets the loaded items, item subgroups, and item groups. Sorts them and
     returns them. Saves us the trouble of recalcualting this every time we sort
@@ -873,7 +873,8 @@ def get_items(lua):
     add_items(data.raw["repair-tool"])  # not an item somehow
     add_items(data.raw["rail-planner"])
     add_items(data.raw["copy-paste-tool"])
-    add_items(data.raw["space-platform-starter-pack"])
+    if game_version >= (2, 0):
+        add_items(data.raw["space-platform-starter-pack"])
 
     # Sort everything
     for i, _ in enumerate(group_list):
@@ -1894,7 +1895,7 @@ def extract_data(
     # Lots of items are sorted by item order, subgroup and group
     # Here we get these things once and pass them into each extraction function
     # as necessary
-    items = get_items(lua)
+    items = get_items(lua, game_version)
 
     extract_entities(lua, draftsman_path, game_version, items, verbose)
     extract_equipment(lua, draftsman_path, items, verbose)

@@ -18,7 +18,9 @@ class TestPlanets:
             "gravity": 10,
         }
 
-    @pytest.mark.skipif("fulgora" not in planets.raw, reason="'nauvis' planet not found")
+    @pytest.mark.skipif(
+        "fulgora" not in planets.raw, reason="'nauvis' planet not found"
+    )
     def test_get_fulgora_properties(self):
         assert planets.get_surface_properties("fulgora") == {
             "solar-power": 20,
