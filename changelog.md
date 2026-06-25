@@ -1,5 +1,7 @@
 # Changelog
 
+* Fixed #223 (Leaking debug log)
+
 ## 3.3.1
 * Updated `factorio-data` to version `2.0.77` (latest)
 * Merged shaunmorris's pull requests:

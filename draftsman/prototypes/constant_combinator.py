@@ -131,7 +131,6 @@ class ConstantCombinator(
 
         :returns: A reference to the :py:class:`.ManualSection` just added.
         """
-        print("add_section")
         self.sections += [
             ManualSection(
                 group=group,
