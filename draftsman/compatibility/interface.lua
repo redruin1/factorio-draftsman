@@ -9,6 +9,8 @@
 -- process (since we have to do this manually due to reasons)
 REQUIRE_STACK = {}  -- Stack of files representing the current `require()` tree
 MOD_STACK = {}      -- Stack of mods keeping track of where to `require()` files
+MODULE_CACHE = {}   -- Cache of modules for a particular mod stage
+NIL_MODULE = {}     -- sentinel value
 
 -- ================
 -- Versioning Fixes
@@ -235,11 +237,23 @@ function require(module_name)
     -- have the correct new filename
     table.insert(REQUIRE_STACK, current_file)
 
-    -- Call the original C Lua require function.
-    -- We MUST use the original `module_name` here, otherwise mod behaviors that
-    -- specifically look for this string will fail in creative ways 
-    -- (pyanodons, flib, Kuxynators)
-    result = lua_require(module_name)
+    local cached = MODULE_CACHE[current_file]
+    if cached ~= nil then
+        -- Returned the cached value for this run
+        result = cached ~= NIL_MODULE and cached or nil
+    else
+        -- Call the original C Lua require function.
+        -- We MUST use the original `module_name` here, otherwise mod behaviors that
+        -- specifically look for this string will fail in creative ways
+        -- (pyanodons, flib, Kuxynators)
+        result = lua_require(module_name)
+
+        -- Clear Lua's own cache, which is keyed by the name as written and so
+        -- would let one mod's "utils" satisfy another mod's "utils". Ours is
+        -- keyed by resolved path, so it can be kept safely.
+        package.loaded[module_name] = nil
+        MODULE_CACHE[current_file] = result ~= nil and result or NIL_MODULE
+    end
 
     -- After the file is required, we reset it's cache so subsequent requires
     -- of the same filename will run through the require process again.
