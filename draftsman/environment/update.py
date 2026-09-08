@@ -858,32 +858,32 @@ def get_items(lua, game_version: tuple[int, int, int, int]):
             item["order"] = ""
         subgroup["items"].append(item)
 
-    def add_items(category):
-        category = convert_table_to_dict(category)
+    def add_items(category_name):
+        if category_name not in data.raw:
+            return
+        category = convert_table_to_dict(data.raw[category_name])
         for item_name in category:
             add_item(category, item_name)
 
     # Iterate over every item
-    add_items(data.raw["item"])
-    add_items(data.raw["item-with-entity-data"])
-    if game_version < (2, 1):
-        add_items(data.raw["tool"])
-    add_items(data.raw["ammo"])
-    add_items(data.raw["module"])
-    add_items(data.raw["armor"])
-    add_items(data.raw["gun"])
-    add_items(data.raw["capsule"])
+    add_items("item")
+    add_items("item-with-entity-data")
+    add_items("tool")
+    add_items("ammo")
+    add_items("module")
+    add_items("armor")
+    add_items("gun")
+    add_items("capsule")
     # Extras
-    add_items(data.raw["blueprint"])
-    add_items(data.raw["blueprint-book"])
-    add_items(data.raw["upgrade-item"])
-    add_items(data.raw["deconstruction-item"])
-    add_items(data.raw["spidertron-remote"])
-    add_items(data.raw["repair-tool"])  # not an item somehow
-    add_items(data.raw["rail-planner"])
-    add_items(data.raw["copy-paste-tool"])
-    if game_version >= (2, 0):
-        add_items(data.raw["space-platform-starter-pack"])
+    add_items("blueprint")
+    add_items("blueprint-book")
+    add_items("upgrade-item")
+    add_items("deconstruction-item")
+    add_items("spidertron-remote")
+    add_items("repair-tool")  # not an item somehow
+    add_items("rail-planner")
+    add_items("copy-paste-tool")
+    add_items("space-platform-starter-pack")
 
     # Sort everything
     for i, _ in enumerate(group_list):

@@ -1,8 +1,11 @@
 # Changelog
 
+## 4.0.1
 * Merged `Sloneggs` pull request:
   * Added `ElectricPole.supply_area_distance` and `ElectricPole.get_world_supply_area()`
       * Mirrors `circuit_wire_max_distance`, including the quality adjustment and returning `None` for unknown prototypes
+* Fixed #227 (`draftsman update` always fails on 4.0.0)
+* Fixed #229 (`draftsman update` fails for any mod set without Space Age)
 
 ## 4.0.0
 * Updated `factorio-data` to version `2.1.17` (latest)
