@@ -6,4 +6,5 @@ exclude draftsman/factorio-mods/mod-list.json
 include draftsman/factorio-mods/.gitignore
 
 recursive-include draftsman/factorio-data/* *
+include draftsman/compatibility/*
 recursive-include draftsman/compatibility/* *
