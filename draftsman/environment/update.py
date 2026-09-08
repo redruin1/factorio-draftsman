@@ -663,7 +663,7 @@ def run_data_lifecycle(
             expansion_shaders={sa_enabled},
         }}
         """.format(
-            sa_enabled="space-age" in owned_dlc
+            sa_enabled="true" if "space-age" in owned_dlc else "false"
         )
     )
 

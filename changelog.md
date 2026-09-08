@@ -6,6 +6,7 @@
       * Mirrors `circuit_wire_max_distance`, including the quality adjustment and returning `None` for unknown prototypes
 * Fixed #227 (`draftsman update` always fails on 4.0.0)
 * Fixed #229 (`draftsman update` fails for any mod set without Space Age)
+* Fixed #230 (`feature_flags` is always nil)
 
 ## 4.0.0
 * Updated `factorio-data` to version `2.1.17` (latest)
