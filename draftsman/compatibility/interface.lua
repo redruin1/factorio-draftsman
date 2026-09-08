@@ -255,13 +255,6 @@ function require(module_name)
         MODULE_CACHE[current_file] = result ~= nil and result or NIL_MODULE
     end
 
-    -- After the file is required, we reset it's cache so subsequent requires
-    -- of the same filename will run through the require process again.
-    -- This won't reload children files in parents that require them simply, but
-    -- it ensures that when two different files share the same exact filename
-    -- both will be loaded properly
-    package.loaded[module_name] = nil
-
     -- After the require function finishes, the current file can be popped off
     table.remove(REQUIRE_STACK)
 
@@ -403,6 +396,9 @@ end
 function lua_unload_cache()
     for k in pairs(package.loaded) do
         package.loaded[k] = nil
+    end
+    for k in pairs(MODULE_CACHE) do
+        MODULE_CACHE[k] = nil
     end
 end
 
