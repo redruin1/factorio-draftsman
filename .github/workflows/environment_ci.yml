@@ -11,6 +11,7 @@ jobs:
           - 'issue_182'
           - 'issue_197'
           - 'issue_199'
+          - 'issue_228'
           - 'krastorio2'
           - 'pyanodons'
           - 'ultracube'

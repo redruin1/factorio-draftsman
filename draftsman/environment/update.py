@@ -21,7 +21,12 @@ from draftsman.error import (
     IncompatableModError,
     IncorrectModVersionError,
 )
-from draftsman.utils import AABB, version_string_to_tuple, version_tuple_to_string
+from draftsman.utils import (
+    AABB,
+    read_bounding_box,
+    version_string_to_tuple,
+    version_tuple_to_string,
+)
 
 import git
 import lupa.lua52 as lupa
@@ -1305,18 +1310,11 @@ def extract_entities(
         entities["raw"][name] = unordered_entities_raw[name]
 
     for name in raw_order:
+
         collision_box = entities["raw"][name].get("collision_box", None)
         if collision_box:
-            collision_sets[name] = CollisionSet(
-                [
-                    AABB(
-                        collision_box[0][0],
-                        collision_box[0][1],
-                        collision_box[1][0],
-                        collision_box[1][1],
-                    )
-                ]
-            )
+            (left, top), (right, bottom) = read_bounding_box(collision_box)
+            collision_sets[name] = CollisionSet([AABB(left, top, right, bottom)])
         else:
             collision_sets[name] = CollisionSet([])
 

@@ -1097,3 +1097,34 @@ def calculate_occupied_slots(item_requests: list, inventory_id: int) -> int:
             if location.inventory == inventory_id  # <- Entity specific
         }
     )
+
+
+def read_bounding_box(
+    box: dict | list,
+) -> tuple[tuple[float, float], tuple[float, float]]:  # pragma: no coverage
+    """
+    Reads a raw bounding box prototype however it happened to be written.
+
+    A ``BoundingBox`` is defined as either:
+        * {"left_top": MapPosition, "right_bottom": MapPosition}
+        * [MapPosition, MapPosition]
+
+    A ``MapPosition`` is defined as either:
+        * {"x": float, "y": float, 1: float, 2: float}
+        * [float, float]
+
+    In the dictionary case for ``MapPosition``, named keys are used first before
+    integer ones (matching Factorio).
+    """
+
+    def corner(point):
+        if isinstance(point, dict):
+            return point.get("x", point.get(1)), point.get("y", point.get(2))
+        return point[0], point[1]
+
+    if isinstance(box, dict):
+        left_top, right_bottom = box["left_top"], box["right_bottom"]
+    else:
+        left_top, right_bottom = box[0], box[1]
+
+    return corner(left_top), corner(right_bottom)

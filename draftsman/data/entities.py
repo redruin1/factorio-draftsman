@@ -15,7 +15,7 @@ from importlib.resources import files
 
 from draftsman import data
 from draftsman.classes.collision_set import CollisionSet
-from draftsman.utils import PrimitiveAABB, AABB
+from draftsman.utils import PrimitiveAABB, AABB, read_bounding_box
 
 from typing import Optional
 
@@ -219,16 +219,8 @@ def add_entity(
     raw[name].update(kwargs)
 
     # Update others
-    collision_sets[name] = CollisionSet(
-        [
-            AABB(
-                collision_box[0][0],
-                collision_box[0][1],
-                collision_box[1][0],
-                collision_box[1][1],
-            )
-        ]
-    )
+    (left, top), (right, bottom) = read_bounding_box(collision_box)
+    collision_sets[name] = CollisionSet([AABB(left, top, right, bottom)])
 
     if type in of_type:
         of_type[type].append(name)  # FIXME
