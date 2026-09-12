@@ -7,6 +7,11 @@ from draftsman.constants import *
 from draftsman.data import mods
 from draftsman.entity import *
 from draftsman.error import *
+from draftsman.signatures import (
+    BlueprintInsertPlan,
+    ItemID,
+    ItemInventoryPositions,
+)
 from draftsman.warning import *
 from draftsman.utils import AABB, version_tuple_to_string
 import draftsman.validators
@@ -19,6 +24,7 @@ import copy
 import itertools
 import json
 import os
+import warnings
 
 from test.prototypes.test_accumulator import valid_accumulator
 from test.prototypes.test_agricultural_tower import valid_agricultural_tower
@@ -371,6 +377,49 @@ class TestEntityBase:
         # Setting tags to anything other than a dict raises errors
         with pytest.raises(DataFormatError):
             container.tags = "incorrect"
+
+    def test_item_requests_to_1_0(self):
+        """
+        The 1.0 `items` format cannot express quality or equipment grid
+        requests, so exporting them loses data. That is unavoidable; losing it
+        silently is not.
+        """
+        # A plain request survives, and multiple inventory positions are summed
+        loco = Locomotive("locomotive")
+        loco.set_item_request("nuclear-fuel", count=3, inventory=1, slot=0)
+        loco.set_item_request("nuclear-fuel", count=5, inventory=2, slot=1)
+        assert loco.to_dict(version=(1, 0))["items"] == {"nuclear-fuel": 8}
+
+        # A quality request cannot be represented, and dropping it here removes
+        # `items` from the output entirely
+        loco = Locomotive("locomotive")
+        loco.set_item_request("nuclear-fuel", count=3, quality="legendary")
+        with pytest.warns(ItemRequestMigrationWarning, match="quality 'legendary'"):
+            assert "items" not in loco.to_dict(version=(1, 0))
+
+        # Neither can a request into an equipment grid, which previously
+        # exported as a meaningless count of zero
+        loco = Locomotive("locomotive")
+        loco.item_requests = [
+            BlueprintInsertPlan(
+                id=ItemID(name="personal-roboport-equipment", quality="normal"),
+                items=ItemInventoryPositions(in_inventory=[], grid_count=2),
+            )
+        ]
+        with pytest.warns(ItemRequestMigrationWarning, match="grid_count=2"):
+            assert "items" not in loco.to_dict(version=(1, 0))
+
+        # 2.0 export is lossless and must stay quiet
+        loco = Locomotive("locomotive")
+        loco.set_item_request("nuclear-fuel", count=3, quality="legendary")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", ItemRequestMigrationWarning)
+            assert loco.to_dict(version=(2, 0))["items"] == [
+                {
+                    "id": {"name": "nuclear-fuel", "quality": "legendary"},
+                    "items": {"in_inventory": [{"inventory": 1, "stack": 0, "count": 3}]},
+                }
+            ]
 
     def test_get_world_bounding_box(self):
         combinator = DeciderCombinator(tile_position=[3, 3], direction=Direction.EAST)

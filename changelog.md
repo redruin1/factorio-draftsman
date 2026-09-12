@@ -2,6 +2,9 @@
 
 ## 4.0.1
 * Merged `Sloneggs` pull request:
+  * Added `ItemRequestMigrationWarning`, issued when an item request cannot be represented in the target version's format and is dropped
+      * Exporting to `version=(1, 0)` silently discarded requests of non-normal quality, which could remove `items` from the output entirely
+      * Equipment grid requests exported to `version=(1, 0)` as a count of `0` rather than being omitted
   * Added `ElectricPole.supply_area_distance` and `ElectricPole.get_world_supply_area()`
       * Mirrors `circuit_wire_max_distance`, including the quality adjustment and returning `None` for unknown prototypes
 * Fixed #227 (`draftsman update` always fails on 4.0.0)
