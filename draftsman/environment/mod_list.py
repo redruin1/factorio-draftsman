@@ -39,7 +39,7 @@ class Mod:
     archive_regex = re.compile(r"(([\w\D]+)_([\d\.]+))\.zip")
     folder_regex = re.compile(r"([^\s.]+)(?:_([\d\.]+))?$")
     dependency_regex = re.compile(
-        r"^(\!|\?|\(\?\)|~)?[^\w\?\!]*([\w-]+)([><=]=?)?([\d\.]+)?"
+        r"^(\!|\?|\(\?\)|~|\+)?[^\w\?\!]*([\w-]+)([><=]=?)?([\d\.]+)?"
     )
 
     def __init__(

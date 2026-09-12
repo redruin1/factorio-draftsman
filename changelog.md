@@ -1,6 +1,7 @@
 # Changelog
 
 ## 4.0.1
+* Added support for "Recommended dependency" `+` symbol for dependencies in `draftsman update`
 * Merged `Sloneggs` pull request:
   * Added `ElectricPole.supply_area_distance` and `ElectricPole.get_world_supply_area()`
       * Mirrors `circuit_wire_max_distance`, including the quality adjustment and returning `None` for unknown prototypes

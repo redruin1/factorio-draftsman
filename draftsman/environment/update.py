@@ -561,7 +561,7 @@ def run_data_lifecycle(
                     raise IncompatableModError(mod_name)
                 else:
                     continue  # Otherwise, don't worry about it
-            elif dependency.flag == "?" or dependency.flag == "(?)":
+            elif dependency.flag == "?" or dependency.flag == "(?)" or dependency.flag == "+":
                 # Mod is optional to the current mod
                 if dependency.name not in mods:
                     continue  # Don't worry about it
