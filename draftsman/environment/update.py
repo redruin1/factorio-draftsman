@@ -873,6 +873,9 @@ def get_items(lua, game_version: tuple[int, int, int, int]):
     # Iterate over every item
     add_items("item")
     add_items("item-with-entity-data")
+    add_items("item-with-inventory")
+    add_items("item-with-label")
+    add_items("item-with-tags")
     add_items("tool")
     add_items("ammo")
     add_items("module")
@@ -1629,6 +1632,9 @@ def extract_signals(
     # Item Signals
     add_signals("item", item_signals, "item")
     add_signals("item-with-entity-data", item_signals, "item")
+    add_signals("item-with-inventory", item_signals, "item")
+    add_signals("item-with-label", item_signals, "item")
+    add_signals("item-with-tags", item_signals, "item")
     add_signals("tool", item_signals, "item")
     add_signals("ammo", item_signals, "item")
     add_signals("module", item_signals, "item")
@@ -1665,7 +1671,7 @@ def extract_signals(
     add_signals("artillery-wagon", entity_signals, "entity")
     add_signals("assembling-machine", entity_signals, "entity")
     add_signals("asteroid", entity_signals, "entity")
-    # add_signals("asteroid-chunk", entity_signals, "entity")
+    add_signals("asteroid-chunk", entity_signals, "entity")
     add_signals("asteroid-collector", entity_signals, "entity")
     add_signals("beacon", entity_signals, "entity")
     add_signals("beam", entity_signals, "entity")
