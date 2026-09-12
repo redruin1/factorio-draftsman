@@ -147,7 +147,7 @@ class TestInserter:
         assert inserter.pickup_position == Vector(11.5, 10.5)
         # Test custom offset
         inserter.pickup_position_offset = (1, 1)
-        assert inserter.pickup_position == Vector(12.5, 11.5)
+        assert inserter.pickup_position == Vector(11.5, 11.5)
 
         # Test long-handed inserter
         long_inserter = Inserter("long-handed-inserter", direction=Direction.NORTH)
@@ -160,15 +160,15 @@ class TestInserter:
         assert long_inserter.pickup_position == Vector(12.5, 10.5)
         # Test custom offset
         long_inserter.pickup_position_offset = (1, 1)
-        assert long_inserter.pickup_position == Vector(13.5, 11.5)
+        assert long_inserter.pickup_position == Vector(11.5, 11.5)
 
         # Test that Group positions are respected
         group = Group(position=(10, 10))
         group.entities.append(inserter, id="inserter")
-        assert group.entities["inserter"].pickup_position == Vector(22.5, 21.5)
+        assert group.entities["inserter"].pickup_position == Vector(21.5, 21.5)
 
         with pytest.warns(UnknownEntityWarning):
-            assert Inserter("some unknown inserter").pickup_position == Vector(0, 0)
+            assert Inserter("some unknown inserter").pickup_position is None
 
     def test_dropoff_position(self):
         inserter = Inserter("inserter", direction=Direction.NORTH)
@@ -181,7 +181,7 @@ class TestInserter:
         assert inserter.drop_position == Vector(9.3, 10.5)
         # Test custom offset
         inserter.drop_position_offset = (1, 1)
-        assert inserter.drop_position == Vector(10.3, 11.5)
+        assert inserter.drop_position == Vector(11.5, 11.5)
 
         # Test long-handed inserter
         long_inserter = Inserter("long-handed-inserter", direction=Direction.NORTH)
@@ -195,15 +195,15 @@ class TestInserter:
         assert long_inserter.drop_position == Vector(8.3, 10.5)
         # Test custom offset
         long_inserter.drop_position_offset = (1, 1)
-        assert long_inserter.drop_position == Vector(9.3, 11.5)
+        assert long_inserter.drop_position == Vector(11.5, 11.5)
 
         # Test that Group positions are respected
         group = Group(position=(10, 10))
         group.entities.append(inserter, id="inserter")
-        assert group.entities["inserter"].drop_position == Vector(20.3, 21.5)
+        assert group.entities["inserter"].drop_position == Vector(21.5, 21.5)
 
         with pytest.warns(UnknownEntityWarning):
-            assert Inserter("some unknown inserter").drop_position == Vector(0, 0)
+            assert Inserter("some unknown inserter").drop_position is None
 
     def test_set_filters(self):
         inserter = Inserter("inserter")

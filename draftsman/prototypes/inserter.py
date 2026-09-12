@@ -53,61 +53,81 @@ class Inserter(
     # =========================================================================
 
     @property
-    def pickup_position(self) -> Vector:
+    def pickup_position(self) -> Optional[Vector]:
         """
-        Gets the current position in world space that this inserter will grab
+        Gets the current position in world space that this inserter will pick up
         items from.
 
-        This value is the sum of this entity's :py:attr:`.global_position`, it's
-        :py:attr:`.prototype` ``"pickup_position"``, and any custom
-        :py:attr:`.pickup_position_offset`. If this entity has no known
-        prototype or pickup offset, then both default to ``(0, 0)``.
+        If this inserter has a non-``None`` :py:attr:`.pickup_position_offset`,
+        the value returned is the sum of that value and
+        :py:attr:`.global_position`.
+
+        If this inserter does not have a custom :py:attr:`.pickup_position_offset`,
+        but it is a prototype that is recognized by the current environment, the
+        value returned is the sum of ``self.prototype["pickup_position"]``
+        (rotated by the entity's current direction) summed with
+        :py:attr:`.global_position`.
+
+        If this inserter has neither a custom pickup offset nor a recognized
+        prototype, this property returns ``None`` to indicate that Draftsman has
+        no idea where this position should be.
         """
-        try:
+        if self.pickup_position_offset is not None:
+            return self.global_position + self.pickup_position_offset
+        elif "pickup_position" in self.prototype:
             direction_matrix = {
                 Direction.NORTH: lambda p: p,
                 Direction.EAST: lambda p: (-p[1], p[0]),
                 Direction.SOUTH: lambda p: (-p[0], -p[1]),
                 Direction.WEST: lambda p: (p[1], -p[0]),
             }
-            pickup_position = direction_matrix[self.direction](
+            return self.global_position + direction_matrix[self.direction](
                 self.prototype["pickup_position"]
             )
-        except KeyError:  # Unknown entity/direction case
-            pickup_position = (0, 0)
-        return self.global_position + pickup_position + self.pickup_position_offset
+        else:
+            return None
 
     # =========================================================================
 
     @property
-    def drop_position(self) -> Vector:
+    def drop_position(self) -> Optional[Vector]:
         """
         Gets the current position in world space that this inserter will drop
         items to.
 
-        This value is the sum of this entity's :py:attr:`.global_position`, it's
-        :py:attr:`.prototype` ``"pickup_position"``, and any custom
-        :py:attr:`.pickup_position_offset`. If this entity has no known
-        prototype or pickup offset, then both default to ``(0, 0)``.
+        If this inserter has a non-``None`` :py:attr:`.drop_position_offset`,
+        the value returned is the sum of that value and
+        :py:attr:`.global_position`.
+
+        If this inserter does not have a custom :py:attr:`.drop_position_offset`,
+        but it is a prototype that is recognized by the current environment, the
+        value returned is the sum of ``self.prototype["insert_position"]``
+        (rotated by the entity's current direction) summed with
+        :py:attr:`.global_position`.
+
+        If this inserter has neither a custom dropoff offset nor a recognized
+        prototype, this property returns ``None`` to indicate that Draftsman has
+        no idea where this position should be.
         """
-        try:
+        if self.drop_position_offset is not None:
+            return self.global_position + self.drop_position_offset
+        elif "insert_position" in self.prototype:
             direction_matrix = {
                 Direction.NORTH: lambda p: p,
                 Direction.EAST: lambda p: (-p[1], p[0]),
                 Direction.SOUTH: lambda p: (-p[0], -p[1]),
                 Direction.WEST: lambda p: (p[1], -p[0]),
             }
-            drop_position = direction_matrix[self.direction](
+            return self.global_position + direction_matrix[self.direction](
                 self.prototype["insert_position"]
             )
-        except KeyError:  # Unknown entity/direction case
-            drop_position = (0, 0)
-        return self.global_position + drop_position + self.drop_position_offset
+        else:
+            return None
 
     # =========================================================================
 
     pickup_position_offset: Optional[Vector] = attrs.field(
-        factory=lambda: Vector(0, 0),
+        default=None,
         converter=Vector.from_other,
         validator=instance_of(Optional[Vector]),
     )
@@ -136,7 +156,7 @@ class Inserter(
     # =========================================================================
 
     drop_position_offset: Optional[Vector] = attrs.field(
-        factory=lambda: Vector(0, 0),
+        default=None,
         converter=Vector.from_other,
         validator=instance_of(Optional[Vector]),
     )
@@ -230,11 +250,19 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
         "pickup_position": (
             _export_fields.pickup_position_offset,
-            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+            lambda inst: (
+                [inst.pickup_position_offset.x, inst.pickup_position_offset.y]
+                if inst.pickup_position_offset is not None
+                else None
+            ),
         ),
         "drop_position": (
             _export_fields.drop_position_offset,
-            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+            lambda inst: (
+                [inst.drop_position_offset.x, inst.drop_position_offset.y]
+                if inst.drop_position_offset is not None
+                else None
+            ),
         ),
         "filter_mode": fields.filter_mode.name,
         None: fields.spoil_priority.name,
@@ -255,11 +283,19 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
         "pickup_position": (
             _export_fields.pickup_position_offset,
-            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+            lambda inst: (
+                [inst.pickup_position_offset.x, inst.pickup_position_offset.y]
+                if inst.pickup_position_offset is not None
+                else None
+            ),
         ),
         "drop_position": (
             _export_fields.drop_position_offset,
-            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+            lambda inst: (
+                [inst.drop_position_offset.x, inst.drop_position_offset.y]
+                if inst.drop_position_offset is not None
+                else None
+            ),
         ),
         "filter_mode": fields.filter_mode.name,
         "spoil_priority": fields.spoil_priority.name,
@@ -279,11 +315,19 @@ draftsman_converters.get_version((2, 1)).add_hook_fns(
         ("control_behavior", "circuit_set_filters"): fields.circuit_set_filters.name,
         "pickup_position": (
             _export_fields.pickup_position_offset,
-            lambda inst: [inst.pickup_position_offset.x, inst.pickup_position_offset.y],
+            lambda inst: (
+                [inst.pickup_position_offset.x, inst.pickup_position_offset.y]
+                if inst.pickup_position_offset is not None
+                else None
+            ),
         ),
         "drop_position": (
             _export_fields.drop_position_offset,
-            lambda inst: [inst.drop_position_offset.x, inst.drop_position_offset.y],
+            lambda inst: (
+                [inst.drop_position_offset.x, inst.drop_position_offset.y]
+                if inst.drop_position_offset is not None
+                else None
+            ),
         ),
         "filter_mode": fields.filter_mode.name,
         "spoil_priority": fields.spoil_priority.name,
