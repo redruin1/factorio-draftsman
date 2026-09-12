@@ -8,6 +8,8 @@
 * Fixed #229 (`draftsman update` fails for any mod set without Space Age)
 * Fixed #230 (`feature_flags` is always nil)
 * Fixed #231 (`draftsman update` crashes on a bounding box whose corner is written both positionally and by name)
+* Fixed #232 (`get_order` raises `KeyError` when an entity is minable into an item that was not extracted)
+* Fixed #233 (`Inserter.pickup_position` and `.drop_position` treat a blueprint's stated positions as adjustments to the default)
 
 ## 4.0.0
 * Updated `factorio-data` to version `2.1.17` (latest)
