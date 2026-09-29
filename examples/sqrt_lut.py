@@ -7,6 +7,10 @@ The footprint of the generated blueprint is dependent on the total number of
 unique signals in your environment - more signals, fewer total combinators in
 order to cover the whole range.
 
+If you don't need to account for the entire integer range, you can change the 
+`MAX_VALUE` constant to some smaller number to reduce the overall size of the
+circuit.
+
 Requirements:
     [Optional] pyperclip
 """
@@ -22,6 +26,9 @@ except ImportError:
     pyperclip = None
 
 
+MAX_VALUE = 20_000 * 20_000
+# MAX_VALUE = 2**31 - 1
+
 def main():
     bp = Blueprint()
 
@@ -33,6 +40,7 @@ def main():
             "signal-fluid-parameter",
             "signal-signal-parameter",
             "signal-unknown",
+            "ferric-asteroid-chunk",
         }:
             continue
         if signal_name in signals.pure_virtual:
@@ -40,6 +48,8 @@ def main():
         for signal_type in signals.type_of[signal_name]:
             for signal_quality in signals.quality:
                 unique_signals.append((signal_name, signal_quality, signal_type))
+
+    print(tuple(signal for signal in unique_signals if "asteroid-chunk" in signal[0]))
 
     def add_row(dc, cc):
         bp.entities.append(cc, id=f"cc_{num_ccs}", tile_position=(0, num_ccs))
@@ -63,7 +73,7 @@ def main():
 
     import math
 
-    num_squares = math.floor(math.sqrt(2**31 - 1))
+    num_squares = math.floor(math.sqrt(MAX_VALUE))
 
     dc = DeciderCombinator("decider-combinator", direction=Direction.EAST)
     Input = DeciderCombinator.Input

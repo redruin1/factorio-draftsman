@@ -1163,6 +1163,12 @@ def extract_entities(
             if not categorize_entity(name, contents):
                 continue
             contents["type"] = prototype_name
+            # Mods can accidentally provide non-keyword keys to `data:extend` (TFMG).
+            # The game seemingly swallows this, ignoring these integer keys?
+            # Regardless, we cannot pass these to the subsequent steps, so we strip them.
+            contents = { k: v for k, v in contents.items() if not isinstance(k, int)}
+            # Because of the above hack, something like passing dict entries as keyword
+            # arguments might not be the best approach.
             add_entity(**contents, target=(unordered_entities_raw, entities["of_type"]))
 
         sort(entities["of_type"][prototype_name])
