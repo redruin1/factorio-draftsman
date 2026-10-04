@@ -7,7 +7,7 @@ The footprint of the generated blueprint is dependent on the total number of
 unique signals in your environment - more signals, fewer total combinators in
 order to cover the whole range.
 
-If you don't need to account for the entire integer range, you can change the 
+If you don't need to account for the entire integer range, you can change the
 `MAX_VALUE` constant to some smaller number to reduce the overall size of the
 circuit.
 
@@ -27,6 +27,7 @@ except ImportError:
 
 
 MAX_VALUE = 2**31 - 1
+
 
 def main():
     bp = Blueprint()

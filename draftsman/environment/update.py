@@ -561,7 +561,11 @@ def run_data_lifecycle(
                     raise IncompatableModError(mod_name)
                 else:
                     continue  # Otherwise, don't worry about it
-            elif dependency.flag == "?" or dependency.flag == "(?)" or dependency.flag == "+":
+            elif (
+                dependency.flag == "?"
+                or dependency.flag == "(?)"
+                or dependency.flag == "+"
+            ):
                 # Mod is optional to the current mod
                 if dependency.name not in mods:
                     continue  # Don't worry about it
@@ -1166,7 +1170,7 @@ def extract_entities(
             # Mods can accidentally provide non-keyword keys to `data:extend` (TFMG).
             # The game seemingly swallows this, ignoring these integer keys?
             # Regardless, we cannot pass these to the subsequent steps, so we strip them.
-            contents = { k: v for k, v in contents.items() if not isinstance(k, int)}
+            contents = {k: v for k, v in contents.items() if not isinstance(k, int)}
             # Because of the above hack, something like passing dict entries as keyword
             # arguments might not be the best approach.
             add_entity(**contents, target=(unordered_entities_raw, entities["of_type"]))
@@ -1440,9 +1444,9 @@ def extract_items(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose
     fuels = {category: set() for category in fuel_categories}
 
     for item_name, item in sorted_items.items():
-        if "fuel_category" in item: # Factorio 1.0
+        if "fuel_category" in item:  # Factorio 1.0
             fuels[item["fuel_category"]].add(item_name)
-        elif "fuel_categories" in item: # Factorio 2.0
+        elif "fuel_categories" in item:  # Factorio 2.0
             for category in item["fuel_categories"]:
                 fuels[category].add(item_name)
 

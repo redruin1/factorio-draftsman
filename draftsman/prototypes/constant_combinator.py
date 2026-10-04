@@ -263,4 +263,3 @@ draftsman_converters.get_version((2, 1)).add_hook_fns(
         ("control_behavior", "sections", "sections"): fields.sections.name,
     },
 )
-
