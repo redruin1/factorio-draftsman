@@ -2,7 +2,7 @@
 
 from draftsman import DEFAULT_FACTORIO_VERSION
 from draftsman.data import mods
-from draftsman.utils import encode_version, decode_version
+from draftsman.utils import decode_version
 
 from enum import IntEnum
 import io
@@ -76,7 +76,7 @@ def decode_mod_settings(input_stream: io.BytesIO) -> ModSettings:
         elif data_type == PropertyTreeType.STRING:
             return read_string(binary_stream)
         elif data_type == PropertyTreeType.LIST:
-            list_length = struct.unpack("<I", binary_stream.read(4))
+            list_length = struct.unpack("<I", binary_stream.read(4))[0]
             out = list()
             for _ in range(list_length):
                 out.append(read_node(binary_stream))
@@ -93,7 +93,8 @@ def decode_mod_settings(input_stream: io.BytesIO) -> ModSettings:
             value = struct.unpack("<q", binary_stream.read(8))[0]
             return value
         elif data_type == PropertyTreeType.UNSIGNED_INTEGER:
-            value = struct.unpack("<Q", binary_stream)
+            value = struct.unpack("<Q", binary_stream.read(8))[0]
+            return value
         else:
             raise ValueError("Unknown PropertyTreeType ID '{}'".format(data_type))
 
@@ -114,25 +115,33 @@ def encode_mod_settings(
     # TODO: check endianness
     if factorio_version is None:
         factorio_version = mods.versions.get("base", DEFAULT_FACTORIO_VERSION)
-    # Write version number
-    version_num = encode_version(*factorio_version)
-    destination.write(struct.pack("<Q"), version_num)
+    # Write version number: four little-endian shorts, major first. This is the
+    # reverse of `encode_version`'s layout, which is why `decode_mod_settings`
+    # reverses what it reads
+    version = (tuple(factorio_version) + (0, 0, 0, 0))[:4]
+    destination.write(struct.pack("<4H", *version))
     # Write empty header flag
-    destination.write(struct.pack("<?"), 0)
+    destination.write(struct.pack("<?", False))
 
-    def write_string(s: str) -> None:
+    def write_raw_string(s: Optional[str]) -> None:
+        # A bare string, as used for a dictionary key: no type/"any type" header,
+        # matching what `read_string` (used directly for keys) expects.
+        if s is None:
+            destination.write(struct.pack("<?", True))  # string absent
+            return
+        destination.write(struct.pack("<?", False))  # string present
+        data = s.encode()
+        if len(data) >= 255:
+            destination.write(struct.pack("<B", 255))
+            destination.write(struct.pack("<I", len(data)))
+        else:
+            destination.write(struct.pack("<B", len(data)))
+        destination.write(data)
+
+    def write_string(s: Optional[str]) -> None:
         destination.write(struct.pack("<B", PropertyTreeType.STRING))
         destination.write(struct.pack("<B", 0))  # "Any type" flag, dummy value
-
-        # Handle dynamic lengths
-        if len(s) >= 255:
-            destination.write(255)
-            destination.write(struct.pack("<I", len(s)))
-        else:
-            destination.write(struct.pack("<B", len(s)))
-
-        # Write the actual data
-        destination.write(s.encode())
+        write_raw_string(s)
 
     def write_node(node: None | bool | float | str | list | dict) -> None:
         if node is None:
@@ -154,12 +163,14 @@ def encode_mod_settings(
             destination.write(struct.pack("<I", len(node)))
             for elem in node:
                 write_node(elem)
-        elif type(dict) is dict:
+        elif type(node) is dict:
             destination.write(struct.pack("<B", PropertyTreeType.DICTIONARY))
             destination.write(struct.pack("<B", 0))  # "Any type" flag, dummy value
             destination.write(struct.pack("<I", len(node)))
             for key, value in node.items():
-                write_string(key)
+                # A dict's keys are bare strings: `read_node` never sees them,
+                # `read_string` is called on them directly.
+                write_raw_string(key)
                 write_node(value)
         elif type(node) is int:
             destination.write(struct.pack("<B", PropertyTreeType.SIGNED_INTEGER))
@@ -195,7 +206,11 @@ def read_mod_settings(mods_path: str) -> ModSettings:
     return mod_settings
 
 
-def write_mod_settings(mods_path: str, mod_settings: ModSettings):
+def write_mod_settings(
+    mods_path: str,
+    mod_settings: ModSettings,
+    factorio_version: Optional[tuple[int, ...]] = None,
+):
     """
     Writes a `mod-settings.dat` file to a specified folder with the contents of
     ``mod_settings``. Note that no validation is done with the contents of
@@ -204,8 +219,15 @@ def write_mod_settings(mods_path: str, mod_settings: ModSettings):
     :param mods_path: The path to the directory where a 'mod-settings.dat' file
         will be created or overwritten.
     :param mod_settings: A properly formatted ModSettings dictionary.
+    :param factorio_version: Version recorded in the file's header. Defaults to
+        ``mods.versions["base"]``, which is only populated once a mod set has
+        been loaded -- pass this explicitly when writing ahead of that.
     """
     with open(
         os.path.join(mods_path, "mod-settings.dat"), mode="wb"
     ) as mod_settings_dat:
-        encode_mod_settings(destination=mod_settings_dat, property_tree=mod_settings)
+        encode_mod_settings(
+            destination=mod_settings_dat,
+            property_tree=mod_settings,
+            factorio_version=factorio_version,
+        )
