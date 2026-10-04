@@ -554,3 +554,136 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ): fields.output_signal.name,
     },
 )
+
+
+draftsman_converters.get_version((2, 1)).add_hook_fns(
+    ArithmeticCombinator,
+    lambda fields: {
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_constant",
+        ): {
+            "attr": fields.first_operand,
+            "name": "first_operand",
+            "type": Optional[int32],
+        },  # Happens first
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal",
+        ): {
+            "attr": fields.first_operand,
+            "name": "first_operand",
+            "type": Optional[SignalID],
+        },  # Overwrites first_constant if found
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal_networks",
+        ): fields.first_operand_wires.name,
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "operation",
+        ): fields.operation.name,
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_constant",
+        ): {
+            "attr": fields.second_operand,
+            "name": "second_operand",
+            "type": Optional[int32],
+        },  # Happens first
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal",
+        ): {
+            "attr": fields.second_operand,
+            "name": "second_operand",
+            "type": Optional[SignalID],
+        },  # Overwrites second_constant if found
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal_networks",
+        ): fields.second_operand_wires.name,
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "output_signal",
+        ): fields.output_signal.name,
+    },
+    lambda fields, converter: {
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_constant",
+        ): (
+            _export_fields.first_constant,
+            lambda inst: (
+                converter.unstructure(inst.first_operand)
+                if isinstance(inst.first_operand, int)
+                else None
+            ),
+        ),
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal",
+        ): (
+            _export_fields.first_signal,
+            lambda inst: (
+                converter.unstructure(inst.first_operand)
+                if not isinstance(inst.first_operand, int)
+                else None
+            ),
+        ),
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "first_signal_networks",
+        ): fields.first_operand_wires.name,
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "operation",
+        ): fields.operation.name,
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_constant",
+        ): (
+            _export_fields.second_constant,
+            lambda inst: (
+                converter.unstructure(inst.second_operand)
+                if isinstance(inst.second_operand, int)
+                else None
+            ),
+        ),
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal",
+        ): (
+            _export_fields.second_signal,
+            lambda inst: (
+                converter.unstructure(inst.second_operand)
+                if not isinstance(inst.second_operand, int)
+                else None
+            ),
+        ),
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "second_signal_networks",
+        ): fields.second_operand_wires.name,
+        (
+            "control_behavior",
+            "arithmetic_conditions",
+            "output_signal",
+        ): fields.output_signal.name,
+    },
+)

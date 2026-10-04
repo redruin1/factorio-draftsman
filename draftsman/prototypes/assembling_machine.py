@@ -109,6 +109,6 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
     ],
 )
 
-draftsman_converters.get_version((2, 0)).add_hook_fns(
-    AssemblingMachine, lambda fields: {}
-)
+# draftsman_converters.get_version((2, 0)).add_hook_fns(
+#     AssemblingMachine, lambda fields: {}
+# )

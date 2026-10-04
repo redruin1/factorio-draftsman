@@ -26,8 +26,7 @@ except ImportError:
     pyperclip = None
 
 
-MAX_VALUE = 20_000 * 20_000
-# MAX_VALUE = 2**31 - 1
+MAX_VALUE = 2**31 - 1
 
 def main():
     bp = Blueprint()
@@ -40,7 +39,6 @@ def main():
             "signal-fluid-parameter",
             "signal-signal-parameter",
             "signal-unknown",
-            "ferric-asteroid-chunk",
         }:
             continue
         if signal_name in signals.pure_virtual:
@@ -48,8 +46,6 @@ def main():
         for signal_type in signals.type_of[signal_name]:
             for signal_quality in signals.quality:
                 unique_signals.append((signal_name, signal_quality, signal_type))
-
-    print(tuple(signal for signal in unique_signals if "asteroid-chunk" in signal[0]))
 
     def add_row(dc, cc):
         bp.entities.append(cc, id=f"cc_{num_ccs}", tile_position=(0, num_ccs))

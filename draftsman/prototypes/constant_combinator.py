@@ -255,3 +255,12 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
         ("control_behavior", "sections", "sections"): fields.sections.name,
     },
 )
+
+draftsman_converters.get_version((2, 1)).add_hook_fns(
+    ConstantCombinator,
+    lambda fields: {
+        ("control_behavior", "is_on"): fields.enabled.name,
+        ("control_behavior", "sections", "sections"): fields.sections.name,
+    },
+)
+

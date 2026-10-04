@@ -12,7 +12,7 @@ import draftsman.validators
 
 from draftsman.data import signals
 
-from examples.decider_bit_checker import determine_bit_conditions
+from examples.combinators.decider_bit_checker import determine_bit_conditions
 
 import pyperclip
 

@@ -1677,7 +1677,7 @@ def extract_signals(
     add_signals("artillery-wagon", entity_signals, "entity")
     add_signals("assembling-machine", entity_signals, "entity")
     add_signals("asteroid", entity_signals, "entity")
-    add_signals("asteroid-chunk", entity_signals, "entity")
+    # add_signals("asteroid-chunk", entity_signals, "entity")
     add_signals("asteroid-collector", entity_signals, "entity")
     add_signals("beacon", entity_signals, "entity")
     add_signals("beam", entity_signals, "entity")

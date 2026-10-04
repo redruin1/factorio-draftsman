@@ -449,6 +449,19 @@ draftsman_converters.get_version((2, 0)).add_hook_fns(
     },
 )
 
+draftsman_converters.get_version((2, 1)).add_hook_fns(
+    DeciderCombinator.Condition,
+    lambda fields: {
+        "first_signal": fields.first_signal.name,
+        "first_signal_networks": fields.first_signal_networks.name,
+        "comparator": fields.comparator.name,
+        "constant": fields.constant.name,
+        "second_signal": fields.second_signal.name,
+        "second_signal_networks": fields.second_signal_networks.name,
+        "compare_type": fields.compare_type.name,
+    },
+)
+
 draftsman_converters.add_hook_fns(
     DeciderCombinator.Output,
     lambda fields: {
@@ -535,6 +548,18 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
 )
 
 draftsman_converters.get_version((2, 0)).add_hook_fns(
+    DeciderCombinator,
+    lambda fields: {
+        (
+            "control_behavior",
+            "decider_conditions",
+            "conditions",
+        ): fields.conditions.name,
+        ("control_behavior", "decider_conditions", "outputs"): fields.outputs.name,
+    },
+)
+
+draftsman_converters.get_version((2, 1)).add_hook_fns(
     DeciderCombinator,
     lambda fields: {
         (

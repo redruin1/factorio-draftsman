@@ -96,5 +96,5 @@ blueprint_book = BlueprintBook()
 blueprint_book.blueprints = [blueprint, UpgradePlanner(), DeconstructionPlanner()]
 
 print(
-    blueprint_book.to_string(version=(2, 0))
+    blueprint_book.to_string(version=(2, 1))
 )  # Blueprint string to import into Factorio

@@ -4,6 +4,9 @@
 ### [examples/entities](entities/)
 * Entity specific programs, usually for ones with complex behaviors.
 
+### [examples/combinators](combinators/)
+* Scripts dedicated to creating complex combinator circuits.
+
 ## [`blueprint_operands.py`](blueprint_operands.py)
 
 ![blueprint_operands.png](images/blueprint_operands.png)
