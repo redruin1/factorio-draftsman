@@ -5,6 +5,8 @@
 * Merged `Sloneggs` pull request:
   * Added `ElectricPole.supply_area_distance` and `ElectricPole.get_world_supply_area()`
       * Mirrors `circuit_wire_max_distance`, including the quality adjustment and returning `None` for unknown prototypes
+* Merged `Fatoom333`s pull request:
+    * Fix encode_mod_settings so it writes a readable mod-settings.dat (#235)
 * Fixed #227 (`draftsman update` always fails on 4.0.0)
 * Fixed #229 (`draftsman update` fails for any mod set without Space Age)
 * Fixed #230 (`feature_flags` is always nil)
