@@ -8,6 +8,7 @@ jobs:
       matrix:
         environment:
           - 'factorio+'
+          - 'factorissimo3'
           - 'issue_182'
           - 'issue_197'
           - 'issue_199'
