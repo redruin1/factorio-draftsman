@@ -23,6 +23,11 @@ math.pow = math.pow or function(value, power)
     return value ^ power
 end
 
+-- Factorio keeps the global `unpack` of Lua 5.1.
+-- If/when we get around to building Factorio's Lua this should be able to be 
+-- removed
+unpack = unpack or table.unpack
+
 -- Factorio uses Lua 5.2.1 - Lupa uses 5.2.4. Inbetween these two versions the
 -- semantics of table.insert/remove changed slightly - for now we just overwrite
 -- the new implementation with one that mimics the old behavior
