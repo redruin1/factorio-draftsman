@@ -1440,8 +1440,11 @@ def extract_items(lua: lupa.LuaRuntime, draftsman_path: str, sort_tuple, verbose
     fuels = {category: set() for category in fuel_categories}
 
     for item_name, item in sorted_items.items():
-        if "fuel_category" in item:
+        if "fuel_category" in item: # Factorio 1.0
             fuels[item["fuel_category"]].add(item_name)
+        elif "fuel_categories" in item: # Factorio 2.0
+            for category in item["fuel_categories"]:
+                fuels[category].add(item_name)
 
     with open(os.path.join(draftsman_path, "data", "items.pkl"), "wb") as out:
         items = [sorted_items, sorted_subgroups, sorted_groups, fuels]

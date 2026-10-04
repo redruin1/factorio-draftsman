@@ -22,7 +22,7 @@ import importlib
         )
         for t in (
             "examples.blueprint_operands",
-            "examples.combinator_text",
+            "examples.combinators.combinator_text",
             # "examples.draftsman_logo", # TODO
             "examples.filtered_train",
             "examples.find_trains_filtered",

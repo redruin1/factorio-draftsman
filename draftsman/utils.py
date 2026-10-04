@@ -895,14 +895,14 @@ def flatten_stock_connections(collection: "Collection") -> list["StockConnection
     return out
 
 
-def parse_energy(energy_string: str) -> int:
+def parse_energy(energy_string: str) -> float:
     """
     Converts a Factorio energy description string into a integer number of
     Joules or Watts. Valid inputs match the following regex string::
 
-        "[0..9]+[kKMGTPEZY]?[JW]"
+        "[0..9]+\\.?[0..9]*[kKMGTPEZY]?[JW]"
 
-    Correctly formatted strings start with a valid integer, followed by an
+    Correctly formatted strings start with a valid number, followed by an
     optional magnitude character, finished with either "J" for Joules or "W" for
     Watts.
 
@@ -944,7 +944,7 @@ def parse_energy(energy_string: str) -> int:
     else:
         digits_string = energy_string[:-1]
 
-    return round(int(digits_string) * multiplier)
+    return float(digits_string) * multiplier
 
 
 def passes_surface_conditions(conditions: list[dict], properties: dict) -> bool:

@@ -378,9 +378,10 @@ class TestUtils:
 
     def test_parse_energy(self):
         # Normal
-        assert utils.parse_energy("100J") == 100
-        assert utils.parse_energy("1000KJ") == 1_000_000
-        assert utils.parse_energy("60MW") == 1_000_000
+        assert utils.parse_energy("100J") == pytest.approx(100)
+        assert utils.parse_energy("1000KJ") == pytest.approx(1_000_000)
+        assert utils.parse_energy("60MW") == pytest.approx(1_000_000)
+        assert utils.parse_energy("1.8MW") == pytest.approx(30_000)
 
         # Unknown unit type specifier
         with pytest.raises(ValueError):

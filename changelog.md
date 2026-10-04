@@ -13,7 +13,9 @@
 * Fixed #231 (`draftsman update` crashes on a bounding box whose corner is written both positionally and by name)
 * Fixed #232 (`get_order` raises `KeyError` when an entity is minable into an item that was not extracted)
 * Fixed #233 (`Inserter.pickup_position` and `.drop_position` treat a blueprint's stated positions as adjustments to the default)
+* Fixed #238 (`parse_energy` errors on a fractional amount)
 * Fixed an issue where mods that erroneously provide integer keys in `data:extend` will cause errors in `draftsman update` wheras Factorio permits them
+* Fixed an issue where fuel items were not being extracted on Factorio 2.0 environments
 
 ## 4.0.0
 * Updated `factorio-data` to version `2.1.17` (latest)
