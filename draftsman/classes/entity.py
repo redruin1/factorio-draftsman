@@ -31,6 +31,7 @@ from draftsman.utils import (
 )
 from draftsman.validators import conditional, instance_of, one_of
 from draftsman.warning import (
+    ItemRequestMigrationWarning,
     UnknownEntityWarning,
     UnknownKeywordWarning,
 )
@@ -1069,6 +1070,43 @@ class _ExportEntity:
 _export_fields = attrs.fields(_ExportEntity)
 
 
+def _item_requests_to_1_0(inst: "Entity") -> dict:
+    """
+    Collapse 2.0 item requests into the 1.0 ``{name: count}`` format.
+
+    That format has no way to express quality, and no way to express a request
+    into an equipment grid, so requests using either are dropped. Dropping them
+    is unavoidable; doing it silently is not, hence the warnings — otherwise a
+    blueprint's ``items`` key can vanish entirely from the output with no
+    indication that anything was lost.
+    """
+    result = {}
+    for item_request in inst.item_requests:
+        if item_request.id.quality != "normal":
+            warnings.warn(
+                "Item request for '{}' of quality '{}' cannot be represented in the "
+                "1.0 format and was omitted".format(
+                    item_request.id.name, item_request.id.quality
+                ),
+                ItemRequestMigrationWarning,
+                stacklevel=2,
+            )
+            continue
+        if item_request.items.grid_count:
+            warnings.warn(
+                "Equipment grid request for '{}' (grid_count={}) cannot be represented "
+                "in the 1.0 format and was omitted".format(
+                    item_request.id.name, item_request.items.grid_count
+                ),
+                ItemRequestMigrationWarning,
+                stacklevel=2,
+            )
+        count = sum(loc.count for loc in item_request.items.in_inventory)
+        if count:
+            result[item_request.id.name] = result.get(item_request.id.name, 0) + count
+    return result
+
+
 draftsman_converters.get_version((1, 0)).add_hook_fns(
     Entity,
     lambda fields: {
@@ -1123,17 +1161,7 @@ draftsman_converters.get_version((1, 0)).add_hook_fns(
         "position": _export_fields.global_position,
         "mirror": None,
         "quality": None,
-        "items": (
-            _export_fields.item_requests,
-            lambda inst: {
-                item_request.id.name: sum(
-                    loc.count for loc in item_request.items.in_inventory
-                )
-                for item_request in inst.item_requests
-                # Skip non-normal item requests since they are unresolvable pre 2.0
-                if item_request.id.quality == "normal"
-            },
-        ),
+        "items": (_export_fields.item_requests, _item_requests_to_1_0),
         "tags": fields.tags.name,
     },
 )

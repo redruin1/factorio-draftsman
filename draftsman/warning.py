@@ -374,3 +374,14 @@ class EquipmentGridWarning(DraftsmanWarning):
     """
 
     pass
+
+
+class ItemRequestMigrationWarning(DraftsmanWarning):
+    """
+    Raised when an item request cannot be represented in the target version's
+    format and is omitted from the output. Most commonly this is a request of
+    non-normal quality or a request into an equipment grid being exported to
+    the 1.0 format, neither of which that format can express.
+    """
+
+    pass
